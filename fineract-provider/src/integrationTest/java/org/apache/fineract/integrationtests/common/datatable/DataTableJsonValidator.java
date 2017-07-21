@@ -216,5 +216,40 @@ public class DataTableJsonValidator {
         assertEquals("this is new description", changes.get("description"));
         assertEquals("2016-07-07", changes.get("started on"));
     }
+    
+    public void validateCreatedDataTableContainingSectionsJson(final JsonArray sectionDataList) {
+        List<Object> sectionDisplayNameInfo = new ArrayList();
+        sectionDisplayNameInfo.add("Personal Details");
+        sectionDisplayNameInfo.add("Transactions");
+        List<Object> displayPositionInfo = new ArrayList();
+        displayPositionInfo.add(1);
+        displayPositionInfo.add(2);
+        for (int i = 0; i < sectionDataList.size(); i++) {
+            String displayName = this.fromJsonHelper.extractStringNamed("displayName", sectionDataList.get(i));
+            assertEquals(sectionDisplayNameInfo.get(i), displayName);
+            Integer displayPosition = this.fromJsonHelper.extractIntegerNamed("displayPosition", sectionDataList.get(i), new Locale("en"));
+            assertEquals(displayPositionInfo.get(i), displayPosition);
+            JsonArray columns = this.fromJsonHelper.extractJsonArrayNamed("columns", sectionDataList.get(i));
+            assertEquals(columns.size(), 1);
+        }
+    }
 
+    public void validateUpdatedDataTableContainingSectionsJson(final JsonArray sectionDataList) {
+        List<Object> sectionDisplayNameInfo = new ArrayList();
+        sectionDisplayNameInfo.add("Miscellaneous");
+        sectionDisplayNameInfo.add("Personal Details");
+        sectionDisplayNameInfo.add("Transactions");
+        List<Object> displayPositionInfo = new ArrayList();
+        displayPositionInfo.add(3);
+        displayPositionInfo.add(1);
+        displayPositionInfo.add(2);
+        for (int i = 0; i < sectionDataList.size(); i++) {
+            String displayName = this.fromJsonHelper.extractStringNamed("displayName", sectionDataList.get(i));
+            assertEquals(sectionDisplayNameInfo.get(i), displayName);
+            Integer displayPosition = this.fromJsonHelper.extractIntegerNamed("displayPosition", sectionDataList.get(i), new Locale("en"));
+            assertEquals(displayPositionInfo.get(i), displayPosition);
+            JsonArray columns = this.fromJsonHelper.extractJsonArrayNamed("columns", sectionDataList.get(i));
+            assertEquals(columns.size(), 1);
+        }
+    }
 }

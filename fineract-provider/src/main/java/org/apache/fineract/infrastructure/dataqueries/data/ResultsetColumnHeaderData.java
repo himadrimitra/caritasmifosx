@@ -45,7 +45,8 @@ public final class ResultsetColumnHeaderData implements Comparable<ResultsetColu
     private final Boolean visible;
     @SuppressWarnings("unused")
     private final Boolean mandatoryIfVisible;
-
+    private final Long sectionId;
+    
     private final List<ResultsetColumnValueData> columnValues;
     private final String columnCode;
     List<ResultsetVisibilityCriteriaData> visibilityCriteria;
@@ -62,22 +63,23 @@ public final class ResultsetColumnHeaderData implements Comparable<ResultsetColu
         final String dependsOnColumnName = null;
         final Boolean visible = null;
         final Boolean mandatoryIfVisible = null;
+        final Long sectionId = null;
         final List<ResultsetVisibilityCriteriaData> visibilityCriteria = new ArrayList<>();
         return new ResultsetColumnHeaderData(columnName, columnType, columnLength, columnNullable, columnIsPrimaryKey, columnValues,
-                columnCode, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria);
+                columnCode, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria, sectionId);
     }
 
     public static ResultsetColumnHeaderData detailed(final String columnName, final String columnType, final Long columnLength,
             final boolean columnNullable, final boolean columnIsPrimaryKey, final List<ResultsetColumnValueData> columnValues,
-            final String columnCode, final String displayName, final String dependsOnColumnName, final Long orderPosition, final  Boolean visible, final Boolean mandatoryIfVisible, List<ResultsetVisibilityCriteriaData> visibilityCriteria) {
+            final String columnCode, final String displayName, final String dependsOnColumnName, final Long orderPosition, final  Boolean visible, final Boolean mandatoryIfVisible, List<ResultsetVisibilityCriteriaData> visibilityCriteria, final Long sectionId) {
         return new ResultsetColumnHeaderData(columnName, columnType, columnLength, columnNullable, columnIsPrimaryKey, columnValues,
-                columnCode, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria);
+                columnCode, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria, sectionId);
     }
 
     private ResultsetColumnHeaderData(final String columnName, final String columnType, final Long columnLength,
             final boolean columnNullable, final boolean columnIsPrimaryKey, final List<ResultsetColumnValueData> columnValues,
             final String columnCode, final String displayName, final String dependsOnColumnName, final Long orderPosition, final Boolean visible,
-            final Boolean mandatoryIfVisible, List<ResultsetVisibilityCriteriaData> visibilityCriteria) {
+            final Boolean mandatoryIfVisible, List<ResultsetVisibilityCriteriaData> visibilityCriteria,  final Long sectionId) {
         this.columnName = columnName;
         this.columnType = columnType;
         this.columnLength = columnLength;
@@ -91,6 +93,7 @@ public final class ResultsetColumnHeaderData implements Comparable<ResultsetColu
         this.visible = visible;
         this.mandatoryIfVisible = mandatoryIfVisible;
         this.visibilityCriteria = visibilityCriteria;
+        this.sectionId = sectionId;
 
         // Refer org.drizzle.jdbc.internal.mysql.MySQLType.java
         adjustColumnTypes();
@@ -332,7 +335,12 @@ public final class ResultsetColumnHeaderData implements Comparable<ResultsetColu
     public String getColumnCode() {
         return this.columnCode;
     }
-    public int compareTo(ResultsetColumnHeaderData rh){
-    	return (this.orderPosition.intValue() - rh.orderPosition.intValue());
+
+    public int compareTo(ResultsetColumnHeaderData rh) {
+        return (this.orderPosition.intValue() - rh.orderPosition.intValue());
+    }
+
+    public Long getSectionId() {
+        return this.sectionId;
     }
 }

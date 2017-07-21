@@ -37150,6 +37150,13 @@ No Request Body:
                                 If this property is not provided Data Table will allow only one entry.
                             </td>
                         </tr>
+						<tr class=alt>
+                            <td><em>Optional - </em>sections</td>
+                        </tr>
+                        <tr>
+                            <td class=fielddesc>On allowing sections, you can categorize columns by placing related columns under one section.
+                            </td>
+                        </tr>
                     </table>
                     <table class=matrixHeading>
 						<tr class="matrixHeadingBG">
@@ -37267,6 +37274,62 @@ Request Body:
                 <code class="method-response">
 {
     "resourceIdentifier": "client_address"
+}
+                </code>
+                <code class="method-request">
+POST https://DomainName/api/v1/datatables
+
+Content-Type: application/json
+Request Body:
+{  
+   "datatableName":"Employee",
+   "apptableName":"m_client",
+   "multiRow":false,
+   "columns":[  
+
+   ],
+   "sections":[  
+      {  
+         "displayPosition":1,
+         "displayName":"Personal Details",
+         "columns":[  
+            {  
+               "name":"Name",
+               "type":"String",
+               "mandatory":false,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "length":"20"
+            },
+            {  
+               "name":"Age",
+               "type":"Number",
+               "mandatory":false,
+               "visible":true,
+               "mandatoryIfVisible":false
+            }
+         ]
+      },
+      {  
+         "displayPosition":2,
+         "displayName":"Department",
+         "columns":[  
+            {  
+               "name":"Department Name",
+               "type":"String",
+               "mandatory":false,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "length":"20"
+            }
+         ]
+      }
+   ]
+}
+                </code>
+                <code class="method-response">
+{
+    "resourceIdentifier": "Employee"
 }
                 </code>
 
@@ -37562,6 +37625,33 @@ GET https://DomainName/api/v1/datatables/{datatable}
 						<tr>
 							<td class=fielddesc>Only used when re-ordering Data Table columns. Requires a full column name to be provided.</td>
 						</tr>
+						<tr class=alt>
+                            <td><em>Optional - </em>sections</td>
+                        </tr>
+						<tr>
+                            <td class=fielddesc>Used when data table columns are organized in sections. IT contains altered columns along with section's display name and display position.</td>
+						</tr>
+						<tr class=alt>
+                            <td><em>Optional - </em>addSections</td>
+                        </tr>
+						<tr>
+                            <td class=fielddesc>Contains newly added sections.</td>
+						</tr>
+						<tr class=alt>
+                            <td><em>Optional - </em>changeSections</td>
+                        </tr>
+						<tr>
+                            <td class=fielddesc>Contains section names and their display position.</td>
+						</tr>
+						<tr>
+                            <td class=fielddesc>Contains newly added sections.</td>
+						</tr>
+						<tr class=alt>
+                            <td><em>Optional - </em>dropSections</td>
+                        </tr>
+						<tr>
+                            <td class=fielddesc>Contains section that needs to be deleted from the data table.</td>
+						</tr>
 					</table>
 				</div>
 				<div class="method-example">
@@ -37607,6 +37697,124 @@ Request Body:
 					<code class="method-response">
 {
   "resourceIdentifier": "extra_client_details"
+}
+				</code>
+<code class="method-declaration">
+PUT https://DomainName/api/v1/datatables/{datatables}
+                    </code>
+                    <code class="method-request">
+PUT https://DomainName/api/v1/datatables/Employee
+
+Content-Type: application/json
+Request Body:
+{  
+   "apptableName":"m_client",
+   "changeColumns":[  
+      {  
+         "name":"Name",
+         "mandatory":false,
+         "displayPosition":2,
+         "visible":true,
+         "mandatoryIfVisible":false,
+         "length":20,
+         "newName":"Name"
+      },
+      {  
+         "name":"Age",
+         "mandatory":false,
+         "displayPosition":3,
+         "visible":true,
+         "mandatoryIfVisible":false,
+         "newName":"Age"
+      },
+      {  
+         "name":"Department Name",
+         "mandatory":false,
+         "displayPosition":4,
+         "visible":true,
+         "mandatoryIfVisible":false,
+         "length":20,
+         "newName":"Department Name"
+      }
+   ],
+   "sections":[  
+      {  
+         "displayPosition":1,
+         "displayName":"Personal Details",
+         "changeColumns":[  
+            {  
+               "name":"Name",
+               "mandatory":false,
+               "displayPosition":2,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "length":20,
+               "newName":"Name"
+            },
+            {  
+               "name":"Age",
+               "mandatory":false,
+               "displayPosition":3,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "newName":"Age"
+            }
+         ]
+      },
+      {  
+         "displayPosition":2,
+         "displayName":"Department",
+         "changeColumns":[  
+            {  
+               "name":"Department Name",
+               "mandatory":false,
+               "displayPosition":4,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "length":20,
+               "newName":"Department Name"
+            }
+         ]
+      },
+      {  
+         "displayPosition":3,
+         "displayName":"Miscellaneous",
+         "addColumns":[  
+            {  
+               "name":"Notes",
+               "type":"string",
+               "mandatory":false,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "length":"20"
+            }
+         ]
+      }
+   ],
+   "addSections":[  
+      {  
+         "displayPosition":3,
+         "displayName":"Miscellaneous"
+      }
+   ],
+   "changeSections":[  
+      {  
+         "displayPosition":1,
+         "displayName":"Personal Details"
+      },
+      {  
+         "displayPosition":2,
+         "displayName":"Department"
+      }
+   ],
+   "dropSections":[  
+
+   ]
+}
+					</code>
+					<code class="method-response">
+{
+  "resourceIdentifier": "Employee"
 }
 				</code>
 				</div>
@@ -37891,7 +38099,190 @@ GET https://DomainName/api/v1/datatables/{datatable}/{apptableId}?genericResultS
                 "First\tcomment made"
             ]
         }
-    ]
+    ],
+	 "sectionedColumnList":[],
+	 "columnData":[  
+      {  
+         "row":[  
+            {  
+               "columnName":"client_id",
+               "value":"1"
+            },
+            {  
+               "columnName":"Business Description",
+               "value":"Livestock sales"
+            },
+            {  
+               "columnName":"Years in Business",
+               "value":"5"
+            },
+            {  
+               "columnName":"Gender_cd",
+               "value":"6"
+            },
+            {  
+               "columnName":"Education_cv",
+               "value":"Primary"
+            },
+            {  
+               "columnName":"Next Visit",
+               "value":"2012-10-01"
+            },
+            {  
+               "columnName":"Highest Rate Paid",
+               "value":"8.500000"
+            },
+			{  
+               "columnName":"Comment",
+               "value":"First\tcomment made"
+            }
+         ]
+      }
+   ] 
+}
+					</code>
+<code class="method-declaration">
+GET https://DomainName/api/v1/datatables/Employee/3?genericResultSet=true
+					</code>
+					<code class="method-response">
+{  
+   "columnHeaders":[  ],
+   "data":[  
+      {  
+         "row":[  
+            "3",
+            "John",
+            "29",
+            "Infrastructure",
+            "Test"
+         ]
+      }
+   ],
+   "sectionedColumnList":[  
+      {  
+         "id":119,
+         "displayName":"Department",
+         "displayPosition":2,
+         "columns":[  
+            {  
+               "columnName":"Department Name",
+               "columnType":"varchar",
+               "columnLength":20,
+               "columnDisplayType":"STRING",
+               "isColumnNullable":true,
+               "isColumnPrimaryKey":false,
+               "displayName":"null",
+               "orderPosition":4,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "sectionId":119,
+               "columnValues":[  
+
+               ],
+               "visibilityCriteria":[  
+
+               ]
+            }
+         ]
+      },
+      {  
+         "id":121,
+         "displayName":"Miscellaneous",
+         "displayPosition":3,
+         "columns":[  
+            {  
+               "columnName":"Notes",
+               "columnType":"varchar",
+               "columnLength":20,
+               "columnDisplayType":"STRING",
+               "isColumnNullable":true,
+               "isColumnPrimaryKey":false,
+               "displayName":"null",
+               "orderPosition":5,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "sectionId":121,
+               "columnValues":[  
+
+               ],
+               "visibilityCriteria":[  
+
+               ]
+            }
+         ]
+      },
+      {  
+         "id":118,
+         "displayName":"Personal Details",
+         "displayPosition":1,
+         "columns":[  
+            {  
+               "columnName":"Name",
+               "columnType":"varchar",
+               "columnLength":20,
+               "columnDisplayType":"STRING",
+               "isColumnNullable":true,
+               "isColumnPrimaryKey":false,
+               "displayName":"null",
+               "orderPosition":2,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "sectionId":118,
+               "columnValues":[  
+
+               ],
+               "visibilityCriteria":[  
+
+               ]
+            },
+            {  
+               "columnName":"Age",
+               "columnType":"int",
+               "columnLength":0,
+               "columnDisplayType":"INTEGER",
+               "isColumnNullable":true,
+               "isColumnPrimaryKey":false,
+               "displayName":"null",
+               "orderPosition":3,
+               "visible":true,
+               "mandatoryIfVisible":false,
+               "sectionId":118,
+               "columnValues":[  
+
+               ],
+               "visibilityCriteria":[  
+
+               ]
+            }
+         ]
+      }
+   ],
+   "columnData":[  
+      {  
+         "row":[  
+            {  
+               "columnName":"client_id",
+               "value":"3"
+            },
+            {  
+               "columnName":"Name",
+               "value":"John"
+            },
+            {  
+               "columnName":"Age",
+               "value":"29"
+            },
+            {  
+               "columnName":"Department Name",
+               "value":"Infrastructure"
+            },
+            {  
+               "columnName":"Notes",
+               "value":"Test"
+            }
+         ]
+      }
+   ]
 }
 					</code>
 				</div>
