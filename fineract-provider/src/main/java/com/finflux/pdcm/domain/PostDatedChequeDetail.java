@@ -148,19 +148,22 @@ public class PostDatedChequeDetail extends AbstractAuditableCustom<AppUser, Long
 
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
-        if (command.isChangeInLocalDateParameterNamed(PostDatedChequeDetailApiConstants.chequeDateParamName,
-                chequeDateParamNameLocalDate())) {
+        if (command
+                .isChangeInLocalDateParameterNamed(PostDatedChequeDetailApiConstants.chequeDateParamName, chequeDateParamNameLocalDate())) {
             final String valueAsInput = command.stringValueOfParameterNamed(PostDatedChequeDetailApiConstants.chequeDateParamName);
             actualChanges.put(PostDatedChequeDetailApiConstants.chequeDateParamName, valueAsInput);
             actualChanges.put(PostDatedChequeDetailApiConstants.dateFormatParamName, dateFormatAsInput);
             actualChanges.put(PostDatedChequeDetailApiConstants.localeParamName, localeAsInput);
             final LocalDate newValue = command.localDateValueOfParameterNamed(PostDatedChequeDetailApiConstants.chequeDateParamName);
-            this.chequeDate = newValue.toDate();
+            if (newValue == null) {
+                this.chequeDate = null;
+            } else {
+                this.chequeDate = newValue.toDate();
+            }
         }
 
         if (command.isChangeInBigDecimalParameterNamed(PostDatedChequeDetailApiConstants.chequeAmountParamName, this.chequeAmount)) {
-            final BigDecimal newValue = command
-                    .bigDecimalValueOfParameterNamed(PostDatedChequeDetailApiConstants.chequeAmountParamName);
+            final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(PostDatedChequeDetailApiConstants.chequeAmountParamName);
             actualChanges.put(PostDatedChequeDetailApiConstants.chequeAmountParamName, newValue);
             this.chequeAmount = newValue;
         }
