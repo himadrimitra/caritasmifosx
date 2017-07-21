@@ -24,21 +24,17 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
-import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiConstants;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryFactory;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Image;
 import org.apache.fineract.infrastructure.documentmanagement.domain.ImageRepository;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.common.domain.EntityType;
-import org.apache.fineract.useradministration.domain.AppUser;
-import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,17 +49,15 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
     private final ClientRepositoryWrapper clientRepositoryWrapper;
     private final ImageRepository imageRepository;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
-    private final PlatformSecurityContext context;
 
     @Autowired
     public ImageWritePlatformServiceJpaRepositoryImpl(final ContentRepositoryFactory documentStoreFactory,
             final ClientRepositoryWrapper clientRepositoryWrapper, final ImageRepository imageRepository,
-            StaffRepositoryWrapper staffRepositoryWrapper,final PlatformSecurityContext context) {
+            StaffRepositoryWrapper staffRepositoryWrapper) {
         this.contentRepositoryFactory = documentStoreFactory;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
         this.imageRepository = imageRepository;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
-        this.context=context;
     }
 
     @Transactional
@@ -182,9 +176,7 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
 
     private Image createImage(Image image, final String imageLocation, final StorageType storageType,final JsonCommand command) {
         if (image == null) {
-            final AppUser createdBy = this.context.authenticatedUser();
-            final LocalDate createdOn=DateUtils.getLocalDateOfTenant();
-            image = new Image(imageLocation, storageType,command,createdBy,createdOn);
+            image = new Image(imageLocation, storageType,command);
         } else {
             JsonElement json=command.parsedJson();
             image.setLocation(imageLocation);

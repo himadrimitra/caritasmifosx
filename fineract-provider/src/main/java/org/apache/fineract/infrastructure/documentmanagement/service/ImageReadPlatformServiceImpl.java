@@ -67,7 +67,6 @@ public class ImageReadPlatformServiceImpl implements ImageReadPlatformService {
     private static final class ImageMapper implements RowMapper<ImageData> {
 
         private final String entityDisplayName;
-
         public ImageMapper(final String entityDisplayName) {
             this.entityDisplayName = entityDisplayName;
         }
@@ -100,12 +99,12 @@ public class ImageReadPlatformServiceImpl implements ImageReadPlatformService {
     
     
     private static final class ImageDataMapper implements RowMapper<ImageData> {
-
+        
         public String schema() {
             StringBuilder builder = new StringBuilder(
                     "image.id as id, image.location as location, image.storage_type_enum as storageType,");
             builder.append(" image.geo_tag as geoTag,image.entity_type as entityType,image.entity_id as entityId,");
-            builder.append("CONCAT(appuser.firstname,' ',appuser.lastname) as createdBy,image.created_on as createdOn ");
+            builder.append("CONCAT(appuser.firstname,' ',appuser.lastname) as createdBy,image.created_date as createdOn ");
             builder.append(" from m_image image LEFT JOIN m_appuser appuser on image.created_by=appuser.id ");
             builder.append("where image.entity_type=? and image.entity_id=?");
             return builder.toString();
@@ -122,7 +121,7 @@ public class ImageReadPlatformServiceImpl implements ImageReadPlatformService {
             final Integer entityType = rs.getInt("entityType");
             EntityType entityTypeEnum = EntityType.fromInt(entityType);
             final Long entityId = rs.getLong("entityId");
-            final String createdBy = rs.getString("createdBy");
+            String createdBy = rs.getString("createdBy");
             final Date createdOn = rs.getDate("createdOn");
             return new ImageData(id, location, storageType, null, geoTag, entityTypeEnum, entityId, createdBy, createdOn);
         }
