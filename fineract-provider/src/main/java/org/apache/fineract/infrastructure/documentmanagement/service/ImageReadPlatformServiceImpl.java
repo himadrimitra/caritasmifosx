@@ -105,7 +105,7 @@ public class ImageReadPlatformServiceImpl implements ImageReadPlatformService {
                     "image.id as id, image.location as location, image.storage_type_enum as storageType,");
             builder.append(" image.geo_tag as geoTag,image.entity_type as entityType,image.entity_id as entityId,");
             builder.append("CONCAT(appuser.firstname,' ',appuser.lastname) as createdBy,image.created_date as createdOn ");
-            builder.append(" from m_image image LEFT JOIN m_appuser appuser on image.created_by=appuser.id ");
+            builder.append(" from m_image image LEFT JOIN m_appuser appuser on image.createdby_id=appuser.id ");
             builder.append("where image.entity_type=? and image.entity_id=?");
             return builder.toString();
         }
