@@ -196,12 +196,12 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
             if (chequeStatus.isPending()) {
                 if (fromDate != null) {
                     if (params.size() > 0) buff.append("and ");
-                    buff.append("pdc.pending_date >= ? ");
+                    buff.append("pdc.created_date >= ? ");
                     params.add(fromDate);
                 }
                 if (toDate != null) {
                     if (params.size() > 0) buff.append("and ");
-                    buff.append("pdc.pending_date <= ? ");
+                    buff.append("pdc.created_date <= ? ");
                     params.add(toDate);
                 }
             } else if (chequeStatus.isPresented()) {

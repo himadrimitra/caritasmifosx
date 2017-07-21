@@ -96,23 +96,23 @@
 				<div class="flybar-menu-overview">
 					<div class="toc-column1">
 						<div class="toc-section">
-<ul>
-	<li><a href="#top">Apache Fineract API Documentation</a></li>
-	<li><a href="#interact">Try The API From Your Browser</a></li>
-	<li><a href="#genopts">Generic Options</a></li>
-	<li><a href="#creates_and_updates">Creating and Updating</a></li>
-	<li><a href="#dates_and_numbers">Updating Dates and Numbers</a></li>
-	<li><a href="#field_descriptions">Field Descriptions</a></li>
-	<li><a href="#authentication_overview">Authentication Overview</a></li>
-	<li><a href="#authentication_basicauth">Authentication HTTP Basic</a></li>
-	<li><a href="#authentication_oauth">Authentication Oauth2</a></li>
-	<li><a href="#errors">Errors</a></li>
-	<li><a href="#batch_api">Batch API</a></li>
-	<li><a href="#fullapi_matrix">Full API Matrix</a></li>
-	<li><a href="#betaapi_matrix">Beta API Matrix</a></li>
-	<li><a href="#paymentapplicationlogic">Payment Application Logic / Transaction Processing Strategies</a></li>
-	<li><a href="#selfservice_overview">Self Service API</a></li>
-</ul>
+							<ul>
+								<li><a href="#top">Apache Fineract API Documentation</a></li>
+								<li><a href="#interact">Try The API From Your Browser</a></li>
+								<li><a href="#genopts">Generic Options</a></li>
+								<li><a href="#creates_and_updates">Creating and Updating</a></li>
+								<li><a href="#dates_and_numbers">Updating Dates and Numbers</a></li>
+								<li><a href="#field_descriptions">Field Descriptions</a></li>
+								<li><a href="#authentication_overview">Authentication Overview</a></li>
+								<li><a href="#authentication_basicauth">Authentication HTTP Basic</a></li>
+								<li><a href="#authentication_oauth">Authentication Oauth2</a></li>
+								<li><a href="#errors">Errors</a></li>
+								<li><a href="#batch_api">Batch API</a></li>
+								<li><a href="#fullapi_matrix">Full API Matrix</a></li>
+								<li><a href="#betaapi_matrix">Beta API Matrix</a></li>
+								<li><a href="#paymentapplicationlogic">Payment Application Logic / Transaction Processing Strategies</a></li>
+								<li><a href="#selfservice_overview">Self Service API</a></li>
+							</ul>
 						</div>
 					</div>
 				</div>
@@ -3879,6 +3879,147 @@
 				</div>
 			</div>
 
+			<!-- API documentation for Other -->
+			<div class="flybar-nav">
+				<h2 class="flybar-button">Others</h2>
+				<div id="toc-menu-report" class="flybar-menu">
+					<div class="tocMatrix">
+						<table class=matrixHeading>
+							<tr class="matrixHeadingBG">
+								<td colspan=2 valign="top"><div class="matrixHeadingVerbs">
+										<table>
+											<tr>
+												<td>RESOURCES</td>
+											</tr>
+										</table>
+									</div></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">POST</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>create/complex
+													update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">GET</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>read</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">PUT</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">DELETE</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>delete</div></td>
+										</tr>
+									</table></td>
+							</tr>
+							<tr>
+								<td><a href="#pdcmanagement">Post Dated Cheque</a></td>
+								<td>pdcm/{entityType}/{entityId}/template</td>
+								<td></td>
+								<td><a href="#retrievepdctemplate">Retrieve Template</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm/{entityType}/{entityId}</td>
+								<td><a href="#createpdc">Create</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm/{entityType}/{entityId}</td>
+								<td></td>
+								<td><a href="#retrieveallpdc">Retrieve All</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm/{pdcId}</td>
+								<td></td>
+								<td><a href="#retrieveonepdc">Retrieve One</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm/{pdcId}</td>
+								<td></td>
+								<td></td>
+								<td><a href="#updatepdc">Update</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm?command=present</td>
+								<td></td>
+								<td></td>
+								<td><a href="#presentpdc">Present PDC</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm?command=bounced</td>
+								<td></td>
+								<td></td>
+								<td><a href="#bouncedpdc">Bounced PDC</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm?command=clear</td>
+								<td></td>
+								<td></td>
+								<td><a href="#clearpdc">Clear PDC</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm?command=cancel</td>
+								<td></td>
+								<td></td>
+								<td><a href="#cancelpdc">Cancel PDC</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm?command=return</td>
+								<td></td>
+								<td></td>
+								<td><a href="#returnpdc">Return PDC</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>pdcm?command=undo</td>
+								<td></td>
+								<td></td>
+								<td><a href="#undopdc">Undo PDC</a></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+
 		</div>
 
 		<div id="main-content-wrapper">
@@ -4814,6 +4955,358 @@ Successful transaction response:
 
 					</div>
 			</div>
+			
+			<!-- start of PDC api docs -->
+			<a id="pdcmanagement" name="pdcmanagement" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h3>Post Dated Cheque</h3>
+					<p>Create and manage "Post Dated Cheques" to repay loan installments.</p>
+					<p></p>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Field Descriptions</div></td>
+						</tr>
+						<tr class=alt>
+							<td>chequeType</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Facility to select cheque type is Repayment PDC or Security PDC.</td>
+						</tr>
+						<tr class=alt>
+							<td>chequeNumber</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Facility to capture the cheque number.</td>
+						</tr>
+						<tr class=alt>
+							<td>chequeDate</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Facility to capture the cheque date.</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			
+			<a id="retrievepdctemplate" name="retrievepdctemplate" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve PDC Template</h4>
+					<p></p>
+					<h5></h5>
+					<dl class="argument-list">
+						
+					</dl>
+					<p>Example Requests:</p>
+					<div class=apiClick>pdcm/{entityType}/{entityId}/template</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/pdcm/{entityType}/{entityId}/template
+					</code>
+					<code class="method-response">
+{
+	"pdcTypeOptions": [{
+		"id": 1,
+		"code": "pdcType.repayment",
+		"value": "Repayment PDC"
+	},
+	{
+		"id": 2,
+		"code": "pdcType.security",
+		"value": "Security PDC"
+	}],
+	"paymentTypeOptions": [{
+		"id": 1,
+		"value": "Check"
+	}],
+	"loanSchedulePeriods": [{
+		"period": 1,
+		"dueDate": "15 August 1947",
+		"totalDueForPeriod" : 1260
+	},
+	{
+		"period": 2,
+		"dueDate": "26 January 1950",
+		"totalDueForPeriod" : 1260
+	}]
+}
+					</code>
+				</div>
+			</div>
+			
+			<a id="createpdc" name="createpdc" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Create PDC</h4>
+					<p></p>
+					<h5></h5>
+					<dl class="argument-list">
+						
+					</dl>
+					<p>Example Requests:</p>
+					<div class=apiClick>pdcm/{entityType}/{entityId}</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/pdcm/{entityType}/{entityId}
+					</code>
+					<code class="method-request">
+Content-Type: application/json
+Request Body:
+{
+	"locale": "en",
+	"dateFormat": "dd MMMM yyyy",
+	"pdcDetails": [{
+		"chequeNumbers": [100000],
+		"chequeType": 1,
+		"numberOfPDC": 5,
+		"isIncrementChequeNumber": true,
+		"bankName": "SBI",
+		"branchName": "Bangalore",
+		"ifscCode": "SBIN0006538",
+		"paymentType": 1,
+		"chequeDates": ["15 August 1947","26 January 1950"],
+		"amounts": [1260,1260]
+	}]
+}
+					</code>
+					
+					<code class="method-response">
+{
+	"changes": {
+		"resourceIds": [1,
+		2]
+	}
+}
+					</code>
+				</div>
+			</div>
+			
+			
+			<a id="retrieveallpdc" name="retrieveallpdc" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve All PDC</h4>
+					<p></p>
+					<h5></h5>
+					<dl class="argument-list">
+						
+					</dl>
+					<p>Example Requests:</p>
+					<div class=apiClick>pdcm/{entityType}/{entityId}</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/pdcm/{entityType}/{entityId}
+					</code>
+					<code class="method-response">
+[{
+	"id": 1,
+	"bankName": "SBI",
+	"branchName": "Bangalore",
+	"ifscCode": "SBIN0006538",
+	"chequeAmount": 1260,
+	"chequeType": {
+		"id": 1,
+		"code": "chequeType.repayment.pdc",
+		"value": "Repayment PDC"
+	},
+	"chequeNumber": "100000",
+	"chequeDate": [1947,
+	8,
+	15],
+	"presentStatus": {
+		"id": 1,
+		"code": "chequeStatus.pending",
+		"value": "Pending"
+	},
+	"mappingData": {
+		"id": 1,
+		"paymentType": 1,
+		"dueAmount": 1260,
+		"dueDate": [1947,
+		8,
+		15],
+		"paidStatus": false
+	}
+},
+{
+	"id": 2,
+	"bankName": "SBI",
+	"branchName": "Bangalore",
+	"ifscCode": "SBIN0006538",
+	"chequeAmount": 1260,
+	"chequeType": {
+		"id": 1,
+		"code": "chequeType.repayment.pdc",
+		"value": "Repayment PDC"
+	},
+	"chequeNumber": "100001",
+	"chequeDate": [1950,
+	1,
+	26],
+	"presentStatus": {
+		"id": 1,
+		"code": "chequeStatus.pending",
+		"value": "Pending"
+	},
+	"mappingData": {
+		"id": 2,
+		"paymentType": 1,
+		"dueAmount": 1260,
+		"dueDate": [1950,
+		1,
+		26],
+		"paidStatus": false
+	}
+}]
+					</code>
+				</div>
+			</div>
+			
+			
+			<a id="retrieveonepdc" name="retrieveonepdc" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve One PDC</h4>
+					<p></p>
+					<h5></h5>
+					<dl class="argument-list">
+						
+					</dl>
+					<p>Example Requests:</p>
+					<div class=apiClick>pdcm/{pdcId}</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/pdcm/{pdcId}
+					</code>
+					<code class="method-response">
+{
+	"id": 1,
+	"bankName": "SBI",
+	"branchName": "Bangalore",
+	"ifscCode": "SBIN0006538",
+	"chequeAmount": 1260,
+	"chequeType": {
+		"id": 1,
+		"code": "chequeType.repayment.pdc",
+		"value": "Repayment PDC"
+	},
+	"chequeNumber": "100000",
+	"chequeDate": [1947,
+	8,
+	15],
+	"presentStatus": {
+		"id": 1,
+		"code": "chequeStatus.pending",
+		"value": "Pending"
+	},
+	"mappingData": {
+		"id": 1,
+		"paymentType": 1,
+		"dueAmount": 1260,
+		"dueDate": [1947,
+		8,
+		15],
+		"paidStatus": false
+	}
+}
+					</code>
+				</div>
+			</div>
+			
+			
+			<a id="updatepdc" name="updatepdc" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Update PDC</h4>
+					<p></p>
+					<h5></h5>
+					<dl class="argument-list">
+						
+					</dl>
+					<p>Example Requests:</p>
+					<div class=apiClick>pdcm/{pdcId}</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+PUT https://DomainName/api/v1/pdcm/{pdcId}
+					</code>
+					<code class="method-request">
+Content-Type: application/json
+Request Body:
+{
+	"chequeNumber": 100004,
+	"chequeDate": "06 August 2017",
+	"bankName": "Industrial and Commercial Bank of China",
+	"branchName": "Canada",
+	"ifscCode": "SBIN0006538",
+	"locale": "en",
+	"dateFormat": "dd MMMM yyyy"
+}	
+					</code>
+					<code class="method-response">
+{
+	"resourceId": 3,
+	"changes": {
+		"chequeNumber": "100004",
+		"chequeDate": "06 August 2017",
+		"dateFormat": "dd MMMM yyyy",
+		"locale": "en",
+		"bankName": "Industrial and Commercial Bank of China",
+		"branchName": "Canada"
+	}
+}
+					</code>
+				</div>
+			</div>
+			
+			<a id="presentpdc" name="presentpdc" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Present PDC</h4>
+					<p></p>
+					<h5></h5>
+					<dl class="argument-list">
+						
+					</dl>
+					<p>Example Requests:</p>
+					<div class=apiClick>pdcm?command=present</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+PUT https://DomainName/api/v1/pdcm?command=present
+					</code>
+					<code class="method-request">
+Content-Type: application/json
+Request Body:
+{
+ "date": "15 December 2014",
+ "description": "Check details",
+ "pdcChequeDetails": [1],
+ "locale": "en",
+ "dateFormat": "dd MMMM yyyy"
+}	
+					</code>
+					<code class="method-response">
+{
+ "changes": {
+ "resourceIds": [1],
+ "transactionIds": [420],
+ "statusIds": [2]
+ }
+}
+					</code>
+				</div>
+			</div>
+			
+			
+			
+			<!-- End of PDC api docs -->
+			
 			<!-- start of clients api docs -->
 			<a id="clients" name="clients" class="old-syle-anchor">&nbsp;</a>
 			<div class="method-section">
@@ -46503,7 +46996,7 @@ GET https://DomainName/api/v1/mandates/list/transactions?dateFormat=dd+MMMM+yyyy
 				</div>
 			</div>
 			<!-- End of Tax Group -->
-
+			
 		<!-- start of clients api docs -->
 		<a id="templates" name="clients" class="old-syle-anchor">&nbsp;</a>
 		<div class="method-section">
@@ -53111,7 +53604,8 @@ No Request Body:
 				</tr>
 			</table>
 		</div>
-
+		
+		
 <a 	id="paymentapplicationlogic"
 	name="paymentapplicationlogic"
 	class="old-syle-anchor">&nbsp;</a>
