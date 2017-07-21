@@ -69,11 +69,10 @@ public class LoanAccountSummaryData {
 
     public static LoanAccountSummaryData instance(final Long id, final String accountNo, final String loanProductName,
             final String shortLoanProductName, final LoanStatusEnumData loanStatus, final BigDecimal originalLoan,
-            final BigDecimal loanBalance, final BigDecimal amountPaid) {
+            final BigDecimal loanBalance, final BigDecimal amountPaid,final Boolean inArrears) {
         final String externalId = null;
         final EnumOptionData loanType = null;
         final LoanApplicationTimelineData timeline = null;
-        final Boolean inArrears = null;
         final Integer loanCycle = null;
         final Long productId = null;
         final Boolean isCoApplicant = false;
