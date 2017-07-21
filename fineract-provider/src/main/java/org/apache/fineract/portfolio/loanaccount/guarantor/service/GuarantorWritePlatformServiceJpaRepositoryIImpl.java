@@ -207,6 +207,10 @@ public class GuarantorWritePlatformServiceJpaRepositoryIImpl implements Guaranto
                 }
                 guarantorForUpdate.updateClientRelationshipType(clientRelationshipType);
             }
+            if(changesOnly.containsKey(GUARANTOR_JSON_INPUT_PARAMS.NATIONAL_ID.getValue())){
+                final String nationalId = guarantorCommand.getNationalId();
+                guarantorForUpdate.setNationalId(nationalId);
+            }
 
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
             final Integer guarantorTypeId = guarantorCommand.getGuarantorTypeId();

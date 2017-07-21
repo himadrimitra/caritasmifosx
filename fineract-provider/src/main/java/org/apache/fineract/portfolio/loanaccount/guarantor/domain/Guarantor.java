@@ -100,6 +100,9 @@ public class Guarantor extends AbstractPersistable<Long> {
 
     @Column(name = "is_active", nullable = false)
     private boolean active;
+    
+    @Column(name = "national_id")
+    private String nationalId;
 
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "guarantor", orphanRemoval = true)
@@ -113,7 +116,7 @@ public class Guarantor extends AbstractPersistable<Long> {
             final String firstname, final String lastname, final Date dateOfBirth, final String addressLine1, final String addressLine2,
             final String city, final String state, final String country, final String zip, final String housePhoneNumber,
             final String mobilePhoneNumber, final String comment, final boolean active,
-            final List<GuarantorFundingDetails> guarantorFundDetails) {
+            final List<GuarantorFundingDetails> guarantorFundDetails,final String nationalId) {
         this.loan = loan;
         this.clientRelationshipType = clientRelationshipType;
         this.gurantorType = gurantorType;
@@ -132,6 +135,7 @@ public class Guarantor extends AbstractPersistable<Long> {
         this.comment = StringUtils.defaultIfEmpty(comment, null);
         this.active = active;
         this.guarantorFundDetails.addAll(guarantorFundDetails);
+        this.nationalId =StringUtils.defaultIfEmpty(nationalId, null);
     }
 
     public static Guarantor fromJson(final Loan loan, final CodeValue clientRelationshipType, final JsonCommand command,
@@ -140,6 +144,7 @@ public class Guarantor extends AbstractPersistable<Long> {
                 .getValue());
         final Long entityId = command.longValueOfParameterNamed(GUARANTOR_JSON_INPUT_PARAMS.ENTITY_ID.getValue());
         final boolean active = true;
+        String nationalId=null;
         if (GuarantorType.EXTERNAL.getValue().equals(gurantorType)) {
             final String firstname = command.stringValueOfParameterNamed(GUARANTOR_JSON_INPUT_PARAMS.FIRSTNAME.getValue());
             final String lastname = command.stringValueOfParameterNamed(GUARANTOR_JSON_INPUT_PARAMS.LASTNAME.getValue());
@@ -153,13 +158,14 @@ public class Guarantor extends AbstractPersistable<Long> {
             final String housePhoneNumber = command.stringValueOfParameterNamed(GUARANTOR_JSON_INPUT_PARAMS.PHONE_NUMBER.getValue());
             final String mobilePhoneNumber = command.stringValueOfParameterNamed(GUARANTOR_JSON_INPUT_PARAMS.MOBILE_NUMBER.getValue());
             final String comment = command.stringValueOfParameterNamed(GUARANTOR_JSON_INPUT_PARAMS.COMMENT.getValue());
+            nationalId = command.stringValueOfParameterNamed(GUARANTOR_JSON_INPUT_PARAMS.NATIONAL_ID.getValue());
 
             return new Guarantor(loan, clientRelationshipType, gurantorType, entityId, firstname, lastname, dateOfBirth, addressLine1,
-                    addressLine2, city, state, country, zip, housePhoneNumber, mobilePhoneNumber, comment, active, fundingDetails);
+                    addressLine2, city, state, country, zip, housePhoneNumber, mobilePhoneNumber, comment, active, fundingDetails,nationalId);
         }
 
         return new Guarantor(loan, clientRelationshipType, gurantorType, entityId, null, null, null, null, null, null, null, null, null,
-                null, null, null, active, fundingDetails);
+                null, null, null, active, fundingDetails,nationalId);
 
     }
 
@@ -182,6 +188,7 @@ public class Guarantor extends AbstractPersistable<Long> {
             handlePropertyUpdate(command, actualChanges, GUARANTOR_JSON_INPUT_PARAMS.PHONE_NUMBER.getValue(), this.housePhoneNumber);
             handlePropertyUpdate(command, actualChanges, GUARANTOR_JSON_INPUT_PARAMS.MOBILE_NUMBER.getValue(), this.mobilePhoneNumber);
             handlePropertyUpdate(command, actualChanges, GUARANTOR_JSON_INPUT_PARAMS.COMMENT.getValue(), this.comment);
+            handlePropertyUpdate(command, actualChanges, GUARANTOR_JSON_INPUT_PARAMS.NATIONAL_ID.getValue(), this.nationalId);
             updateExistingEntityToNull();
         }
 
@@ -249,6 +256,8 @@ public class Guarantor extends AbstractPersistable<Long> {
                 this.mobilePhoneNumber = newValue;
             } else if (paramName.equals(GUARANTOR_JSON_INPUT_PARAMS.COMMENT.getValue())) {
                 this.comment = newValue;
+            } else if (paramName.equals(GUARANTOR_JSON_INPUT_PARAMS.NATIONAL_ID.getValue())) {
+                this.nationalId = newValue;
             }
         }
     }
@@ -365,5 +374,10 @@ public class Guarantor extends AbstractPersistable<Long> {
             isSelf = true;
         }
         return isSelf;
+    }
+
+    
+    public void setNationalId(String nationalId) {
+        this.nationalId = nationalId;
     }
 }

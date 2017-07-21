@@ -57,11 +57,12 @@ public class GuarantorCommand {
     private final LocalDate dob;
     private final Long savingsId;
     private final BigDecimal amount;
+    private final String nationalId;
 
     public GuarantorCommand(final Long clientRelationshipTypeId, final Integer guarantorTypeId, final Long entityId,
             final String firstname, final String lastname, final String addressLine1, final String addressLine2, final String city,
             final String state, final String zip, final String country, final String mobileNumber, final String housePhoneNumber,
-            final String comment, final LocalDate dob, final Long savingsId, final BigDecimal amount) {
+            final String comment, final LocalDate dob, final Long savingsId, final BigDecimal amount,final String nationalId) {
 
         this.clientRelationshipTypeId = clientRelationshipTypeId;
 
@@ -84,6 +85,7 @@ public class GuarantorCommand {
         this.dob = dob;
         this.savingsId = savingsId;
         this.amount = amount;
+        this.nationalId = nationalId;
     }
 
     public boolean isExternalGuarantor() {
@@ -139,7 +141,7 @@ public class GuarantorCommand {
 
         baseDataValidator.reset().parameter(GUARANTOR_JSON_INPUT_PARAMS.GUARANTOR_TYPE_ID.getValue()).value(this.guarantorTypeId)
                 .ignoreIfNull().inMinMaxRange(GuarantorType.getMinValue(), GuarantorType.getMaxValue());
-
+        
         // validate for existing Client or Staff serving as gurantor
         if (!isExternalGuarantor()) {
             baseDataValidator.reset().parameter(GUARANTOR_JSON_INPUT_PARAMS.ENTITY_ID.getValue()).value(this.entityId).ignoreIfNull()
@@ -222,5 +224,10 @@ public class GuarantorCommand {
 
     public BigDecimal getAmount() {
         return this.amount;
+    }
+
+    
+    public String getNationalId() {
+        return this.nationalId;
     }
 }
