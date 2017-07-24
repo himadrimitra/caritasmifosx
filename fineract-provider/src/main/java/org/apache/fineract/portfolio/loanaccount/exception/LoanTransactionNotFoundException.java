@@ -33,4 +33,10 @@ public class LoanTransactionNotFoundException extends AbstractPlatformResourceNo
         super("error.msg.loan.id.invalid",
                 "Transaction with identifier " + id + " does not exist for loan with identifier " + loanId + ".", id, loanId);
     }
+    
+    public LoanTransactionNotFoundException(final Long id, final String loanAccountNumber) {
+        super("error.msg.loan.id.invalid",
+                "Transaction with identifier " + id + " does not exist for loan with account number " + loanAccountNumber + ".", id, loanAccountNumber);
+    }
+    
 }

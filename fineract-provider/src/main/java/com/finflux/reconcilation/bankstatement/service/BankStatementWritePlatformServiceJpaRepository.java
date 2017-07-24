@@ -144,6 +144,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final SavingsAccountDomainService savingsAccountDomainService;
     private final SavingsAccountTransactionRepository savingsAccountTransactionRepository;
     private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
+    private final LoanTransactionRepositoryWrapper loanTransactionRepositoryWrapper;
 
     @Autowired
     public BankStatementWritePlatformServiceJpaRepository(final PlatformSecurityContext context,
@@ -166,7 +167,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             final OfficeReadPlatformService readPlatformService,
             final JournalEntryWritePlatformService journalEntryWritePlatformService,
             final SavingsAccountDomainService savingsAccountDomainService, final PaymentDetailWritePlatformService paymentDetailWritePlatformService,
-            final SavingsAccountTransactionRepository savingsAccountTransactionRepository,final LoanTransactionRepository loanTransactionRepositoryy) {
+            final SavingsAccountTransactionRepository savingsAccountTransactionRepository,final LoanTransactionRepository loanTransactionRepositoryy,
+            final LoanTransactionRepositoryWrapper loanTransactionRepositoryWrapper) {
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = contentRepositoryFactory;
@@ -194,6 +196,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
         this.loanTransactionRepositoryy = loanTransactionRepositoryy;
+        this.loanTransactionRepositoryWrapper = loanTransactionRepositoryWrapper;
     }
 
     @Transactional
@@ -1081,8 +1084,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                             paymentDetailAccountNumber, paymentDetailChequeNumber, routingCode, receiptNumber, paymentDetailBankNumber);
 
                     if (accountType == null || accountType.equals("loans")) {
-                        LoanTransaction loanTransaction = this.loanTransactionRepositoryy.findOne(transactionIdForUpdate);
-                        if (loanTransaction == null) { throw new LoanTransactionNotFoundException(transactionIdForUpdate); }
+                        LoanTransaction loanTransaction = this.loanTransactionRepositoryWrapper
+                                .findOneWithLoanAccountNumberAndTransactionId(transactionIdForUpdate, loanAccountNumber);
                         this.paymentDetailWritePlatformService.persistPaymentDetail(paymentDetail);
                         loanTransaction.setPaymentDetail(paymentDetail);
                         this.loanTransactionRepository.save(loanTransaction);
