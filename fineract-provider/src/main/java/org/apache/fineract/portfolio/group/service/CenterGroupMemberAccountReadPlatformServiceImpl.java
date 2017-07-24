@@ -25,6 +25,7 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountStatusEnumData;
 import org.apache.fineract.portfolio.savings.service.SavingsEnumerations;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -79,7 +80,8 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
                 sqlBuilder.append(", IF(l.total_outstanding_derived IS NULL, 0, l.total_outstanding_derived) AS loanBalance ");
                 sqlBuilder.append(", IF(l.total_repayment_derived IS NULL, 0, l.total_repayment_derived) AS loanAmountPaid ");
                 sqlBuilder.append(", s.id AS savingsId, s.account_no AS savingsAccountNo, sp.name AS savingsProductName, s.status_enum AS savingsStatusEnum ");
-                sqlBuilder.append(", IF(s.account_balance_derived IS NULL, 0, s.account_balance_derived) AS savingsBalance ");
+                sqlBuilder.append(", IF(s.account_balance_derived IS NULL, 0, s.account_balance_derived) AS savingsBalance, ");
+                sqlBuilder.append(" IF(la.principal_overdue_derived IS NULL,false,true) AS inArrears ");
             }
             sqlBuilder.append("FROM m_group g ");
             sqlBuilder.append("JOIN m_office go ON go.id = g.office_id ");
@@ -88,6 +90,7 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
             sqlBuilder.append("LEFT JOIN m_client c ON c.id = gc.client_id AND c.status_enum = 300 ");
             if (this.isShowLoanDetailsInCenterPageEnabled) {
                 sqlBuilder.append("LEFT JOIN m_loan l ON l.client_id = c.id AND l.loan_status_id = 300 ");
+                sqlBuilder.append(" LEFT JOIN m_loan_arrears_aging la ON la.loan_id = l.id ");
                 sqlBuilder.append("LEFT JOIN m_product_loan AS lp ON lp.id = l.product_id ");
                 sqlBuilder.append("LEFT JOIN m_savings_account s ON s.client_id = c.id ");
                 sqlBuilder.append("LEFT JOIN m_savings_product AS sp ON sp.id = s.product_id ");
@@ -214,9 +217,11 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
             BigDecimal originalLoanAmount = rs.getBigDecimal("originalLoanAmount");
             BigDecimal loanBalance = rs.getBigDecimal("loanBalance");
             BigDecimal amountPaid = rs.getBigDecimal("loanAmountPaid");
+            final Boolean inArrears = rs.getBoolean("inArrears");
+            
 
             return LoanAccountSummaryData.instance(loanId, loanAccountNo, loanProductName, loanShortName, loanStatus, originalLoanAmount,
-                    loanBalance, amountPaid);
+                    loanBalance, amountPaid,inArrears);
         }
     }
 
