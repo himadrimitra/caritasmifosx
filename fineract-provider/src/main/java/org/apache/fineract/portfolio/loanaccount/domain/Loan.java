@@ -8075,6 +8075,7 @@ public class Loan extends AbstractPersistable<Long> {
             ScheduleGeneratorDTO scheduleGeneratorDTO) {
 
         if (MathUtility.isGreaterThanZero(amount)) {
+            
             Set<GroupLoanIndividualMonitoringCharge> glimCharges = glimMember.getGroupLoanIndividualMonitoringCharges();
             for (LoanCharge loanCharge : charges()) {
                 for (GroupLoanIndividualMonitoringCharge glimCharge : glimCharges) {
@@ -8088,10 +8089,23 @@ public class Loan extends AbstractPersistable<Long> {
                             if (currentInstallment.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
                                 chargeAmountToBeWaived = amount;
                             }
-                        } else {
-                            chargeAmountToBeWaived = MathUtility.getInstallmentAmount(chargeAmount,
+                        } else {                            
+                            BigDecimal installmentChargeAmount = MathUtility.getInstallmentAmount(chargeAmount,
                                     this.fetchNumberOfInstallmensAfterExceptions(), this.getCurrency(),
                                     currentInstallment.getInstallmentNumber());
+                            if (MathUtility.isGreaterThanZero(glimCharge.getPaidCharge())) {
+                                chargeAmountToBeWaived = getInstallmentChargeAmountToBeWaived(glimCharge.getPaidCharge(), chargeAmount,
+                                        installmentChargeAmount, this.fetchNumberOfInstallmensAfterExceptions(),
+                                        currentInstallment.getInstallmentNumber());
+                            } else {
+
+                                if (this.fetchNumberOfInstallmensAfterExceptions() == currentInstallment.getInstallmentNumber().intValue()) {
+                                    chargeAmountToBeWaived = chargeAmount.subtract(MathUtility.multiply(installmentChargeAmount,
+                                            this.fetchNumberOfInstallmensAfterExceptions() - 1));
+                                } else {
+                                    chargeAmountToBeWaived = installmentChargeAmount;
+                                }
+                            }
                         }
 
                         waiveGlimLoanCharge(loanCharge, existingTransactionIds, existingReversedTransactionIds,
@@ -8112,6 +8126,22 @@ public class Loan extends AbstractPersistable<Long> {
         }
 
         return feeChargesWriteOffPerInstallments;
+    }
+    
+    public BigDecimal getInstallmentChargeAmountToBeWaived(BigDecimal paidAmount, BigDecimal totalChargeAmount,
+            BigDecimal installmentCharge, int numberOfRepayment, int installmentNumber) {
+        BigDecimal chargeToBeCompleted = MathUtility.multiply(installmentCharge, installmentNumber);
+        BigDecimal chargeToBePaid = MathUtility.subtract(chargeToBeCompleted, paidAmount);
+
+        // when current installment charge completed
+        if (MathUtility.isNegative(chargeToBePaid)) { return BigDecimal.ZERO; }
+        // this is for partial installment
+        if (MathUtility.isLesser(chargeToBePaid, installmentCharge)) { return chargeToBePaid; }
+        // for last installment
+        if (installmentNumber == numberOfRepayment) { return totalChargeAmount.subtract(MathUtility.multiply(installmentCharge,
+                numberOfRepayment - 1)); }
+        // for unpaid installment
+        return installmentCharge;
     }
 
     public void updateDefautGlimMembers(List<GroupLoanIndividualMonitoring> defaultGlimMembers) {
