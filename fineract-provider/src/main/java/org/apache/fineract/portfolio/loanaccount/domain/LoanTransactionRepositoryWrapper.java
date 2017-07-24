@@ -48,5 +48,11 @@ public class LoanTransactionRepositoryWrapper {
         org.hibernate.Hibernate.initialize(loanTransaction.getGlimTransaction());
         return loanTransaction;
     }
+    
+    public LoanTransaction findOneWithLoanAccountNumberAndTransactionId(final Long id, final String loanAccountNumber) {
+        final LoanTransaction loanTransaction = this.loanTransactionRepository.findOneWithTransactionIdAndLoanAccountNumber(id, loanAccountNumber);
+        if (loanTransaction == null) { throw new LoanTransactionNotFoundException(id, loanAccountNumber); }
+        return loanTransaction;
+    }
 
 }
