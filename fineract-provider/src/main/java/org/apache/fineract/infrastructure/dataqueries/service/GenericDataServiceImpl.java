@@ -32,11 +32,13 @@ import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.dataqueries.data.AllowedValueOptions;
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
+import org.apache.fineract.infrastructure.dataqueries.data.ResultSetColumnAndData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnHeaderData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnValueData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetRowData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetVisibilityCriteriaData;
 import org.apache.fineract.infrastructure.dataqueries.data.ScopeCriteriaData;
+import org.apache.fineract.infrastructure.dataqueries.data.SectionData;
 import org.apache.fineract.infrastructure.dataqueries.domain.DataTableScopes;
 import org.apache.fineract.infrastructure.dataqueries.exception.DatatableNotFoundException;
 import org.apache.fineract.portfolio.client.domain.LegalForm;
@@ -108,8 +110,9 @@ public class GenericDataServiceImpl implements GenericDataService {
         }
 
         String registeredDataTableDisplayName = null;
-        
-        return new GenericResultsetData(columnHeaders, resultsetDataRows, registeredDataTableDisplayName);
+        List<SectionData> sectionedColumnList = null;
+        List<ResultSetColumnAndData> columnData = null;
+        return new GenericResultsetData(columnHeaders, resultsetDataRows, registeredDataTableDisplayName, sectionedColumnList, columnData);
     }
 
     @Override
@@ -237,6 +240,7 @@ public class GenericDataServiceImpl implements GenericDataService {
             Long orderPosition =columnDefinitions.getLong("ORDINAL_POSITION");
             Boolean visible = null;
             Boolean mandatoryIfVisible = null;
+            Long sectionId = null;
             Integer watchColumn = null;
             Integer codeValueId = null;
             String dependsOnColumnName = null;
@@ -305,6 +309,7 @@ public class GenericDataServiceImpl implements GenericDataService {
                     if (visible != null && visible && mandatoryIfVisible != null && mandatoryIfVisible) { 
                         columnNullable = false;
                     }
+                    sectionId = rsValues.getLong("section_id");
                 }
             }
             /**TODO : Dirty Quick fix for chaitanya**/
@@ -313,7 +318,7 @@ public class GenericDataServiceImpl implements GenericDataService {
             }
             
             final ResultsetColumnHeaderData rsch = ResultsetColumnHeaderData.detailed(columnName, columnType, columnLength, columnNullable,
-                    columnIsPrimaryKey, columnValues, codeName, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria);
+                    columnIsPrimaryKey, columnValues, codeName, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria, sectionId);
 
             columnHeaders.add(rsch);
         }
@@ -354,7 +359,7 @@ public class GenericDataServiceImpl implements GenericDataService {
 
     private SqlRowSet retriveXRegisteredMetadata(String datatable) {
         final String sql = "select m.column_name columnName, m.display_name displayName, m.associate_with dependsOn, m.order_position orderPosition, m.visible visible,"
-                + "m.mandatory_if_visible mandatoryIfVisible, r.watch_column watchColumn,v.code_value_id codeValueId from x_registered_table x inner join x_registered_table_metadata m on m.registered_table_id = x.id "
+                + "m.mandatory_if_visible mandatoryIfVisible, m.section_id, r.watch_column watchColumn,v.code_value_id codeValueId from x_registered_table x inner join x_registered_table_metadata m on m.registered_table_id = x.id "
                 + "left join x_registered_table_display_rules r on r.registered_table_metadata_id = m.id left join x_registered_table_display_rules_value v on v.registered_table_display_rules_id = r.id "
                 + " where x.registered_table_name = '" + datatable + "'";
         final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
@@ -588,4 +593,25 @@ public class GenericDataServiceImpl implements GenericDataService {
         }*/         
         return scopeCriteriaData;
     }
+
+    @Override
+    public List<SectionData> fetchSections(Integer dataTableId) {
+        List<SectionData> SectionDataList = new ArrayList<>();
+
+        final String sql = "select *from f_registered_table_section section where registered_table_id =  " + dataTableId;
+
+        final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
+
+        while (rsValues.next()) {
+            Long id = rsValues.getLong("id");
+            String displayName = rsValues.getString("display_name");
+            Integer displayPosition = rsValues.getInt("display_position");
+            SectionData sectionData = SectionData.instance(id, displayName, displayPosition);
+            SectionDataList.add(sectionData);
+
+        }
+        return SectionDataList;
+
+    }
+
 }

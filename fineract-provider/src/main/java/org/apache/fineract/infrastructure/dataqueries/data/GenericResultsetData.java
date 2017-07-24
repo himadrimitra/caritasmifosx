@@ -27,13 +27,20 @@ public final class GenericResultsetData {
 
     private final List<ResultsetColumnHeaderData> columnHeaders;
     private final List<ResultsetRowData> data;
+    @SuppressWarnings("unused")
     private final String registeredDataTableDisplayName;
+    @SuppressWarnings("unused")
+    private final List<SectionData> sectionedColumnList;
+    @SuppressWarnings("unused")
+    private final List<ResultSetColumnAndData> columnData;
 
     public GenericResultsetData(final List<ResultsetColumnHeaderData> columnHeaders, final List<ResultsetRowData> resultsetDataRows,
-            final String registeredDataTableDisplayName) {
+            final String registeredDataTableDisplayName, final List<SectionData> sectionedColumnList, final List<ResultSetColumnAndData> columnData) {
         this.columnHeaders = columnHeaders;
         this.data = resultsetDataRows;
         this.registeredDataTableDisplayName = registeredDataTableDisplayName;
+        this.sectionedColumnList = sectionedColumnList;
+        this.columnData = columnData;
     }
 
     public List<ResultsetColumnHeaderData> getColumnHeaders() {

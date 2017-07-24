@@ -19,6 +19,10 @@ public class DataTableTestBuilder {
     private List<HashMap> addColumns = new ArrayList<HashMap>();
     private List<HashMap> changedColumns = new ArrayList<HashMap>();
     private List<HashMap> dropedColumns = new ArrayList<HashMap>();
+    private List<HashMap> sections = new ArrayList<HashMap>();
+    private List<HashMap> changeSections = new ArrayList<HashMap>();
+    private List<HashMap> addSections = new ArrayList<HashMap>();
+    private List<String> dropSections = new ArrayList<String>();
     private boolean isDataTableJsonForCreate = true;
 
     public DataTableTestBuilder withDatatableName(final String datatableName) {
@@ -128,7 +132,74 @@ public class DataTableTestBuilder {
         if (!this.columns.isEmpty()) {
             map.put("columns", this.columns);
         }
-
+        
+        if (!this.sections.isEmpty()) {
+            map.put("sections", this.sections);
+            if (!map.containsKey("columns")) map.put("columns", this.columns);
+        }
+        if (!this.changeSections.isEmpty()) {
+            map.put("changeSections", this.changeSections);
+            map.remove("columns");
+        }
+        if (!this.addSections.isEmpty()) {
+            map.put("addSections", this.addSections);
+        }
+        if (!this.dropSections.isEmpty()) {
+            map.put("dropSections", this.dropSections);
+        }
         return new Gson().toJson(map);
+    }
+
+    public DataTableTestBuilder withSection(final String displayName, final String displayPosition, final String columnName,
+            final String columnType, final boolean isUpdate) {
+        HashMap<String, Object> newSection = new HashMap<String, Object>();
+        HashMap<String, Object> newcolumns = new HashMap<String, Object>();
+        List<HashMap> columns = new ArrayList<HashMap>();
+        boolean mandatory = false;
+        String length = "20";
+
+        newSection.put("displayName", displayName);
+        newSection.put("displayPosition", displayPosition);
+        newcolumns.put("name", columnName);
+        newcolumns.put("type", columnType);
+        newcolumns.put("mandatory", mandatory);
+
+        if (columnType.equalsIgnoreCase("String")) {
+            newcolumns.put("length", length);
+        }
+        columns.add(newcolumns);
+        if (isUpdate) {
+            newSection.put("changeColumns", columns);
+            newcolumns.remove("type");
+        } else {
+            newSection.put("columns", columns);
+        }
+        this.sections.add(newSection);
+        return this;
+    }
+
+    public DataTableTestBuilder withAddSection(final String displayName, final String displayPosition) {
+        HashMap<String, Object> changeSections = new HashMap<String, Object>();
+
+        changeSections.put("displayName", displayName);
+        changeSections.put("displayPosition", displayPosition);
+
+        this.addSections.add(changeSections);
+        return this;
+    }
+
+    public DataTableTestBuilder withChangeSections(final String displayName, final String displayPosition) {
+        HashMap<String, Object> changeSections = new HashMap<String, Object>();
+
+        changeSections.put("displayName", displayName);
+        changeSections.put("displayPosition", displayPosition);
+
+        this.changeSections.add(changeSections);
+        return this;
+    }
+
+    public DataTableTestBuilder withDropSections(final String displayName) {
+        this.dropSections.add(displayName);
+        return this;
     }
 }
