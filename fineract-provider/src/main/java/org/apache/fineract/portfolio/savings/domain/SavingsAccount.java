@@ -810,7 +810,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     
     private BigDecimal getEffectiveInterestRateAsFractionBetweenDates(MathContext mc, final LocalDate periodStartDate,
             List<FloatingInterestRateChart> floatingInterestRateChart) {
-        BigDecimal interestRateAsFraction = this.nominalAnnualInterestRate.divide(BigDecimal.valueOf(100l), mc);
+        BigDecimal interestRateAsFraction = this.nominalAnnualInterestRate;
         LocalDate earliestEffectiveFromDate = null;
         for (FloatingInterestRateChart chart : floatingInterestRateChart) {
             if (earliestEffectiveFromDate == null || (chart.getEffectiveFromAsLocalDate().isAfter(earliestEffectiveFromDate))) {
