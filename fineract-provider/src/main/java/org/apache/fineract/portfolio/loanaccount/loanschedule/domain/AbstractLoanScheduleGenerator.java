@@ -345,7 +345,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             Money actualPrincipal =principalInterestForThisPeriod.principal();
 
             installmentCapitalizedChargeAmount = updateCapitalizedFee(scheduleParams, loanApplicationTerms, currency,
-                    installmentCapitalizedChargeAmount, currentPeriodParams, principalInterestForThisPeriod);
+                    installmentCapitalizedChargeAmount, currentPeriodParams);
             
             // applies early payments on principal portion
             updatePrincipalPortionBasedOnPreviousEarlyPayments(currency, scheduleParams, currentPeriodParams);
@@ -515,21 +515,26 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
     private Money updateCapitalizedFee(final LoanScheduleParams scheduleParams, final LoanApplicationTerms loanApplicationTerms,
             final MonetaryCurrency currency, Money installmentCapitalizedChargeAmount,
-            final ScheduleCurrentPeriodParams currentPeriodParams, final PrincipalInterest principalInterestForThisPeriod) {
+            final ScheduleCurrentPeriodParams currentPeriodParams) {
+        if(loanApplicationTerms.isPrincipalGraceApplicableForThisPeriod(scheduleParams.getInstalmentNumber())){
+            return installmentCapitalizedChargeAmount.zero();
+        }
         if (scheduleParams.getTotalCapitalizedChargeAmount().isGreaterThanZero()) {
-            BigDecimal principalPlusCapitalizedFee = loanApplicationTerms.getFixedEmiAmount().subtract(
-                    principalInterestForThisPeriod.interest().getAmount());
+            BigDecimal principalPlusCapitalizedFee = currentPeriodParams.getPrincipalForThisPeriod().getAmount();
             BigDecimal totalAmount = loanApplicationTerms.getPrincipal().getAmount()
                     .add(scheduleParams.getTotalCapitalizedChargeAmount().getAmount());
-            BigDecimal adjustedPrincipal = BigDecimal
-                    .valueOf(((loanApplicationTerms.getPrincipal().getAmount().doubleValue() * principalPlusCapitalizedFee.doubleValue()) / totalAmount
+            BigDecimal installmentFee = BigDecimal
+                    .valueOf(((scheduleParams.getTotalCapitalizedChargeAmount().getAmount().doubleValue() * principalPlusCapitalizedFee.doubleValue()) / totalAmount
                             .doubleValue()));
-            if (loanApplicationTerms.getActualNoOfRepaymnets() == scheduleParams.getInstalmentNumber()) {
+            installmentCapitalizedChargeAmount = Money.of(currency, installmentFee);
+            if (loanApplicationTerms.getActualNoOfRepaymnets() == scheduleParams.getInstalmentNumber()
+                    || !scheduleParams.getOutstandingBalance().minus(principalPlusCapitalizedFee).isGreaterThanZero()
+                    || scheduleParams.getTotalAccountedCapitalizedCharge().plus(installmentCapitalizedChargeAmount)
+                            .isGreaterThan(scheduleParams.getTotalCapitalizedChargeAmount())) {
                 installmentCapitalizedChargeAmount = scheduleParams.getTotalCapitalizedChargeAmount().minus(
                         scheduleParams.getTotalAccountedCapitalizedCharge());
             } else {
-                currentPeriodParams.setPrincipalForThisPeriod(Money.of(currency, adjustedPrincipal));
-                installmentCapitalizedChargeAmount = Money.of(currency, principalPlusCapitalizedFee.subtract(adjustedPrincipal));
+                currentPeriodParams.minusPrincipalForThisPeriod(installmentCapitalizedChargeAmount);
             }
         }
         scheduleParams.addTotalAccountedCapitalizedCharge(installmentCapitalizedChargeAmount);
