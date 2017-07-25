@@ -1280,7 +1280,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append("g.id as groupId, ");
          builder.append("g.account_no as groupAccountNo, ");
          builder.append("g.display_name as groupName, ");
-         builder.append("g.group_level as groupLevel, ");
+         builder.append("g.level_id as groupLevel, ");
          builder.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
          builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName, ");
          builder.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");
