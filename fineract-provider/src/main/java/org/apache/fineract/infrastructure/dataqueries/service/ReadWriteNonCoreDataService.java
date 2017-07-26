@@ -29,7 +29,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 public interface ReadWriteNonCoreDataService {
 
-    List<DatatableData> retrieveDatatableNames(String appTable, Long associatedEntityId);
+    List<DatatableData> retrieveDatatableNames(String appTable, Long associatedEntityId, boolean isFetchBasicData);
 
     DatatableData retrieveDatatable(String datatable);
 

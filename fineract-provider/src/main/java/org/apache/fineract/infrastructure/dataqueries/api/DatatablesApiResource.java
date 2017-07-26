@@ -90,9 +90,11 @@ public class DatatablesApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getDatatables(@QueryParam("apptable") final String apptable, @Context final UriInfo uriInfo, 
-            @QueryParam("associatedEntityId") final Long associatedEntityId) {
+            @QueryParam("associatedEntityId") final Long associatedEntityId,
+            @QueryParam("isFetchBasicData") final boolean isFetchBasicData) {
 
-        final List<DatatableData> result = this.readWriteNonCoreDataService.retrieveDatatableNames(apptable, associatedEntityId);
+        final List<DatatableData> result = this.readWriteNonCoreDataService.retrieveDatatableNames(apptable, associatedEntityId,
+                isFetchBasicData);
 
         final boolean prettyPrint = ApiParameterHelper.prettyPrint(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serializePretty(prettyPrint, result);
