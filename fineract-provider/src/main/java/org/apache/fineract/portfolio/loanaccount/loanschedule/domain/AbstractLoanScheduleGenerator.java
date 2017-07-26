@@ -152,9 +152,11 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         // Determine the total interest owed over the full loan for FLAT
         // interest method .
         if (!scheduleParams.isPartialUpdate()) {
-            final Money totalInterestChargedForFullLoanTerm = loanApplicationTerms.calculateTotalInterestCharged(
+            Money totalInterestChargedForFullLoanTerm = loanApplicationTerms.calculateTotalInterestCharged(
                     this.paymentPeriodsInOneYearCalculator, mc);
+            totalInterestChargedForFullLoanTerm = getGlimLoanTotalFlatInterestAmount(loanApplicationTerms, totalInterestChargedForFullLoanTerm);
             loanApplicationTerms.updateTotalInterestDue(totalInterestChargedForFullLoanTerm);
+            
         }
 
         setCapitalizedChargesDetailesToLoanScheduleParams(scheduleParams, loanApplicationTerms);
@@ -477,6 +479,17 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 scheduleParams.getTotalCumulativeInterest().getAmount(), scheduleParams.getTotalFeeChargesCharged().getAmount(),
                 scheduleParams.getTotalPenaltyChargesCharged().getAmount(), scheduleParams.getTotalRepaymentExpected().getAmount(),
                 totalOutstanding);
+    }
+
+    private Money getGlimLoanTotalFlatInterestAmount(final LoanApplicationTerms loanApplicationTerms, Money totalInterestChargedForFullLoanTerm) {
+        if (loanApplicationTerms.getGroupLoanIndividualMonitoring() != null
+                && loanApplicationTerms.getGroupLoanIndividualMonitoring().size() > 0 && loanApplicationTerms.getInterestMethod().isFlat()) {
+            totalInterestChargedForFullLoanTerm = Money.zero(loanApplicationTerms.getCurrency());
+            for (GroupLoanIndividualMonitoring glim : loanApplicationTerms.getGroupLoanIndividualMonitoring()) {
+                totalInterestChargedForFullLoanTerm = totalInterestChargedForFullLoanTerm.plus(glim.getInterestAmount());
+            }
+        }
+        return totalInterestChargedForFullLoanTerm;
     }
 
     private void applyUpfrontAmountCollection(final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO,
