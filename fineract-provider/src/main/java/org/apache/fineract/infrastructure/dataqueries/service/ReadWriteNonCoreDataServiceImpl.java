@@ -1618,7 +1618,6 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         final Long LoanId = getLongSqlRowSet(rs, "loanId");
         final Long entityId = getLongSqlRowSet(rs, "entityId");
         final String transactionId = rs.getString("transactionId");
-        final Long loanApplicationReferenceId = getLongSqlRowSet(rs, "loanApplicationReferenceId");
 
         if (rs.next() && !appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) { throw new DatatableSystemErrorException("System Error: More than one row returned from data scoping query"); }
 
@@ -1629,7 +1628,6 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 .withSavingsId(savingsId) //
                 .withLoanId(LoanId).withEntityId(entityId)//
                 .withTransactionId(transactionId)//
-                .withLoanApplicationReferenceId(loanApplicationReferenceId)//
                 .build();
     }
 
@@ -1677,6 +1675,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         if (appTable.equalsIgnoreCase("m_savings_product")) { return; }
         if (appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) { return; }
         if (appTable.equalsIgnoreCase(DataTableApiConstant.LOAN_APPLICATION_REFERENCE)) { return; }
+        if (appTable.equalsIgnoreCase(DataTableApiConstant.VILLAGE)) { return; }
 
         throw new PlatformDataIntegrityException("error.msg.invalid.application.table", "Invalid Application Table: " + appTable, "name",
                 appTable);

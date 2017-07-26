@@ -52,7 +52,7 @@ public class DeleteOneToManyDatatableEntryCommandHandler implements NewCommandSo
                 .withSavingsId(commandProcessingResult.getSavingsId()) //
                 .withLoanId(commandProcessingResult.getLoanId()) //
                 .withTransactionId(commandProcessingResult.getTransactionId()) //
-                .withLoanApplicationReferenceId(commandProcessingResult.getLoanApplicationReferenceId()) //
+                .withEntityId(commandProcessingResult.resourceId())//
                 .build();
     }
 }

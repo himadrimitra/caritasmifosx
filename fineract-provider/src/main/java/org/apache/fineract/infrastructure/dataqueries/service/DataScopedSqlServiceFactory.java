@@ -39,6 +39,10 @@ public class DataScopedSqlServiceFactory {
             break;
             case DataTableApiConstant.LOAN_APPLICATION_REFERENCE:
                 scopedSqlService = new LoanApplicationreferenceDataScopedSqlServiceImpl ();
+            break;    
+            case DataTableApiConstant.VILLAGE:
+                scopedSqlService = new VillageDataScopedSqlServiceImpl ();
+            break;    
         }
         return scopedSqlService;
     }
