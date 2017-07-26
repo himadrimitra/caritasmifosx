@@ -120,7 +120,7 @@ public class TomcatJdbcDataSourcePerTenantService implements RoutingDataSourceSe
         poolConfiguration.setMinEvictableIdleTimeMillis(tenantConnectionObj.getMinEvictableIdleTimeMillis());
 
         poolConfiguration.setJdbcInterceptors("org.apache.tomcat.jdbc.pool.interceptor.ConnectionState;"
-                + "org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer;org.apache.tomcat.jdbc.pool.interceptor.SlowQueryReport");
+                + "org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer;org.apache.tomcat.jdbc.pool.interceptor.SlowQueryReport;org.apache.tomcat.jdbc.pool.interceptor.ResetAbandonedTimer");
 
         return new org.apache.tomcat.jdbc.pool.DataSource(poolConfiguration);
     }
