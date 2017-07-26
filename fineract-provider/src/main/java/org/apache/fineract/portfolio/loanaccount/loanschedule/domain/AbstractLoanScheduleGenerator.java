@@ -1928,10 +1928,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     if (periodHasCompoundingDate) {
                         if (isPastDate) {
                             updateMapWithAmount(params.getPrincipalPortionMap(), totalCompoundedAmount, lastRestDate);
-                        } else {
-                            Money amountToBeEffected = amountCharged;
-                            updateMapWithAmount(params.getPrincipalPortionMap(), amountToBeEffected, restDate);
-                        }
+                        } 
                     }
                     Money uncompoundedInThisPeriod = Money.zero(currency);
                     if (totalCompoundedAmount.isGreaterThanZero()) {
@@ -1950,8 +1947,15 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         params.getCompoundingMap().clear();
                         params.getCompoundingDateVariations().put(loanRepaymentScheduleInstallment.getFromDate(),
                                 new TreeMap<>(params.getCompoundingMap()));
-                        params.addUnCompoundedAmount(amountCharged.minus(params.getUnCompoundedAmount().minus(params.getCompoundedInLastInstallment())));
+                        if(params.getOutstandingBalance().isZero() && loanRepaymentScheduleInstallment.isRecalculatedInterestComponent()){
+                            params.addUnCompoundedAmount(amountCharged.minus(params.getUnCompoundedAmount().minus(params.getCompoundedInLastInstallment())));
+                        }else{
+                            params.addUnCompoundedAmount(amountCharged);
+                        }
                         uncompoundedInThisPeriod = amountCharged;
+                    }
+                    if(!isPastDate && amountCharged.isGreaterThanZero()){
+                        updateMapWithAmount(params.getPrincipalPortionMap(), amountCharged, restDate);
                     }
                     params.setCompoundedInLastInstallment(amountCharged.zero());
                     if (uncompoundedInThisPeriod.isGreaterThanZero()) {
