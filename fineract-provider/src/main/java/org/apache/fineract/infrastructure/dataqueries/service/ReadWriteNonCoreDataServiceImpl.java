@@ -159,7 +159,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     }
 
     @Override
-    public List<DatatableData> retrieveDatatableNames(final String appTable, Long associatedEntityId) {
+    public List<DatatableData> retrieveDatatableNames(final String appTable, Long associatedEntityId, boolean isFetchBasicData) {
 
         String andClause;
         if (appTable == null) {
@@ -187,11 +187,25 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
             final String registeredDataTableDisplayName = rs.getString("registered_table_display_name");
             List<SectionData> sectionedColumnList = null;
-            if (associatedEntityId != null && scopingCriteriaEnum != null && scopingCriteriaEnum > 0) {
-                isEntityIdAssociatedWithDatatable = isEntityIdAssociatedWithDatatable(id, associatedEntityId, scopingCriteriaEnum);
-                if (isEntityIdAssociatedWithDatatable) {
+            if (!isFetchBasicData) {
+                if (associatedEntityId != null && scopingCriteriaEnum != null && scopingCriteriaEnum > 0) {
+                    isEntityIdAssociatedWithDatatable = isEntityIdAssociatedWithDatatable(id, associatedEntityId, scopingCriteriaEnum);
+                    if (isEntityIdAssociatedWithDatatable) {
+                        final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
+                                .fillResultsetColumnHeaders(registeredDatatableName);
+                        sectionedColumnList = this.genericDataService.fetchSections(id);
+                        if (sectionedColumnList != null && sectionedColumnList.size() > 0) {
+
+                            sectionedColumnList = SectionData.organizeList(columnHeaderData, sectionedColumnList);
+                        }
+
+                        datatables.add(DatatableData.instance(id, appTableName, registeredDatatableName, columnHeaderData,
+                                scopingCriteriaEnum, null, registeredDataTableDisplayName, sectionedColumnList));
+                    }
+                } else {
                     final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                             .fillResultsetColumnHeaders(registeredDatatableName);
+
                     sectionedColumnList = this.genericDataService.fetchSections(id);
                     if (sectionedColumnList != null && sectionedColumnList.size() > 0) {
 
@@ -202,17 +216,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                             null, registeredDataTableDisplayName, sectionedColumnList));
                 }
             } else {
-                final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
-                        .fillResultsetColumnHeaders(registeredDatatableName);
-                
-                sectionedColumnList = this.genericDataService.fetchSections(id);
-                if (sectionedColumnList != null && sectionedColumnList.size() > 0) {
-
-                    sectionedColumnList = SectionData.organizeList(columnHeaderData, sectionedColumnList);
-                }
-
-                datatables.add(DatatableData.instance(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum,
-                        null, registeredDataTableDisplayName, sectionedColumnList));
+                datatables.add(DatatableData.instance(appTableName, registeredDatatableName, registeredDataTableDisplayName));
             }
         }
 

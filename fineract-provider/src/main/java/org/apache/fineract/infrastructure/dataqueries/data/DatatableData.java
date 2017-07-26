@@ -64,6 +64,16 @@ public class DatatableData {
         return new DatatableData(id, applicationTableName, registeredTableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData,
                 registeredTableDisplayName, sectionDataList);
     }
+    
+    public static DatatableData instance(final String applicationTableName, final String registeredTableName, final String registeredTableDisplayName){
+        final Integer id = null;
+        final List<ResultsetColumnHeaderData> columnHeaderData = null;
+        final List<ScopeCriteriaData> scopeCriteriaData = null;
+        final Long scopingCriteriaEnum = null;
+        final List<SectionData> sectionDataList = null;
+        return new DatatableData(id, applicationTableName, registeredTableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData,
+                registeredTableDisplayName, sectionDataList);
+    }
 
     public Integer getId() {
         return this.id;
