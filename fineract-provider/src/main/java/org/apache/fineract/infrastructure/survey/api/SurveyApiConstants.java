@@ -31,4 +31,5 @@ public class SurveyApiConstants {
     public static final String enumTypeStaffs = "STAFFS";
     public static final String enumTypeLoanApplications = "LOANAPPLICATIONS";
     public static final String enumTypeLoans = "LOANS";
+    public static final String enumTypeVillages = "VILLAGES";
 }
