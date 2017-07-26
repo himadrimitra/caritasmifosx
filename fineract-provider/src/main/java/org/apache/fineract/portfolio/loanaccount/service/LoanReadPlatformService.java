@@ -167,4 +167,6 @@ public interface LoanReadPlatformService {
     
     Collection<LoanSchedulePeriodData> lookUpLoanSchedulePeriodsByPeriodNumberAndDueDateAndDueAmounts(final Long loanId,
             final boolean excludeLoanScheduleMappedToPDC);
+    
+    Long retrivePaymentDetailsIdWithLoanAccountNumberAndLoanTransactioId(final long loanTransactionId, final String loanAccountNumber);
 }

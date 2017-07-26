@@ -315,6 +315,7 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                                 savingsAccountNumber, transactionIdForUpdate);
                         bankStatementDetails.setIsError(false);
                         bankStatementDetailsList.add(bankStatementDetails);
+                        validateForPortfolioTransactions(bankStatementDetails, errorRows, rowError, row.getRowNum() +1);
                     }
                     if (row.getRowNum() != 0) {
                         if (rowError.size() > 0) {
@@ -330,6 +331,28 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
         fileDataMap.put(ReconciliationApiConstants.ERROR_ROWS, errorRowMap);
 
         return fileDataMap;
+    }
+    
+    private void validateForPortfolioTransactions(BankStatementDetails bankStatementDetails, Set<Integer> errorRows, List<String> rowError,
+            int rowNumber) {
+        if (bankStatementDetails.getAccountingType().equalsIgnoreCase(ReconciliationApiConstants.loansParamName)
+                || bankStatementDetails.getAccountingType().equalsIgnoreCase(ReconciliationApiConstants.depositsParamName)) {
+            if (bankStatementDetails.getTransactionIdForUpdate() != null) {
+                if (bankStatementDetails.getPaymentTypeName() != null) {
+                    errorRows.add(rowNumber);
+                    rowError.add(ReconciliationApiConstants.PAYMENT_TYPE_CANNOT_BE_UPDATED);
+                }
+                if (bankStatementDetails.getTransactionDate() != null) {
+                    errorRows.add(rowNumber);
+                    rowError.add(ReconciliationApiConstants.TRANSACTION_DATE_CANNOT_BE_UPDATED);
+                }
+                if (bankStatementDetails.getAmount() != null) {
+                    errorRows.add(rowNumber);
+                    rowError.add(ReconciliationApiConstants.AMOUNT_CANNOT_BE_UPDATED);
+                }
+            }
+        }
+
     }
 
 }
