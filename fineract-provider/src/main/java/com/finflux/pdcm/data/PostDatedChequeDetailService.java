@@ -535,10 +535,15 @@ public class PostDatedChequeDetailService {
 
     private void makeLoanRepayment(final PostDatedChequeDetail postDatedChequeDetail, final JsonCommand command,
             final String transactionDate) {
+        final ChequeType chequeType = ChequeType.fromInt(postDatedChequeDetail.getChequeType());
         final Long loanId = postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityId();
         final JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("transactionDate", transactionDate);
-        jsonObject.addProperty("transactionAmount", postDatedChequeDetail.getPostDatedChequeDetailMapping().getDueAmount());
+        if(chequeType.isRepaymentPDC()){
+            jsonObject.addProperty("transactionAmount", postDatedChequeDetail.getPostDatedChequeDetailMapping().getDueAmount());
+        }else{
+            jsonObject.addProperty("transactionAmount", postDatedChequeDetail.getChequeAmount());
+        }
         jsonObject.addProperty("paymentTypeId", postDatedChequeDetail.getPostDatedChequeDetailMapping().getPaymentType());
         jsonObject.addProperty("locale", command.locale().toString());
         jsonObject.addProperty("dateFormat", command.dateFormat().toString());
