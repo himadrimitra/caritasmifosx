@@ -1,5 +1,6 @@
 package com.finflux.portfolio.loan.utilization.service;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 
 import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckData;
@@ -18,4 +19,6 @@ public interface LoanUtilizationCheckReadPlatformService {
     Collection<LoanUtilizationCheckData> retrieveCenterLoanUtilizationchecks(final Long centerId);
 
     Collection<LoanUtilizationCheckData> retrieveGroupLoanUtilizationchecks(final Long groupId);
+    
+    BigDecimal retrieveUtilityAmountByLoanId(final Long loanId);
 }
