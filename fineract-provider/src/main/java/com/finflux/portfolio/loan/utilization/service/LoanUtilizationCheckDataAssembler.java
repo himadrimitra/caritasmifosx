@@ -3,11 +3,11 @@ package com.finflux.portfolio.loan.utilization.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.organisation.staff.domain.Staff;
@@ -52,8 +52,7 @@ public class LoanUtilizationCheckDataAssembler {
         final List<LoanUtilizationCheck> loanUtilizationChecks = new ArrayList<>();
         final JsonElement parentElement = command.parsedJson();
         final JsonObject parentElementObj = parentElement.getAsJsonObject();
-        final Map<Long,BigDecimal> totalLoanAmountUtilizedBasedOnLoanId = new HashedMap();
-        
+        final Map<Long,BigDecimal> totalLoanAmountUtilizedBasedOnLoanId = new HashMap<>();
         if (parentElement.isJsonObject() && !command.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName)) {
             final LoanUtilizationCheck loanUtilizationCheck = assembleCreateFormEachObject(parentElement.getAsJsonObject(),totalLoanAmountUtilizedBasedOnLoanId);
             loanUtilizationChecks.add(loanUtilizationCheck);
@@ -169,7 +168,7 @@ public class LoanUtilizationCheckDataAssembler {
         final JsonObject topLevelJsonElement = parentElement.getAsJsonObject();
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
         final Map<String, Object> changes = loanUtilizationCheck.update(command);
-        final Map<Long, BigDecimal> totalLoanAmountUtilizedBasedOnLoanId = new HashedMap();
+        final Map<Long, BigDecimal> totalLoanAmountUtilizedBasedOnLoanId = new HashMap<>();
         final LoanUtilizationCheckDetail loanUtilizationCheckDetail = assembleLoanUtilizationCheckDetail(loanUtilizationCheck,
                 parentElementObj.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName).getAsJsonObject(), locale,totalLoanAmountUtilizedBasedOnLoanId);
         loanUtilizationCheck.updateLoanUtilizationCheckDetails(loanUtilizationCheckDetail);
