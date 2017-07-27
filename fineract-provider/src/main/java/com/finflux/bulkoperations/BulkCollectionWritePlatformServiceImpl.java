@@ -203,7 +203,8 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                                 }
                             break;
                             case TRANSACTION_ID_FOR_UPDATE:
-                                if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK && cell.getCellType() == Cell.CELL_TYPE_NUMERIC) {
+                                if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK ) {
+                                    if(cell.getCellType() == Cell.CELL_TYPE_NUMERIC){
                                     tempRowError.clear();
                                     try {
                                         transactionIdForUpdate = Long.valueOf(ExcelUtility.getCellValueAsString(cell));
@@ -211,7 +212,10 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                                         errorRows.add(row.getRowNum() + 1);
                                         rowError.add(ReconciliationApiConstants.TRANSACTION_ID_INVALID);
                                     }
-                                }
+                                    }else {
+                                        tempRowError.put(row.getRowNum() + 1, ReconciliationApiConstants.TRANSACTION_ID_INVALID);
+                                    }
+                                } 
                             break;
                             case ACCOUNT_NUMBER:
                                 if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK ) {

@@ -66,8 +66,8 @@ public class FileSystemContentRepository implements ContentRepository {
     }
 
     @Override
-    public String saveImage(final InputStream uploadedInputStream, final Long resourceId, final String imageName, final Long fileSize) {
-        final String uploadImageLocation = generateClientImageParentDirectory(resourceId);
+    public String saveImage(final InputStream uploadedInputStream, final Long resourceId, final String imageName, final Long fileSize,String entityName) {
+        final String uploadImageLocation = generateClientImageParentDirectory(resourceId,entityName);
 
         ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(fileSize, imageName);
         makeDirectories(uploadImageLocation);
@@ -79,8 +79,8 @@ public class FileSystemContentRepository implements ContentRepository {
     }
 
     @Override
-    public String saveImage(final Base64EncodedImage base64EncodedImage, final Long resourceId, final String imageName) {
-        final String uploadImageLocation = generateClientImageParentDirectory(resourceId);
+    public String saveImage(final Base64EncodedImage base64EncodedImage, final Long resourceId, final String imageName,String entityName) {
+        final String uploadImageLocation = generateClientImageParentDirectory(resourceId,entityName);
 
         makeDirectories(uploadImageLocation);
 
@@ -151,10 +151,10 @@ public class FileSystemContentRepository implements ContentRepository {
     /**
      * Generate directory path for storing new Image
      */
-    private String generateClientImageParentDirectory(final Long resourceId) {
+    private String generateClientImageParentDirectory(final Long resourceId,String entityName) {
         return FileSystemContentRepository.FINERACT_BASE_DIR + File.separator
                 + ThreadLocalContextUtil.getTenant().getName().replaceAll(" ", "").trim() + File.separator + "images" + File.separator
-                + "clients" + File.separator + resourceId;
+                + entityName + File.separator + resourceId;
     }
 
     /**

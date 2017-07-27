@@ -708,7 +708,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final StringBuilder sql = new StringBuilder(200);
         sql.append("SELECT dd.id AS trancheDisbursalId, IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
         sql.append(" , l.product_id as productId, l.client_id as clientId, l.expected_firstrepaymenton_date as expectedFirstRepaymentOnDate,");
-        sql.append(" l.principal_net_disbursed_derived as netDisbursalDerived , dd.principal_net_disbursed as trancheNetDisburseAmount,l.loan_status_id as status, IFNULL(dd.discount_on_disbursal_amount, l.discount_on_disbursal_amount) as discountOnDisbursalAmount ");
+        sql.append(" l.principal_net_disbursed_derived as netDisbursalDerived , dd.principal_net_disbursed as trancheNetDisburseAmount,l.loan_status_id as status, IF(dd.id IS NOT NULL,dd.discount_on_disbursal_amount, l.discount_on_disbursal_amount) as discountOnDisbursalAmount ");
         sql.append("FROM m_loan l");
         sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
@@ -1280,7 +1280,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append("g.id as groupId, ");
          builder.append("g.account_no as groupAccountNo, ");
          builder.append("g.display_name as groupName, ");
-         builder.append("g.group_level as groupLevel, ");
+         builder.append("g.level_id as groupLevel, ");
          builder.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
          builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName, ");
          builder.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");

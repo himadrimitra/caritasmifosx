@@ -781,6 +781,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 validateOfficetoProductAcess(productId, officeId);
                 newLoanProduct = this.loanProductRepository.findOne(productId);
                 if (newLoanProduct == null) { throw new LoanProductNotFoundException(productId); }
+                existingLoanApplication.updateLoanProduct(newLoanProduct);
             }
 
             LoanProduct loanProductForValidations = newLoanProduct == null ? existingLoanApplication.loanProduct() : newLoanProduct;
@@ -899,7 +900,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             }
 
             if (newLoanProduct != null) {
-                existingLoanApplication.updateLoanProduct(newLoanProduct);
                 if (!changes.containsKey("interestRateFrequencyType")) {
                     existingLoanApplication.updateInterestRateFrequencyType();
                 }

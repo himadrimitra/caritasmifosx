@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -58,10 +57,12 @@ import org.apache.fineract.infrastructure.dataqueries.data.AllowedValueOptions;
 import org.apache.fineract.infrastructure.dataqueries.data.DataTableValidator;
 import org.apache.fineract.infrastructure.dataqueries.data.DatatableData;
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
+import org.apache.fineract.infrastructure.dataqueries.data.ResultSetColumnAndData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnHeaderData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetRowData;
 import org.apache.fineract.infrastructure.dataqueries.data.ScopeCriteriaData;
 import org.apache.fineract.infrastructure.dataqueries.data.ScopeOptionsData;
+import org.apache.fineract.infrastructure.dataqueries.data.SectionData;
 import org.apache.fineract.infrastructure.dataqueries.domain.DataTableScopes;
 import org.apache.fineract.infrastructure.dataqueries.exception.DatatableNotFoundException;
 import org.apache.fineract.infrastructure.dataqueries.exception.DatatableSystemErrorException;
@@ -158,7 +159,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     }
 
     @Override
-    public List<DatatableData> retrieveDatatableNames(final String appTable, Long associatedEntityId) {
+    public List<DatatableData> retrieveDatatableNames(final String appTable, Long associatedEntityId, boolean isFetchBasicData) {
 
         String andClause;
         if (appTable == null) {
@@ -185,19 +186,37 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final String registeredDatatableName = rs.getString("registered_table_name");
             final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
             final String registeredDataTableDisplayName = rs.getString("registered_table_display_name");
-            if (associatedEntityId != null && scopingCriteriaEnum != null && scopingCriteriaEnum > 0) {
-                isEntityIdAssociatedWithDatatable = isEntityIdAssociatedWithDatatable(id, associatedEntityId, scopingCriteriaEnum);
-                if (isEntityIdAssociatedWithDatatable) {
+            List<SectionData> sectionedColumnList = null;
+            if (!isFetchBasicData) {
+                if (associatedEntityId != null && scopingCriteriaEnum != null && scopingCriteriaEnum > 0) {
+                    isEntityIdAssociatedWithDatatable = isEntityIdAssociatedWithDatatable(id, associatedEntityId, scopingCriteriaEnum);
+                    if (isEntityIdAssociatedWithDatatable) {
+                        final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
+                                .fillResultsetColumnHeaders(registeredDatatableName);
+                        sectionedColumnList = this.genericDataService.fetchSections(id);
+                        if (sectionedColumnList != null && sectionedColumnList.size() > 0) {
+
+                            sectionedColumnList = SectionData.organizeList(columnHeaderData, sectionedColumnList);
+                        }
+
+                        datatables.add(DatatableData.instance(id, appTableName, registeredDatatableName, columnHeaderData,
+                                scopingCriteriaEnum, null, registeredDataTableDisplayName, sectionedColumnList));
+                    }
+                } else {
                     final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                             .fillResultsetColumnHeaders(registeredDatatableName);
 
-                    datatables.add(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null, registeredDataTableDisplayName));
+                    sectionedColumnList = this.genericDataService.fetchSections(id);
+                    if (sectionedColumnList != null && sectionedColumnList.size() > 0) {
+
+                        sectionedColumnList = SectionData.organizeList(columnHeaderData, sectionedColumnList);
+                    }
+
+                    datatables.add(DatatableData.instance(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum,
+                            null, registeredDataTableDisplayName, sectionedColumnList));
                 }
             } else {
-                final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
-                        .fillResultsetColumnHeaders(registeredDatatableName);
-
-                datatables.add(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null, registeredDataTableDisplayName));
+                datatables.add(DatatableData.instance(appTableName, registeredDatatableName, registeredDataTableDisplayName));
             }
         }
 
@@ -252,8 +271,14 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final String registeredDataTableDisplayName = rs.getString("registered_table_display_name");
             final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                     .fillResultsetColumnHeaders(registeredDatatableName);
+            List<SectionData> sectionDataList = this.genericDataService.fetchSections(id);
+            if (sectionDataList != null && sectionDataList.size() > 0) {
 
-            datatableData = DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData, registeredDataTableDisplayName);
+                sectionDataList = SectionData.organizeList(columnHeaderData, sectionDataList);
+            }
+
+            datatableData = DatatableData.instance(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum,
+                    scopeCriteriaData, registeredDataTableDisplayName, sectionDataList);
         }
 
         return datatableData;
@@ -410,12 +435,16 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         final String deleteRegisteredDatatableScope = "DELETE rts FROM f_registered_table_scoping rts INNER JOIN x_registered_table rt ON rt.id = rts.registered_table_id "
                 + " WHERE rt.registered_table_name =  '" + datatable + "'";
 
-        String[] sqlArray = new String[5];
+        final String deleteRegisteredDatatableSections = "DELETE section from f_registered_table_section section INNER JOIN  x_registered_table rt ON section.registered_table_id = rt.id WHERE rt.registered_table_name =  '"
+                + datatable + "'";
+
+        String[] sqlArray = new String[6];
         sqlArray[0] = deleteRolePermissionsSql;
         sqlArray[1] = deletePermissionsSql;
         sqlArray[2] = deleteRegisteredDatatableScope;
-        sqlArray[3] = deleteRegisteredDatatableSql;
-        sqlArray[4] = deleteFromConfigurationSql;
+        sqlArray[3] = deleteRegisteredDatatableSections;
+        sqlArray[4] = deleteRegisteredDatatableSql;
+        sqlArray[5] = deleteFromConfigurationSql;
 
         this.jdbcTemplate.batchUpdate(sqlArray);
     }
@@ -579,7 +608,14 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             this.fromApiJsonDeserializer.validateForCreate(command.json());
 
             final JsonElement element = this.fromJsonHelper.parse(command.json());
-            final JsonArray columns = this.fromJsonHelper.extractJsonArrayNamed("columns", element);
+            JsonArray sections = null;
+            JsonArray columns = null;
+            if (this.fromJsonHelper.parameterExists(DataTableApiConstant.sectionsParamName, element)) {
+                sections = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.sectionsParamName, element);
+            } else {
+                columns = this.fromJsonHelper.extractJsonArrayNamed("columns", element);
+            }
+
             datatableName = this.fromJsonHelper.extractStringNamed("datatableName", element);
             final String dataTableDisplayName = this.fromJsonHelper.extractStringNamed("dataTableDisplayName", element);
             final String apptableName = this.fromJsonHelper.extractStringNamed("apptableName", element);
@@ -626,9 +662,20 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 sqlBuilder = sqlBuilder.append("`" + fkColumnName + "` BIGINT(20) NOT NULL, ");
             }
 
-            for (final JsonElement column : columns) {
-                parseDatatableColumnObjectForCreate(column.getAsJsonObject(), sqlBuilder, constrainBuilder, dataTableNameAlias,
-                        codeMappings, isConstraintApproach);
+            if (columns != null) {
+                for (final JsonElement column : columns) {
+                    parseDatatableColumnObjectForCreate(column.getAsJsonObject(), sqlBuilder, constrainBuilder, dataTableNameAlias,
+                            codeMappings, isConstraintApproach);
+                }
+            } else if (sections != null) {
+                for (final JsonElement section : sections) {
+                    final JsonArray sectionedColumns = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.columnsParamName,
+                            section);
+                    for (final JsonElement column : sectionedColumns) {
+                        parseDatatableColumnObjectForCreate(column.getAsJsonObject(), sqlBuilder, constrainBuilder, dataTableNameAlias,
+                                codeMappings, isConstraintApproach);
+                    }
+                }
             }
 
             // Remove trailing comma and space
@@ -656,9 +703,26 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
             registerDatatable(datatableName, apptableName, scopingCriteriaEnum, dataTableDisplayName);
             registerColumnCodeMapping(codeMappings);
-            registerDatatableMetadata(datatableName, columns);
             boolean isCreateDataTable = true;
-            updateXRegisteredDisplayRules(datatableName, columns, isCreateDataTable);
+            Long sectionId = null;
+            if (sections != null && sections.size() > 0) {
+                for (JsonElement section : sections) {
+                    sectionId = registerDataTableSectionData(datatableName, section);
+                    JsonArray sectionedcolumns = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.columnsParamName, section);
+                    if (sectionedcolumns != null && sectionedcolumns.size() > 0) {
+
+                        final JsonArray sectionedColumns = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.columnsParamName,
+                                section);
+                        registerDatatableMetadata(datatableName, sectionedColumns, sectionId);
+                        updateXRegisteredDisplayRules(datatableName, sectionedcolumns, isCreateDataTable);
+                    }
+                }
+
+            } else {
+                registerDatatableMetadata(datatableName, columns, sectionId);
+                updateXRegisteredDisplayRules(datatableName, columns, isCreateDataTable);
+            }
+           
             if (scope != null) {
                 if (scope.isJsonArray()) {
                     final JsonArray scopeArray = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.scopeParamName, element);
@@ -796,12 +860,12 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     }
 
     @Transactional
-    private void registerDatatableMetadata(String datatableName, JsonArray columns) {
+    private void registerDatatableMetadata(String datatableName, JsonArray columns, Long sectionId) {
         String sql = null;
         String query = null;
         sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + datatableName + "'";
         int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
-        
+
         for (final JsonElement column : columns) {
             final String name = this.fromJsonHelper.extractStringNamed("name", column);
             final String displayName = this.fromJsonHelper.extractStringNamed("displayName", column);
@@ -810,10 +874,11 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final Boolean mandatoryIfVisible = this.fromJsonHelper.extractBooleanNamed("mandatoryIfVisible", column);
 
             Long associatedColumnId = null;
-            query = "insert into x_registered_table_metadata(registered_table_id, column_name, associate_with, display_name, order_position, visible, mandatory_if_visible) " +
-            	"values("+xResgisteredTableId+", '"+name+"', "+associatedColumnId+", '"+displayName+"', "+displayPosition+", "+visible+", "+mandatoryIfVisible+")";
+            query = "insert into x_registered_table_metadata(registered_table_id, column_name, associate_with, display_name, order_position, visible, mandatory_if_visible, section_id) "
+                    + "values(" + xResgisteredTableId + ", '" + name + "', " + associatedColumnId + ", '" + displayName + "', "
+                    + displayPosition + ", " + visible + ", " + mandatoryIfVisible + ", " + sectionId + ")";
             this.jdbcTemplate.execute(query);
-    	
+
         }
     }
 
@@ -1046,6 +1111,19 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final String apptableName = this.fromJsonHelper.extractStringNamed("apptableName", element);
             final String dataTableDisplayName = this.fromJsonHelper.extractStringNamed("dataTableDisplayName", element);
             final Long scopingCriteriaEnum = this.fromJsonHelper.extractLongNamed("scopingCriteriaEnum", element);
+            final JsonArray addSections = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.addSectionsParamName, element);
+            final JsonArray dropSections = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.dropSectionsParamName, element);
+            final JsonArray reorderSections = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.changeSectionsParamName,
+                    element);
+
+            Boolean isDataTableSectioned = false;
+            JsonArray sections = null;
+            if (this.fromJsonHelper.parameterExists(DataTableApiConstant.sectionsParamName, element)) {
+                sections = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.sectionsParamName, element);
+                if (sections != null && sections.size() > 0) {
+                    isDataTableSectioned = true;
+                }
+            }
             final JsonObject jsonObject = element.getAsJsonObject();
             JsonElement scope = jsonObject.get(DataTableApiConstant.scopeParamName);
 
@@ -1093,10 +1171,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 }
             }
 
-            if (changeColumns == null && addColumns == null && dropColumns == null) { return; }
-
             if (dropColumns != null) {
-
                 StringBuilder sqlBuilder = new StringBuilder("ALTER TABLE `" + datatableName + "`");
                 final StringBuilder constrainBuilder = new StringBuilder();
                 final List<String> codeMappings = new ArrayList<>();
@@ -1127,103 +1202,51 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 this.jdbcTemplate.execute(sql.toString());
                 deleteColumnCodeMapping(codeMappings);
             }
-            if (addColumns != null) {
+            Long sectionId = null;
 
-                StringBuilder sqlBuilder = new StringBuilder("ALTER TABLE `" + datatableName + "`");
-                final StringBuilder constrainBuilder = new StringBuilder();
-                final Map<String, Long> codeMappings = new HashMap<>();
-                for (final JsonElement column : addColumns) {
-                    parseDatatableColumnForAdd(column.getAsJsonObject(), sqlBuilder, datatableName.toLowerCase().replaceAll("\\s", "_"),
-                            constrainBuilder, codeMappings, isConstraintApproach);
-                }
-                String sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + datatableName + "'";
-                int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
-                updateScopeCriteriaEnum(scopingCriteriaEnum, xResgisteredTableId);
-                registerDatatableMetadata(datatableName, addColumns);
-                updateXRegisteredDisplayRules(datatableName, addColumns, false);
-                // Remove the first comma, right after ALTER TABLE `datatable`
-                final int indexOfFirstComma = sqlBuilder.indexOf(",");
-                if (indexOfFirstComma != -1) {
-                    sqlBuilder = sqlBuilder.deleteCharAt(indexOfFirstComma);
-                }
-                sqlBuilder.append(constrainBuilder);
-                this.jdbcTemplate.execute(sqlBuilder.toString());
-                registerColumnCodeMapping(codeMappings);
+            if (!isDataTableSectioned && addColumns != null) {
+
+                addColumnsToDatatable(datatableName, addColumns, scopingCriteriaEnum, isConstraintApproach, sectionId);
             }
-            if (changeColumns != null) {
+            
+            if (!isDataTableSectioned && changeColumns != null) {
 
-                StringBuilder sqlBuilder = new StringBuilder("ALTER TABLE `" + datatableName + "`");
-                final StringBuilder constrainBuilder = new StringBuilder();
-                final Map<String, Long> codeMappings = new HashMap<>();
-                final List<String> removeMappings = new ArrayList<>();
-                DatatableData datatableData = retrieveDatatable(datatableName);
-                Integer xRegisterTableId = datatableData.getId();
-                updateScopeCriteriaEnum(scopingCriteriaEnum, xRegisterTableId);
-                for (final JsonElement column : changeColumns) {
-                    // remove NULL values from column where mandatory is true
-                    removeNullValuesFromStringColumn(datatableName, column.getAsJsonObject(), mapColumnNameDefinition);
-
-                    parseDatatableColumnForUpdate(column.getAsJsonObject(), mapColumnNameDefinition, sqlBuilder, datatableName,
-                            constrainBuilder, codeMappings, removeMappings, isConstraintApproach);
-                    String name = (column.getAsJsonObject().has("name")) ? column.getAsJsonObject().get("name").getAsString() : null;
-                    String newName = (column.getAsJsonObject().has("newName")) ? column.getAsJsonObject().get("newName").getAsString()
-                            : name;
-
-                    String displayName = (column.getAsJsonObject().has("displayName"))
-                            ? column.getAsJsonObject().get("displayName").getAsString() : null;
-                    StringBuilder updateSqlBuilder = new StringBuilder(
-                            "UPDATE `x_registered_table_metadata` SET column_name = '" + newName + "' ");
-                    if (displayName != null) {
-                        updateSqlBuilder.append(", display_name = '" + displayName + "' ");
+                alterColumnsInDatatable(datatableName, changeColumns, scopingCriteriaEnum, mapColumnNameDefinition, isConstraintApproach,
+                        sectionId);
+            }
+            if (addSections != null && addSections.size() > 0) {
+                for (JsonElement tempsection : addSections)
+                    registerDataTableSectionData(datatableName, tempsection);
+            }
+            if (dropSections != null && dropSections.size() > 0) {
+                for (JsonElement tempsection : dropSections)
+                    removeSection(datatableName, tempsection);
+            }
+            if (reorderSections != null && reorderSections.size() > 0) {
+                for (JsonElement tempsection : reorderSections)
+                    reOrderSection(datatableName, tempsection);
+            }
+            
+            if (isDataTableSectioned && sections != null && sections.size() > 0) {
+                for (JsonElement section : sections) {
+                    String sectionName = this.fromJsonHelper.extractStringNamed(DataTableApiConstant.displayNameParamName, section);
+                    sectionId = retrieveSectionId(datatableName, sectionName);// registerDataTableSectionData(datatableName,
+                                                                              // section);
+                    JsonArray changedSectionColumns = null;
+                    if (this.fromJsonHelper.parameterExists(DataTableApiConstant.changeColumnsParamName, section)) {
+                        changedSectionColumns = this.fromJsonHelper.extractJsonArrayNamed("changeColumns", section);
+                        if (changedSectionColumns != null && changedSectionColumns.size() > 0) {
+                            alterColumnsInDatatable(datatableName, changedSectionColumns, scopingCriteriaEnum, mapColumnNameDefinition,
+                                    isConstraintApproach, sectionId);
+                        }
                     }
-                    Integer displayPosition = (column.getAsJsonObject().has("displayPosition"))
-                            ? column.getAsJsonObject().get("displayPosition").getAsInt() : null;
-
-                    if (displayName != null) {
-                        updateSqlBuilder.append(", order_position = '" + displayPosition + "' ");
+                    JsonArray addSectionColumns = null;
+                    if (this.fromJsonHelper.parameterExists(DataTableApiConstant.addColumnsParamName, section)) {
+                        addSectionColumns = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.addColumnsParamName, section);
+                        if (addSectionColumns != null && addSectionColumns.size() > 0) {
+                            addColumnsToDatatable(datatableName, addSectionColumns, scopingCriteriaEnum, isConstraintApproach, sectionId);
+                        }
                     }
-                    Boolean visible = (column.getAsJsonObject().has("visible")) ? column.getAsJsonObject().get("visible").getAsBoolean()
-                            : null;
-
-                    if (visible != null) {
-
-                        updateSqlBuilder.append(", visible = '" + visible.compareTo(Boolean.FALSE) + "' ");
-                    }
-                    Boolean mandatoryIfVisible = (column.getAsJsonObject().has("mandatoryIfVisible"))
-                            ? column.getAsJsonObject().get("mandatoryIfVisible").getAsBoolean() : null;
-
-                    if (mandatoryIfVisible != null) {
-                        updateSqlBuilder.append(", mandatory_if_visible = '" + mandatoryIfVisible.compareTo(Boolean.FALSE) + "' ");
-                    }
-                    updateSqlBuilder.append("WHERE column_name = '" + name + "' AND registered_table_id = " + xRegisterTableId);
-
-                    this.jdbcTemplate.execute(updateSqlBuilder.toString());
-
-                }
-                updateXRegisteredDisplayRules(datatableName, changeColumns, false);
-                // Remove the first comma, right after ALTER TABLE `datatable`
-                final int indexOfFirstComma = sqlBuilder.indexOf(",");
-                if (indexOfFirstComma != -1) {
-                    sqlBuilder = sqlBuilder.deleteCharAt(indexOfFirstComma);
-                }
-                sqlBuilder.append(constrainBuilder);
-                try {
-                    this.jdbcTemplate.execute(sqlBuilder.toString());
-                    deleteColumnCodeMapping(removeMappings);
-                    registerColumnCodeMapping(codeMappings);
-                } catch (final Exception e) {
-                    if (e.getMessage().contains("Error on rename")) { throw new PlatformServiceUnavailableException(
-                            "error.msg.datatable.column.update.not.allowed", "One of the column name modification not allowed"); }
-                    // handle all other exceptions in here
-
-                    // check if exception message contains the
-                    // "invalid use of null value" SQL exception message
-                    // throw a 503 HTTP error -
-                    // PlatformServiceUnavailableException
-                    if (e.getMessage().toLowerCase()
-                            .contains("invalid use of null value")) { throw new PlatformServiceUnavailableException(
-                                    "error.msg.datatable.column.update.not.allowed",
-                                    "One of the data table columns contains null values"); }
                 }
             }
             if (scope != null) {
@@ -1257,6 +1280,104 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
             throwExceptionIfValidationWarningsExist(dataValidationErrors);
         }
+    }
+
+    private void alterColumnsInDatatable(final String datatableName, final JsonArray changeColumns, final Long scopingCriteriaEnum,
+            final Map<String, ResultsetColumnHeaderData> mapColumnNameDefinition, final boolean isConstraintApproach,
+            final Long sectionId) {
+        StringBuilder sqlBuilder = new StringBuilder("ALTER TABLE `" + datatableName + "`");
+        final StringBuilder constrainBuilder = new StringBuilder();
+        final Map<String, Long> codeMappings = new HashMap<>();
+        final List<String> removeMappings = new ArrayList<>();
+        DatatableData datatableData = retrieveDatatable(datatableName);
+        Integer xRegisterTableId = datatableData.getId();
+        updateScopeCriteriaEnum(scopingCriteriaEnum, xRegisterTableId);
+        for (final JsonElement column : changeColumns) {
+            // remove NULL values from column where mandatory is true
+            removeNullValuesFromStringColumn(datatableName, column.getAsJsonObject(), mapColumnNameDefinition);
+
+            parseDatatableColumnForUpdate(column.getAsJsonObject(), mapColumnNameDefinition, sqlBuilder, datatableName, constrainBuilder,
+                    codeMappings, removeMappings, isConstraintApproach);
+            String name = (column.getAsJsonObject().has("name")) ? column.getAsJsonObject().get("name").getAsString() : null;
+            String newName = (column.getAsJsonObject().has("newName")) ? column.getAsJsonObject().get("newName").getAsString() : name;
+
+            String displayName = (column.getAsJsonObject().has("displayName")) ? column.getAsJsonObject().get("displayName").getAsString()
+                    : null;
+            StringBuilder updateSqlBuilder = new StringBuilder("UPDATE `x_registered_table_metadata` SET column_name = '" + newName + "' ");
+            if (displayName != null) {
+                updateSqlBuilder.append(", display_name = '" + displayName + "' ");
+            }
+            Integer displayPosition = (column.getAsJsonObject().has("displayPosition"))
+                    ? column.getAsJsonObject().get("displayPosition").getAsInt() : null;
+
+            if (displayName != null) {
+                updateSqlBuilder.append(", order_position = '" + displayPosition + "' ");
+            }
+            Boolean visible = (column.getAsJsonObject().has("visible")) ? column.getAsJsonObject().get("visible").getAsBoolean() : null;
+
+            if (visible != null) {
+
+                updateSqlBuilder.append(", visible = '" + visible.compareTo(Boolean.FALSE) + "' ");
+            }
+            Boolean mandatoryIfVisible = (column.getAsJsonObject().has("mandatoryIfVisible"))
+                    ? column.getAsJsonObject().get("mandatoryIfVisible").getAsBoolean() : null;
+
+            if (mandatoryIfVisible != null) {
+                updateSqlBuilder.append(", mandatory_if_visible = '" + mandatoryIfVisible.compareTo(Boolean.FALSE) + "' ");
+            }
+            updateSqlBuilder.append(", section_id = " + sectionId);
+            updateSqlBuilder.append(" WHERE column_name = '" + name + "' AND registered_table_id = " + xRegisterTableId);
+
+            this.jdbcTemplate.execute(updateSqlBuilder.toString());
+
+        }
+        updateXRegisteredDisplayRules(datatableName, changeColumns, false);
+        // Remove the first comma, right after ALTER TABLE `datatable`
+        final int indexOfFirstComma = sqlBuilder.indexOf(",");
+        if (indexOfFirstComma != -1) {
+            sqlBuilder = sqlBuilder.deleteCharAt(indexOfFirstComma);
+        }
+        sqlBuilder.append(constrainBuilder);
+        try {
+            this.jdbcTemplate.execute(sqlBuilder.toString());
+            deleteColumnCodeMapping(removeMappings);
+            registerColumnCodeMapping(codeMappings);
+        } catch (final Exception e) {
+            if (e.getMessage().contains("Error on rename")) { throw new PlatformServiceUnavailableException(
+                    "error.msg.datatable.column.update.not.allowed", "One of the column name modification not allowed"); }
+            // handle all other exceptions in here
+
+            // check if exception message contains the
+            // "invalid use of null value" SQL exception message
+            // throw a 503 HTTP error -
+            // PlatformServiceUnavailableException
+            if (e.getMessage().toLowerCase().contains("invalid use of null value")) { throw new PlatformServiceUnavailableException(
+                    "error.msg.datatable.column.update.not.allowed", "One of the data table columns contains null values"); }
+        }
+    }
+
+    private void addColumnsToDatatable(final String datatableName, final JsonArray addColumns, final Long scopingCriteriaEnum,
+            final boolean isConstraintApproach, final Long sectionId) {
+        StringBuilder sqlBuilder = new StringBuilder("ALTER TABLE `" + datatableName + "`");
+        final StringBuilder constrainBuilder = new StringBuilder();
+        final Map<String, Long> codeMappings = new HashMap<>();
+        for (final JsonElement column : addColumns) {
+            parseDatatableColumnForAdd(column.getAsJsonObject(), sqlBuilder, datatableName.toLowerCase().replaceAll("\\s", "_"),
+                    constrainBuilder, codeMappings, isConstraintApproach);
+        }
+        String sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + datatableName + "'";
+        int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+        updateScopeCriteriaEnum(scopingCriteriaEnum, xResgisteredTableId);
+        registerDatatableMetadata(datatableName, addColumns, sectionId);
+        updateXRegisteredDisplayRules(datatableName, addColumns, false);
+        // Remove the first comma, right after ALTER TABLE `datatable`
+        final int indexOfFirstComma = sqlBuilder.indexOf(",");
+        if (indexOfFirstComma != -1) {
+            sqlBuilder = sqlBuilder.deleteCharAt(indexOfFirstComma);
+        }
+        sqlBuilder.append(constrainBuilder);
+        this.jdbcTemplate.execute(sqlBuilder.toString());
+        registerColumnCodeMapping(codeMappings);
     }
 
     private void updateScopeCriteriaEnum(final Long scopingCriteriaEnum, Integer xRegisterTableId) {
@@ -1442,14 +1563,21 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             sql = sql + "select * from `" + dataTableName + "` where id = " + id;
         }
 
+        Integer registeredDataTableId = queryForDataTableId(dataTableName);
+        List<SectionData> sectionedColumnList = null;
+        sectionedColumnList = this.genericDataService.fetchSections(registeredDataTableId);
+        if (sectionedColumnList != null && sectionedColumnList.size() > 0) {
+            sectionedColumnList = SectionData.organizeList(columnHeaders, sectionedColumnList);
+        }
+
         if (order != null) {
             sql = sql + " order by " + order;
         }
 
         final List<ResultsetRowData> result = fillDatatableResultSetDataRows(sql);
-        String registeredDataTableDisplayName = queryForApplicationTableDisplayName(dataTableName);;
-        
-        return new GenericResultsetData(columnHeaders, result, registeredDataTableDisplayName);
+        String registeredDataTableDisplayName = queryForApplicationTableDisplayName(dataTableName);
+        final List<ResultSetColumnAndData> columnValueList = fillDatatableResultSetColumnAndvalues(sql);
+        return new GenericResultsetData(columnHeaders, result, registeredDataTableDisplayName, sectionedColumnList,columnValueList);
     }
 
     private GenericResultsetData retrieveDataTableGenericResultSetForUpdate(final String appTable, final String dataTableName,
@@ -1470,8 +1598,9 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         final List<ResultsetRowData> result = fillDatatableResultSetDataRows(sql);
         
         String registeredDataTableDisplayName = null;
-
-        return new GenericResultsetData(columnHeaders, result, registeredDataTableDisplayName);
+        List<SectionData> sectionedColumnList = null;
+        final List<ResultSetColumnAndData> columnValueList = fillDatatableResultSetColumnAndvalues(sql);
+        return new GenericResultsetData(columnHeaders, result, registeredDataTableDisplayName, sectionedColumnList, columnValueList);
     }
 
     private CommandProcessingResult checkMainResourceExistsWithinScope(final String appTable, final String apptableIdentifier) {
@@ -1489,7 +1618,6 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         final Long LoanId = getLongSqlRowSet(rs, "loanId");
         final Long entityId = getLongSqlRowSet(rs, "entityId");
         final String transactionId = rs.getString("transactionId");
-        final Long loanApplicationReferenceId = getLongSqlRowSet(rs, "loanApplicationReferenceId");
 
         if (rs.next() && !appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) { throw new DatatableSystemErrorException("System Error: More than one row returned from data scoping query"); }
 
@@ -1500,7 +1628,6 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 .withSavingsId(savingsId) //
                 .withLoanId(LoanId).withEntityId(entityId)//
                 .withTransactionId(transactionId)//
-                .withLoanApplicationReferenceId(loanApplicationReferenceId)//
                 .build();
     }
 
@@ -1548,6 +1675,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         if (appTable.equalsIgnoreCase("m_savings_product")) { return; }
         if (appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) { return; }
         if (appTable.equalsIgnoreCase(DataTableApiConstant.LOAN_APPLICATION_REFERENCE)) { return; }
+        if (appTable.equalsIgnoreCase(DataTableApiConstant.VILLAGE)) { return; }
 
         throw new PlatformDataIntegrityException("error.msg.invalid.application.table", "Invalid Application Table: " + appTable, "name",
                 appTable);
@@ -1568,10 +1696,12 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
         while (rs.next()) {
             final List<String> columnValues = new ArrayList<>();
+            final List<ResultSetColumnAndData> objectList = new ArrayList<>();
             for (int i = 0; i < rsmd.getColumnCount(); i++) {
                 final String columnName = rsmd.getColumnName(i + 1);
                 final String columnValue = rs.getString(columnName);
                 columnValues.add(columnValue);
+                objectList.add(new ResultSetColumnAndData(columnName, columnValue));
             }
 
             final ResultsetRowData resultsetDataRow = ResultsetRowData.create(columnValues);
@@ -1580,7 +1710,30 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
         return resultsetDataRows;
     }
+    
+    private List<ResultSetColumnAndData> fillDatatableResultSetColumnAndvalues(final String sql) {
 
+        final SqlRowSet rs = this.jdbcTemplate.queryForRowSet(sql);
+
+        final List<ResultSetColumnAndData> columns = new ArrayList<>();
+
+        final SqlRowSetMetaData rsmd = rs.getMetaData();
+
+        while (rs.next()) {
+            final List<ResultSetColumnAndData> objectList = new ArrayList<>();
+            for (int i = 0; i < rsmd.getColumnCount(); i++) {
+                final String columnName = rsmd.getColumnName(i + 1);
+                final String columnValue = rs.getString(columnName);
+                objectList.add(new ResultSetColumnAndData(columnName, columnValue));
+            }
+
+            final ResultSetColumnAndData columnAndValueData = ResultSetColumnAndData.create(objectList);
+            columns.add(columnAndValueData);
+        }
+
+        return columns;
+    }
+    
     private String queryForApplicationTableName(final String datatable) {
         final String sql = "SELECT application_table_name FROM x_registered_table where registered_table_name = '" + datatable + "'";
 
@@ -1604,6 +1757,16 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         } catch (final EmptyResultDataAccessException e) { }
 
         return applicationTableDisplayName;
+    }
+    
+    private Integer queryForDataTableId(final String datatable) {
+        final String sql = "SELECT id FROM x_registered_table where registered_table_name = '" + datatable + "'";
+        Integer id = null;
+        try {
+            id = this.jdbcTemplate.queryForObject(sql, Integer.class);
+        } catch (final EmptyResultDataAccessException e) { }
+
+        return id;
     }
 
     private String getFKField(final String applicationTableName) {
@@ -2060,4 +2223,73 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         }
         return appTableIdenfier;
     }
+    
+    private Long registerDataTableSectionData(final String dataTableName, final JsonElement section) {
+        assertDataTableExists(dataTableName);
+        String sql = null;
+        String query = null;
+        Long sectionId;
+        String sectionQuery = null;
+
+        sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + dataTableName + "'";
+        int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+
+        final String displayName = this.fromJsonHelper.extractStringNamed(DataTableApiConstant.displayNameParamName, section);
+        final Long displayPosition = this.fromJsonHelper.extractLongNamed(DataTableApiConstant.displayPositionParamName, section);
+        query = "insert into f_registered_table_section (registered_table_id, display_name, display_position) values ("
+                + xResgisteredTableId + ", " + "'" + displayName + "', " + displayPosition + ")";
+        this.jdbcTemplate.execute(query);
+        sectionQuery = "select section.id from f_registered_table_section section INNER JOIN x_registered_table rt ON section.registered_table_id = rt.id and rt.id = "
+                + xResgisteredTableId + " where section.display_name =";
+        sectionQuery = sectionQuery + " '" + displayName + "'";
+        sectionId = this.jdbcTemplate.queryForLong(sectionQuery);
+        return sectionId;
+    }
+
+    private void removeSection(final String dataTableName, final JsonElement section) {
+        assertDataTableExists(dataTableName);
+        String sql = null;
+        String query = null;
+
+        sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + dataTableName + "'";
+        int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+
+        final String displayName = section.getAsString();
+        query = "delete from f_registered_table_section where registered_table_id = " + xResgisteredTableId + " and  display_name = '"
+                + displayName + "'";
+        this.jdbcTemplate.execute(query);
+    }
+    
+    private void reOrderSection(final String dataTableName, final JsonElement section) {
+        assertDataTableExists(dataTableName);
+        String sql = null;
+        String query = null;
+
+        sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + dataTableName + "'";
+        int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+
+        final String displayName = this.fromJsonHelper.extractStringNamed(DataTableApiConstant.displayNameParamName, section);
+        final Long displayPosition = this.fromJsonHelper.extractLongNamed(DataTableApiConstant.displayPositionParamName, section);
+        query = "update f_registered_table_section set display_position = " + displayPosition + " where registered_table_id = "
+                + xResgisteredTableId + " and  display_name = '" + displayName + "'";
+        this.jdbcTemplate.execute(query);
+    }
+
+
+    private Long retrieveSectionId(final String dataTableName, final String sectionName) {
+        String sql = null;
+        String query = null;
+        Long sectionId;
+        String sectionQuery = null;
+
+        sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + dataTableName + "'";
+        int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+
+        sectionQuery = "select section.id from f_registered_table_section section INNER JOIN x_registered_table rt ON section.registered_table_id = rt.id and rt.id = "
+                + xResgisteredTableId + "  where section.display_name =";
+        sectionQuery = sectionQuery + " '" + sectionName + "'";
+        sectionId = this.jdbcTemplate.queryForLong(sectionQuery);
+        return sectionId;
+    }
+
 }

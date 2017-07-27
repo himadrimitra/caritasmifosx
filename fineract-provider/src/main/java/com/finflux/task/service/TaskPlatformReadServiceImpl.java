@@ -501,7 +501,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             params.addValue("childConfigId", childConfigId);
         }
         
-        if (!loanAccountType.isInvalid()) {
+        if (loanAccountType != null && (loanAccountType.isIndividualAccount() || loanAccountType.isJLGAccount())) {
             sqlBuilder.append(" AND t.entity_type = :entityType AND t.entity_id = loan.id ");
             params.addValue("entityType", TaskEntityType.LOAN_APPLICATION.getValue());
             if (centerId != null && loanAccountType.isJLGAccount()) {

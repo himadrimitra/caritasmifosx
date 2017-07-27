@@ -14,15 +14,10 @@ public class LoanApplicationreferenceDataScopedSqlServiceImpl implements DataSco
 
     @Override
     public String getDataScopedSql(final AppUser currentUser, final String apptableIdentifier) {
-        final StringBuilder sqlBuilder = new StringBuilder("select  distinctrow x.* from (");
-        sqlBuilder.append(" (select o.id as officeId, l.group_id as groupId, l.client_id as clientId, null as savingsId, ");
-        sqlBuilder.append("l.id as loanApplicationReferenceId, null as loanId, null as entityId, null as transactionId from f_loan_application_reference l " + " join m_client c on c.id = l.client_id ");
+        final StringBuilder sqlBuilder  = new StringBuilder("select o.id as officeId, l.group_id as groupId, l.client_id as clientId, null as savingsId, ");
+        sqlBuilder.append("l.id as loanApplicationReferenceId, null as loanId, l.id as entityId, null as transactionId, null as villageId from f_loan_application_reference l " + " join m_client c on c.id = l.client_id ");
         sqlBuilder.append(" join m_office o on o.id = c.office_id and o.hierarchy like '" + currentUser.getOffice().getHierarchy() + "%'");
-        sqlBuilder.append(" where l.id = " + apptableIdentifier + ")" + " union all ");
-        sqlBuilder.append(" (select o.id as officeId, l.group_id as groupId, l.client_id as clientId, null as savingsId, l.id as loanApplicationReferenceId, null as loanId,");
-        sqlBuilder.append(" null as entityId, null as transactionId from f_loan_application_reference l " + " join m_group g on g.id = l.group_id ");
-        sqlBuilder.append(" join m_office o on o.id = g.office_id and o.hierarchy like '" + currentUser.getOffice().getHierarchy() + "%'");
-        sqlBuilder.append(" where l.id = " + apptableIdentifier + ")" +" ) x");
+        sqlBuilder.append(" where l.id = " + apptableIdentifier );
         return sqlBuilder.toString();
     }
 

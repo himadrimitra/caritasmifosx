@@ -224,5 +224,40 @@ public class DataTableIntegrationTest {
         JsonArray dataArray = this.fromApiJsonHelper.extractJsonArrayNamed("data", parsedCommand);
         assertEquals(0, dataArray.size());
     }
+    
+    @Test
+    public void createDataTableContainingSectionsTest() {
+        String dataTableJson = new DataTableTestBuilder().withSection("Transactions", "2", "amount", DECIMAL_TYPE_COLUMN, false)
+                .withSection("Personal Details", "1", "name", DECIMAL_TYPE_COLUMN, false).build();
+        final String createDataTableResourceIdentifier = dataTableHelper.createDataTable(dataTableJson);
+        final HashMap dataTableContent = (HashMap) dataTableHelper.readDataTable(createDataTableResourceIdentifier);
+        final JsonElement parsedCommand = this.fromApiJsonHelper.parse(gson.toJson(dataTableContent));
+        String applicationTableName = this.fromApiJsonHelper.extractStringNamed("applicationTableName", parsedCommand);
+        JsonArray sectionDataList = this.fromApiJsonHelper.extractJsonArrayNamed("sectionDataList", parsedCommand);
+        dataTableJsonValidator.validateCreatedDataTableContainingSectionsJson(sectionDataList);
+        assertEquals(ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME, applicationTableName);
+    }
+
+    @Test
+    public void updateDataTableContainingSectionsTest() {
+        String dataTableJson = new DataTableTestBuilder().withSection("Transactions", "2", "amount", DECIMAL_TYPE_COLUMN, false)
+                .withSection("Personal Details", "1", "name", DECIMAL_TYPE_COLUMN, false)
+                .withSection("Test", "3", "Total", DECIMAL_TYPE_COLUMN, false).build();
+        final String createDataTableResourceIdentifier = dataTableHelper.createDataTable(dataTableJson);
+        String updateTableJson = new DataTableTestBuilder().withAddSection("Miscellaneous", "3").withChangeSections("Personal Details", "1")
+                .withChangeSections("Transactions", "2").withisDataTableJsonForCreate(false)
+                .withSection("Transactions", "2", "amount", DECIMAL_TYPE_COLUMN, true)
+                .withSection("Personal Details", "1", "name", DECIMAL_TYPE_COLUMN, true)
+                .withSection("Miscellaneous", "3", "Total", DECIMAL_TYPE_COLUMN, true).withDropSections("Test")
+                .withApptableName(ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME).build();
+        final String updateDataTableResourceIdentifier = dataTableHelper.updateDataTable(updateTableJson,
+                createDataTableResourceIdentifier);
+        final HashMap dataTableContent = (HashMap) dataTableHelper.readDataTable(createDataTableResourceIdentifier);
+        final JsonElement parsedCommand = this.fromApiJsonHelper.parse(gson.toJson(dataTableContent));
+        String applicationTableName = this.fromApiJsonHelper.extractStringNamed("applicationTableName", parsedCommand);
+        JsonArray sectionDataList = this.fromApiJsonHelper.extractJsonArrayNamed("sectionDataList", parsedCommand);
+        dataTableJsonValidator.validateUpdatedDataTableContainingSectionsJson(sectionDataList);
+        assertEquals(ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME, applicationTableName);
+    }
 
 }

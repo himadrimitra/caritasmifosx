@@ -340,16 +340,32 @@ public class PostDatedChequeDetailService {
                     .notExceedingLengthOf(50);
         }
 
-        if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeDateParamName, element)) {
-            final LocalDate chequeDate = this.fromApiJsonHelper.extractLocalDateNamed(
-                    PostDatedChequeDetailApiConstants.chequeDateParamName, element);
-            baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeDateParamName).value(chequeDate).notBlank();
-        }
-
-        if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeAmountParamName, element)) {
-            final BigDecimal chequeAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
-                    PostDatedChequeDetailApiConstants.chequeAmountParamName, element);
-            baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeAmountParamName).value(chequeAmount).notBlank()
+        if (ChequeType.fromInt(postDatedChequeDetail.getChequeType()).isRepaymentPDC()) {
+            if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeDateParamName, element)) {
+                final LocalDate chequeDate = this.fromApiJsonHelper.extractLocalDateNamed(
+                        PostDatedChequeDetailApiConstants.chequeDateParamName, element);
+                baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeDateParamName).value(chequeDate).notBlank();
+            }
+            if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeAmountParamName, element)) {
+                final BigDecimal chequeAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                        PostDatedChequeDetailApiConstants.chequeAmountParamName, element);
+                baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeAmountParamName).value(chequeAmount).notBlank()
+                        .positiveAmount();
+            }
+        } else {
+            LocalDate chequeDate = null;
+            if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeDateParamName, element)) {
+                chequeDate = this.fromApiJsonHelper.extractLocalDateNamed(PostDatedChequeDetailApiConstants.chequeDateParamName, element);
+                baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeDateParamName).value(chequeDate).notBlank();
+            }
+            BigDecimal chequeAmount = null;
+            if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeAmountParamName, element)) {
+                chequeAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                        PostDatedChequeDetailApiConstants.chequeAmountParamName, element);
+            }
+            baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeDateParamName).value(chequeDate).ignoreIfNull()
+                    .notBlank();
+            baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeAmountParamName).value(chequeAmount)
                     .positiveAmount();
         }
 

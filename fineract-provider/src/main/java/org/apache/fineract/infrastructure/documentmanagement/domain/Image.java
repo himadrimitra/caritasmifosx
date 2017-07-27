@@ -22,12 +22,16 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.GeoTag;
-import org.springframework.data.jpa.domain.AbstractPersistable;
+import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
+import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiConstants;
+import org.apache.fineract.portfolio.common.domain.EntityType;
+import org.apache.fineract.useradministration.domain.AppUser;
 
 @Entity
 @Table(name = "m_image")
-public final class Image extends AbstractPersistable<Long> {
+public final class Image extends AbstractAuditableCustom<AppUser,Long> {
 
     @Column(name = "location", length = 500)
     private String location;
@@ -38,12 +42,29 @@ public final class Image extends AbstractPersistable<Long> {
     @Column(name="geo_tag")
     private String geoTag ;
     
-    public Image(final String location, final StorageType storageType, final GeoTag geoTag) {
+    @Column(name="entity_type")
+    private Integer entityType;
+    
+    @Column(name="entity_id")
+    private Integer entityId;
+    
+    public Image(final String location, final StorageType storageType, final GeoTag geoTag,final Integer entityType,final Integer entityId) {
         this.location = location;
         this.storageType = storageType.getValue();
         if(geoTag != null) this.geoTag = geoTag.toString() ;
+        this.entityType=entityType;
+        this.entityId=entityId;
     }
 
+    public Image(final String location, final StorageType storageType,JsonCommand command){
+        this.location = location;
+        this.storageType = storageType.getValue();
+        if(geoTag != null) this.geoTag = geoTag.toString() ;
+        if (command != null) {
+            this.entityType=EntityType.getEntityTypeByString(command.parsedJson().getAsJsonObject().get(ImagesApiConstants.entityNameParam).getAsString()).getValue();
+            this.entityId = command.parsedJson().getAsJsonObject().get(ImagesApiConstants.entityIdParam).getAsInt();
+        }
+    }
     protected Image() {
 
     }
@@ -66,5 +87,17 @@ public final class Image extends AbstractPersistable<Long> {
 
     public void setGeoTag(final GeoTag geoTag) {
         this.geoTag = geoTag != null ? geoTag.toString() : null ;
+    }
+
+    public String getGeoTag() {
+        return this.geoTag;
+    }
+
+    public Integer getEntityType() {
+        return this.entityType;
+    }
+
+    public Integer getEntityId() {
+        return this.entityId;
     }
 }

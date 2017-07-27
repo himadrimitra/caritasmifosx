@@ -1,44 +1,80 @@
-SELECT office_id, office_name, client_id, client_name, COUNT(IF(account_type = 'loan',1,NULL)) Loans, COUNT(IF(account_type = 'deposit',1,NULL)) Deposits, COUNT(IF(account_type = 'charges',1,NULL)) Charges
+set @as:='2017-06-30';
+select count( distinct cb.ac) 'Active Clients' from (
+/* Query to handle migrated loans */
+select ad.client_id ac
 
-FROM
--- SELECT * FROM
-(
+from m_loan l
 
--- 1) Active Loans disbursed before end-date
+/* to get client loan mapping */
+join `additional details` ad on ad.`Loan No`=l.id
+/* considers all currently active loans disbursed before the AsonDate */
+where ((l.disbursedon_date <= @as and l.loan_status_id =300)
+/Loans that are currently closed but was active As on a date/
+or (l.loan_status_id in (600,601,700) and l.disbursedon_date <= @as and ifnull(l.closedon_date,l.writtenoffon_date) > @as))
+/* id hardcoded to consider migrated loans only */
+and l.id <=23822
 
-SELECT o.id office_id, o.name office_name, mc.id client_id, mc.display_name client_name, 
-	'loan' account_type, ml.loan_status_id status, ml.id account_id, p.name product, 
-	MAX(lt.transaction_date) max_txn_date
-FROM m_loan ml
-JOIN m_group mg ON ml.group_id = mg.id
-JOIN m_group_client mgc ON mgc.group_id = mg.id
-JOIN m_client mc ON mc.id = mgc.client_id
-JOIN m_office o ON mg.office_id = o.id
-JOIN m_product_loan p ON p.id = ml.product_id
-JOIN m_loan_transaction lt ON ml.id = lt.loan_id
-WHERE ml.loan_status_id = 300 and mc.status_enum=300
-AND ml.disbursedon_date <= '2017-02-28' 
-GROUP BY mc.id, ml.id
+union all
+
+/* Query to handle GLIM loans (Post Migration) */
+select c.id
+
+from m_loan l
+join m_loan_glim lg on lg.loan_id=l.id
+join m_client c on c.id=lg.client_id and lg.is_client_selected=1
+/* considers all active currently loans disbursed before the AsonDate */
+where ((l.disbursedon_date <= @as and l.loan_status_id =300)
+/Loans that are currently closed but was active As on a date/
+or (l.loan_status_id in (600,601,700) and l.disbursedon_date <= @as and ifnull(l.closedon_date,l.writtenoffon_date) > @as)) ) cb
 
 
-UNION ALL
--- 2) Closed and Overpaid loans that were disbursed before end-date and with last transaction between start-date and end-date
+/* ################################################################################################ */
 
-SELECT o.id office_id, o.name office_name, mc.id client_id, mc.display_name client_name, 
-	'loan' account_type, ml.loan_status_id status, ml.id account_id, p.name product, 
-	MAX(lt.transaction_date) max_txn_date
-FROM m_loan ml
-JOIN m_group mg ON ml.group_id = mg.id
-JOIN m_group_client mgc ON mgc.group_id = mg.id
-JOIN m_client mc ON mc.id = mgc.client_id
-JOIN m_office o ON mg.office_id = o.id
-JOIN m_product_loan p ON p.id = ml.product_id
-JOIN m_loan_transaction lt ON ml.id = lt.loan_id
-WHERE ml.loan_status_id IN (600,601,602,700)
-AND ml.disbursedon_date <= '2017-02-28' 
-AND lt.transaction_date >= '2017-02-01' and lt.is_reversed =0 and lt.transaction_type_enum not in (10)
-GROUP BY mc.id, ml.id
+Detailed query
 
-) q
-GROUP BY office_id, client_id
-ORDER BY q.client_id
+set @ad:='2017-06-30';
+select distinct cb.branch Branch
+,cb.client Client
+,cb.client_id 'Client ID'
+,group_concat(cb.loanNo) Loans
+from (
+select o.name branch
+,c.display_name client
+,c.external_id client_id
+#,g.display_name groupName
+#,g.external_id pfcode
+#,l.id noofloans
+,c.id noOfClients
+,l.id loanNo
+from m_loan l
+join m_group g on g.id=l.group_id
+
+join `additional details` ad on ad.`Loan No`=l.id
+join m_client c on c.id=ad.client_id
+join m_office o on o.id=c.office_id
+
+where ((l.disbursedon_date <= @ad and l.loan_status_id =300)
+or (l.loan_status_id in (600,601,700) and l.disbursedon_date <= @ad and ifnull(l.closedon_date,l.writtenoffon_date) > @ad))
+and l.id <=23822
+#group by c.id
+
+union all
+
+select o.name branch
+,c.display_name client
+,c.external_id client_id
+#,g.display_name groupName
+#,g.external_id pfcode
+#,l.id noofloans
+,c.id
+,l.id
+from m_loan l
+join m_loan_glim lg on lg.loan_id=l.id
+join m_group g on g.id=l.group_id
+join m_client c on c.id=lg.client_id and lg.is_client_selected=1
+join m_office o on o.id=c.office_id
+where ((l.disbursedon_date <= @ad and l.loan_status_id =300)
+or (l.loan_status_id in (600,601,700) and l.disbursedon_date <= @ad and ifnull(l.closedon_date,l.writtenoffon_date) > @ad))
+#group by c.id
+) cb
+group by cb.noOfClients
