@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.organisation.staff.domain.Staff;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import com.finflux.portfolio.loan.utilization.api.LoanUtilizationCheckApiConstants;
 import com.finflux.portfolio.loan.utilization.domain.LoanUtilizationCheck;
 import com.finflux.portfolio.loan.utilization.domain.LoanUtilizationCheckDetail;
+import com.finflux.portfolio.loan.utilization.exception.LoanPurpuseAmountMoreThanDisbursalAmountException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -34,29 +36,33 @@ public class LoanUtilizationCheckDataAssembler {
     private final StaffRepositoryWrapper staffRepository;
     private final AppUserRepository appUserRepository;
     private final LoanRepositoryWrapper loanRepository;
+    private final LoanUtilizationCheckReadPlatformService readPlatformService;
 
     @Autowired
     public LoanUtilizationCheckDataAssembler(final FromJsonHelper fromApiJsonHelper, final StaffRepositoryWrapper staffRepository,
-            final AppUserRepository appUserRepository, final LoanRepositoryWrapper loanRepository) {
+            final AppUserRepository appUserRepository, final LoanRepositoryWrapper loanRepository,final LoanUtilizationCheckReadPlatformService readPlatformService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.staffRepository = staffRepository;
         this.appUserRepository = appUserRepository;
         this.loanRepository = loanRepository;
+        this.readPlatformService = readPlatformService;
     }
 
     public List<LoanUtilizationCheck> assembleCreateForm(final JsonCommand command) {
         final List<LoanUtilizationCheck> loanUtilizationChecks = new ArrayList<>();
         final JsonElement parentElement = command.parsedJson();
         final JsonObject parentElementObj = parentElement.getAsJsonObject();
+        final Map<Long,BigDecimal> totalLoanAmountUtilizedBasedOnLoanId = new HashedMap();
+        
         if (parentElement.isJsonObject() && !command.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName)) {
-            final LoanUtilizationCheck loanUtilizationCheck = assembleCreateFormEachObject(parentElement.getAsJsonObject());
+            final LoanUtilizationCheck loanUtilizationCheck = assembleCreateFormEachObject(parentElement.getAsJsonObject(),totalLoanAmountUtilizedBasedOnLoanId);
             loanUtilizationChecks.add(loanUtilizationCheck);
         } else if (command.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName)) {
             final JsonArray array = parentElementObj.get(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName).getAsJsonArray();
             if (array != null && array.size() > 0) {
                 for (int i = 0; i < array.size(); i++) {
                     final JsonObject element = array.get(i).getAsJsonObject();
-                    final LoanUtilizationCheck loanUtilizationCheck = assembleCreateFormEachObject(element);
+                    final LoanUtilizationCheck loanUtilizationCheck = assembleCreateFormEachObject(element,totalLoanAmountUtilizedBasedOnLoanId);
                     loanUtilizationChecks.add(loanUtilizationCheck);
                 }
             }
@@ -64,7 +70,7 @@ public class LoanUtilizationCheckDataAssembler {
         return loanUtilizationChecks;
     }
 
-    private LoanUtilizationCheck assembleCreateFormEachObject(final JsonObject element) {
+    private LoanUtilizationCheck assembleCreateFormEachObject(final JsonObject element, final Map<Long, BigDecimal> totalLoanAmountUtilizedBasedOnLoanId) {
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
         final Long loanId = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.loanIdParamName, element);
@@ -97,12 +103,11 @@ public class LoanUtilizationCheckDataAssembler {
         if (localDateAuditDoneOn != null) {
             auditDoneOn = localDateAuditDoneOn.toDate();
         }
-
         final LoanUtilizationCheck loanUtilizationCheck = LoanUtilizationCheck.create(loan, toBeAuditedBy, auditeScheduledOn, auditDoneBy,
                 auditDoneOn);
 
         final LoanUtilizationCheckDetail loanUtilizationCheckDetail = assembleLoanUtilizationCheckDetail(loanUtilizationCheck,
-                element.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName).getAsJsonObject(), locale);
+                element.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName).getAsJsonObject(), locale,totalLoanAmountUtilizedBasedOnLoanId);
 
         if (loanUtilizationCheck != null && loanUtilizationCheckDetail != null) {
             loanUtilizationCheck.updateLoanUtilizationCheckDetails(loanUtilizationCheckDetail);
@@ -111,7 +116,7 @@ public class LoanUtilizationCheckDataAssembler {
     }
 
     private LoanUtilizationCheckDetail assembleLoanUtilizationCheckDetail(final LoanUtilizationCheck loanUtilizationCheck,
-            final JsonElement utilizationDetailElement, final Locale locale) {
+            final JsonElement utilizationDetailElement, final Locale locale, final Map<Long, BigDecimal> totalLoanAmountUtilizedBasedOnLoanId) {
         LoanUtilizationCheckDetail loanUtilizationCheckDetail = loanUtilizationCheck.getLoanUtilizationCheckDetail();
 
         final Long loanPurposeId = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.loanPurposeIdParamName,
@@ -125,12 +130,36 @@ public class LoanUtilizationCheckDataAssembler {
 
         final String comment = this.fromApiJsonHelper.extractStringNamed(LoanUtilizationCheckApiConstants.commentParamName,
                 utilizationDetailElement);
+        
+        BigDecimal totalLoanAmountUtilized = BigDecimal.ZERO;
+        if (totalLoanAmountUtilizedBasedOnLoanId.containsKey(loanUtilizationCheck.getLoan().getId())) {
+            totalLoanAmountUtilized = totalLoanAmountUtilizedBasedOnLoanId.get(loanUtilizationCheck.getLoan().getId());
+        } else {
+            totalLoanAmountUtilized = this.readPlatformService.retrieveUtilityAmountByLoanId(loanUtilizationCheck.getLoan().getId());
+            if (loanUtilizationCheckDetail != null && loanUtilizationCheckDetail.getId() != null) {
+                if (loanUtilizationCheckDetail.getLoanUtilizedAmount() != null) {
+                    totalLoanAmountUtilized = totalLoanAmountUtilized.subtract(loanUtilizationCheckDetail.getLoanUtilizedAmount());
+                }
+            }
+
+        }
+        
         if (loanUtilizationCheckDetail != null) {
             loanUtilizationCheckDetail.update(loanUtilizationCheck, loanPurposeId, isSameAsOriginalPurpose, amount, comment);
         } else {
             loanUtilizationCheckDetail = LoanUtilizationCheckDetail.create(loanUtilizationCheck, loanPurposeId, isSameAsOriginalPurpose,
                     amount, comment);
         }
+        
+        
+        if (amount != null) {
+            totalLoanAmountUtilized = totalLoanAmountUtilized.add(amount);
+            totalLoanAmountUtilizedBasedOnLoanId.put(loanUtilizationCheck.getLoan().getId(), totalLoanAmountUtilized);
+        }
+        validateTotalLoanAmountUtilizedWithPrincipleAmount(loanUtilizationCheck.getLoan(), totalLoanAmountUtilized);
+
+        
+        
         return loanUtilizationCheckDetail;
     }
 
@@ -140,8 +169,9 @@ public class LoanUtilizationCheckDataAssembler {
         final JsonObject topLevelJsonElement = parentElement.getAsJsonObject();
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
         final Map<String, Object> changes = loanUtilizationCheck.update(command);
+        final Map<Long, BigDecimal> totalLoanAmountUtilizedBasedOnLoanId = new HashedMap();
         final LoanUtilizationCheckDetail loanUtilizationCheckDetail = assembleLoanUtilizationCheckDetail(loanUtilizationCheck,
-                parentElementObj.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName).getAsJsonObject(), locale);
+                parentElementObj.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName).getAsJsonObject(), locale,totalLoanAmountUtilizedBasedOnLoanId);
         loanUtilizationCheck.updateLoanUtilizationCheckDetails(loanUtilizationCheckDetail);
         if (changes.containsKey(LoanUtilizationCheckApiConstants.loanIdParamName)) {
             final Long loanId = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.loanIdParamName);
@@ -166,5 +196,11 @@ public class LoanUtilizationCheckDataAssembler {
             loanUtilizationCheck.updateAuditDoneBy(auditDoneBy);
         }
         return changes;
+    }
+    public void validateTotalLoanAmountUtilizedWithPrincipleAmount(Loan loan,BigDecimal amount){
+        if(loan.getPrincpal().getAmount().compareTo(amount) < 0){
+            throw new LoanPurpuseAmountMoreThanDisbursalAmountException(amount.longValue());
+        }
+        
     }
 }

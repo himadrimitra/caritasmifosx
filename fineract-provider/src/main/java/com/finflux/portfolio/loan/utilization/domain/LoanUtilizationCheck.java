@@ -171,4 +171,8 @@ public class LoanUtilizationCheck extends AbstractPersistable<Long> {
     public void setLoanUtilizationCheckDetail(LoanUtilizationCheckDetail loanUtilizationCheckDetail) {
         this.loanUtilizationCheckDetail = loanUtilizationCheckDetail;
     }
+    
+    public Loan getLoan() {
+        return this.loan;
+    }
 }
