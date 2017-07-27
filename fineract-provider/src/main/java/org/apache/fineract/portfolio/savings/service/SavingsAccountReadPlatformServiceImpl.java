@@ -50,6 +50,7 @@ import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
+import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionNotFoundException;
 import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
@@ -73,6 +74,7 @@ import org.apache.fineract.portfolio.savings.data.SavingsProductDrawingPowerDeta
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountSubStatusEnum;
 import org.apache.fineract.portfolio.savings.exception.SavingsAccountNotFoundException;
+import org.apache.fineract.portfolio.savings.exception.SavingsAccountTransactionNotFoundException;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.Days;
@@ -1257,6 +1259,21 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         return this.jdbcTemplate.query(sql, new Object[] {}, rm);
     }
 
+    @Override
+    public Long retrivePaymentDetailsIdWithSavingsAccountNumberAndTransactioId(final long transactionId,
+            final String savingsAccountNumber) {
+        try {
+            final StringBuilder sql = new StringBuilder();
+            sql.append("select sat.payment_detail_id  from m_savings_account sa ");
+            sql.append("join m_savings_account_transaction sat on sat.savings_account_id = sa.id ");
+            sql.append("where sa.account_no = ? and sat.id= ?");
+
+            return this.jdbcTemplate.queryForObject(sql.toString(), new Object[] { savingsAccountNumber, transactionId }, Long.class);
+        } catch (final EmptyResultDataAccessException e) {
+            throw new SavingsAccountTransactionNotFoundException( savingsAccountNumber, transactionId); 
+        }
+    }
+    
     private static final class SavingAccountDpDetailsDataMapper implements RowMapper<SavingsAccountDpDetailsData> {
 
         private final String schemaSql;

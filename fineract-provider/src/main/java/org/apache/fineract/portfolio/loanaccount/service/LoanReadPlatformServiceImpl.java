@@ -3141,7 +3141,21 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
         return loanTransactionData;
     }
+    
+    @Override
+    public Long retrivePaymentDetailsIdWithLoanAccountNumberAndLoanTransactioId(final long loanTransactionId,
+            final String loanAccountNumber) {
+        try {
+            final StringBuilder sql = new StringBuilder();
+            sql.append("select mlt.payment_detail_id from m_loan loan ");
+            sql.append("JOIN m_loan_transaction mlt on mlt.loan_id = loan.id ");
+            sql.append("where loan.account_no = ? and mlt.id= ?");
 
+            return this.jdbcTemplate.queryForObject(sql.toString(), new Object[] { loanAccountNumber, loanTransactionId }, Long.class);
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanTransactionNotFoundException(loanTransactionId, loanAccountNumber); 
+        }
+    }
     
     @Override
     public Collection<Long> retriveLoansForMarkingAsNonNPAWithPeriodicAccounding() {

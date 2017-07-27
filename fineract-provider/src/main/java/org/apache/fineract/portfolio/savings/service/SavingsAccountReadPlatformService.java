@@ -70,4 +70,5 @@ public interface SavingsAccountReadPlatformService {
 	Collection<SavingsAccountTransactionData> retrieveAllTransactions(Long savingsId,
 			DepositAccountType depositAccountType, SearchParameters searchParameters);
 
+    Long retrivePaymentDetailsIdWithSavingsAccountNumberAndTransactioId(final long transactionId, final String savingsAccountNumber);
 }
