@@ -709,7 +709,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
                     .append(" left join r_enum_value renum on cli_txn.transaction_type_enum = renum.enum_id AND renum.enum_name = 'client_transaction_type_enum' ");
             sqlBuilder.append(" left join m_client cl on cli_txn.client_id = cl.id ");
             sqlBuilder.append(" left join m_office o on cl.office_id = o.id ");
-            sqlBuilder.append(" left join m_appuser user on cli_txn.appuser_id = user.id ");
+            sqlBuilder.append(" left join m_appuser user on cli_txn.createdby_id = user.id ");
             sqlBuilder.append(" left join m_staff staff on user.staff_id = staff.id ");
             sqlBuilder.append(" left join m_cashiers c on c.staff_id = staff.id ");
             sqlBuilder.append(" left join m_payment_detail payDetails on payDetails.id = cli_txn.payment_detail_id ");
@@ -871,7 +871,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
                     .append("	left join r_enum_value renum ON cli_txn.transaction_type_enum = renum.enum_id AND renum.enum_name = 'client_transaction_type_enum' ");
             sqlBuilder.append("	left join m_client cl ON cli_txn.client_id = cl.id ");
             sqlBuilder.append("	left join m_office o ON cl.office_id = o.id ");
-            sqlBuilder.append("	left join m_appuser user ON cli_txn.appuser_id = user.id ");
+            sqlBuilder.append("	left join m_appuser user ON cli_txn.createdby_id = user.id ");
             sqlBuilder.append("	left join m_staff staff ON user.staff_id = staff.id ");
             sqlBuilder.append("	left join m_cashiers c ON c.staff_id = staff.id ");
             sqlBuilder.append(" left join m_payment_detail payDetails on payDetails.id = cli_txn.payment_detail_id ");
