@@ -27,7 +27,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.joda.time.LocalDate;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.data.PaginationParameters;
@@ -46,18 +46,22 @@ import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.data.GroupRoleData;
-import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
-import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.village.data.VillageData;
 import org.apache.fineract.portfolio.village.data.VillageTimelineData;
 import org.apache.fineract.portfolio.village.domain.VillageTypeEnumerations;
 import org.apache.fineract.portfolio.village.exception.VillageNotFoundException;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
 
 
 @Service
@@ -71,17 +75,22 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
     private final PaginationParametersDataValidator paginationParametersDataValidator;
     private final static Set<String> supportedOrderByValues = new HashSet<>(Arrays.asList("id", "name", "officeId", "officeName"));
     
-    private final VillageDataMapper villageDataMapper = new VillageDataMapper();
     private final RetrieveOneMapper oneVillageMapper = new RetrieveOneMapper();
     private final RetrieveHierarchyMapper hierarchyMapper = new RetrieveHierarchyMapper();
+    private final ConfigurationDomainService configurationDomainService;
+    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
+    
     @Autowired
     public VillageReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource, final OfficeReadPlatformService
-            officeReadPlatformService, final PaginationParametersDataValidator paginationParametersDataValidator) {
+            officeReadPlatformService, final PaginationParametersDataValidator paginationParametersDataValidator,
+            final ConfigurationDomainService configurationDomainService, final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
 
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.officeReadPlatformService = officeReadPlatformService;
         this.paginationParametersDataValidator = paginationParametersDataValidator;
+        this.configurationDomainService = configurationDomainService ;
+        this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository ;
     }
     
     @Override
@@ -95,7 +104,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
     
     @Override
     public Page<VillageData> retrievePagedAll(SearchParameters searchParameters, PaginationParameters paginationParameters) {
-
+        final VillageDataMapper villageDataMapper = new VillageDataMapper(isVillageWorkflowEnabled());
         this.paginationParametersDataValidator.validateParameterValues(paginationParameters, supportedOrderByValues, "audits");
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
@@ -103,7 +112,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
         
         StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
-        sqlBuilder.append(this.villageDataMapper.schema());
+        sqlBuilder.append(villageDataMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
         
         final String extraCriteria = getVillageExtraCriteria(searchParameters);
@@ -112,7 +121,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
         }
         
         if (searchParameters.isOrderByRequested()) {
-            sqlBuilder.append(" order by ").append(searchParameters.getOrderBy());
+            sqlBuilder.append(" order by ").append("o."+searchParameters.getOrderBy());
             if (searchParameters.isSortOrderProvided()) {
                 sqlBuilder.append(' ').append(searchParameters.getSortOrder());
             }
@@ -126,13 +135,25 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
         }
         
         final String sqlCountRows = "SELECT FOUND_ROWS()";
-        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(), new Object[] { hierarchySearchString },
-                this.villageDataMapper);
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(), new Object[] { TaskEntityType.VILLAGE.getValue(), hierarchySearchString},
+                villageDataMapper);
+    }
+    
+    private boolean isVillageWorkflowEnabled() {
+        boolean isEnabled = false ;
+        if(this.configurationDomainService.isWorkFlowEnabled()) {
+            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                    .findOneByEntityTypeAndEntityId(TaskConfigEntityType.VILLAGEONBOARDING.getValue(), -1L);
+            if(taskConfigEntityTypeMapping != null) {
+                isEnabled = true ;
+            }
+        }
+        return isEnabled ;
     }
     
     @Override
     public Collection<VillageData> retrieveAll(SearchParameters searchParameters, PaginationParameters paginationParameters) {
-       
+        final VillageDataMapper villageDataMapper = new VillageDataMapper(isVillageWorkflowEnabled());
         this.paginationParametersDataValidator.validateParameterValues(paginationParameters, supportedOrderByValues, "audits");
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
@@ -140,7 +161,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
         
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select ");
-        sqlBuilder.append(this.villageDataMapper.schema());
+        sqlBuilder.append(villageDataMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
         
         final String extraCriteria = getVillageExtraCriteria(searchParameters);
@@ -162,7 +183,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             }
         }
         
-        return this.jdbcTemplate.query(sqlBuilder.toString(), this.villageDataMapper, new Object[] { hierarchySearchString });
+        return this.jdbcTemplate.query(sqlBuilder.toString(), villageDataMapper, new Object[] {  TaskEntityType.VILLAGE.getValue(), hierarchySearchString });
     }
     
     @Override
@@ -338,7 +359,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final VillageTimelineData timeline = new VillageTimelineData(activatedOnDate, activatedByUsername, activatedByFirstName, 
                     activatedByLastName, submittedOnDate, submittedByUsername, submittedByFirstName, submittedByLastName);
 
-            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline);
+            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline, null, false);
         }
         
     }
@@ -384,19 +405,23 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
     private static final class VillageDataMapper implements RowMapper<VillageData> {
         
         private final String schema;
+        private final boolean isWorkflowEnabled ;
         
-        public VillageDataMapper() {
+        public VillageDataMapper(final Boolean isWorkflowEnabled) {
+            this.isWorkflowEnabled = isWorkflowEnabled ;
             final StringBuilder builder = new StringBuilder(200);
             
             builder.append(" v.id as id, v.external_id as externalId, v.office_id as officeId, o.name as officeName, ");
             builder.append(" v.village_code as villageCode, v.village_name as villageName, v.counter as counter, v.`status` as status,");
             builder.append(" v.activatedon_date as activatedOnDate, v.submitedon_date as submittedOnDate, ");
             builder.append(" acu.username as activatedByUsername, acu.firstname as activatedByFirstName, acu.lastname as activatedByLastName, ");
-            builder.append(" sbu.username as submittedByUsername, sbu.firstname as submittedByFirstName, sbu.lastname as submittedByLastName ");
+            builder.append(" sbu.username as submittedByUsername, sbu.firstname as submittedByFirstName, sbu.lastname as submittedByLastName, ");
+            builder.append(" task.id as workflowId ") ;
             builder.append(" from chai_villages v  ");
             builder.append(" join m_office o on o.id = v.office_id ");
             builder.append(" left join m_appuser acu on acu.id = v.activatedon_userid ");
             builder.append(" left join m_appuser sbu on sbu.id = v.submitedon_userid ");
+            builder.append(" LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = v.id  ");
             
             this.schema = builder.toString();
         }
@@ -425,11 +450,11 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final String submittedByUsername = rs.getString("submittedByUsername");
             final String submittedByFirstName = rs.getString("submittedByFirstName");
             final String submittedByLastName = rs.getString("submittedByLastName");
-            
+            final Long workflowId = rs.getLong("workflowId") ;
             final VillageTimelineData timeline = new VillageTimelineData(activatedOnDate, activatedByUsername, activatedByFirstName, 
                     activatedByLastName, submittedOnDate, submittedByUsername, submittedByFirstName, submittedByLastName);
 
-            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline);
+            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline, workflowId, this.isWorkflowEnabled);
         }
     }
 

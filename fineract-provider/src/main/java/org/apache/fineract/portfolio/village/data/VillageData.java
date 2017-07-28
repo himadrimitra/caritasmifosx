@@ -58,13 +58,20 @@ public class VillageData {
     
     final VillageTimelineData timeline;
     
+    private final Long workflowId ;
+    private final Boolean isWorkflowEnabled ;
+    
     public static VillageData template(final Long officeId, final Collection<OfficeData> officeOptions) {
         final Collection<CenterData> centers = null;
-        return new VillageData(null, null, officeId, null, null, null, null, officeOptions, null, null, null,null, centers);
+        final Long workflowId = null ;
+        final Boolean isWorkflowEnabled = false ;
+        return new VillageData(null, null, officeId, null, null, null, null, officeOptions, null, null, null,null, centers, workflowId, isWorkflowEnabled);
     }
     
     private VillageData(final Long id, final String externalId, final Long officeId, final String officeName, final String villageCode,
-            final String villageName, final Long counter, final Collection<OfficeData> officeOptions, final EnumOptionData status, final VillageTimelineData timeline, final Collection<CenterData> setOfCenters,final Collection<AddressData> addressData, final Collection<CenterData> centers){
+            final String villageName, final Long counter, final Collection<OfficeData> officeOptions, final EnumOptionData status, final VillageTimelineData timeline, 
+            final Collection<CenterData> setOfCenters,final Collection<AddressData> addressData, final Collection<CenterData> centers,
+            final Long workflowId, final Boolean isWorkflowEnabled){
         
         this.villageId = id;
         this.externalId = externalId;
@@ -79,32 +86,37 @@ public class VillageData {
         this.setOfCenters = setOfCenters;
         this.addressData = addressData;
         this.centers = centers;
+        this.workflowId = workflowId ;
+        this.isWorkflowEnabled = isWorkflowEnabled ;
     }
     
     public static VillageData instance(final Long id, final String externalId, final Long officeId, final String officeName, final String villageCode, 
-            final String villageName, final Long counter, 
-            final EnumOptionData status, final VillageTimelineData timeline) {
+            final String villageName, final Long counter, final EnumOptionData status, final VillageTimelineData timeline,
+            final Long workflowId, final Boolean isWorkflowEnabled) {
         final Collection<CenterData> centers = null;
-
         return new VillageData(id, externalId, officeId, officeName, villageCode, villageName, counter, null, status, 
-                 timeline, null,null, centers);
+                 timeline, null,null, centers, workflowId, isWorkflowEnabled);
     }
     
     public static VillageData lookup(final Long id, final String villageName) {
         final Collection<CenterData> centers = null;
-
-        return new VillageData(id, null, null, null, null, villageName, null, null, null, null, null,null, centers);
+        final Long workflowId = null ;
+        final Boolean isWorkflowEnabled = false ;
+        return new VillageData(id, null, null, null, null, villageName, null, null, null, null, null,null, centers, workflowId, isWorkflowEnabled);
     }
     
     public static VillageData countValue(final Long counter, final String villageName) {
         final Collection<CenterData> centers = null;
-
-        return new VillageData(null, null, null, null, null, villageName, counter, null, null, null, null,null, centers);
+        final Long workflowId = null ;
+        final Boolean isWorkflowEnabled = false ;
+        return new VillageData(null, null, null, null, null, villageName, counter, null, null, null, null,null, centers, workflowId, isWorkflowEnabled);
     }
 
     public static VillageData withAssociations(VillageData village, Collection<CenterData> centers, Collection<AddressData> address,Collection<CenterData> hierarchy) {
+        final Long workflowId = null ;
+        final Boolean isWorkflowEnabled = false ;
         return new VillageData(village.villageId, village.externalId, village.officeId, village.officeName, village.villageCode, village.villageName, 
-                village.counter, null, village.status, village.timeline, centers,address, hierarchy);
+                village.counter, null, village.status, village.timeline, centers,address, hierarchy, workflowId, isWorkflowEnabled);
     }
     
 }

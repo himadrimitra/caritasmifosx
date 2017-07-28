@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandProcessingService;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -55,12 +56,17 @@ import org.springframework.transaction.annotation.Transactional;
 import com.finflux.kyc.address.api.AddressApiConstants;
 import com.finflux.kyc.address.data.AddressEntityTypeEnums;
 import com.finflux.kyc.address.service.AddressWritePlatformService;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.WorkflowDTO;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.CreateWorkflowTaskFactory;
 
 @Service
 public class VillageWritePlatformServiceImpl implements VillageWritePlatformService {
 
     private final static Logger logger = LoggerFactory.getLogger(VillageWritePlatformServiceImpl.class);
-    
+
     private final PlatformSecurityContext context;
     private final VillageDataValidator fromApiJsonDeserializer;
     private final VillageRepositoryWrapper villageRepository;
@@ -69,9 +75,16 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
     private final CommandProcessingService commandProcessingService;
     private final VillageRepository villageRepo;
     private final AddressWritePlatformService addressWritePlatformService;
+    private final ConfigurationDomainService configurationDomainService;
+    private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
+    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
+    
     @Autowired
-    public VillageWritePlatformServiceImpl(PlatformSecurityContext context, VillageDataValidator fromApiJsonDeserializer, VillageRepositoryWrapper villageRepository, 
-            OfficeRepository officeRepository, GroupRepository centerRepository, CommandProcessingService commandProcessingService,VillageRepository villageRepo, final AddressWritePlatformService addressWritePlatformService) {
+    public VillageWritePlatformServiceImpl(PlatformSecurityContext context, VillageDataValidator fromApiJsonDeserializer,
+            VillageRepositoryWrapper villageRepository, OfficeRepository officeRepository, GroupRepository centerRepository,
+            CommandProcessingService commandProcessingService, VillageRepository villageRepo,
+            final AddressWritePlatformService addressWritePlatformService, final ConfigurationDomainService configurationDomainService,
+            final CreateWorkflowTaskFactory createWorkflowTaskFactory, final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
 
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
@@ -79,71 +92,71 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
         this.officeRepository = officeRepository;
         this.centerRepository = centerRepository;
         this.commandProcessingService = commandProcessingService;
-        this.villageRepo=villageRepo;
+        this.villageRepo = villageRepo;
         this.addressWritePlatformService = addressWritePlatformService;
+        this.configurationDomainService = configurationDomainService;
+        this.createWorkflowTaskFactory = createWorkflowTaskFactory;
+        this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository ;
+
     }
-    
-    
+
     @Transactional
     @Override
     public CommandProcessingResult createVillage(final JsonCommand command) {
 
-        try{
+        try {
             final AppUser currentUser = this.context.authenticatedUser();
             this.fromApiJsonDeserializer.validateForCreateVillage(command);
-            
+
             final Long officeId = command.longValueOfParameterNamed(VillageTypeApiConstants.officeIdParamName);
-            
+
             final Office villageOffice = this.officeRepository.findOne(officeId);
-            if (villageOffice == null) {
-                throw  new OfficeNotFoundException(officeId);
-            }
-            
+            if (villageOffice == null) { throw new OfficeNotFoundException(officeId); }
+
             final String villageName = command.stringValueOfParameterNamed(VillageTypeApiConstants.villageNameParamName);
-            
+
             Long count = command.longValueOfParameterNamed(VillageTypeApiConstants.countParamName);
             if (count == null) {
                 count = 0L;
             }
             final LocalDate activationDate = command.localDateValueOfParameterNamed(VillageTypeApiConstants.activationDateParamName);
-            
+
             validateOfficeOpeningDateIsAfterVillageOpeningDate(villageOffice, activationDate);
-            
+
             final Long centerId = command.longValueOfParameterNamed(VillageTypeApiConstants.centerIdParamName);
-            
+
             Group centerOfVillage = null;
             if (centerId != null) {
                 centerOfVillage = this.centerRepository.findOne(centerId);
                 if (centerOfVillage == null) { throw new CenterNotFoundException(centerId); }
             }
-               
+
             final boolean active = command.booleanPrimitiveValueOfParameterNamed(VillageTypeApiConstants.activeParamName);
             LocalDate submittedOnDate = DateUtils.getLocalDateOfTenant();
             if (active && submittedOnDate.isAfter(activationDate)) {
                 submittedOnDate = activationDate;
             }
-            
+
             if (command.hasParameter(VillageTypeApiConstants.submittedOnDateParamName)) {
                 submittedOnDate = command.localDateValueOfParameterNamed(VillageTypeApiConstants.submittedOnDateParamName);
             }
-            
-            final Village newVillage = Village.newVillage(villageOffice, villageName, count, currentUser, active, activationDate, submittedOnDate, command);
-            
+
+            final Village newVillage = Village.newVillage(villageOffice, villageName, count, currentUser, active, activationDate,
+                    submittedOnDate, command);
+
             if (centerOfVillage != null) {
                 newVillage.setCenter(centerOfVillage);
             }
-            
+
             boolean rollbackTransaction = false;
             if (newVillage.isActive()) {
                 final CommandWrapper commandWrapper = new CommandWrapperBuilder().activateVillage(null).build();
                 rollbackTransaction = this.commandProcessingService.validateCommand(commandWrapper, currentUser);
             }
-            Integer VillageNameCount=this.villageRepo.retrieveVillageNameCount(villageName,officeId);
-            if(VillageNameCount!=0){
-                throw new DuplicateVillageNameException(villageName);
-            }
+            Integer VillageNameCount = this.villageRepo.retrieveVillageNameCount(villageName, officeId);
+            if (VillageNameCount != 0) { throw new DuplicateVillageNameException(villageName); }
             this.villageRepository.save(newVillage);
-            
+
             /**
              * Call Address Service
              */
@@ -152,17 +165,16 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
                 this.addressWritePlatformService.createOrUpdateAddress(entityType, newVillage.getId(), command);
             }
 
-            
             return new CommandProcessingResultBuilder() //
-                        .withCommandId(command.commandId()) //
-                        .withOfficeId(villageOffice.getId()) // 
-                        .withSubEntityId(centerId) //
-                        .withEntityId(newVillage.getId()) //
-                        .setRollbackTransaction(rollbackTransaction) //
-                        .build();
-        }catch(final DataIntegrityViolationException dive) {
+                    .withCommandId(command.commandId()) //
+                    .withOfficeId(villageOffice.getId()) //
+                    .withSubEntityId(centerId) //
+                    .withEntityId(newVillage.getId()) //
+                    .setRollbackTransaction(rollbackTransaction) //
+                    .build();
+        } catch (final DataIntegrityViolationException dive) {
             handleVillageDataIntegrityIssues(command, dive);
-            return CommandProcessingResult.empty(); 
+            return CommandProcessingResult.empty();
         }
     }
 
@@ -171,81 +183,82 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
         final Throwable realCause = dive.getMostSpecificCause();
         String errorMessageForUser = null;
         String errorMessageForMachine = null;
-        
+
         if (realCause.getMessage().contains("villageName")) {
             final String name = command.stringValueOfParameterNamed(VillageTypeApiConstants.villageNameParamName);
             errorMessageForUser = "village with name" + name + " already exists.";
             errorMessageForMachine = "error.msg.village.duplicate.name";
-            throw new PlatformDataIntegrityException(errorMessageForMachine, errorMessageForUser, VillageTypeApiConstants.villageNameParamName, name);
-        } 
+            throw new PlatformDataIntegrityException(errorMessageForMachine, errorMessageForUser,
+                    VillageTypeApiConstants.villageNameParamName, name);
+        }
         logger.error(dive.getMessage(), dive);
-        throw new PlatformDataIntegrityException("error.msg.village.unknown.data.integrity.issue", "Unknown data integrity issue with resource."); 
+        throw new PlatformDataIntegrityException("error.msg.village.unknown.data.integrity.issue",
+                "Unknown data integrity issue with resource.");
     }
 
     private void validateOfficeOpeningDateIsAfterVillageOpeningDate(Office villageOffice, LocalDate activationDate) {
 
         if (activationDate != null && villageOffice.getOpeningLocalDate().isAfter(activationDate)) {
-            
-            final String errorMessage = "activation date should be greater than or equal to the parent Office's creation date " + activationDate.toString();
-            
-            throw new InvalidVillageStateTransitionException("activate.date", "cannot.be. before.office.activation.date", errorMessage, activationDate, 
-                    villageOffice.getOpeningLocalDate());
+
+            final String errorMessage = "activation date should be greater than or equal to the parent Office's creation date "
+                    + activationDate.toString();
+
+            throw new InvalidVillageStateTransitionException("activate.date", "cannot.be. before.office.activation.date", errorMessage,
+                    activationDate, villageOffice.getOpeningLocalDate());
         }
     }
-    
+
     @Transactional
     @Override
     public CommandProcessingResult updateVillage(final Long villageId, final JsonCommand command) {
 
         try {
             this.fromApiJsonDeserializer.validateForUpdateVillage(command);
-            
+
             final Village villageForUpdate = this.villageRepository.findOneWithNotFoundDetection(villageId);
             final Office officeId = villageForUpdate.getOffice();
             final String villageHierarchy = villageForUpdate.getOffice().getHierarchy();
-            
+
             this.context.validateAccessRights(villageHierarchy);
-            
+
             final LocalDate activationDate = command.localDateValueOfParameterNamed(VillageTypeApiConstants.activationDateParamName);
             validateOfficeOpeningDateIsAfterVillageOpeningDate(officeId, activationDate);
-            
+
             final Map<String, Object> changes = villageForUpdate.update(command);
-            
+
             if (!changes.isEmpty()) {
                 this.villageRepository.saveAndFlush(villageForUpdate);
             }
-            
+
             return new CommandProcessingResultBuilder() //
-            .withCommandId(command.commandId()) //
-            .withOfficeId(villageForUpdate.officeId()) //
-            .withGroupId(villageForUpdate.getId()) //
-            .withEntityId(villageForUpdate.getId()) //
-            .with(changes) //
-            .build();
-            
+                    .withCommandId(command.commandId()) //
+                    .withOfficeId(villageForUpdate.officeId()) //
+                    .withGroupId(villageForUpdate.getId()) //
+                    .withEntityId(villageForUpdate.getId()) //
+                    .with(changes) //
+                    .build();
+
         } catch (final DataIntegrityViolationException e) {
             handleVillageDataIntegrityIssues(command, e);
             return CommandProcessingResult.empty();
         }
     }
 
-
     @Transactional
     @Override
     public CommandProcessingResult deleteVillage(Long villageId) {
 
         final Village village = this.villageRepository.findOneWithNotFoundDetection(villageId);
-        if (village.isNotPending()) { throw new VillageMustBePendingToBeDeletedException(villageId);
-        }
-        
+        if (village.isNotPending()) { throw new VillageMustBePendingToBeDeletedException(villageId); }
+
         this.villageRepository.delete(village);
-        
+
         return new CommandProcessingResultBuilder() //
                 .withOfficeId(village.officeId()) //
                 .withEntityId(villageId) //
                 .build();
     }
-    
+
     @Transactional
     @Override
     public CommandProcessingResult activateVillage(final Long villageId, final JsonCommand command) {
@@ -274,5 +287,31 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
             return CommandProcessingResult.empty();
         }
     }
-    
+
+    @Transactional
+    @Override
+    public CommandProcessingResult intiateVillageWorkflow(final Long villageId, final JsonCommand command) {
+
+        try {
+            final Village village = this.villageRepository.findOneWithNotFoundDetection(villageId);
+            if (this.configurationDomainService.isWorkFlowEnabled()) {
+                final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                        .findOneByEntityTypeAndEntityId(TaskConfigEntityType.VILLAGEONBOARDING.getValue(), -1L);
+                if(taskConfigEntityTypeMapping != null) {
+                    WorkflowDTO workflowDTO = new WorkflowDTO(village);
+                    this.createWorkflowTaskFactory.create(TaskConfigEntityType.VILLAGEONBOARDING).createWorkFlow(workflowDTO);    
+                }
+            }
+            this.villageRepository.saveAndFlush(village);
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .withOfficeId(village.officeId()) //
+                    .withEntityId(villageId) //
+                    .build();
+        } catch (final DataIntegrityViolationException dve) {
+            handleVillageDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
+    }
+
 }

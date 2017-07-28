@@ -2,6 +2,7 @@ package com.finflux.task.data;
 
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
+import org.apache.fineract.portfolio.village.domain.Village;
 
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanCoApplicant;
@@ -12,13 +13,15 @@ public class WorkflowDTO
 	private final LoanApplicationReference loanApplicationReference;
 	private final LoanProduct loanProduct;
 	private final LoanCoApplicant loanCoApplicant;
-
+	private final Village village ;
+	
     public WorkflowDTO(final Client client)
 	{
 		this.loanApplicationReference=null;
 		this.loanProduct=null;
 		this.client=client;
 		this.loanCoApplicant=null;
+		this.village = null ;
 	}
 	public WorkflowDTO(final Client client,final LoanCoApplicant loanCoApplicant,final LoanApplicationReference loanApplicationReference,final LoanProduct loanProduct)
 	{
@@ -26,6 +29,7 @@ public class WorkflowDTO
 		this.loanProduct=loanProduct;
 		this.client=client;
 		this.loanCoApplicant=loanCoApplicant;
+		this.village = null ;
 	}
 	public WorkflowDTO(final LoanApplicationReference loanApplicationReference,final LoanProduct loanProduct)
 	{
@@ -33,8 +37,17 @@ public class WorkflowDTO
 		this.loanProduct=loanProduct;
 		this.client=null;
 		this.loanCoApplicant=null;
+		this.village = null ;
 	}
 
+	public WorkflowDTO(final Village village) {
+	    this.loanApplicationReference= null;
+            this.loanProduct=null;
+            this.client=null;
+            this.loanCoApplicant=null;
+            this.village = village ;
+	}
+	
 	public Client getClient() {
 		return this.client;
 	}
@@ -51,7 +64,7 @@ public class WorkflowDTO
 		return this.loanCoApplicant;
 	}
 	
-
-	
-	
+	public Village getVillage() {
+	    return this.village ;
+	}
 }

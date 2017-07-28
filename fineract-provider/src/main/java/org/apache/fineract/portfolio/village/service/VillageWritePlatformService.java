@@ -28,4 +28,5 @@ public interface VillageWritePlatformService {
     CommandProcessingResult updateVillage(final Long villageId, final JsonCommand command);
     CommandProcessingResult deleteVillage(final Long villageId);
     CommandProcessingResult activateVillage(Long villageId, JsonCommand command);
+    CommandProcessingResult intiateVillageWorkflow(final Long villageId, final JsonCommand command) ;
 }

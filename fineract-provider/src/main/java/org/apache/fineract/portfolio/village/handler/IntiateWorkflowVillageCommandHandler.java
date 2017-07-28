@@ -25,21 +25,22 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.portfolio.village.service.VillageWritePlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@CommandType(entity = "VILLAGE", action = "ACTIVATE")
-public class ActivateVillageCommandHandler implements NewCommandSourceHandler {
+@CommandType(entity = "VILLAGE", action = "INITIATEWORKFLOW")
+public class IntiateWorkflowVillageCommandHandler implements NewCommandSourceHandler {
 
     private final VillageWritePlatformService villageWritePlatformService;
 
     @Autowired
-    public ActivateVillageCommandHandler(final VillageWritePlatformService villageWritePlatformService) {
+    public IntiateWorkflowVillageCommandHandler(final VillageWritePlatformService villageWritePlatformService) {
         this.villageWritePlatformService = villageWritePlatformService;
     }
 
+    @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-
-        return this.villageWritePlatformService.activateVillage(command.entityId(), command);
+        return this.villageWritePlatformService.intiateVillageWorkflow(command.entityId(), command) ;
     }
 }

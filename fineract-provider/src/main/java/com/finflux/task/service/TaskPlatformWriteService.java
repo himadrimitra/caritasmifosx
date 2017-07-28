@@ -24,4 +24,5 @@ public interface TaskPlatformWriteService
 	CommandProcessingResult assignTaskToMe(Long aLong, String json);
 
 	CommandProcessingResult unassignTaskFromMe(Long aLong, String json);
+	
 }
