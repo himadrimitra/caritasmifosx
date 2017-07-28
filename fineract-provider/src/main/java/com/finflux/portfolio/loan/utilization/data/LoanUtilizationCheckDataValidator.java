@@ -123,10 +123,9 @@ public class LoanUtilizationCheckDataValidator {
                 LoanUtilizationCheckApiConstants.isSameAsOriginalPurposeParamName, element);
         baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.isSameAsOriginalPurposeParamName)
                 .value(isSameAsOriginalPurpose).ignoreIfNull();
-
-        final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed(LoanUtilizationCheckApiConstants.amountParamName, element,
-                locale);
-        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.amountParamName).value(amount).ignoreIfNull();
+        final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed(LoanUtilizationCheckApiConstants.amountParamName, element,locale);
+       
+        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.amountParamName).value(amount).notNull().positiveAmount();
 
         final String comment = this.fromApiJsonHelper.extractStringNamed(LoanUtilizationCheckApiConstants.commentParamName, element);
         baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.commentParamName).value(comment).ignoreIfNull();

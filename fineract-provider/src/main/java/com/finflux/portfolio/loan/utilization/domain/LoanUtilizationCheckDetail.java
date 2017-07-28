@@ -59,4 +59,8 @@ public class LoanUtilizationCheckDetail extends AbstractPersistable<Long> {
         this.comment = comment;
 
     }
+
+    public BigDecimal getLoanUtilizedAmount() {
+        return this.amount;
+    }
 }

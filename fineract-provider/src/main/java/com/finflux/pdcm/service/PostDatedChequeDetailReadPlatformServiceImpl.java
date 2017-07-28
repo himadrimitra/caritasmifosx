@@ -16,8 +16,12 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.portfolio.common.domain.EntityType;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
+import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.joda.time.LocalDate;
@@ -89,8 +93,10 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
             sb.append(",pdc.previous_status as previousStatus,pdc.presented_date as presentedDate,pdc.bounced_date as bouncedDate ");
             sb.append(",pdc.cleared_date as clearedDate,pdc.cancelled_date as cancelledDate,pdc.returned_date as returnedDate ");
             sb.append(",pdcm.id as pdcMappingId,pdcm.payment_type as paymentType,pdcm.entity_type as entityTypeId,pdcm.entity_id as entityId,pdcm.due_amount as dueAmount,pdcm.due_date as dueDate,pdcm.paid_status as paidStatus ");
+            sb.append(",l.id as loanId, l.account_no as loanAccountNumber ,l.loan_status_id as loanStatusId ");
             sb.append("from f_pdc_cheque_detail pdc ");
             sb.append("join f_pdc_cheque_detail_mapping pdcm on pdcm.pdc_cheque_detail_id = pdc.id and pdcm.is_deleted = 0 ");
+            sb.append("join m_loan l on l.id = pdcm.entity_id ");
             this.schema = sb.toString();
         }
 
@@ -132,10 +138,19 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
             final BigDecimal dueAmount = rs.getBigDecimal("dueAmount");
             final LocalDate dueDate = JdbcSupport.getLocalDate(rs, "dueDate");
             final boolean paidStatus = rs.getBoolean("paidStatus");
+            
+            final String loanProductName = null;
+            final Long loanId = rs.getLong("loanId");
+            final String loanAccountNumber = rs.getString("loanAccountNumber");
+            final Integer loanStatusId = JdbcSupport.getIntegeActualValue(rs, "loanStatusId");
+            final LoanStatusEnumData status = LoanEnumerations.status(loanStatusId);
+            final LoanAccountData loanAccountData = LoanAccountData.loanDetailsForPDCLookUp(loanId, loanAccountNumber, status,
+                    loanProductName);
 
             final PostDatedChequeDetailData postDatedChequeDetailData = PostDatedChequeDetailData.instance(id, bankName, branchName,
                     accountNumber, ifscCode, chequeAmount, chequeType, chequeNumber, chequeDate, presentStatus, previousStatus,
-                    presentedDate, bouncedDate, clearedDate, cancelledDate, returnedDate);
+                    presentedDate, bouncedDate, clearedDate, cancelledDate, returnedDate, loanAccountData);
+            
             final PostDatedChequeDetailMappingData postDatedChequeDetailMappingData = PostDatedChequeDetailMappingData.instance(
                     pdcMappingId, paymentType, entityType, entityId, dueAmount, dueDate, paidStatus);
             postDatedChequeDetailData.setMappingData(postDatedChequeDetailMappingData);
@@ -196,12 +211,12 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
             if (chequeStatus.isPending()) {
                 if (fromDate != null) {
                     if (params.size() > 0) buff.append("and ");
-                    buff.append("pdc.created_date >= ? ");
+                    buff.append("pdc.cheque_date >= ? ");
                     params.add(fromDate);
                 }
                 if (toDate != null) {
                     if (params.size() > 0) buff.append("and ");
-                    buff.append("pdc.created_date <= ? ");
+                    buff.append("pdc.cheque_date <= ? ");
                     params.add(toDate);
                 }
             } else if (chequeStatus.isPresented()) {
@@ -259,7 +274,8 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
 
         public PostDatedChequeDetailSearchDataMapper() {
             final StringBuilder sb = new StringBuilder(500);
-            sb.append("o.name as officeName,c.display_name as clientName,lp.name as loanProductName,l.account_no as loanAccountNumber ");
+            sb.append("o.name as officeName,c.display_name as clientName,lp.name as loanProductName ");
+            sb.append(",l.id as loanId, l.account_no as loanAccountNumber ,l.loan_status_id as loanStatusId ");
             sb.append(",pdc.id as id,pdc.bank_name as bankName,pdc.branch_name as branchName,pdc.account_number as accountNumber ");
             sb.append(",pdc.ifsc_code as ifscCode,pdc.cheque_amount as chequeAmount,pdc.cheque_type as chequeType ");
             sb.append(",pdc.cheque_number as chequeNumber,pdc.cheque_date as chequeDate,pdc.present_status as presentStatus ");
@@ -270,7 +286,8 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
             sb.append("join f_pdc_cheque_detail_mapping pdcm on pdcm.pdc_cheque_detail_id = pdc.id and pdcm.is_deleted = 0 ");
             sb.append("and pdcm.entity_type = ").append(EntityType.LOAN.getValue());
             sb.append(" join m_loan l on l.id = pdcm.entity_id ");
-            sb.append("join m_product_loan lp on lp.id = l.product_id ");
+            sb.append(" and l.loan_status_id = ").append(LoanStatus.ACTIVE.getValue());
+            sb.append(" join m_product_loan lp on lp.id = l.product_id ");
             sb.append("join m_client c on c.id = l.client_id ");
             sb.append("join m_office o on o.id = c.office_id ");
             this.schema = sb.toString();
@@ -318,12 +335,16 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
             final String officeName = rs.getString("officeName");
             final String clientName = rs.getString("clientName");
             final String loanProductName = rs.getString("loanProductName");
+            final Long loanId = rs.getLong("loanId");
             final String loanAccountNumber = rs.getString("loanAccountNumber");
+            final Integer loanStatusId = JdbcSupport.getIntegeActualValue(rs, "loanStatusId");
+            final LoanStatusEnumData status = LoanEnumerations.status(loanStatusId);
+            final LoanAccountData loanAccountData = LoanAccountData.loanDetailsForPDCLookUp(loanId, loanAccountNumber, status,
+                    loanProductName);
 
             final PostDatedChequeDetailData postDatedChequeDetailData = PostDatedChequeDetailData.searchDataInstance(id, bankName,
                     branchName, accountNumber, ifscCode, chequeAmount, chequeType, chequeNumber, chequeDate, presentStatus, previousStatus,
-                    presentedDate, bouncedDate, clearedDate, cancelledDate, returnedDate, officeName, clientName, loanProductName,
-                    loanAccountNumber);
+                    presentedDate, bouncedDate, clearedDate, cancelledDate, returnedDate, officeName, clientName, loanAccountData);
             final PostDatedChequeDetailMappingData postDatedChequeDetailMappingData = PostDatedChequeDetailMappingData.instance(
                     pdcMappingId, paymentType, entityType, entityId, dueAmount, dueDate, paidStatus);
             postDatedChequeDetailData.setMappingData(postDatedChequeDetailMappingData);

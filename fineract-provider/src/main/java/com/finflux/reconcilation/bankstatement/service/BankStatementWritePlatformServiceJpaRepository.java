@@ -66,8 +66,8 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionRepositoryWrapper;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAssembler;
+import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailRepository;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
@@ -77,6 +77,7 @@ import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransactionRepository;
 import org.apache.fineract.portfolio.savings.exception.SavingsAccountTransactionNotFoundException;
+import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.joda.time.LocalDate;
@@ -145,6 +146,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final SavingsAccountTransactionRepository savingsAccountTransactionRepository;
     private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
     private final LoanTransactionRepositoryWrapper loanTransactionRepositoryWrapper;
+    private final LoanReadPlatformService loanReadPlatformService;
+    private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
 
     @Autowired
     public BankStatementWritePlatformServiceJpaRepository(final PlatformSecurityContext context,
@@ -168,7 +171,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             final JournalEntryWritePlatformService journalEntryWritePlatformService,
             final SavingsAccountDomainService savingsAccountDomainService, final PaymentDetailWritePlatformService paymentDetailWritePlatformService,
             final SavingsAccountTransactionRepository savingsAccountTransactionRepository,final LoanTransactionRepository loanTransactionRepositoryy,
-            final LoanTransactionRepositoryWrapper loanTransactionRepositoryWrapper) {
+            final LoanTransactionRepositoryWrapper loanTransactionRepositoryWrapper, final LoanReadPlatformService loanReadPlatformService,
+            final SavingsAccountReadPlatformService savingsAccountReadPlatformService) {
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = contentRepositoryFactory;
@@ -197,6 +201,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
         this.loanTransactionRepositoryy = loanTransactionRepositoryy;
         this.loanTransactionRepositoryWrapper = loanTransactionRepositoryWrapper;
+        this.loanReadPlatformService = loanReadPlatformService;
+        this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
     }
 
     @Transactional
@@ -1076,32 +1082,27 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             if (errmsg != null) {
                 continue;
             }
-            PaymentDetail paymentDetail = null;
+            Long paymentDetailId = null;
             final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
             try {
-                if (paymentTypeName != null && transactionIdForUpdate != null) {
-                    paymentDetail = PaymentDetail.instance(this.paymentTypeRepository.findByPaymentTypeName(paymentTypeName),
-                            paymentDetailAccountNumber, paymentDetailChequeNumber, routingCode, receiptNumber, paymentDetailBankNumber);
-
+                if (transactionIdForUpdate != null) {
                     if (accountType == null || accountType.equals("loans")) {
-                        LoanTransaction loanTransaction = this.loanTransactionRepositoryWrapper
-                                .findOneWithLoanAccountNumberAndTransactionId(transactionIdForUpdate, loanAccountNumber);
-                        this.paymentDetailWritePlatformService.persistPaymentDetail(paymentDetail);
-                        loanTransaction.setPaymentDetail(paymentDetail);
-                        this.loanTransactionRepository.save(loanTransaction);
-                        bankStatementDetail.setLoanTransaction(loanTransaction);
-                        bankStatementDetail.setTransactionId(loanTransaction.getId().toString());
+                        paymentDetailId = loanReadPlatformService
+                                .retrivePaymentDetailsIdWithLoanAccountNumberAndLoanTransactioId(transactionIdForUpdate, loanAccountNumber);
+                    } else if (accountType.equals("deposits")) {
+                        paymentDetailId = this.savingsAccountReadPlatformService
+                                .retrivePaymentDetailsIdWithSavingsAccountNumberAndTransactioId(transactionIdForUpdate,
+                                        savingsAccountNumber);
+                    }
+                    if (paymentDetailId != null) {
+                        PaymentDetail paymentDetail = paymentDetailRepository.findOne(paymentDetailId);
+                        paymentDetail.updatePaymentDetail(paymentDetailAccountNumber, paymentDetailChequeNumber, routingCode, receiptNumber,
+                                paymentDetailBankNumber);
+                        bankStatementDetail.setTransactionId(transactionIdForUpdate.toString());
+                        this.paymentDetailRepository.save(paymentDetail);
                         bankStatementDetail.setIsReconciled(true);
                     } else {
-                        final SavingsAccountTransaction savingsAccountTransaction = this.savingsAccountTransactionRepository
-                                .findOne(transactionIdForUpdate);
-                        if (savingsAccountTransaction == null) { throw new SavingsAccountTransactionNotFoundException(
-                                transactionIdForUpdate); }
-                        this.paymentDetailWritePlatformService.persistPaymentDetail(paymentDetail);
-                        savingsAccountTransaction.setPaymentDetail(paymentDetail);
-                        this.savingsAccountTransactionRepository.save(savingsAccountTransaction);
-                        bankStatementDetail.setTransactionId(savingsAccountTransaction.getId().toString());
-                        bankStatementDetail.setIsReconciled(true);
+                        bankStatementDetail.setErrmsg(ReconciliationApiConstants.TRANSACTION_WITHOUT_PAYMENT_DETAILS_CANNOT_BE_UPDATED);
                     }
                 }else{ 
                     if (loanAccountNumber != null) {

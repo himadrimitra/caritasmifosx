@@ -89,6 +89,7 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
         final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan,
                 loanRescheduleRequest.getRescheduleFromDate());
         LocalDate rescheduleFromDate = null;
+        LocalDate previouslyAdjustedDate = null;
         List<LoanTermVariationsData> removeLoanTermVariationsData = new ArrayList<>();
         final LoanApplicationTerms loanApplicationTerms = loan.constructLoanApplicationTerms(scheduleGeneratorDTO);
         LoanTermVariations dueDateVariationInCurrentRequest = loanRescheduleRequest.getDueDateTermVariationIfExists();
@@ -96,6 +97,7 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
             for (LoanTermVariationsData loanTermVariation : loanApplicationTerms.getLoanTermVariations().getDueDateVariation()) {
                 if (loanTermVariation.getDateValue().equals(dueDateVariationInCurrentRequest.fetchTermApplicaDate())) {
                     rescheduleFromDate = loanTermVariation.getTermApplicableFrom();
+                    previouslyAdjustedDate = loanTermVariation.getDateValue();
                     removeLoanTermVariationsData.add(loanTermVariation);
                 }
             }
@@ -156,6 +158,10 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
                     loanTermVariationsData.add(loanTermVariation);
                 }
             }
+        }
+        
+        if (previouslyAdjustedDate != null) {
+            rescheduleFromDate = rescheduleFromDate.isAfter(previouslyAdjustedDate) ? previouslyAdjustedDate : rescheduleFromDate;
         }
         
         loanApplicationTerms.getLoanTermVariations().updateLoanTermVariationsData(loanTermVariationsData);

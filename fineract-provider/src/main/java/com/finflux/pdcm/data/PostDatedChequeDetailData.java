@@ -3,6 +3,7 @@ package com.finflux.pdcm.data;
 import java.math.BigDecimal;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 import org.joda.time.LocalDate;
 
 public class PostDatedChequeDetailData {
@@ -26,15 +27,13 @@ public class PostDatedChequeDetailData {
     private PostDatedChequeDetailMappingData mappingData;
     private final String officeName;
     private final String clientName;
-    private final String loanProductName;
-    private final String loanAccountNumber;
+    private final LoanAccountData loanAccountData;
 
     private PostDatedChequeDetailData(final Long id, final String bankName, final String branchName, final String accountNumber,
             final String ifscCode, final BigDecimal chequeAmount, final EnumOptionData chequeType, final String chequeNumber,
             final LocalDate chequeDate, final EnumOptionData presentStatus, final EnumOptionData previousStatus,
             final LocalDate presentedDate, final LocalDate bouncedDate, final LocalDate clearedDate, final LocalDate cancelledDate,
-            final LocalDate returnedDate, final String officeName, final String clientName, final String loanProductName,
-            final String loanAccountNumber) {
+            final LocalDate returnedDate, final String officeName, final String clientName, final LoanAccountData loanAccountData) {
         this.id = id;
         this.bankName = bankName;
         this.branchName = branchName;
@@ -53,33 +52,29 @@ public class PostDatedChequeDetailData {
         this.returnedDate = returnedDate;
         this.officeName = officeName;
         this.clientName = clientName;
-        this.loanProductName = loanProductName;
-        this.loanAccountNumber = loanAccountNumber;
+        this.loanAccountData = loanAccountData;
     }
 
     public static PostDatedChequeDetailData instance(final Long id, final String bankName, final String branchName,
             final String accountNumber, final String ifscCode, final BigDecimal chequeAmount, final EnumOptionData chequeType,
             final String chequeNumber, final LocalDate chequeDate, final EnumOptionData presentStatus, final EnumOptionData previousStatus,
             final LocalDate presentedDate, final LocalDate bouncedDate, final LocalDate clearedDate, final LocalDate cancelledDate,
-            final LocalDate returnedDate) {
+            final LocalDate returnedDate, final LoanAccountData loanAccountData) {
         final String officeName = null;
         final String clientName = null;
-        final String loanProductName = null;
-        final String loanAccountNumber = null;
         return new PostDatedChequeDetailData(id, bankName, branchName, accountNumber, ifscCode, chequeAmount, chequeType, chequeNumber,
                 chequeDate, presentStatus, previousStatus, presentedDate, bouncedDate, clearedDate, cancelledDate, returnedDate,
-                officeName, clientName, loanProductName, loanAccountNumber);
+                officeName, clientName, loanAccountData);
     }
 
     public static PostDatedChequeDetailData searchDataInstance(final Long id, final String bankName, final String branchName,
             final String accountNumber, final String ifscCode, final BigDecimal chequeAmount, final EnumOptionData chequeType,
             final String chequeNumber, final LocalDate chequeDate, final EnumOptionData presentStatus, final EnumOptionData previousStatus,
             final LocalDate presentedDate, final LocalDate chequeBouncedDate, final LocalDate clearedDate, final LocalDate cancelledDate,
-            final LocalDate returnedDate, final String officeName, final String clientName, final String loanProductName,
-            final String loanAccountNumber) {
+            final LocalDate returnedDate, final String officeName, final String clientName, final LoanAccountData loanAccountData) {
         return new PostDatedChequeDetailData(id, bankName, branchName, accountNumber, ifscCode, chequeAmount, chequeType, chequeNumber,
                 chequeDate, presentStatus, previousStatus, presentedDate, chequeBouncedDate, clearedDate, cancelledDate, returnedDate,
-                officeName, clientName, loanProductName, loanAccountNumber);
+                officeName, clientName, loanAccountData);
     }
 
     public Long getId() {
@@ -158,12 +153,8 @@ public class PostDatedChequeDetailData {
         return this.clientName;
     }
 
-    public String getLoanProductName() {
-        return this.loanProductName;
-    }
-
-    public String getLoanAccountNumber() {
-        return this.loanAccountNumber;
+    public LoanAccountData getLoanAccountData() {
+        return this.loanAccountData;
     }
 
     public void setMappingData(final PostDatedChequeDetailMappingData mappingData) {

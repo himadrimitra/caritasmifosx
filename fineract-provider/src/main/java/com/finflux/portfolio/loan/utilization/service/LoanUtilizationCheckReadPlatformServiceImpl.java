@@ -268,4 +268,12 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
             return UtilizationDetailsData.instance(loanPurposeData, isSameAsOroginalPurpose, amount, comment);
         }
     }
+
+    @Override
+    public BigDecimal retrieveUtilityAmountByLoanId(final Long loanId) {
+
+        String sql = "SELECT " + "SUM(IFNULL(lucd.amount, 0)) from f_loan_utilization_check_detail lucd "
+                + "join f_loan_utilization_check luc on luc.id = lucd.loan_utilization_check_id" + " WHERE luc.loan_id = ? ";
+        return this.jdbcTemplate.queryForObject(sql, new Object[] { loanId }, BigDecimal.class);
+    }
 }

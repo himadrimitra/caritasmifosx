@@ -83,6 +83,8 @@ public class ReconciliationApiConstants {
     public static final String loanTransactionDataParam = "loanTransactionData";
     public static final String loanTransactionOptionsParam = "loanTransactionOptions";
     public static final String receiptNumberParam = "receiptNumber";
+    public static final String loansParamName = "loans";
+    public static final String depositsParamName = "deposits";
 
     public static final String RECONCILED = "reconciled";
     public static final String JOURNAL_ENTRY = "journalentry";
@@ -165,4 +167,8 @@ public class ReconciliationApiConstants {
     public static final String INVALID_PAYMENT_TYPE = "Invalid Paymnet Type";
     public static final String AMOUNT_CAN_NOT_BE_NEGATIVE = "Amount cannot be Negative";
     public static final String TRANSACTION_ID_INVALID = "Transaction id is invalid.";
+    public static final String PAYMENT_TYPE_CANNOT_BE_UPDATED = "Cannot update payment type for an existing transaction";
+    public static final String TRANSACTION_DATE_CANNOT_BE_UPDATED = "Cannot update transaction date for an existing transaction";
+    public static final String AMOUNT_CANNOT_BE_UPDATED = "Cannot update amount for an existing transaction";
+    public static final String TRANSACTION_WITHOUT_PAYMENT_DETAILS_CANNOT_BE_UPDATED = "Transaction without payment details cannot be updated";
 }

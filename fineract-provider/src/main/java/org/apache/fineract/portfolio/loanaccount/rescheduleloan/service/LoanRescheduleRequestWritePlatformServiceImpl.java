@@ -77,6 +77,8 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanRepayme
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanRepaymentScheduleHistoryRepository;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleHistoryWritePlatformService;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.RescheduleLoansApiConstants;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.data.LoanRescheduleRequestDataValidator;
@@ -440,6 +442,9 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             processApproveRequest(loanRescheduleRequest, appUser, approvedOnDate, loan, existingTransactionIds,
                     existingReversedTransactionIds, scheduleGeneratorDTO, loanRepaymentScheduleHistoryList, loanApplicationTerms,
                     rescheduleFromDate);
+            if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+                createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO, loanRescheduleRequest);
+            }
 
             return new CommandProcessingResultBuilder().withCommandId(jsonCommand.commandId()).withEntityId(loanRescheduleRequestId)
                     .withLoanId(loanRescheduleRequest.getLoan().getId()).with(changes).build();
@@ -481,6 +486,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             final LoanApplicationTerms loanApplicationTerms, LocalDate rescheduleFromDate) {
         Set<LoanTermVariations> activeLoanTermVariations = loan.getActiveLoanTermVariations();
         LoanTermVariations dueDateVariationInCurrentRequest = loanRescheduleRequest.getDueDateTermVariationIfExists();
+        LocalDate previouslyAdjustedDate = null;
         if (dueDateVariationInCurrentRequest != null && activeLoanTermVariations != null) {
             LocalDate fromScheduleDate = dueDateVariationInCurrentRequest.fetchTermApplicaDate();
             LocalDate currentScheduleDate = fromScheduleDate;
@@ -492,6 +498,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
                         && activeLoanTermVariation.fetchDateValue().equals(dueDateVariationInCurrentRequest.fetchTermApplicaDate())) {
                     activeLoanTermVariation.markAsInactive();
                     rescheduleFromDate = activeLoanTermVariation.fetchTermApplicaDate();
+                    previouslyAdjustedDate = activeLoanTermVariation.fetchDateValue();
                     dueDateVariationInCurrentRequest.setTermApplicableFrom(rescheduleFromDate.toDate());
                 } else if (!activeLoanTermVariation.fetchTermApplicaDate().isBefore(fromScheduleDate)) {
                     while (currentScheduleDate.isBefore(activeLoanTermVariation.fetchTermApplicaDate())) {
@@ -510,6 +517,9 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
         }
         if (rescheduleFromDate == null) {
             rescheduleFromDate = loanRescheduleRequest.getRescheduleFromDate();
+        }
+        if (previouslyAdjustedDate != null) {
+            rescheduleFromDate = rescheduleFromDate.isAfter(previouslyAdjustedDate) ? previouslyAdjustedDate : rescheduleFromDate;
         }
         if (dueDateVariationInCurrentRequest != null) {
             if (!(loanApplicationTerms.getNthDay() == null || loanApplicationTerms.getWeekDayType() == null || loanApplicationTerms
@@ -857,7 +867,32 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
         this.loanRepository.save(loan);
         changes.put("loanId", loanId);
         changes.put("rescheduleRequestId", loanRescheduleRequest.getId());
+        if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+            createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO, loanRescheduleRequest);
+        }
         return changes;
+    }
+    
+    private void createAndSaveLoanScheduleArchive(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO, final LoanRescheduleRequest loanRescheduleRequest) {
+        LoanScheduleModel loanScheduleModel = loan.regenerateScheduleModel(scheduleGeneratorDTO);
+        List<LoanRepaymentScheduleInstallment> installments = retrieveRepaymentScheduleFromModel(loanScheduleModel);
+        this.loanScheduleHistoryWritePlatformService.createAndSaveLoanScheduleArchive(installments, loan, loanRescheduleRequest);
+    }
+    
+    private List<LoanRepaymentScheduleInstallment> retrieveRepaymentScheduleFromModel(LoanScheduleModel model) {
+        final List<LoanRepaymentScheduleInstallment> installments = new ArrayList<>();
+        for (final LoanScheduleModelPeriod scheduledLoanInstallment : model.getPeriods()) {
+            if (scheduledLoanInstallment.isRepaymentPeriod()) {
+                final LoanRepaymentScheduleInstallment installment = new LoanRepaymentScheduleInstallment(null,
+                        scheduledLoanInstallment.periodNumber(), scheduledLoanInstallment.periodFromDate(),
+                        scheduledLoanInstallment.periodDueDate(), scheduledLoanInstallment.principalDue(),
+                        scheduledLoanInstallment.interestDue(), scheduledLoanInstallment.feeChargesDue(),
+                        scheduledLoanInstallment.penaltyChargesDue(), scheduledLoanInstallment.isRecalculatedInterestComponent(),
+                        scheduledLoanInstallment.getLoanCompoundingDetails());
+                installments.add(installment);
+            }
+        }
+        return installments;
     }
 
 }
