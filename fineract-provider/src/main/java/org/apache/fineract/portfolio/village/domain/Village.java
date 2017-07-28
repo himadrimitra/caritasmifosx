@@ -329,4 +329,21 @@ public class Village extends AbstractPersistable<Long> {
     public boolean isPending() {
         return VillageTypeStatus.fromInt(this.status).isPending();
     }
+    
+    public String getVillageName() {
+        return this.villageName ;
+    }
+    
+    public String getExternalId() {
+        return this.externalId ;
+    }
+    
+    public String getVillageCode() {
+        return this.villageCode ;
+    }
+    
+    public String getOfficeName() {
+        return this.getOffice().getName() ;
+    }
+    
 }
