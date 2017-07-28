@@ -185,4 +185,13 @@ public final class PaymentDetail extends AbstractPersistable<Long> {
         }
         return changed ;
     }
+    
+    public void updatePaymentDetail(final String paymentDetailAccountNumber, final String paymentDetailChequeNumber,
+            final String routingCode, final String receiptNumber, final String paymentDetailBankNumber) {
+        this.accountNumber = paymentDetailAccountNumber;
+        this.checkNumber = paymentDetailChequeNumber;
+        this.routingCode = routingCode;
+        this.receiptNumber = receiptNumber;
+        this.bankNumber = paymentDetailBankNumber;
+    }
 }

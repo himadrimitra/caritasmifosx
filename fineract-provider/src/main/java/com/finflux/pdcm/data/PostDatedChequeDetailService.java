@@ -107,10 +107,25 @@ public class PostDatedChequeDetailService {
                 }
             }
         }
-
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
-
+        validateCreateForDuplicateChequeNumber(postDatedChequeDetails);
         return postDatedChequeDetails;
+    }
+
+    private void validateCreateForDuplicateChequeNumber(final List<PostDatedChequeDetail> postDatedChequeDetails) {
+        final List<String> allChequeNumbers = new ArrayList<>();
+        final List<String> duplicatedChequeNumbers = new ArrayList<>();
+        for (int i = 0; i < postDatedChequeDetails.size(); i++) {
+            final PostDatedChequeDetail pdc = postDatedChequeDetails.get(i);
+            if (i > 0) {
+                final PostDatedChequeDetail postDatedChequeDetail = postDatedChequeDetails.get(i - 1);
+                if (isChequeNumberDuplicated(allChequeNumbers, pdc, postDatedChequeDetail)) {
+                    duplicatedChequeNumbers.add(pdc.getChequeNumber());
+                }
+            }
+            allChequeNumbers.add(pdc.getChequeNumber());
+            validateAgainstBasedOnExistingChequeNumbers(pdc, allChequeNumbers, duplicatedChequeNumbers);
+        }
     }
 
     /**
@@ -387,24 +402,24 @@ public class PostDatedChequeDetailService {
             baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.ifscCodeParamName).value(ifscCode).notBlank()
                     .notExceedingLengthOf(50);
         }
-
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
-
         final Map<String, Object> changes = postDatedChequeDetail.update(command);
-
-        validateForDuplicateChequeNumber(postDatedChequeDetail);
-
+        validateUpdateForDuplicateChequeNumber(postDatedChequeDetail);
         return changes;
-
     }
 
-    public void validateForDuplicateChequeNumber(final PostDatedChequeDetail postDatedChequeDetail) {
+    private void validateUpdateForDuplicateChequeNumber(final PostDatedChequeDetail postDatedChequeDetail) {
+        final List<String> allChequeNumbers = new ArrayList<>();
+        final List<String> duplicatedChequeNumbers = new ArrayList<>();
+        validateAgainstBasedOnExistingChequeNumbers(postDatedChequeDetail, allChequeNumbers, duplicatedChequeNumbers);
+    }
+
+    private void validateAgainstBasedOnExistingChequeNumbers(final PostDatedChequeDetail postDatedChequeDetail,
+            final List<String> allChequeNumbers, final List<String> duplicatedChequeNumbers) {
         final Integer entityType = postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType();
         final Long entityId = postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityId();
         final List<PostDatedChequeDetailMapping> postDatedChequeDetailMappings = this.mappingRepository.findByEntityTypeAndEntityId(
                 entityType, entityId);
-        final List<String> allChequeNumbers = new ArrayList<>();
-        final List<String> duplicatedChequeNumbers = new ArrayList<>();
         for (final PostDatedChequeDetailMapping postDatedChequeDetailMapping : postDatedChequeDetailMappings) {
             if (!postDatedChequeDetailMapping.isDeleted()) {
                 final PostDatedChequeDetail pdc = postDatedChequeDetailMapping.getPostDatedChequeDetail();
@@ -535,10 +550,15 @@ public class PostDatedChequeDetailService {
 
     private void makeLoanRepayment(final PostDatedChequeDetail postDatedChequeDetail, final JsonCommand command,
             final String transactionDate) {
+        final ChequeType chequeType = ChequeType.fromInt(postDatedChequeDetail.getChequeType());
         final Long loanId = postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityId();
         final JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("transactionDate", transactionDate);
-        jsonObject.addProperty("transactionAmount", postDatedChequeDetail.getPostDatedChequeDetailMapping().getDueAmount());
+        if(chequeType.isRepaymentPDC()){
+            jsonObject.addProperty("transactionAmount", postDatedChequeDetail.getPostDatedChequeDetailMapping().getDueAmount());
+        }else{
+            jsonObject.addProperty("transactionAmount", postDatedChequeDetail.getChequeAmount());
+        }
         jsonObject.addProperty("paymentTypeId", postDatedChequeDetail.getPostDatedChequeDetailMapping().getPaymentType());
         jsonObject.addProperty("locale", command.locale().toString());
         jsonObject.addProperty("dateFormat", command.dateFormat().toString());
