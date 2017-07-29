@@ -194,12 +194,17 @@ public class ClientsApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveOne(@PathParam("clientId") final Long clientId, @Context final UriInfo uriInfo,
-            @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly) {
+            @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
+            @DefaultValue("false") @QueryParam("isFetchAdressDetails") final boolean isFetchAdressDetails) {
 
         this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
         final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        ClientData clientData = this.clientReadPlatformService.retrieveOne(clientId);
+        ClientData clientData = null;
+        if(isFetchAdressDetails){
+             clientData = this.clientReadPlatformService.retrieveOneWithBasicDetails(clientId);
+        }else{
+         clientData = this.clientReadPlatformService.retrieveOne(clientId);
         
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("hierarchyLookup")) {
@@ -224,6 +229,7 @@ public class ClientsApiResource {
                 clientData = ClientData.templateWithSavingAccountOptions(clientData, savingAccountOptions);
             }
         }
+       }
 
         return this.toApiJsonSerializer.serialize(settings, clientData, ClientApiConstants.CLIENT_RESPONSE_DATA_PARAMETERS);
     }

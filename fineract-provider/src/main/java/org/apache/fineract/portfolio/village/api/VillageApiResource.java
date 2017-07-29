@@ -156,7 +156,9 @@ public class VillageApiResource {
         Collection<CenterData> centers = null;
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         
-        Collection<AddressData> address  = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(VillageTypeApiConstants.pathParamName,villageId,settings.isTemplate());
+        boolean fetchNonVerifiedData = false;
+        Collection<AddressData> address = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(
+                VillageTypeApiConstants.pathParamName, villageId, settings.isTemplate(), fetchNonVerifiedData);
         
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("setOfCenters")) {
