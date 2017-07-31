@@ -64,6 +64,9 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.kyc.address.data.AddressData;
+import com.finflux.kyc.address.service.AddressReadPlatformService;
+
 @Service
 public class ClientReadPlatformServiceImpl implements ClientReadPlatformService {
 
@@ -81,13 +84,14 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     private final ClientLookupMapper lookupMapper = new ClientLookupMapper();
     private final ClientMembersOfGroupMapper membersOfGroupMapper = new ClientMembersOfGroupMapper();
     private final ParentGroupsMapper clientGroupsMapper = new ParentGroupsMapper();
+    private final AddressReadPlatformService addressReadPlatformService;
 
     @Autowired
     public ClientReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
             final OfficeReadPlatformService officeReadPlatformService, final StaffReadPlatformService staffReadPlatformService,
             final CodeValueReadPlatformService codeValueReadPlatformService,
 			final SavingsProductReadPlatformService savingsProductReadPlatformService,
-			ConfigurationDomainService configurationDomainService) {
+			ConfigurationDomainService configurationDomainService, final AddressReadPlatformService addressReadPlatformService) {
         this.context = context;
         this.officeReadPlatformService = officeReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
@@ -95,6 +99,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.savingsProductReadPlatformService = savingsProductReadPlatformService;
         this.configurationDomainService = configurationDomainService;
+        this.addressReadPlatformService = addressReadPlatformService;
     }
 
     @Override
@@ -274,6 +279,26 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 
             return ClientData.setParentGroups(clientData, parentGroups);
 
+        } catch (final EmptyResultDataAccessException e) {
+            throw new ClientNotFoundException(clientId);
+        }
+    }
+    
+    @Override
+    public ClientData retrieveOneWithBasicDetails(final Long clientId) {
+        try {
+            final String hierarchy = this.context.officeHierarchy();
+            final String hierarchySearchString = hierarchy + "%";
+            ClientBasicDetailsMapper mapper = new ClientBasicDetailsMapper();
+            final String sql = "select  " + mapper.schema() + " where ( o.hierarchy like ?) and c.id = ?";
+            ClientData clientData = this.jdbcTemplate.queryForObject(sql, mapper, new Object[] { hierarchySearchString, clientId });
+            final String entityType = "clients";
+            final boolean isTemplateRequired = false;
+            final boolean fetchNonVerifiedData = true;
+            final Collection<AddressData> addressData = addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(entityType,
+                    clientId, isTemplateRequired, fetchNonVerifiedData);
+            clientData.updateAddressData(addressData);
+            return clientData;
         } catch (final EmptyResultDataAccessException e) {
             throw new ClientNotFoundException(clientId);
         }
@@ -690,6 +715,45 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
                     firstname, middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                     imageId, staffId, staffName, timeline, savingsProductId, savingsProductName, savingsAccountId, clienttype,
                     classification, legalForm, clientNonPerson, closurereason, emailId);
+
+        }
+    }
+    
+    
+    private static final class ClientBasicDetailsMapper implements RowMapper<ClientData> {
+
+        private final String schema;
+
+        public ClientBasicDetailsMapper() {
+            final StringBuilder builder = new StringBuilder(400);
+            builder.append("c.id as id, ");
+            builder.append("c.fullname as fullname, c.display_name as displayName, ");
+            builder.append("c.mobile_no as mobileNo, ");
+            builder.append("c.date_of_birth as dateOfBirth, ");
+            builder.append("c.gender_cv_id as genderId, ");
+            builder.append("cv.code_value as genderValue ");
+            builder.append("from m_client c ");
+            builder.append("join m_office o on o.id = c.office_id ");
+            builder.append("left join m_code_value cv on cv.id = c.gender_cv_id ");
+
+            this.schema = builder.toString();
+        }
+
+        public String schema() {
+            return this.schema;
+        }
+
+        @Override
+        public ClientData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = JdbcSupport.getLong(rs, "id");
+            final String displayName = rs.getString("displayName");
+            final String mobileNo = rs.getString("mobileNo");
+            final LocalDate dateOfBirth = JdbcSupport.getLocalDate(rs, "dateOfBirth");
+            final Long genderId = JdbcSupport.getLong(rs, "genderId");
+            final String genderValue = rs.getString("genderValue");
+            final CodeValueData gender = CodeValueData.instance(genderId, genderValue);
+            return ClientData.formClientData(id, displayName, dateOfBirth, gender, mobileNo);
 
         }
     }

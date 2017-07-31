@@ -12,7 +12,8 @@ public interface AddressReadPlatformService {
 
     AddressData retrieveOne(final String entityType, final Long entityId, final Long addressId, final boolean isTemplateRequired);
 
-    Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId,final boolean isTemplateRequired);
+    Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId,
+            final boolean isTemplateRequired, boolean fetchNonVerifiedData);
 
     Long countOfAddressByEntityTypeAndEntityId(final AddressEntityTypeEnums entityType, final Long entityId);
 

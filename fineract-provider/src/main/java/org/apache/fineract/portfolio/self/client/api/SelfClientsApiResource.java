@@ -110,8 +110,9 @@ public class SelfClientsApiResource {
 		validateAppuserClientsMapping(clientId);
 
 		final boolean staffInSelectedOfficeOnly = false;
+		final boolean isFetchAdressDetails = false;
 		return this.clientApiResource.retrieveOne(clientId, uriInfo,
-				staffInSelectedOfficeOnly);
+				staffInSelectedOfficeOnly, isFetchAdressDetails);
 	}
 
 	@GET
