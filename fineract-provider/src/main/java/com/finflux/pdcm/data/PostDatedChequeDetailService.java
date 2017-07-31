@@ -591,9 +591,9 @@ public class PostDatedChequeDetailService {
         jsonObject.addProperty("dateFormat", command.dateFormat().toString());
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(jsonObject.toString());
         final JsonCommand newCommand = JsonCommand.fromExistingCommand(command, parsedCommand);
-        this.loanWritePlatformService.adjustLoanTransaction(loanId, transactionId, newCommand);
-        transactionId = null;
         postDatedChequeDetail.getPostDatedChequeDetailMapping().setTransactionId(null);
+        this.postDatedChequeDetailsRepository.save(postDatedChequeDetail);
+        this.loanWritePlatformService.adjustLoanTransaction(loanId, transactionId, newCommand);
     }
 
     @Transactional
