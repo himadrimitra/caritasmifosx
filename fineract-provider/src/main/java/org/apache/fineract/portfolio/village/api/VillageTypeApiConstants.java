@@ -22,13 +22,15 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.finflux.kyc.address.api.AddressApiConstants;
-
 
 public class VillageTypeApiConstants {
     
     public static String VILLAGE_RESOURCE_NAME = "village";
 
+    //Supported command parameters
+    public final static String ACTIVATE_COMMAND = "activate" ;
+    public final static String INITIATE_WORKFLOW_COMMAND = "initiateWorkflow" ;
+    
     public static final String idParamName = "id";
     public static final String externalIdParamName = "externalId";
     public static final String officeIdParamName = "officeId";

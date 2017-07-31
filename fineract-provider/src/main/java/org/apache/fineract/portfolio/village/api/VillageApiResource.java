@@ -156,7 +156,9 @@ public class VillageApiResource {
         Collection<CenterData> centers = null;
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         
-        Collection<AddressData> address  = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(VillageTypeApiConstants.pathParamName,villageId,settings.isTemplate());
+        boolean fetchNonVerifiedData = false;
+        Collection<AddressData> address = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(
+                VillageTypeApiConstants.pathParamName, villageId, settings.isTemplate(), fetchNonVerifiedData);
         
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("setOfCenters")) {
@@ -208,22 +210,30 @@ public class VillageApiResource {
     @Path("{villageId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String activate(@PathParam("villageId") final Long villageId, @QueryParam("command") final String commandParam,
+    public String handleCommand(@PathParam("villageId") final Long villageId, @QueryParam("command") final String commandParam,
             final String apiRequestBodyAsJson, @Context final UriInfo uriInfo) {
-
-        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
-
-        CommandProcessingResult result = null;
-        if (is(commandParam, "activate")) {
-            final CommandWrapper commandRequest = builder.activateVillage(villageId).build();
-            result = this.commandSourceWritePlatformService.logCommandSource(commandRequest);
-            return this.toApiJsonSerializer.serialize(result);
+        if(StringUtils.isBlank(commandParam)) {
+            throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { VillageTypeApiConstants.ACTIVATE_COMMAND,  VillageTypeApiConstants.INITIATE_WORKFLOW_COMMAND});
         }
-        throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { "activate" });
-
-    }
-    
-    private boolean is(final String commandParam, final String commandValue) {
-        return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
+        CommandProcessingResult commandResult = null;
+        CommandWrapper commandRequest = null ;
+        String result = null ;
+        switch(commandParam.trim()) {
+            case VillageTypeApiConstants.ACTIVATE_COMMAND :
+                commandRequest = builder.activateVillage(villageId).build();
+                commandResult = this.commandSourceWritePlatformService.logCommandSource(commandRequest);
+                result = this.toApiJsonSerializer.serialize(commandResult);
+                break ;
+            case VillageTypeApiConstants.INITIATE_WORKFLOW_COMMAND:
+                commandRequest = builder.intiateVillageWorkflow(villageId).build();
+                commandResult = this.commandSourceWritePlatformService.logCommandSource(commandRequest);
+                result = this.toApiJsonSerializer.serialize(commandResult);
+                break ;
+                default:
+                    throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { VillageTypeApiConstants.ACTIVATE_COMMAND,  VillageTypeApiConstants.INITIATE_WORKFLOW_COMMAND});
+                
+        }
+        return result ;
     }
 }

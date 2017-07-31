@@ -17,6 +17,8 @@ import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformSer
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -92,6 +94,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             // entityId);
             final Collection<AddressEntityData> addressEntityDatas = retrieveAddressEntityData(entityId, entityTypeEnum, addressId);
             if (addressEntityDatas != null) {
+                final ClientData clientData = null;
                 final AddressDataMapper dataMapper = new AddressDataMapper(districtDatas, stateDatas, countryDatas, addressEntityDatas,
                         talukaDatas);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE a.id = ? ";
@@ -215,7 +218,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
 
     @SuppressWarnings({ "unused" })
     @Override
-    public Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId,final boolean isTemplateRequired) {
+    public Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId, final boolean isTemplateRequired,  boolean fetchNonVerifiedData) {
         try {
             final AddressEntityTypeEnums addressEntityType = AddressEntityTypeEnums.getEntityType(entityType);
             if (addressEntityType == null) { throw new AddressEntityTypeNotSupportedException(entityType); }
@@ -240,7 +243,10 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                     final Collection<CountryData> countryDatas = getCountryDatas(null, listOfMapForCountryStateDistrictIds,isTemplateRequired);
                     final AddressDataMapper dataMapper = new AddressDataMapper(districtDatas, stateDatas, countryDatas, addressEntityDatas,
                             talukaDatas);
-                    final String sql = "SELECT " + dataMapper.schema() + " WHERE a.id IN (" + addressIdsAsString + ") ";
+                    String sql = "SELECT " + dataMapper.schema() + " WHERE a.id IN (" + addressIdsAsString + ") ";
+                    if (fetchNonVerifiedData) {
+                        sql += " AND a.is_verified = 0";
+                    }
                     return this.jdbcTemplate.query(sql, dataMapper);
                 }
             }
@@ -374,7 +380,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                     + " where ae.address_id = ? AND ae.entity_id = ? AND ae.entity_type_enum = ? ";
             return this.jdbcTemplate.query(sql, this.addressEntityDataMapper, new Object[] { addressId, entityId, entityTypeEnum });
         } else if (entityId != null && entityTypeEnum != null) {
-            final String sql = "SELECT " + this.addressEntityDataMapper.schema() + " where ae.entity_id = ? AND ae.entity_type_enum = ? ";
+            String sql = "SELECT " + this.addressEntityDataMapper.schema() + " where ae.entity_id = ? AND ae.entity_type_enum = ? ";
             return this.jdbcTemplate.query(sql, this.addressEntityDataMapper, new Object[] { entityId, entityTypeEnum });
         }
         return null;

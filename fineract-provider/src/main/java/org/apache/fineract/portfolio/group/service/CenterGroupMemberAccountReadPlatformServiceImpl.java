@@ -193,7 +193,7 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
             if (clientStatus != null) {
                 status = ClientEnumerations.status(clientStatus);
             }
-
+ 
             return ClientData.instance(clientId, clientAccountNumber, clientFullName, status);
         }
     }

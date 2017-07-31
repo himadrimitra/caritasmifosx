@@ -740,11 +740,10 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 }
             }
             
-        } catch (final DataIntegrityViolationException e) {
+        } catch (final DataAccessException e) {
             final Throwable realCause = e.getCause();
             final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
             final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("datatable");
-
             if (realCause.getMessage().toLowerCase().contains("duplicate column name")) {
                 baseDataValidator.reset().parameter("name").failWithCode("duplicate.column.name");
             } else if (realCause.getMessage().contains("Table") && realCause.getMessage().contains("already exists")) {

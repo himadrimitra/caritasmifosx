@@ -30,6 +30,8 @@
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
 		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
 
+	<cache:annotation-driven cache-manager="ehcacheManager"/>
+
 	<bean id="ehcacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager"
 		p:cacheManager-ref="ehcacheInstance" />
 

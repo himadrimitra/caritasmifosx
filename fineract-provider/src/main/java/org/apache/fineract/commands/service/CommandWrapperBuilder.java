@@ -3050,6 +3050,14 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder intiateVillageWorkflow(final Long villageId) {
+        this.actionName = "INITIATEWORKFLOW";
+        this.entityName = "VILLAGE";
+        this.entityId = villageId;
+        this.href = "/villages/" + villageId + "?command=initiateWorkflow";
+        return this;
+    }
+    
     public CommandWrapperBuilder updateVillage(final Long villageId) {
         this.actionName = "UPDATE";
         this.entityName = "VILLAGE";
