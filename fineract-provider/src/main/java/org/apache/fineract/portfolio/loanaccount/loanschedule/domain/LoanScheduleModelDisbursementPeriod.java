@@ -143,4 +143,14 @@ public final class LoanScheduleModelDisbursementPeriod implements LoanScheduleMo
     public void setAdvancePayment(@SuppressWarnings("unused") Money advancePayment) {
         return;
     }
+
+    @Override
+    public BigDecimal capitalChargeDue() {
+        return null;
+    }
+
+    @Override
+    public void setCapitalChargeDue(@SuppressWarnings("unused") Money capitalChargeDue) {
+       return;
+    }
 }

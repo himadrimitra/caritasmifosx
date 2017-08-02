@@ -1117,6 +1117,10 @@ public class LoanCharge extends AbstractPersistable<Long> {
     public void addLoanInstallmentCharges(final Collection<LoanInstallmentCharge> installmentCharges) {
         this.loanInstallmentCharge.addAll(installmentCharges);
     }
+    
+    public void addLoanInstallmentCharge(final LoanInstallmentCharge installmentCharge) {
+        this.loanInstallmentCharge.add(installmentCharge);
+    }
 
     public boolean hasNoLoanInstallmentCharges() {
         return this.loanInstallmentCharge.isEmpty();
@@ -1127,6 +1131,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
     	Collections.sort(installmentCharges);
         return installmentCharges;
     }
+    
 
     public List<LoanChargePaidDetail> fetchRepaymentInstallment(final MonetaryCurrency currency) {
         List<LoanChargePaidDetail> chargePaidDetails = new ArrayList<>();
@@ -1461,6 +1466,11 @@ public class LoanCharge extends AbstractPersistable<Long> {
         this.amountOutstanding = BigDecimal.ZERO;
         this.paid = false;
         this.waived = true;
+    }
+
+    
+    public Set<LoanInstallmentCharge> getLoanInstallmentCharge() {
+        return this.loanInstallmentCharge;
     }
     
 }

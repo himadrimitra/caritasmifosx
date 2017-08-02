@@ -1710,6 +1710,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             loanCharges.add(loanCharge);
             this.loanApplicationCommandFromApiJsonHelper.validateLoanCharges(loanCharges, dataValidationErrors, loan.repaymentScheduleDetail().isInterestRecalculationEnabled());
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+        } else if(loanCharge.isCapitalized()){
+            final String defaultUserMessage = "Capitalized charge cannot be added to the loan.";
+            throw new LoanChargeCannotBeAddedException("loanCharge", "capitalized.charge", defaultUserMessage, null, chargeDefinition.getName());
         }
 
     }
@@ -1913,6 +1916,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         
         if (loan.isGLIMLoan()) {
             throw new LoanChargeCannotBeDeletedException(LOAN_CHARGE_CANNOT_BE_DELETED_REASON.GLIM_LOAN_CHARGE, loanCharge.getId()); 
+        }else if(loanCharge.isCapitalized()){
+            throw new LoanChargeCannotBeDeletedException(LOAN_CHARGE_CANNOT_BE_DELETED_REASON.CAPITALIZED_CHARGE, loanCharge.getId()); 
         }
 
         // Charges may be deleted only when the loan associated with them are

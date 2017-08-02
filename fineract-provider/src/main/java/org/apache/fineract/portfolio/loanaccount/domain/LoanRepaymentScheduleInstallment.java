@@ -138,6 +138,10 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "loan_repayment_schedule_id", referencedColumnName = "id", nullable = false)
     private List<LoanInterestRecalcualtionAdditionalDetails> loanCompoundingDetails = new ArrayList<>();
+    
+    @Column(name = "capitalized_charge_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal capitalizedCharePortion;
+    
     protected LoanRepaymentScheduleInstallment() {
         this.installmentNumber = null;
         this.fromDate = null;
@@ -165,7 +169,8 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
     public LoanRepaymentScheduleInstallment(final Loan loan, final Integer installmentNumber, final LocalDate fromDate,
             final LocalDate dueDate, final BigDecimal principal, final BigDecimal interest, final BigDecimal feeCharges,
             final BigDecimal penaltyCharges, final boolean recalculatedInterestComponent,
-            final List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails, final BigDecimal advancedPaymentAmount) {
+            final List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails, final BigDecimal advancedPaymentAmount,
+            final BigDecimal capitalizedCharePortion) {
         this.loan = loan;
         this.installmentNumber = installmentNumber;
         this.fromDate = fromDate.toDateTimeAtStartOfDay().toDate();
@@ -178,6 +183,7 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.recalculatedInterestComponent = recalculatedInterestComponent;
         this.loanCompoundingDetails = compoundingDetails;
         this.advancePaymentAmount = advancedPaymentAmount;
+        this.capitalizedCharePortion = capitalizedCharePortion;
     }
 
     public LoanRepaymentScheduleInstallment(final Loan loan) {
@@ -900,5 +906,10 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
     
     public void setAdvancePaymentAmount(BigDecimal advancePaymentAmount) {
         this.advancePaymentAmount = advancePaymentAmount;
+    }
+
+    
+    public BigDecimal getCapitalizedCharePortion() {
+        return this.capitalizedCharePortion;
     }
 }
