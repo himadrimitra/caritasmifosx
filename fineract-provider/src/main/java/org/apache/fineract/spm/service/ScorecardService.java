@@ -85,7 +85,11 @@ public class ScorecardService {
         this.securityContext.authenticatedUser();
         final Long surveyedById = surveyTakenData.getSurveyedBy();
         final Staff surveyedBy = this.staffRepository.findOneWithNotFoundDetection(surveyedById);
-        final SurveyTaken surveyTaken = SurveyTakenMapper.map(surveyTakenData, survey, surveyedBy);
+        Staff coSurveyedBy = null;
+        if (surveyTakenData.getCoSurveyedBy() != null) {
+            coSurveyedBy = this.staffRepository.findOneWithNotFoundDetection(surveyTakenData.getCoSurveyedBy());
+        }
+        final SurveyTaken surveyTaken = SurveyTakenMapper.map(surveyTakenData, survey, surveyedBy, coSurveyedBy);
         List<Scorecard> scorecards = new ArrayList<Scorecard>();
         if (surveyTakenData.getScorecardValues() != null) {
             for (final ScorecardValue scorecardValue : surveyTakenData.getScorecardValues()) {
@@ -113,8 +117,12 @@ public class ScorecardService {
         this.securityContext.authenticatedUser();
         final Long surveyedById = surveyTakenData.getSurveyedBy();
         final Staff surveyedBy = this.staffRepository.findOneWithNotFoundDetection(surveyedById);
+        Staff coSurveyedBy = null;
+        if (surveyTakenData.getCoSurveyedBy() != null) {
+            coSurveyedBy = this.staffRepository.findOneWithNotFoundDetection(surveyTakenData.getCoSurveyedBy());
+        }
         final SurveyTaken surveyTaken = this.surveyTakenRepository.findOne(surveyTakenData.getId());
-        SurveyTakenMapper.updateMap(surveyTaken, surveyTakenData, survey, surveyedBy);
+        SurveyTakenMapper.updateMap(surveyTaken, surveyTakenData, survey, surveyedBy,coSurveyedBy);
         List<Scorecard> scorecards = new ArrayList<Scorecard>();
         if (surveyTakenData.getScorecardValues() != null) {
             for (final ScorecardValue scorecardValue : surveyTakenData.getScorecardValues()) {
