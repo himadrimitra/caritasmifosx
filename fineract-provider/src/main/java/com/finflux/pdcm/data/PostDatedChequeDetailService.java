@@ -371,7 +371,6 @@ public class PostDatedChequeDetailService {
             LocalDate chequeDate = null;
             if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeDateParamName, element)) {
                 chequeDate = this.fromApiJsonHelper.extractLocalDateNamed(PostDatedChequeDetailApiConstants.chequeDateParamName, element);
-                baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeDateParamName).value(chequeDate).notBlank();
             }
             BigDecimal chequeAmount = null;
             if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeAmountParamName, element)) {
