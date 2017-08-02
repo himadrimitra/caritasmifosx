@@ -74,6 +74,9 @@ public class Survey extends AbstractPersistable<Long> {
 
     @Column(name = "is_active")
     private boolean isActive = true;
+    
+    @Column(name = "is_co_officer_required")
+    private boolean isCoOfficerRequired = false;
 
     public Survey() {
         super();
@@ -167,5 +170,13 @@ public class Survey extends AbstractPersistable<Long> {
 
     public void setActive(final boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public boolean isCoOfficerRequired() {
+        return this.isCoOfficerRequired;
+    }
+
+    public void setCoOfficerRequired(final boolean isCoOfficerRequired) {
+        this.isCoOfficerRequired = isCoOfficerRequired;
     }
 }

@@ -39,6 +39,7 @@ public class SurveyData {
     private Date validFrom;
     private Date validTo;
     private boolean isActive;
+    private Boolean isCoOfficerRequired;
 
     // Template Data
     private Collection<EnumOptionData> surveyEntityTypes;
@@ -49,7 +50,7 @@ public class SurveyData {
 
     public SurveyData(final Long id, final List<ComponentData> componentDatas, final List<QuestionData> questionDatas,
             final EnumOptionData entityType, final String key, final String name, final String description, final String countryCode,
-            final Date validFrom, final Date validTo, final boolean isActive) {
+            final Date validFrom, final Date validTo, final boolean isActive, final Boolean isCoOfficerRequired) {
         super();
         this.id = id;
         this.componentDatas = componentDatas;
@@ -67,6 +68,7 @@ public class SurveyData {
         this.validFrom = validFrom;
         this.validTo = validTo;
         this.isActive = isActive;
+        this.isCoOfficerRequired = isCoOfficerRequired;
     }
 
     public Long getId() {
@@ -179,5 +181,13 @@ public class SurveyData {
 
     public void setSurveyEntityTypes(Collection<EnumOptionData> surveyEntityTypes) {
         this.surveyEntityTypes = surveyEntityTypes;
+    }
+
+    public Boolean isCoOfficerRequired() {
+        return this.isCoOfficerRequired;
+    }
+
+    public void setCoOfficerRequired(final Boolean isCoOfficerRequired) {
+        this.isCoOfficerRequired = isCoOfficerRequired;
     }
 }
