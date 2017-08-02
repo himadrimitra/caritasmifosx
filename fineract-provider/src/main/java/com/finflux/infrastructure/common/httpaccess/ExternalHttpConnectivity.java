@@ -1,6 +1,7 @@
 package com.finflux.infrastructure.common.httpaccess;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -12,7 +13,11 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import com.finflux.infrastructure.external.authentication.aadhar.exception.ConnectionFailedException;
@@ -102,5 +107,22 @@ public class ExternalHttpConnectivity {
             // do nothing
         }
     }
+    
+	public URI performForLocation(final String initUrl, final MultiValueMap<String, String> mapParams) {
+		trustAllSSLCertificates();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+		HttpEntity<MultiValueMap<String, String>> requestBody = new HttpEntity<MultiValueMap<String, String>>(mapParams,
+				headers);
+		URI response = null;
+		try {
+			RestTemplate restTemplate = new RestTemplate();
+			response = restTemplate.postForLocation(initUrl, requestBody);
+		} catch (Exception ce) {
+			throw new ConnectionFailedException(
+					"Unable to communicate with Aadhaar server. Please Conntact your Support team.");
+		}
+		return response;
+	}
 
 }

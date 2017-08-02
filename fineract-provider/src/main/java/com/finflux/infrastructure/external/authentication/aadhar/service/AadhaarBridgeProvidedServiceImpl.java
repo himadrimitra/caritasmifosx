@@ -1,6 +1,7 @@
 
 package com.finflux.infrastructure.external.authentication.aadhar.service;
 
+import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
@@ -16,7 +17,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
+import com.aadhaarconnect.bridge.capture.model.auth.AuthCaptureData;
 import com.aadhaarconnect.bridge.capture.model.common.Location;
 import com.aadhaarconnect.bridge.capture.model.common.LocationType;
 import com.aadhaarconnect.bridge.capture.model.common.request.CertificateType;
@@ -30,6 +33,7 @@ import com.finflux.infrastructure.external.authentication.aadhar.data.AadhaarSer
 import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarDataValidator;
 import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarOutBoundRequestDetails;
 import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarOutBoundRequestDetailsRepositoryWrapper;
+import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarRequestPurposeTypeEnum;
 import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarRequestStatusTypeEnum;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.AadhaarServiceResponseParserException;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.AuthRequestDataBuldFailedException;
@@ -56,6 +60,8 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	 **/
 	private static final String auth = "/auth";
 	private static final String kyc = "/kyc";
+	private static final String INIT = "_init";
+	private static final String FORM = "_form/";
 	private final AadhaarServiceDataAssembler aadharServiceDataAssembler;
 
 	private String endpoint;
@@ -118,8 +124,7 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	@Override
 	public OtpResponse generateOtp(final String aadhaarNumber) {
 		initalize();
-		String otpCaptureRequestJson = this.aadharServiceDataAssembler.otpRequestDataAssembler(aadhaarNumber,
-				this.certificateType);
+		String otpCaptureRequestJson = this.aadharServiceDataAssembler.otpRequestDataAssembler(aadhaarNumber);
 		String url = urlBuilder(endpoint, generateOtpPath);
 
 		String response = this.httpConnectivity.performServerPost(url, otpCaptureRequestJson, String.class);
@@ -137,10 +142,10 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	}
 
 	@Override
-	public AuthResponse authenticateUserByOtp(String aadhaarNumber, String otp, final Location location) {
+	public AuthResponse authenticateUserByOtp(String aadhaarNumber, String otp, final String transactionId) {
 		initalize();
 		String authenticateUserByOtpJson = this.aadharServiceDataAssembler
-				.authenticateUserUsingOtpDataAssembler(aadhaarNumber, otp, this.certificateType, location);
+				.authenticateUserUsingOtpDataAssembler(aadhaarNumber, otp, this.certificateType, transactionId);
 		String url = urlBuilder(endpoint, authRaw);
 
 		String response = this.httpConnectivity.performServerPost(url, authenticateUserByOtpJson, String.class);
@@ -157,12 +162,10 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	}
 
 	@Override
-	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String aadhaarNumber,
-			final String fingerPrintData, final Location location) {
+	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String json) {
 		initalize();
 		String authenticateUserByFingerprintJson = this.aadharServiceDataAssembler
-				.authenticateUserUsingFingerprintDataAssembler(aadhaarNumber, fingerPrintData, this.certificateType,
-						location);
+				.authenticateUserUsingFingerprintDataAssembler(json);
 		String url = urlBuilder(endpoint, auth);
 
 		String response = this.httpConnectivity.performServerPost(url, authenticateUserByFingerprintJson, String.class);
@@ -182,10 +185,10 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 
 	
 	public String obtainEKycUsingAadhaarService(final String aadhaarNumber, final String authData,
-                final Location location, final String authType) {
+			final String transactionId, final String authType) {
         initalize();
         String kycByFingerprintJson = this.aadharServiceDataAssembler.getKycCaptureData(aadhaarNumber, authData,
-                        certificateType, location, authType);
+                        certificateType, transactionId, authType);
         String url = urlBuilder(endpoint, kyc);
 
         String response = this.httpConnectivity.performServerPost(url, kycByFingerprintJson, String.class);
@@ -219,7 +222,7 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
             String certificateType = null;
             String saltKey = null;
             String saCode = null;
-            String otpUrl = null;
+            String initUrl = null;
             String kycUrl = null;
             while (rs.next()) {
                 if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.AADHAAR_HOST)) {
@@ -238,13 +241,13 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
                     if (saCode != null) {
                         saCode = platformCryptoService.decrypt(saCode);
                     }
-                } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.OTPURL)) {
-                    otpUrl = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.INITURL)) {
+                	initUrl = rs.getString("value");
                 } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.KYCURL)) {
                     kycUrl = rs.getString("value");
                 }
             }
-            return AadhaarServerDetails.instance(host, port, certificateType, saltKey, saCode, otpUrl, kycUrl);
+            return AadhaarServerDetails.instance(host, port, certificateType, saltKey, saCode, initUrl, kycUrl);
         }
     }
 
@@ -271,20 +274,8 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 		final String authType = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.AUTH_TYPE, element);
 		final String authData = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.AUTH_DATA, element);
 		JsonElement locationElement = element.getAsJsonObject().get("location");
-		Location location = null;
-		if (locationElement != null) {
-			String locationType = this.fromJsonHelper.extractStringNamed("locationType", locationElement);
-			location = new Location();
-			if (locationType.equals("gps")) {
-				location.setType(LocationType.gps);
-				location.setLongitude(this.fromJsonHelper.extractStringNamed("longitude", locationElement));
-				location.setLatitude(this.fromJsonHelper.extractStringNamed("latitude", locationElement));
-			} else if (locationType.equals("pincode")) {
-				location.setType(LocationType.pincode);
-				location.setPincode(this.fromJsonHelper.extractStringNamed("pincode", locationElement));
-			}
-		}
-		String kycData = obtainEKycUsingAadhaarService(aadhaarNumber, authData, location, authType) ;
+		final String transactionId = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.TRANSACTIONID,element);
+		String kycData = obtainEKycUsingAadhaarService(aadhaarNumber, authData, transactionId, authType) ;
 		return kycData ;
 	}
 
@@ -297,7 +288,8 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
         /**
          * fetch the sacode and saltkey from external services
          **/
-        String initOtpUrl = this.aadhaarServerDetails.getOtpUrl();
+        String initUrl = this.aadhaarServerDetails.getInitUrl();
+		initUrl = initUrl + this.INIT;
         final String saCode = this.aadhaarServerDetails.getSaCode();
         final String saltKey = this.aadhaarServerDetails.getSaltKey();
         final String redirectUrl = this.endpoint;
@@ -307,15 +299,27 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
         final String status = AadhaarRequestStatusTypeEnum.enumTypeInitiate;
         AadhaarOutBoundRequestDetails aadhaarServices = AadhaarOutBoundRequestDetails.create(aadhaarNumber, requestId, status);
         this.aadhaarServicesRepositoryWrapper.save(aadhaarServices);
-        final AadhaarRequestStatusTypeEnum purposeTypeEnum = AadhaarRequestStatusTypeEnum.fromInt(aadhaarServices.getPurpose());
-        final EnumOptionData optionData = AadhaarRequestStatusTypeEnum.aadhaarRequestEntity(purposeTypeEnum);
+        final AadhaarRequestPurposeTypeEnum purposeTypeEnum = AadhaarRequestPurposeTypeEnum.fromInt(aadhaarServices.getPurpose());
+        final EnumOptionData optionData = AadhaarRequestPurposeTypeEnum.aadhaarRequestEntity(purposeTypeEnum);
         String purpose = null;
         if (optionData != null) {
             purpose = optionData.getValue();
         }
-        initOtpUrl = this.aadharServiceDataAssembler.otpRequestDataAssembler(initOtpUrl, redirectUrl, aadhaarNumber, requestId, purpose,
+        MultiValueMap<String, String> mapParams = this.aadharServiceDataAssembler.otpRequestDataAssembler(redirectUrl, aadhaarNumber, requestId, purpose,
                 saCode, hash);
-        return this.httpConnectivity.initiateGenerateOtp(initOtpUrl);
+        URI response = this.httpConnectivity.performForLocation(initUrl, mapParams);
+		String webUrl = this.aadhaarServerDetails.getInitUrl();
+		webUrl = webUrl + this.FORM;
+		if (response != null) {
+			String uriStr = response.toString();
+			String[] tokens = uriStr.split("/");
+			String responseUrl = tokens[tokens.length - 1];
+
+			if (responseUrl != null && responseUrl.length() > 15) {
+				webUrl = webUrl + responseUrl;
+			}
+		}
+		return webUrl;
     }
 
     /**
@@ -332,7 +336,7 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
             digits[i] = (char) (random.nextInt(10) + '0');
         }
         if (aadhaarNumber.length() > 4)
-            return (aadhaarNumber.substring(aadhaarNumber.length() - 4, aadhaarNumber.length()) + (new String(digits)));
+            return (aadhaarNumber.substring(aadhaarNumber.length() - 4, aadhaarNumber.length()-1) + (new String(digits)));
         else
             return (new String(digits));
 
@@ -392,7 +396,6 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
         final String hash = generateHashKey(saCode, aadhaarNumber, requestId, saltKey, uuId);
         this.aadhaarDataValidator.validateReceivedHash(receivedHash, saltKey, requestId, aadhaarNumber, saCode);
         String eKycByOtpJson = this.aadharServiceDataAssembler.getEkycCaptureData(aadhaarNumber, requestId, uuId, saCode, hash);
-        String url = urlBuilder(endpoint, eKycUrl);
 
         String response = this.httpConnectivity.performServerPost(eKycUrl, eKycByOtpJson, String.class);
 
@@ -409,4 +412,50 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
             throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
         }
     }
+    
+	@Override
+	public String initiateRequestWithBiometricData(String json) {
+		AuthCaptureData capturedData = this.aadhaarDataValidator.validateAndCreateAuthCaptureData(json);
+		initalize();
+		final JsonElement element = this.fromJsonHelper.parse(json);
+		final String aadhaarNumber = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.AADHAAR_ID, element);
+		/**
+		 * fetch the sacode and saltkey from external services
+		 **/
+		String initUrl = this.aadhaarServerDetails.getInitUrl();
+		initUrl = initUrl + this.INIT;
+		final String saCode = this.aadhaarServerDetails.getSaCode();
+		final String saltKey = this.aadhaarServerDetails.getSaltKey();
+		final String redirectUrl = this.endpoint;
+		String requestId = generateRandomRequestId(aadhaarNumber, 16);
+		String uuId = null;
+		final String hash = generateHashKey(saCode, aadhaarNumber, requestId, saltKey, uuId);
+		final String status = AadhaarRequestStatusTypeEnum.enumTypeInitiate;
+		AadhaarOutBoundRequestDetails aadhaarServices = AadhaarOutBoundRequestDetails.create(aadhaarNumber, requestId,
+				status);
+		this.aadhaarServicesRepositoryWrapper.save(aadhaarServices);
+		final AadhaarRequestPurposeTypeEnum purposeTypeEnum = AadhaarRequestPurposeTypeEnum
+				.fromInt(aadhaarServices.getPurpose());
+		final EnumOptionData optionData = AadhaarRequestPurposeTypeEnum.aadhaarRequestEntity(purposeTypeEnum);
+		String purpose = null;
+		if (optionData != null) {
+			purpose = optionData.getValue();
+		}
+		MultiValueMap<String, String> mapParams = this.aadharServiceDataAssembler.initiateBiometricRequest(redirectUrl,
+				aadhaarNumber, requestId, purpose, saCode, hash, capturedData);
+		URI response = this.httpConnectivity.performForLocation(initUrl, mapParams);
+		String webUrl = this.aadhaarServerDetails.getInitUrl();
+		webUrl = webUrl+this.FORM;
+		if (response != null) {
+			String uriStr = response.toString();
+			String[] tokens = uriStr.split("/");
+			String responseUrl = tokens[tokens.length - 1];
+
+			if (responseUrl != null && responseUrl.length() > 15) {
+				webUrl = webUrl + responseUrl;
+			}
+		}
+		return webUrl;
+	}
+
 }

@@ -1,6 +1,5 @@
 package com.finflux.infrastructure.external.authentication.aadhar.service;
 
-import com.aadhaarconnect.bridge.capture.model.common.Location;
 import com.aadhaarconnect.bridge.gateway.model.AuthResponse;
 import com.aadhaarconnect.bridge.gateway.model.OtpResponse;
 
@@ -15,13 +14,14 @@ public interface AadhaarBridgeProvidedService {
 	public OtpResponse generateOtp(final String aadhaarNumber);
 
 	public AuthResponse authenticateUserByOtp(final String aadhaarNumber, final String otp,
-			final Location location);
+			final String transactionId);
 
-	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String aadharNumber,
-			final String fingerPrintData, final Location location);
+	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String json);
 	
 	public String initiateOtpRequest(final String json);
 	
 	public String initiateKycRequest(final String json);
+	
+	public String initiateRequestWithBiometricData(final String json);
 
 }

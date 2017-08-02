@@ -25,8 +25,8 @@ public class SecondLevelAuthenticationUsingFingerprintImpl implements SecondLeve
 	}
 
 	@Override
-	public Object authenticateUser(final  String aadhaarNumber, final String authData, final Location location) {
-		return this.aadharReadPlatformService.authenticateUserByFingerPrintUsingAadhaarService(aadhaarNumber, authData, location);
+	public Object authenticateUser(final  String aadhaarNumber, final String authData, final String location) {
+		return this.aadharReadPlatformService.authenticateUserByFingerPrintUsingAadhaarService(location);
 	}
 
 	@Override

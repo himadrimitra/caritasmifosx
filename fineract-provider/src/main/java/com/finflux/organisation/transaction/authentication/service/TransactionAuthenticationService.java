@@ -181,8 +181,9 @@ public class TransactionAuthenticationService {
 										secondaryAuthenticationService.getAuthServiceClassName());
 						Location location = getLocationDetails(clientDataForAuthentication);
 						final String otp = clientDataForAuthentication.getClientAuthdata();
+						final String otpTransactionId = null;
 						Object response = secondLevelAuthenticationService.authenticateUser(aadhaarNumber, otp,
-								location);
+								otpTransactionId);
 						secondLevelAuthenticationService.responseValidation(response);
 					} else {
 						throw new InAcitiveExternalServiceexception(secondaryAuthenticationService.getName(),

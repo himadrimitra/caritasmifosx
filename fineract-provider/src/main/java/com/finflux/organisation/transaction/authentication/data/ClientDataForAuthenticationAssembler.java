@@ -115,7 +115,6 @@ public class ClientDataForAuthenticationAssembler {
 			baseDataValidator.reset().parameter(TransactionAuthenticationApiConstants.LATITUDE).value(latitude)
 					.notNull().notBlank();
 		}
-
 		if (!dataValidationErrors.isEmpty()) {
 			throw new PlatformApiDataValidationException(dataValidationErrors);
 		}
