@@ -30,6 +30,9 @@ public class VillageTypeApiConstants {
     //Supported command parameters
     public final static String ACTIVATE_COMMAND = "activate" ;
     public final static String INITIATE_WORKFLOW_COMMAND = "initiateWorkflow" ;
+    public final static String ASSIGN_STAFF_COMMAND = "assignstaff" ;
+    public final static String UNASSIGN_STAFF_COMMAND = "unassignstaff" ;
+    public static final String staffIdParamName = "staffId";
     
     public static final String idParamName = "id";
     public static final String externalIdParamName = "externalId";

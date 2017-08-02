@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.group.data.CenterData;
 
 import com.finflux.kyc.address.data.AddressData;
@@ -60,18 +61,21 @@ public class VillageData {
     
     private final Long workflowId ;
     private final Boolean isWorkflowEnabled ;
+    Collection<StaffData> staffOptions;
+    private final StaffData staff;
     
-    public static VillageData template(final Long officeId, final Collection<OfficeData> officeOptions) {
+    public static VillageData template(final Long officeId, final Collection<OfficeData> officeOptions, Collection<StaffData> staffOptions) {
         final Collection<CenterData> centers = null;
         final Long workflowId = null ;
         final Boolean isWorkflowEnabled = false ;
-        return new VillageData(null, null, officeId, null, null, null, null, officeOptions, null, null, null,null, centers, workflowId, isWorkflowEnabled);
+        final StaffData staff = null;
+        return new VillageData(null, null, officeId, null, null, null, null, officeOptions, null, null, null,null, centers, workflowId, isWorkflowEnabled, staffOptions, staff);
     }
     
     private VillageData(final Long id, final String externalId, final Long officeId, final String officeName, final String villageCode,
             final String villageName, final Long counter, final Collection<OfficeData> officeOptions, final EnumOptionData status, final VillageTimelineData timeline, 
             final Collection<CenterData> setOfCenters,final Collection<AddressData> addressData, final Collection<CenterData> centers,
-            final Long workflowId, final Boolean isWorkflowEnabled){
+            final Long workflowId, final Boolean isWorkflowEnabled, Collection<StaffData> staffOptions,final StaffData staff){
         
         this.villageId = id;
         this.externalId = externalId;
@@ -88,35 +92,50 @@ public class VillageData {
         this.centers = centers;
         this.workflowId = workflowId ;
         this.isWorkflowEnabled = isWorkflowEnabled ;
+        this.staffOptions = staffOptions;
+        this.staff = staff;
     }
     
     public static VillageData instance(final Long id, final String externalId, final Long officeId, final String officeName, final String villageCode, 
             final String villageName, final Long counter, final EnumOptionData status, final VillageTimelineData timeline,
-            final Long workflowId, final Boolean isWorkflowEnabled) {
+            final Long workflowId, final Boolean isWorkflowEnabled,final StaffData staff) {
         final Collection<CenterData> centers = null;
+        final Collection<StaffData> staffOptions = null;
         return new VillageData(id, externalId, officeId, officeName, villageCode, villageName, counter, null, status, 
-                 timeline, null,null, centers, workflowId, isWorkflowEnabled);
+                 timeline, null,null, centers, workflowId, isWorkflowEnabled, staffOptions, staff);
     }
     
     public static VillageData lookup(final Long id, final String villageName) {
         final Collection<CenterData> centers = null;
         final Long workflowId = null ;
         final Boolean isWorkflowEnabled = false ;
-        return new VillageData(id, null, null, null, null, villageName, null, null, null, null, null,null, centers, workflowId, isWorkflowEnabled);
+        final Collection<StaffData> staffOptions = null;
+        final StaffData staff = null;
+        return new VillageData(id, null, null, null, null, villageName, null, null, null, null, null,null, centers, workflowId, isWorkflowEnabled, staffOptions,staff);
     }
     
     public static VillageData countValue(final Long counter, final String villageName) {
         final Collection<CenterData> centers = null;
         final Long workflowId = null ;
         final Boolean isWorkflowEnabled = false ;
-        return new VillageData(null, null, null, null, null, villageName, counter, null, null, null, null,null, centers, workflowId, isWorkflowEnabled);
+        final Collection<StaffData> staffOptions = null;
+        final StaffData staff = null;
+        return new VillageData(null, null, null, null, null, villageName, counter, null, null, null, null,null, centers, workflowId, isWorkflowEnabled, staffOptions, staff);
     }
 
-    public static VillageData withAssociations(VillageData village, Collection<CenterData> centers, Collection<AddressData> address,Collection<CenterData> hierarchy) {
+    public static VillageData withAssociations(VillageData village, Collection<CenterData> centers, Collection<AddressData> address,Collection<CenterData> hierarchy,Collection<StaffData> staffOptions) {
         final Long workflowId = null ;
         final Boolean isWorkflowEnabled = false ;
         return new VillageData(village.villageId, village.externalId, village.officeId, village.officeName, village.villageCode, village.villageName, 
-                village.counter, null, village.status, village.timeline, centers,address, hierarchy, workflowId, isWorkflowEnabled);
+                village.counter, null, village.status, village.timeline, centers,address, hierarchy, workflowId, isWorkflowEnabled, staffOptions, village.staff);
     }
+
+
+    
+    public Long getOfficeId() {
+        return this.officeId;
+    }
+    
+    
     
 }

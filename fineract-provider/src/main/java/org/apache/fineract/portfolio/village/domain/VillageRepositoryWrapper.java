@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.village.domain;
 
 import org.apache.fineract.portfolio.village.exception.VillageNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +39,14 @@ public class VillageRepositoryWrapper {
             throw new VillageNotFoundException(id);
         }
         return entity;
+    }
+    
+    
+    public Village findOneWithNotFoundDetectionAndLazyInitialize(final Long id) {
+        final Village village = this.repository.findOne(id);
+        if (village == null) { throw new VillageNotFoundException(id); }
+        Hibernate.initialize(village.getVillageStaffHistory());
+        return village;
     }
     
     public void saveAndFlush(final Village entity) {

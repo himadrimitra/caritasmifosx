@@ -24,6 +24,7 @@ import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.collaterals.api.CollateralsApiConstants;
 import org.apache.fineract.portfolio.paymenttype.api.PaymentTypeApiResourceConstants;
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
+import org.apache.fineract.portfolio.village.api.VillageTypeApiConstants;
 import org.apache.fineract.useradministration.api.PasswordPreferencesApiConstants;
 
 import com.sun.jersey.multipart.FormDataMultiPart;
@@ -3071,6 +3072,22 @@ public class CommandWrapperBuilder {
         this.entityName = "VILLAGE";
         this.entityId = villageId;
         this.href = "/villages/" + villageId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder assignStaffToVillage(final Long villageId) {
+        this.actionName = "ASSIGNSTAFF";
+        this.entityName = "VILLAGE";
+        this.entityId = villageId;
+        this.href = "/villages/" + villageId+ "?command="+VillageTypeApiConstants.ASSIGN_STAFF_COMMAND;
+        return this;
+    }
+    
+    public CommandWrapperBuilder unassignStaffFromVillage(final Long villageId) {
+        this.actionName = "UNASSIGNSTAFF";
+        this.entityName = "VILLAGE";
+        this.entityId = villageId;
+        this.href = "/villages/" + villageId+ "?command="+VillageTypeApiConstants.UNASSIGN_STAFF_COMMAND;
         return this;
     }
 
