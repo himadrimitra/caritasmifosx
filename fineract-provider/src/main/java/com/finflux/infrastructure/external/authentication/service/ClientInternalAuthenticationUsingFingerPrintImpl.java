@@ -22,7 +22,7 @@ public class ClientInternalAuthenticationUsingFingerPrintImpl implements SecondL
 	}
 
 	@Override
-	public Object authenticateUser(String aadhaarNumber, String authData, Location location) {
+	public Object authenticateUser(String aadhaarNumber, String authData, String location) {
 		
 		return this.fingerPrintAuthenticationServices.authenticateUserByAuthKey(authData);
 	}

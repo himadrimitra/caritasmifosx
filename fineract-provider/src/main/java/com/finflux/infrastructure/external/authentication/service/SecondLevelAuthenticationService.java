@@ -9,7 +9,7 @@ public interface SecondLevelAuthenticationService {
 	public String getKey();
 
 	public Object authenticateUser(final String aadhaarNumber, final String authData,
-			final Location location);
+			final String transactionId);
 
 	public void responseValidation(final Object response);
 }

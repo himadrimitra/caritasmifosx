@@ -22,8 +22,8 @@ public class AadhaarServerDetails {
         return this.saCode;
     }
 
-    public String getOtpUrl() {
-        return this.otpUrl;
+    public String getInitUrl() {
+        return this.initUrl;
     }
 
     public String getKycUrl() {
@@ -35,22 +35,22 @@ public class AadhaarServerDetails {
     private final String certificateType;
     private final String saltKey;
     private final String saCode;
-    private final String otpUrl;
+    private final String initUrl;
     private final String kycUrl;
 
     private AadhaarServerDetails(final String host, final String port, final String certificateType, final String saltKey,
-            final String saCode, final String otpUrl, final String kycUrl) {
+            final String saCode, final String initUrl, final String kycUrl) {
         this.host = host;
         this.port = port;
         this.certificateType = certificateType;
         this.saltKey = saltKey;
         this.saCode = saCode;
-        this.otpUrl = otpUrl;
+        this.initUrl = initUrl;
         this.kycUrl = kycUrl;
     }
 
     public static AadhaarServerDetails instance(final String host, final String port, final String certificateType, final String saltKey,
-            final String saCode, final String otpUrl, final String kycUrl) {
-        return new AadhaarServerDetails(host, port, certificateType, saltKey, saCode, otpUrl, kycUrl);
+            final String saCode, final String initUrl, final String kycUrl) {
+        return new AadhaarServerDetails(host, port, certificateType, saltKey, saCode, initUrl, kycUrl);
     }
 }

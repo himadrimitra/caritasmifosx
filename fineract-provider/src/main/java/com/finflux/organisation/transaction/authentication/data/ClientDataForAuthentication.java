@@ -64,5 +64,4 @@ public class ClientDataForAuthentication {
 	public String getLatitude() {
 		return latitude;
 	}
-
 }

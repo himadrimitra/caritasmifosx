@@ -78,4 +78,14 @@ public class AadhaarApiResource {
         context.authenticatedUser().validateHasPermissionTo(AadhaarApiConstants.READ_KYC_DETAILS);
         return this.readPlatformService.initiateKycRequest(apiRequestBodyAsJson);
     }
+    
+    @POST
+    @Path("/initiatebiometric")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String initiateKycRequestWithIris(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
+        context.authenticatedUser().validateHasPermissionTo(AadhaarApiConstants.READ_KYC_DETAILS);
+        String response = this.readPlatformService.initiateRequestWithBiometricData(apiRequestBodyAsJson);
+        return this.toApiJsonSerializer.serialize(response);
+    }
 }
