@@ -41,6 +41,7 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
     private Money interestDue;
     private Money feeChargesDue;
     private Money penaltyChargesDue;
+    private Money capitalChargeDue;
     private Money totalDue;
     private Money advancePayment;
     private final boolean recalculatedInterestComponent;
@@ -196,5 +197,19 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
     @Override
     public void setAdvancePayment(Money advancePayment) {
         this.advancePayment = advancePayment;
+    }
+
+    @Override
+    public BigDecimal capitalChargeDue() {
+        BigDecimal value = null;
+        if (this.capitalChargeDue != null) {
+            value = this.capitalChargeDue.getAmount();
+        }
+        return value;
+    }
+
+    @Override
+    public void setCapitalChargeDue(Money capitalChargeDue) {
+       this.capitalChargeDue = capitalChargeDue;
     }
 }

@@ -1335,7 +1335,6 @@ public class Loan extends AbstractPersistable<Long> {
 
     public void updateLoanSchedule(final LoanScheduleModel modifiedLoanSchedule, AppUser currentUser) {
         this.repaymentScheduleInstallments.clear();
-
         for (final LoanScheduleModelPeriod scheduledLoanInstallment : modifiedLoanSchedule.getPeriods()) {
 
             if (scheduledLoanInstallment.isRepaymentPeriod()) {
@@ -1344,11 +1343,12 @@ public class Loan extends AbstractPersistable<Long> {
                         scheduledLoanInstallment.periodDueDate(), scheduledLoanInstallment.principalDue(),
                         scheduledLoanInstallment.interestDue(), scheduledLoanInstallment.feeChargesDue(),
                         scheduledLoanInstallment.penaltyChargesDue(), scheduledLoanInstallment.isRecalculatedInterestComponent(),
-                        scheduledLoanInstallment.getLoanCompoundingDetails(), scheduledLoanInstallment.advancePayment());
+                        scheduledLoanInstallment.getLoanCompoundingDetails(), scheduledLoanInstallment.advancePayment(),
+                        scheduledLoanInstallment.capitalChargeDue());
                 addRepaymentScheduleInstallment(installment);
             }
         }
-
+        
         updateLoanScheduleDependentDerivedFields();
         updateLoanSummaryDerivedFields();
         applyAccurals(currentUser);
@@ -5917,7 +5917,6 @@ public class Loan extends AbstractPersistable<Long> {
 
     public List<LoanInstallmentCharge> generateInstallmentLoanCharges(final LoanCharge loanCharge) {
     	final List<LoanInstallmentCharge> loanChargePerInstallments = new ArrayList<>();
-    	BigDecimal totalCapitalizAmount = BigDecimal.ZERO;
         if (loanCharge.isInstalmentFee()) {
             for (final LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
             	if(installment.isRecalculatedInterestComponent()){
@@ -5946,8 +5945,7 @@ public class Loan extends AbstractPersistable<Long> {
                     amount = chargeAmountPerInstallment;
                 } else if (loanCharge.isInstalmentFee() && loanCharge.getChargeCalculation().isSlabBased()) {
                     if (loanCharge.isCapitalized()) {
-                        amount = getCapitalizedInstallmentChargeAmount(loanCharge, totalCapitalizAmount, installment);
-                        totalCapitalizAmount = totalCapitalizAmount.add(amount);
+                        amount = getCapitalizedInstallmentChargeAmount(installment);
                     } else {
                         amount = MathUtility.getInstallmentAmount(loanCharge.amount(), this.fetchNumberOfInstallmensAfterExceptions(),
                                 this.getCurrency(), installment.getInstallmentNumber());
@@ -5964,14 +5962,13 @@ public class Loan extends AbstractPersistable<Long> {
         return loanChargePerInstallments;
     }
 
-    private BigDecimal getCapitalizedInstallmentChargeAmount(final LoanCharge loanCharge, BigDecimal totalCapitalizAmount,
-            final LoanRepaymentScheduleInstallment installment) {
-        BigDecimal amount;
-        if(installment.getInstallmentNumber()!=this.fetchNumberOfInstallmensAfterExceptions()){
-        	amount = this.calculatedInstallmentAmount.subtract(installment.getPrincipal(this.getCurrency()).getAmount()).subtract(installment.getInterestCharged(this.getCurrency()).getAmount());
-        	
-        }else{
-        	amount =loanCharge.getAmount(this.getCurrency()).getAmount().subtract(totalCapitalizAmount);
+    /**
+     * capitalized charges will get calculated only from loan schedule generator 
+     */
+    private BigDecimal getCapitalizedInstallmentChargeAmount(final LoanRepaymentScheduleInstallment installment) {
+        BigDecimal amount = BigDecimal.ZERO;
+        if(!installment.isRecalculatedInterestComponent() && installment.getCapitalizedCharePortion() != null){
+            amount = installment.getCapitalizedCharePortion();
         }
         return amount;
     }

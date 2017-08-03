@@ -407,4 +407,9 @@ public class LoanInstallmentCharge extends AbstractPersistable<Long> implements 
         this.waived = true;
         return getAmountWrittenOff(currency);
     }
+
+    
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
 }
