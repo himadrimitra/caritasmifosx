@@ -42,9 +42,11 @@ public class VillageOnboardingWorkflow implements WorkflowCreator {
             Client client = null ;
             AppUser assignedTo = null;
             Date dueDate = null;
-            String description = village.getId() + "- New Village "
+            /*String description = village.getId() + "- New Village "
                     + WordUtils.capitalizeFully(village.getVillageName()) + " for office - "
-                    + WordUtils.capitalizeFully(village.getOfficeName());
+                    + WordUtils.capitalizeFully(village.getOfficeName());*/
+            String description = village.getId() + "- New Village "
+                    + WordUtils.capitalizeFully(village.getVillageName());
             this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                     TaskEntityType.VILLAGE, village.getId(), client, assignedTo, dueDate, village.getOffice(), map,
                     description);

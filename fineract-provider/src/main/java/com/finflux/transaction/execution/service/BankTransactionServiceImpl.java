@@ -130,8 +130,9 @@ public class BankTransactionServiceImpl implements BankTransactionService {
 					description.append(" | Loan Id #").append(transactionRequest.getEntityId());
 					description.append(" | Loan TxnId #").append(transactionRequest.getEntityTxnId());
 				}
-				description.append(" | Client: ").append(client.getDisplayName())
-						.append("(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()));
+				/*description.append(" | Client: ").append(client.getDisplayName())
+						.append("(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()));*/
+				description.append(" | Client: ").append(client.getDisplayName());
 				final AppUser assignedTo = null;
 				final Date dueDate = null;
 				this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
