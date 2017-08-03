@@ -1,25 +1,17 @@
 package com.finflux.infrastructure.external.authentication.aadhar.data;
 
-import java.io.IOException;
 import java.lang.reflect.Type;
-import java.net.URISyntaxException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
-import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -32,7 +24,6 @@ import com.aadhaarconnect.bridge.capture.model.common.Location;
 import com.aadhaarconnect.bridge.capture.model.common.LocationType;
 import com.aadhaarconnect.bridge.capture.model.common.request.CertificateType;
 import com.aadhaarconnect.bridge.capture.model.common.request.Modality;
-import com.aadhaarconnect.bridge.capture.model.common.request.ModalityType;
 import com.aadhaarconnect.bridge.capture.model.common.response.Modalities;
 import com.aadhaarconnect.bridge.capture.model.common.response.Pid;
 import com.aadhaarconnect.bridge.capture.model.common.response.PidType;
@@ -43,7 +34,6 @@ import com.aadhaarconnect.bridge.capture.model.otp.OtpCaptureRequest;
 import com.aadhaarconnect.bridge.capture.model.otp.OtpChannel;
 import com.finflux.infrastructure.external.authentication.aadhar.api.AadhaarApiConstants;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.AuthRequestDataBuldFailedException;
-import com.finflux.kyc.address.service.AddressReadPlatformService;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -101,8 +91,8 @@ public class AadhaarServiceDataAssembler {
         return authCaptureRequest;
     }
 
-    public String authenticateUserUsingFingerprintDataAssembler(final String json) {
-        final AuthCaptureData authCaptureData = assembleAndGetAuthCaptureDataForFingerPrint(json);
+    public String authenticateUserUsingFingerprintDataAssembler(final String aadharNumber, final String authData) {
+        final AuthCaptureData authCaptureData = assembleAndGetAuthCaptureDataForFingerPrint(aadharNumber, authData);
        return this.jsonSerializer.serialize(authCaptureData);
     }
 
@@ -136,27 +126,25 @@ public class AadhaarServiceDataAssembler {
         return json;
     }
 
-    public AuthCaptureData assembleAndGetAuthCaptureDataForFingerPrint(final String json) {
-    	if (StringUtils.isBlank(json)) {
+    public AuthCaptureData assembleAndGetAuthCaptureDataForFingerPrint(final String aadharNumber, final String authData) {
+    	if (StringUtils.isBlank(authData)) {
 			throw new InvalidJsonException();
 		}
 
 		final Type typeOfMap = new TypeToken<Map<String, Object>>() {
 		}.getType();
 
-		this.fromJsonHelper.checkForUnsupportedParameters(typeOfMap, json, AadhaarApiConstants.IRIS_REQUEST_DATA);
+		this.fromJsonHelper.checkForUnsupportedParameters(typeOfMap, authData, AadhaarApiConstants.IRIS_REQUEST_DATA);
 
 		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 		final DataValidatorBuilder dataValidatorBuilder = new DataValidatorBuilder(dataValidationErrors)
 				.resource(AadhaarApiConstants.AADHAAR_SERIVICE_RESOURCE_NAME);
 
 		AuthCaptureData authCaptureData = new AuthCaptureData();
-		JsonElement element = this.fromJsonHelper.parse(json);
+		JsonElement element = this.fromJsonHelper.parse(authData);
 		authCaptureData.setConsent(ConsentType.Y);
-		final String aadhaarNumber = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.AADHAAR_ID, element);
-		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.AADHAAR_NUMBER).value(aadhaarNumber).notNull();
-		authCaptureData.setAadhaar(aadhaarNumber);
-		final JsonObject parentObject = this.fromJsonHelper.parse(json).getAsJsonObject();
+		authCaptureData.setAadhaar(aadharNumber);
+		final JsonObject parentObject = this.fromJsonHelper.parse(authData).getAsJsonObject();
 		final JsonElement modality = parentObject.get(AadhaarApiConstants.MODALITY);
 		Modalities modalities = new Modalities();
 		modalities.setIris(this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.IRIS, modality));
@@ -172,10 +160,10 @@ public class AadhaarServiceDataAssembler {
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.TYPE).value(pidType).notNull().notBlank();
 		;
 		pid.setType(PidType.valueOf(pidType));
-		final String authData = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.PID_VALUE, pidData);
-		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.PID_VALUE).value(authData).notNull().notBlank();
+		final String pidAuthData = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.PID_VALUE, pidData);
+		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.PID_VALUE).value(pidAuthData).notNull().notBlank();
 		;
-		pid.setValue(authData);
+		pid.setValue(pidAuthData);
 		authCaptureData.setPid(pid);
 		final String hmac = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.HMAC, element);
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.HMAC).value(hmac).notNull().notBlank();

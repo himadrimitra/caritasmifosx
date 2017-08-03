@@ -6,6 +6,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Base64;
 import java.util.Random;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -20,8 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import com.aadhaarconnect.bridge.capture.model.auth.AuthCaptureData;
-import com.aadhaarconnect.bridge.capture.model.common.Location;
-import com.aadhaarconnect.bridge.capture.model.common.LocationType;
 import com.aadhaarconnect.bridge.capture.model.common.request.CertificateType;
 import com.aadhaarconnect.bridge.gateway.model.AuthResponse;
 import com.aadhaarconnect.bridge.gateway.model.OtpResponse;
@@ -40,6 +39,7 @@ import com.finflux.infrastructure.external.authentication.aadhar.exception.AuthR
 import com.finflux.infrastructure.external.authentication.aadhar.exception.ConnectionFailedException;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.UnableToGetKycDetails;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.UnableToSendOtpException;
+import com.finflux.organisation.transaction.authentication.api.TransactionAuthenticationApiConstants;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
@@ -75,7 +75,8 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 
 	private AadhaarServerDetails aadhaarServerDetails;
 	private CertificateType certificateType;
-
+	private final FromJsonHelper fromApiJsonHelper;
+	
 	private void initalize() {
 		this.aadhaarServerDetails = getAadhaarServerDetails();
 		setCertificateType();
@@ -104,7 +105,9 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	@Autowired
 	public AadhaarBridgeProvidedServiceImpl(final AadhaarServiceDataAssembler aadhaarServiceDataAssembler,
 			final RoutingDataSource dataSource, final ExternalHttpConnectivity httpConnectivity,
-			final FromJsonHelper fromJsonHelper, final AadhaarDataValidator aadhaarDataValidator, final AadhaarOutBoundRequestDetailsRepositoryWrapper aadhaarServicesRepositoryWrapper, final PlatformCryptoService platformCryptoService) {
+			final FromJsonHelper fromJsonHelper, final AadhaarDataValidator aadhaarDataValidator, 
+			final AadhaarOutBoundRequestDetailsRepositoryWrapper aadhaarServicesRepositoryWrapper, final PlatformCryptoService platformCryptoService,
+			final FromJsonHelper fromApiJsonHelper) {
 		this.aadharServiceDataAssembler = aadhaarServiceDataAssembler;
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 		this.httpConnectivity = httpConnectivity;
@@ -112,6 +115,7 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 		this.aadhaarDataValidator = aadhaarDataValidator;
 		this.aadhaarServicesRepositoryWrapper = aadhaarServicesRepositoryWrapper;
 		this.platformCryptoService = platformCryptoService;
+		this.fromApiJsonHelper = fromApiJsonHelper ;
 	}
 
 	private String urlBuilder(final String endpoint, final String path) {
@@ -142,10 +146,14 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	}
 
 	@Override
-	public AuthResponse authenticateUserByOtp(String aadhaarNumber, String otp, final String transactionId) {
+	public AuthResponse authenticateUserByOtp(String aadhaarNumber, String otp) {
 		initalize();
-		String authenticateUserByOtpJson = this.aadharServiceDataAssembler
-				.authenticateUserUsingOtpDataAssembler(aadhaarNumber, otp, this.certificateType, transactionId);
+		final JsonElement element = this.fromApiJsonHelper.parse(otp);
+		final String otpElement = this.fromApiJsonHelper.extractStringNamed("OtpPinNumber", element) ;
+		JsonElement otpResponseElement = element.getAsJsonObject().get("otpResponse");
+		final String transactionIdElement = this.fromApiJsonHelper.extractStringNamed("aadhaar-reference-code", otpResponseElement) ;
+			String authenticateUserByOtpJson = this.aadharServiceDataAssembler
+				.authenticateUserUsingOtpDataAssembler(aadhaarNumber, otpElement, this.certificateType, transactionIdElement);
 		String url = urlBuilder(endpoint, authRaw);
 
 		String response = this.httpConnectivity.performServerPost(url, authenticateUserByOtpJson, String.class);
@@ -162,10 +170,10 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	}
 
 	@Override
-	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String json) {
+	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String aadharNumber, final String authData) {
 		initalize();
 		String authenticateUserByFingerprintJson = this.aadharServiceDataAssembler
-				.authenticateUserUsingFingerprintDataAssembler(json);
+				.authenticateUserUsingFingerprintDataAssembler(aadharNumber,authData );
 		String url = urlBuilder(endpoint, auth);
 
 		String response = this.httpConnectivity.performServerPost(url, authenticateUserByFingerprintJson, String.class);

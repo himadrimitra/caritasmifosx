@@ -89,7 +89,7 @@ public class TransactionAuthenticationService {
 		public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
 			JsonCommand jsonCommand = (JsonCommand) businessEventEntity.get(BUSINESS_ENTITY.JSON_COMMAND);
 			Loan loan = (Loan) businessEventEntity.get(BUSINESS_ENTITY.LOAN);
-			executeTransactionAuthenticationService(jsonCommand, loan);
+			//executeTransactionAuthenticationService(jsonCommand, loan);
 		}
 
 		@Override
@@ -179,11 +179,8 @@ public class TransactionAuthenticationService {
 						final SecondLevelAuthenticationService secondLevelAuthenticationService = this.secondaryAuthenticationFactory
 								.getSecondLevelAuthenticationService(
 										secondaryAuthenticationService.getAuthServiceClassName());
-						Location location = getLocationDetails(clientDataForAuthentication);
-						final String otp = clientDataForAuthentication.getClientAuthdata();
-						final String otpTransactionId = null;
-						Object response = secondLevelAuthenticationService.authenticateUser(aadhaarNumber, otp,
-								otpTransactionId);
+						final String clientAuthData = clientDataForAuthentication.getClientAuthdata();
+						Object response = secondLevelAuthenticationService.authenticateUser(aadhaarNumber, clientAuthData);
 						secondLevelAuthenticationService.responseValidation(response);
 					} else {
 						throw new InAcitiveExternalServiceexception(secondaryAuthenticationService.getName(),
@@ -194,18 +191,5 @@ public class TransactionAuthenticationService {
 		}
 	}
 
-	public Location getLocationDetails(final ClientDataForAuthentication data) {
-		String locationType = data.getLocationType();
-		Location location = new Location();
-		if (locationType.equals("gps")) {
-			location.setType(LocationType.gps);
-			location.setLongitude(data.getLongitude());
-			location.setLatitude(data.getLatitude());
-		} else if (locationType.equals("pincode")) {
-			location.setType(LocationType.pincode);
-			location.setPincode(data.getPincode());
-		}
-		return location;
-	}
 
 }
