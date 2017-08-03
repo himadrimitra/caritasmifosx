@@ -57,7 +57,6 @@ import javax.persistence.Version;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
-import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainServiceJpa;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
@@ -149,6 +148,7 @@ import org.hibernate.annotations.LazyCollectionOption;
 import org.hibernate.annotations.Where;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -4261,7 +4261,9 @@ public class Loan extends AbstractPersistable<Long> {
     public ChangedTransactionDetail adjustExistingTransaction(final LoanTransaction newTransactionDetail,
             final LoanLifecycleStateMachine loanLifecycleStateMachine, final LoanTransaction transactionForAdjustment,
             final ScheduleGeneratorDTO scheduleGeneratorDTO, final AppUser currentUser) {
-
+        validateActivityNotBeforeLastTransactionDateWithTime(LoanEvent.LOAN_REPAYMENT_OR_WAIVER,
+                transactionForAdjustment.getTransactionDate(),
+                transactionForAdjustment.getCreatedDate().withZone(DateUtils.getDateTimeZoneOfTenant()).toLocalDateTime());
         HolidayDetailDTO holidayDetailDTO = scheduleGeneratorDTO.getHolidayDetailDTO();
         validateActivityNotBeforeLastTransactionDate(LoanEvent.LOAN_REPAYMENT_OR_WAIVER, transactionForAdjustment.getTransactionDate());
         
@@ -5722,45 +5724,79 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
     }
+    
+    private void validateActivityNotBeforeLastTransactionDateWithTime(final LoanEvent event, final LocalDate activityDate,
+            final LocalDateTime activityCreatedDateTime) {
+        final LoanTransaction loanTransaction = getLastUserTransaction();
+        if (loanTransaction != null) {
+            final LocalDate lastTansactionDate = loanTransaction.getTransactionDate();
+            final LocalDateTime lastTransactionCreatedDateTime = loanTransaction.getCreatedDate()
+                    .withZone(DateUtils.getDateTimeZoneOfTenant()).toLocalDateTime();
+            if (lastTansactionDate.isAfter(activityDate)
+                    || (lastTansactionDate.isEqual(activityDate) && lastTransactionCreatedDateTime.isAfter(activityCreatedDateTime))) {
+                invalidLoanStateTransitionException(event);
+            }
+        }
+    }
+
+    private LoanTransaction getLastUserTransaction() {
+        Collection<Integer> transactionType = new ArrayList<>();
+        transactionType.add(LoanTransactionType.ACCRUAL.getValue());
+        transactionType.add(LoanTransactionType.ACCRUAL_SUSPENSE.getValue());
+        transactionType.add(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue());
+        transactionType.add(LoanTransactionType.INCOME_POSTING.getValue());
+        final boolean excludeTypes = true;
+        final int size = this.getLoanTransactions().size();
+        final List<LoanTransaction> transactions = this.getOrderedLoanTransactions();
+        for (int i = size - 1; i >= 0; i--) {
+            LoanTransaction loanTransaction = transactions.get(i);
+            if (loanTransaction.isNotReversed() && (transactionType.contains(loanTransaction.getTypeOf().getValue()) ^ excludeTypes)) { return loanTransaction; }
+        }
+        return null;
+    }
+
+    private void invalidLoanStateTransitionException(final LoanEvent event) {
+        final LocalDate clientOfficeJoiningDate = this.client.getOfficeJoiningLocalDate();
+        String errorMessage = null;
+        String action = null;
+        String postfix = null;
+        switch (event) {
+            case LOAN_REPAYMENT_OR_WAIVER:
+                errorMessage = "The date on which a repayment or waiver is made cannot be earlier than last transaction date";
+                action = "repayment.or.waiver";
+                postfix = "cannot.be.made.before.last.transaction.date";
+            break;
+            case WRITE_OFF_OUTSTANDING:
+                errorMessage = "The date on which a write off is made cannot be earlier than last transaction date";
+                action = "writeoff";
+                postfix = "cannot.be.made.before.last.transaction.date";
+            break;
+            case LOAN_CHARGE_PAYMENT:
+                errorMessage = "The date on which a charge payment is made cannot be earlier than last transaction date";
+                action = "charge.payment";
+                postfix = "cannot.be.made.before.last.transaction.date";
+            break;
+            case LOAN_ADD_SUBSIDY:
+                errorMessage = "The date on which a subsidy payment is made cannot be earlier than last transaction date";
+                action = "add.subsidy";
+                postfix = "cannot.be.made.before.last.transaction.date";
+            break;
+            case LOAN_REVOKE_SUBSIDY:
+                errorMessage = "The date on which a subsidy is revoked cannot be earlier than last transaction date";
+                action = "revoke.subsidy";
+                postfix = "cannot.be.made.before.last.transaction.date";
+            break;
+            default:
+            break;
+        }
+        throw new InvalidLoanStateTransitionException(action, postfix, errorMessage, clientOfficeJoiningDate);
+    }
 
     private void validateActivityNotBeforeLastTransactionDate(final LoanEvent event, final LocalDate activityDate) {
         if (!(this.repaymentScheduleDetail().isInterestRecalculationEnabled() || this.loanProduct().isHoldGuaranteeFundsEnabled())) { return; }
         LocalDate lastTransactionDate = getLastUserTransactionDate();
-        final LocalDate clientOfficeJoiningDate = this.client.getOfficeJoiningLocalDate();
         if (lastTransactionDate.isAfter(activityDate)) {
-            String errorMessage = null;
-            String action = null;
-            String postfix = null;
-            switch (event) {
-                case LOAN_REPAYMENT_OR_WAIVER:
-                    errorMessage = "The date on which a repayment or waiver is made cannot be earlier than last transaction date";
-                    action = "repayment.or.waiver";
-                    postfix = "cannot.be.made.before.last.transaction.date";
-                break;
-                case WRITE_OFF_OUTSTANDING:
-                    errorMessage = "The date on which a write off is made cannot be earlier than last transaction date";
-                    action = "writeoff";
-                    postfix = "cannot.be.made.before.last.transaction.date";
-                break;
-                case LOAN_CHARGE_PAYMENT:
-                    errorMessage = "The date on which a charge payment is made cannot be earlier than last transaction date";
-                    action = "charge.payment";
-                    postfix = "cannot.be.made.before.last.transaction.date";
-                break;
-                case LOAN_ADD_SUBSIDY:
-                    errorMessage = "The date on which a subsidy payment is made cannot be earlier than last transaction date";
-                    action = "add.subsidy";
-                    postfix = "cannot.be.made.before.last.transaction.date";
-                break;
-                case LOAN_REVOKE_SUBSIDY:
-                    errorMessage = "The date on which a subsidy is revoked cannot be earlier than last transaction date";
-                    action = "revoke.subsidy";
-                    postfix = "cannot.be.made.before.last.transaction.date";
-                break;
-                default:
-                break;
-            }
-            throw new InvalidLoanStateTransitionException(action, postfix, errorMessage, clientOfficeJoiningDate);
+            invalidLoanStateTransitionException(event);
         }
     }
     
@@ -5815,7 +5851,7 @@ public class Loan extends AbstractPersistable<Long> {
         boolean excludeTypes = true;
         return getLastTransactioDateOfType(transactionType, excludeTypes);
     }
-    
+
     private LocalDate getLastTransactioDateOfType(Collection<Integer> transactionType, boolean excludeTypes) {
         int size = this.getLoanTransactions().size();
         LocalDate lastTansactionDate = getDisbursementDate();

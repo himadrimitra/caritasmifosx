@@ -180,14 +180,27 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
     @Override
     public Collection<PostDatedChequeDetailData> searchPDC(final JsonQuery query) {
         final PDCSearchParameters searchParameters = this.service.validateAndBuildPDCSearchParameters(query.json());
+        final ChequeStatus chequeStatus = ChequeStatus.fromInt(searchParameters.getChequeStatus());
         final PostDatedChequeDetailSearchDataMapper searchDataMapper = new PostDatedChequeDetailSearchDataMapper();
-        String sql = "select " + searchDataMapper.schema();
+        String sql = "select " + searchDataMapper.schema(chequeStatus);
         final List<Object> params = new ArrayList<>();
         final String whereClauseConditions = buildSQLwhereCondition(searchParameters, params);
         if (StringUtils.isNotBlank(whereClauseConditions)) {
             sql = sql + " where " + whereClauseConditions;
         }
+        final String groupByOrOrderByConditions = buildSQLGroupOrOrderByCondition(chequeStatus);
+        if (StringUtils.isNotBlank(groupByOrOrderByConditions)) {
+            sql = sql + groupByOrOrderByConditions;
+        }
         return this.jdbcTemplate.query(sql, params.toArray(), searchDataMapper);
+    }
+
+    private String buildSQLGroupOrOrderByCondition(final ChequeStatus chequeStatus) {
+        final StringBuilder buff = new StringBuilder();
+        if (chequeStatus.isPresented() || chequeStatus.isBounced()) {
+            buff.append(" order by l.id desc, lt.created_date desc ");
+        }
+        return buff.toString();
     }
 
     private String buildSQLwhereCondition(final PDCSearchParameters searchParameters, final List<Object> params) {
@@ -285,15 +298,20 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
             sb.append("from f_pdc_cheque_detail pdc ");
             sb.append("join f_pdc_cheque_detail_mapping pdcm on pdcm.pdc_cheque_detail_id = pdc.id and pdcm.is_deleted = 0 ");
             sb.append("and pdcm.entity_type = ").append(EntityType.LOAN.getValue());
-            sb.append(" join m_loan l on l.id = pdcm.entity_id ");
-            sb.append(" and l.loan_status_id = ").append(LoanStatus.ACTIVE.getValue());
+            sb.append(" join m_loan l on l.id = pdcm.entity_id and l.loan_status_id >= ").append(LoanStatus.ACTIVE.getValue());
             sb.append(" join m_product_loan lp on lp.id = l.product_id ");
             sb.append("join m_client c on c.id = l.client_id ");
             sb.append("join m_office o on o.id = c.office_id ");
             this.schema = sb.toString();
         }
 
-        public String schema() {
+        public String schema(final ChequeStatus chequeStatus) {
+            if (chequeStatus.isPresented() || chequeStatus.isBounced()) {
+                final StringBuilder sb = new StringBuilder(this.schema.length() + 100);
+                sb.append(this.schema);
+                sb.append(" left join m_loan_transaction lt on lt.loan_id = l.id and pdcm.transaction_id = lt.id ");
+                return sb.toString();
+            }
             return this.schema;
         }
 
