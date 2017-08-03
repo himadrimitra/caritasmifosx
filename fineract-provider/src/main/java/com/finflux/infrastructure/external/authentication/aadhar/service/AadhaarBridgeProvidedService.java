@@ -13,10 +13,9 @@ public interface AadhaarBridgeProvidedService {
 
 	public OtpResponse generateOtp(final String aadhaarNumber);
 
-	public AuthResponse authenticateUserByOtp(final String aadhaarNumber, final String otp,
-			final String transactionId);
+	public AuthResponse authenticateUserByOtp(final String aadhaarNumber, final String otp);
 
-	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String json);
+	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String aadharNumber, final String authData);
 	
 	public String initiateOtpRequest(final String json);
 	

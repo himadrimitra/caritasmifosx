@@ -8,7 +8,7 @@ import com.finflux.fingerprint.api.FingerPrintApiConstants;
 public class FingerPrintAuthenticationServicesImpl implements FingerPrintAuthenticationServices {
 	
 	@Override
-	public Boolean authenticateUserByAuthKey(String userKey) {
+	public Boolean authenticateUserByAuthKey(final String aadharNumber, final String userKey) {
 		final String authKey = FingerPrintApiConstants.FINGER_PRINT_AUTH_KEY;
 		boolean isKeyMatch = false;
 		if(authKey.equals(userKey)){
