@@ -29,6 +29,8 @@ public class SurveyTakenData {
     private Long entityId;
     private Long surveyedBy;
     private String surveyedByName;
+    private Long coSurveyedBy;
+    private String coSurveyedByName;
     private Date surveyedOn;
     private Integer totalScore;
     private List<ScorecardValue> scorecardValues;
@@ -37,21 +39,26 @@ public class SurveyTakenData {
         super();
     }
 
-    public SurveyTakenData(final Long entityId, final Long surveyedBy, final Date surveyedOn, final List<ScorecardValue> scorecardValues) {
+    public SurveyTakenData(final Long entityId, final Long surveyedBy, final Long coSurveyedBy, final Date surveyedOn,
+            final List<ScorecardValue> scorecardValues) {
         super();
         this.entityId = entityId;
         this.surveyedBy = surveyedBy;
+        this.coSurveyedBy = coSurveyedBy;
         this.surveyedOn = surveyedOn;
         this.scorecardValues = scorecardValues;
     }
 
     public SurveyTakenData(final Long id, final Long surveyId, final String surveyName, final Long surveyedBy, final String surveyedByName,
-            final Date surveyedOn, final Integer totalScore, final List<ScorecardValue> scorecardValues) {
+            final Long coSurveyedBy, final String coSurveyedByName, final Date surveyedOn, final Integer totalScore,
+            final List<ScorecardValue> scorecardValues) {
         this.id = id;
         this.surveyId = surveyId;
         this.surveyName = surveyName;
         this.surveyedBy = surveyedBy;
         this.surveyedByName = surveyedByName;
+        this.coSurveyedBy = coSurveyedBy;
+        this.coSurveyedByName = coSurveyedByName;
         this.surveyedOn = surveyedOn;
         this.totalScore = totalScore;
         this.scorecardValues = scorecardValues;
@@ -127,5 +134,21 @@ public class SurveyTakenData {
 
     public void setTotalScore(Integer totalScore) {
         this.totalScore = totalScore;
+    }
+
+    public Long getCoSurveyedBy() {
+        return this.coSurveyedBy;
+    }
+
+    public void setCoSurveyedBy(Long coSurveyedBy) {
+        this.coSurveyedBy = coSurveyedBy;
+    }
+
+    public String getCoSurveyedByName() {
+        return this.coSurveyedByName;
+    }
+
+    public void setCoSurveyedByName(String coSurveyedByName) {
+        this.coSurveyedByName = coSurveyedByName;
     }
 }
