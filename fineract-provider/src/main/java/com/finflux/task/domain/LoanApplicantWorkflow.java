@@ -47,9 +47,11 @@ public class LoanApplicantWorkflow implements WorkflowCreator
             map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
             AppUser assignedTo=null;
             Date dueDate=null;
-            String description = loanProduct.getProductName() + " Main Applicant: "+WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") for loan application #" +
+           /* String description = loanProduct.getProductName() + " Main Applicant: "+WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") for loan application #" +
                     loanApplicationReference.getLoanApplicationReferenceNo() +" in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
-                    loanApplicationReference.getLoanAmountRequested();
+                    loanApplicationReference.getLoanAmountRequested();*/
+            String description = loanProduct.getProductName() + " Applicant: "+WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") for loan application #" +
+                    loanApplicationReference.getLoanApplicationReferenceNo();
             this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                     TaskEntityType.LOAN_APPLICATION_APPLICANT, loanApplicationId, loanApplicationReference.getClient(),assignedTo,dueDate,
                     loanApplicationReference.getClient().getOffice(), map, description);
