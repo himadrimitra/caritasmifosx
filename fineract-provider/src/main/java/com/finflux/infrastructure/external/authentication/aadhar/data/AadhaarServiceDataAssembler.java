@@ -157,6 +157,15 @@ public class AadhaarServiceDataAssembler {
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.AADHAAR_NUMBER).value(aadhaarNumber).notNull();
 		authCaptureData.setAadhaar(aadhaarNumber);
 		final JsonObject parentObject = this.fromJsonHelper.parse(json).getAsJsonObject();
+		final JsonElement modality = parentObject.get(AadhaarApiConstants.MODALITY);
+		Modalities modalities = new Modalities();
+		modalities.setIris(this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.IRIS, modality));
+		modalities.setOtp(this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.AUTHTYPE_OTP, modality));
+		modalities.setPin(this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.PIN, modality));
+		modalities.setDemographics(this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.DEMOGRAPHIC, modality));
+		modalities.setFpMinutae(this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.FP_MINUTAE, modality));
+		modalities.setFpImage(this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.FP_IMAGE, modality));
+		authCaptureData.setModalities(modalities);
 		final JsonElement pidData = parentObject.get(AadhaarApiConstants.PID);
 		Pid pid = new Pid();
 		final String pidType = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.TYPE, pidData);
