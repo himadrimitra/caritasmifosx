@@ -197,8 +197,11 @@ public class PostDatedChequeDetailReadPlatformServiceImpl implements PostDatedCh
 
     private String buildSQLGroupOrOrderByCondition(final ChequeStatus chequeStatus) {
         final StringBuilder buff = new StringBuilder();
+        buff.append(" order by ");
         if (chequeStatus.isPresented() || chequeStatus.isBounced()) {
-            buff.append(" order by l.id desc, lt.created_date desc ");
+            buff.append(" l.id desc, lt.transaction_date desc, lt.created_date desc, pdcm.due_date desc, pdc.cheque_date desc ");
+        } else {
+            buff.append(" l.id, pdcm.due_date, pdc.cheque_date ");
         }
         return buff.toString();
     }
