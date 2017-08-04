@@ -60,4 +60,8 @@ public interface LoanScheduleModelPeriod {
     BigDecimal advancePayment();
 
     void setAdvancePayment(Money advancePayment);
+    
+    BigDecimal capitalChargeDue();
+    
+    void setCapitalChargeDue(Money capitalChargeDue);
 }

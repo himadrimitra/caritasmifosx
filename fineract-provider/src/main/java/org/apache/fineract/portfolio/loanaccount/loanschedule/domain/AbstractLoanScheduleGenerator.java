@@ -397,6 +397,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     scheduleParams.getOutstandingBalance(), currentPeriodParams.getInterestForThisPeriod(),
                     currentPeriodParams.getFeeChargesForInstallment(), currentPeriodParams.getPenaltyChargesForInstallment(),
                     totalInstallmentDue, !isCompletePeriod);
+            installment.setCapitalChargeDue(installmentCapitalizedChargeAmount);
             emiDetails.setEmiAmount(loanApplicationTerms.getFixedEmiAmount());
             emiDetails.setLastEmiAmount(currentPeriodParams.getPrincipalForThisPeriod()
                     .plus(currentPeriodParams.getInterestForThisPeriod()).plus(installmentCapitalizedChargeAmount).getAmount());
@@ -3023,7 +3024,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     scheduledLoanInstallment.principalDue(), scheduledLoanInstallment.interestDue(),
                     scheduledLoanInstallment.feeChargesDue(), scheduledLoanInstallment.penaltyChargesDue(),
                     scheduledLoanInstallment.isRecalculatedInterestComponent(), scheduledLoanInstallment.getLoanCompoundingDetails(),
-                    scheduledLoanInstallment.advancePayment());
+                    scheduledLoanInstallment.advancePayment(), scheduledLoanInstallment.capitalChargeDue());
             installments.add(installment);
         }
         return installment;
