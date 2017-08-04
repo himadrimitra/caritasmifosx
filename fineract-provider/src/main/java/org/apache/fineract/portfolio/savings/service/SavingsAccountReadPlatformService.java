@@ -20,11 +20,11 @@ package org.apache.fineract.portfolio.savings.service;
 
 import java.math.BigDecimal;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
@@ -67,8 +67,11 @@ public interface SavingsAccountReadPlatformService {
 
     SavingsAccountDpDetailsData retrieveSavingsDpDetailsBySavingsId(Long accountId);
 
-	Collection<SavingsAccountTransactionData> retrieveAllTransactions(Long savingsId,
-			DepositAccountType depositAccountType, SearchParameters searchParameters);
+    Collection<SavingsAccountTransactionData> retrieveAllTransactions(Long savingsId, DepositAccountType depositAccountType,
+            SearchParameters searchParameters);
+
+    Collection<Long> retrieveRecurringDepositsIdByOfficesAndHoliday(final Long officeId, final List<Holiday> holidays,
+            final Collection<Integer> status, final LocalDate recalculateFrom);
 
     Long retrivePaymentDetailsIdWithSavingsAccountNumberAndTransactioId(final long transactionId, final String savingsAccountNumber);
 }

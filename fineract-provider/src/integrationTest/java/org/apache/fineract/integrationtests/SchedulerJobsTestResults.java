@@ -365,7 +365,7 @@ public class SchedulerJobsTestResults {
         holidayId = this.holidayHelper.activateHolidays(this.requestSpec, this.responseSpec, holidayId.toString());
         Assert.assertNotNull(holidayId);
 
-        String JobName = SchedulerJobHelper.APPLY_HOLIDAYS_TO_LOANS;
+        String JobName = SchedulerJobHelper.APPLY_HOLIDAYS;
 
         this.schedulerJobHelper.executeJob(JobName);
         final ArrayList<HashMap> repaymentScheduleDataAfterJob = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,

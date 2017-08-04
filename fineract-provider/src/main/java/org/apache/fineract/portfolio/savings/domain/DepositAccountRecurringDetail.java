@@ -21,7 +21,6 @@ package org.apache.fineract.portfolio.savings.domain;
 import static org.apache.fineract.portfolio.savings.DepositsApiConstants.mandatoryRecommendedDepositAmountParamName;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -113,8 +112,8 @@ public class DepositAccountRecurringDetail extends AbstractPersistable<Long> {
         return actualChanges;
     }
 
-    public Map<String, Object> updateMandatoryRecommendedDepositAmount(BigDecimal newMandatoryRecommendedDepositAmount,
-            LocalDate effectiveDate, Boolean isSavingsInterestPostingAtCurrentPeriodEnd, Integer financialYearBeginningMonth) {
+    public Map<String, Object> updateMandatoryRecommendedDepositAmount(final BigDecimal newMandatoryRecommendedDepositAmount,
+            final LocalDate effectiveDate) {
         final Map<String, Object> actualChanges = new LinkedHashMap<>(10);
         actualChanges.put(mandatoryRecommendedDepositAmountParamName, newMandatoryRecommendedDepositAmount);
         this.mandatoryRecommendedDepositAmount = newMandatoryRecommendedDepositAmount;
@@ -129,10 +128,6 @@ public class DepositAccountRecurringDetail extends AbstractPersistable<Long> {
         }
         depositAccount.updateScheduleInstallmentsWithNewRecommendedDepositAmount(newMandatoryRecommendedDepositAmount, effectiveDate);
         depositAccount.updateOverduePayments(DateUtils.getLocalDateOfTenant());
-        MathContext mc = MathContext.DECIMAL64;
-        Boolean isPreMatureClosure = false;
-        depositAccount.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
-                financialYearBeginningMonth);
         return actualChanges;
     }
 

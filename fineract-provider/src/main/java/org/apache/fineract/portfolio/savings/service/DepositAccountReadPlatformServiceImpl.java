@@ -512,14 +512,18 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
         final StringBuilder sb = new StringBuilder(300);
         sb.append(" select rd.savings_account_id savingsId, rd.mandatory_recommended_deposit_amount as amount,");
         sb.append(" mc.recurrence as recurrence ,");
-        sb.append(" max(ms.duedate) as dueDate , max(ms.installment) as installment,");
+        sb.append(" max(ms.actualduedate) as actualDueDate , max(ms.installment) as installment,");
         sb.append(" count(ms.installment) as futureInstallemts");
+        sb.append(" ,c.office_id as clientOfficeId ");
+        sb.append(" ,g.office_id as groupOfficeId ");
         sb.append(" from m_deposit_account_term_and_preclosure dat ");
         sb.append(" inner join m_savings_account sa on sa.id = dat.savings_account_id and sa.status_enum = ?");
+        sb.append(" left join m_client c on c.id = sa.client_id ");
+        sb.append(" left join m_group g on g.id = sa.group_id ");
         sb.append(" inner join m_deposit_account_recurring_detail rd on rd.savings_account_id = dat.savings_account_id ");
         sb.append(" inner join m_calendar_instance mci on mci.entity_type_enum = ? and mci.entity_id = dat.savings_account_id  ");
         sb.append(" inner join m_calendar mc  on mc.id = mci.calendar_id and mc.calendar_type_enum = ?");
-        sb.append(" inner join m_mandatory_savings_schedule ms on ms.savings_account_id = dat.savings_account_id and ms.duedate > ?");
+        sb.append(" inner join m_mandatory_savings_schedule ms on ms.savings_account_id = dat.savings_account_id and ms.actualduedate > ?");
         sb.append(" where dat.deposit_period is null");
         sb.append(" group by ms.savings_account_id");
 

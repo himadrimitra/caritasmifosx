@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -32,10 +31,7 @@ import javax.transaction.Transactional;
 
 import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
-import org.apache.fineract.infrastructure.core.data.ApiParameterError;
-import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
-import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
@@ -45,8 +41,6 @@ import org.apache.fineract.infrastructure.jobs.service.JobExecuter;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.infrastructure.jobs.service.JobRunner;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
-import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
-import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
@@ -69,21 +63,16 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     private final ConfigurationDomainService configurationDomainService;
     private final LoanReadPlatformService loanReadPlatformService;
     private final LoanWritePlatformService loanWritePlatformService;
-    private final LoanUtilService loanUtilService;
-    private final HolidayRepositoryWrapper holidayRepository;
     private final JobExecuter jobExecuter;
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public LoanSchedularServiceImpl(final ConfigurationDomainService configurationDomainService,
             final LoanReadPlatformService loanReadPlatformService, final LoanWritePlatformService loanWritePlatformService,
-            final LoanUtilService loanUtilService, final HolidayRepositoryWrapper holidayRepository,
-            final JobExecuter jobExecuter,final RoutingDataSource dataSource) {
+            final JobExecuter jobExecuter, final RoutingDataSource dataSource) {
         this.configurationDomainService = configurationDomainService;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanWritePlatformService = loanWritePlatformService;
-        this.loanUtilService = loanUtilService;
-        this.holidayRepository = holidayRepository;
         this.jobExecuter = jobExecuter;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
@@ -130,26 +119,26 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         final String errors = this.jobExecuter.executeJob(loanIds, runner);
         if (errors.length() > 0) { throw new JobExecutionException(errors); }
     }
-    
-    private  class RecalculateInterestJobRunner implements JobRunner<List<Long>>{
+
+    private class RecalculateInterestJobRunner implements JobRunner<List<Long>> {
 
         final Integer maxNumberOfRetries;
         final Integer maxIntervalBetweenRetries;
         final Boolean ignoreOverdue;
-        
+
         public RecalculateInterestJobRunner() {
             maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
             maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
             ignoreOverdue = ThreadLocalContextUtil.getIgnoreOverdue();
-        }        
-        
+        }
+
         @Override
         public void runJob(final List<Long> loanIds, final StringBuilder sb) {
             ThreadLocalContextUtil.setIgnoreOverdue(this.ignoreOverdue);
             recalculateInterest(sb, this.maxNumberOfRetries, this.maxIntervalBetweenRetries, loanIds);
-            
+
         }
-        
+
     }
 
     private StringBuilder recalculateInterest(final StringBuilder sb, Integer maxNumberOfRetries, Integer maxIntervalBetweenRetries,
@@ -198,51 +187,22 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     }
 
     @Override
-    @CronTarget(jobName = JobName.APPLY_HOLIDAYS_TO_LOANS)
-    public void applyHolidaysToLoans() throws JobExecutionException {
-
-        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
-
-        if (!isHolidayEnabled) { return; }
-
+    public void applyHolidaysToLoans(final HolidayDetailDTO holidayDetailDTO, final Map<Long, List<Holiday>> officeIds,
+            final Set<Long> failedForOffices, final StringBuilder sb) throws JobExecutionException {
         final Collection<Integer> loanStatuses = new ArrayList<>(Arrays.asList(LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(),
                 LoanStatus.APPROVED.getValue(), LoanStatus.ACTIVE.getValue()));
-        // Get all Holidays which are active/deleted and not processed
-        final List<Holiday> holidays = this.holidayRepository.findUnprocessed();
-
-        // Loop through all holidays
-        final Map<Long, List<Holiday>> officeIds = new HashMap<>();
-        for (final Holiday holiday : holidays) {
-            // All offices to which holiday is applied
-            final Set<Office> offices = holiday.getOffices();
-            for (final Office office : offices) {
-                if (officeIds.containsKey(office.getId())) {
-                    officeIds.get(office.getId()).add(holiday);
-                } else {
-                    List<Holiday> holidaylist = new ArrayList<>();
-                    holidaylist.add(holiday);
-                    officeIds.put(office.getId(), holidaylist);
-                }
-            }
-
-        }
-        StringBuilder sb = new StringBuilder();
-        String errorMessage = "Apply Holidays for loans failed for account:";
-        Set<Long> failedForOffices = new HashSet<>();
-        for (Map.Entry<Long, List<Holiday>> entry : officeIds.entrySet()) {
+        final String errorMessage = "Apply Holidays for loans failed for account:";
+        for (final Map.Entry<Long, List<Holiday>> entry : officeIds.entrySet()) {
             try {
                 LocalDate recalculateFrom = null;
-                for(final Holiday holiday : entry.getValue()){
-                    if(recalculateFrom == null || recalculateFrom.isAfter(holiday.getFromDateLocalDate())){
+                for (final Holiday holiday : entry.getValue()) {
+                    if (recalculateFrom == null || recalculateFrom.isAfter(holiday.getFromDateLocalDate())) {
                         recalculateFrom = holiday.getFromDateLocalDate();
                     }
                 }
-                Collection<Long> loansForProcess = this.loanReadPlatformService.retrieveLoansByOfficesAndHoliday(entry.getKey(),
+                final Collection<Long> loansForProcess = this.loanReadPlatformService.retrieveLoansByOfficesAndHoliday(entry.getKey(),
                         entry.getValue(), loanStatuses, recalculateFrom);
-                final List<Holiday> holidaysList = null;
-                HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(holidaysList);
-                for (Long loanId : loansForProcess) {
-
+                for (final Long loanId : loansForProcess) {
                     try {
                         this.loanWritePlatformService.updateScheduleDates(loanId, holidayDetailDTO, recalculateFrom);
                     } catch (Exception e) {
@@ -258,29 +218,6 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
                 failedForOffices.add(entry.getKey());
             }
         }
-        boolean holidayStatusChanged = false;
-        for (final Holiday holiday : holidays) {
-            if (failedForOffices.isEmpty()) {
-                holiday.processed();
-                holidayStatusChanged = true;
-            } else {
-                final Set<Office> offices = holiday.getOffices();
-                boolean updateProcessedStatus = true;
-                for (final Office office : offices) {
-                    if (failedForOffices.contains(office.getId())) {
-                        updateProcessedStatus = false;
-                    }
-                }
-                if (updateProcessedStatus) {
-                    holiday.processed();
-                    holidayStatusChanged = true;
-                }
-            }
-        }
-        if (holidayStatusChanged) {
-            this.holidayRepository.save(holidays);
-        }
-        if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
     }
     
     @Override

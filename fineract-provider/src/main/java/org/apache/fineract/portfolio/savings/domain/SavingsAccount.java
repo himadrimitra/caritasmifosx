@@ -3159,4 +3159,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         this.savingsOnHoldAmount = getSavingsHoldAmount().subtract(amount);
     }
 
+    public Group getGroup() {
+        return this.group;
+    }
+
 }
