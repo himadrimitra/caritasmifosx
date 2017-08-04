@@ -21,9 +21,12 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.PlatformMultipleDomainValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.serialization.JsonParserHelper;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import com.finflux.pdcm.constants.ChequeStatus;
@@ -36,6 +39,7 @@ import com.finflux.pdcm.domain.PostDatedChequeDetailsRepositoryWrapper;
 import com.finflux.pdcm.exception.PostDatedChequeDetailDeleteException;
 import com.finflux.pdcm.exception.PostDatedChequeDetailStatusException;
 import com.finflux.pdcm.service.PDCSearchParameters;
+import com.finflux.portfolio.loan.mandate.domain.MandateStatusEnum;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -49,15 +53,18 @@ public class PostDatedChequeDetailService {
     private final PostDatedChequeDetailsRepositoryWrapper postDatedChequeDetailsRepository;
     private final PostDatedChequeDetailMappingRepository mappingRepository;
     private final LoanWritePlatformService loanWritePlatformService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public PostDatedChequeDetailService(final FromJsonHelper fromApiJsonHelper,
             final PostDatedChequeDetailsRepositoryWrapper postDatedChequeDetailsRepository,
-            final PostDatedChequeDetailMappingRepository mappingRepository, final LoanWritePlatformService loanWritePlatformService) {
+            final PostDatedChequeDetailMappingRepository mappingRepository, final LoanWritePlatformService loanWritePlatformService,
+            final RoutingDataSource dataSource) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.postDatedChequeDetailsRepository = postDatedChequeDetailsRepository;
         this.mappingRepository = mappingRepository;
         this.loanWritePlatformService = loanWritePlatformService;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
     /**
@@ -68,6 +75,8 @@ public class PostDatedChequeDetailService {
      * @param json
      */
     public List<PostDatedChequeDetail> validateAndCreate(final Integer entityType, final Long entityId, final String json) {
+
+        validatePDCActionsAllowedOrNot(entityType, entityId);
 
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
@@ -110,6 +119,22 @@ public class PostDatedChequeDetailService {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
         validateCreateForDuplicateChequeNumber(postDatedChequeDetails);
         return postDatedChequeDetails;
+    }
+
+    private void validatePDCActionsAllowedOrNot(final Integer entityType, final Long entityId) {
+        final EntityType entity = EntityType.fromInt(entityType);
+        if (entity.isLoan()) {
+            final String sql = "select COUNT(lm.id) from f_loan_mandates lm where lm.loan_id = ? and lm.mandate_status_enum = ?";
+            final List<Object> params = new ArrayList<>();
+            params.add(entityId);
+            params.add(MandateStatusEnum.ACTIVE.getValue());
+            final Long count = this.jdbcTemplate.queryForObject(sql, params.toArray(), Long.class);
+            if (count != null && count > 0) {
+                final String globalisationMessageCode = "error.msg.pdc.actions.not.allowed.for.nach.linked.with.loan.account";
+                final String defaultUserMessage = "PDC actions are not allowed for NACH linked with loan account";
+                throw new GeneralPlatformDomainRuleException(globalisationMessageCode, defaultUserMessage, entityId);
+            }
+        }
     }
 
     private void validateCreateForDuplicateChequeNumber(final List<PostDatedChequeDetail> postDatedChequeDetails) {
@@ -334,6 +359,9 @@ public class PostDatedChequeDetailService {
 
     public Map<String, Object> validateAndUpdate(final PostDatedChequeDetail postDatedChequeDetail, final JsonCommand command) {
 
+        validatePDCActionsAllowedOrNot(postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType(), postDatedChequeDetail
+                .getPostDatedChequeDetailMapping().getEntityId());
+
         if (StringUtils.isBlank(command.json())) { throw new InvalidJsonException(); }
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
@@ -371,7 +399,6 @@ public class PostDatedChequeDetailService {
             LocalDate chequeDate = null;
             if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeDateParamName, element)) {
                 chequeDate = this.fromApiJsonHelper.extractLocalDateNamed(PostDatedChequeDetailApiConstants.chequeDateParamName, element);
-                baseDataValidator.reset().parameter(PostDatedChequeDetailApiConstants.chequeDateParamName).value(chequeDate).notBlank();
             }
             BigDecimal chequeAmount = null;
             if (this.fromApiJsonHelper.parameterExists(PostDatedChequeDetailApiConstants.chequeAmountParamName, element)) {
@@ -493,6 +520,8 @@ public class PostDatedChequeDetailService {
     }
 
     public void validateAndDelete(final PostDatedChequeDetail postDatedChequeDetail) {
+        validatePDCActionsAllowedOrNot(postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType(), postDatedChequeDetail
+                .getPostDatedChequeDetailMapping().getEntityId());
         if (postDatedChequeDetail.isDelete()) { throw new PostDatedChequeDetailDeleteException(postDatedChequeDetail.getId()); }
         final String globalisationMessageCode = "error.msg.pdc.can.not.be.deleted.status.not.in.pending.state";
         final String defaultUserMessage = "PDC details with identifier " + postDatedChequeDetail.getId()
@@ -540,6 +569,8 @@ public class PostDatedChequeDetailService {
     @Transactional
     public PostDatedChequeDetail processForPresentPDC(final JsonCommand command, final PostDatedChequeDetail postDatedChequeDetail,
             final LocalDate presentedDate, final String presentedDescription, final String transactionDate) {
+        validatePDCActionsAllowedOrNot(postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType(), postDatedChequeDetail
+                .getPostDatedChequeDetailMapping().getEntityId());
         postDatedChequeDetail.setPresentedDate(presentedDate.toDate());
         postDatedChequeDetail.setPresentedDescription(presentedDescription);
         postDatedChequeDetail.setPresentStatus(ChequeStatus.PRESENTED.getValue());
@@ -554,9 +585,9 @@ public class PostDatedChequeDetailService {
         final Long loanId = postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityId();
         final JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("transactionDate", transactionDate);
-        if(chequeType.isRepaymentPDC()){
+        if (chequeType.isRepaymentPDC()) {
             jsonObject.addProperty("transactionAmount", postDatedChequeDetail.getPostDatedChequeDetailMapping().getDueAmount());
-        }else{
+        } else {
             jsonObject.addProperty("transactionAmount", postDatedChequeDetail.getChequeAmount());
         }
         jsonObject.addProperty("paymentTypeId", postDatedChequeDetail.getPostDatedChequeDetailMapping().getPaymentType());
@@ -572,6 +603,8 @@ public class PostDatedChequeDetailService {
     @Transactional
     public PostDatedChequeDetail processForBouncedPDC(final JsonCommand command, final PostDatedChequeDetail postDatedChequeDetail,
             final LocalDate bouncedDate, final String bouncedDescription, final String transactionDate) {
+        validatePDCActionsAllowedOrNot(postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType(), postDatedChequeDetail
+                .getPostDatedChequeDetailMapping().getEntityId());
         postDatedChequeDetail.setBouncedDate(bouncedDate.toDate());
         postDatedChequeDetail.setBouncedDescription(bouncedDescription);
         postDatedChequeDetail.setPresentStatus(ChequeStatus.BOUNCED.getValue());
@@ -599,6 +632,8 @@ public class PostDatedChequeDetailService {
     @Transactional
     public PostDatedChequeDetail processForClearPDC(final PostDatedChequeDetail postDatedChequeDetail, final LocalDate clearedDate,
             final String clearedDescription) {
+        validatePDCActionsAllowedOrNot(postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType(), postDatedChequeDetail
+                .getPostDatedChequeDetailMapping().getEntityId());
         postDatedChequeDetail.setClearedDate(clearedDate.toDate());
         postDatedChequeDetail.setClearedDescription(clearedDescription);
         postDatedChequeDetail.setPresentStatus(ChequeStatus.CLEARED.getValue());
@@ -610,6 +645,8 @@ public class PostDatedChequeDetailService {
     @Transactional
     public PostDatedChequeDetail processForCancelPDC(final PostDatedChequeDetail postDatedChequeDetail, final LocalDate cancelledDate,
             final String cancelledDescription) {
+        validatePDCActionsAllowedOrNot(postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType(), postDatedChequeDetail
+                .getPostDatedChequeDetailMapping().getEntityId());
         postDatedChequeDetail.setCancelledDate(cancelledDate.toDate());
         postDatedChequeDetail.setCancelledDescription(cancelledDescription);
         postDatedChequeDetail.setPresentStatus(ChequeStatus.CANCELLED.getValue());
@@ -620,6 +657,8 @@ public class PostDatedChequeDetailService {
     @Transactional
     public PostDatedChequeDetail processForReturnPDC(final PostDatedChequeDetail postDatedChequeDetail, final LocalDate returnedDate,
             final String returnedDescription) {
+        validatePDCActionsAllowedOrNot(postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType(), postDatedChequeDetail
+                .getPostDatedChequeDetailMapping().getEntityId());
         postDatedChequeDetail.setReturnedDate(returnedDate.toDate());
         postDatedChequeDetail.setReturnedDescription(returnedDescription);
         postDatedChequeDetail.setPresentStatus(ChequeStatus.RETURNED.getValue());
@@ -646,6 +685,8 @@ public class PostDatedChequeDetailService {
 
     @Transactional
     public PostDatedChequeDetail processForUndoPDC(JsonCommand command, final PostDatedChequeDetail postDatedChequeDetail) {
+        validatePDCActionsAllowedOrNot(postDatedChequeDetail.getPostDatedChequeDetailMapping().getEntityType(), postDatedChequeDetail
+                .getPostDatedChequeDetailMapping().getEntityId());
         if (postDatedChequeDetail.getPreviousStatus() != null) {
             final ChequeStatus presentStatus = ChequeStatus.fromInt(postDatedChequeDetail.getPresentStatus());
             if (presentStatus.isPresented()) {

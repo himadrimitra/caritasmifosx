@@ -71,7 +71,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -126,7 +125,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
 
     @Transactional
     @Override
-    @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
+//    @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
     public CommandProcessingResult createFund(final JsonCommand command) {
         try {
         this.fundDataValidator.validate(command);
@@ -253,7 +252,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
 
     @Transactional
     @Override
-    @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
+//    @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
     public CommandProcessingResult updateFund(final Long fundId, final JsonCommand command) {
 
         try {

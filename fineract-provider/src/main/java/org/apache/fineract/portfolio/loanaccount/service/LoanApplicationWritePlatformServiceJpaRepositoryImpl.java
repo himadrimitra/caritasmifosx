@@ -495,6 +495,17 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             return CommandProcessingResult.empty();
         }
     }
+    
+    private void validateForCapitalizedCharge(final Loan loan){
+        boolean isCapitalChargePresent = false;
+        for(LoanCharge charge : loan.charges()){
+            if(charge.isCapitalized()){
+                if(isCapitalChargePresent){
+                    
+                }isCapitalChargePresent = true;
+            }
+        }
+    }
 
     private Collection<Long> extractChargeIds(JsonCommand command) {
         Collection<Long> chargeIds = new ArrayList<>();
