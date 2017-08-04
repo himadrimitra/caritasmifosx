@@ -1,0 +1,1 @@
+INSERT INTO `f_task_activity`(`name`,`identifier`,`type`) VALUES('Activate the Village','activatethevillage',3);
