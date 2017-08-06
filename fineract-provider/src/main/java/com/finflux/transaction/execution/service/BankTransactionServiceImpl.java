@@ -97,51 +97,48 @@ public class BankTransactionServiceImpl implements BankTransactionService {
 		return false;
 	}
 
-	@Override
-	public BankTransactionDetail transactionEntry(
-			Long externalPaymentServiceId,
-			BankTransactionRequest transactionRequest) {
-		BankAccountTransaction bankAccountTransaction = new BankAccountTransaction(
-				transactionRequest.getEntityTypeId(), transactionRequest.getEntityId(),
-				transactionRequest.getEntityTxnId(), TransactionStatus.DRAFTED.getValue(),
-				transactionRequest.getDebiter().getId(), transactionRequest.getBeneficiary().getId(),
-				transactionRequest.getAmount(), transactionRequest.getTransferType().getValue(),
-				externalPaymentServiceId, transactionRequest.getReason());
-		Long txnId = writePlatformService.createTransactionEntry(bankAccountTransaction);
+    @Override
+    public BankTransactionDetail transactionEntry(Long externalPaymentServiceId, BankTransactionRequest transactionRequest) {
+        BankAccountTransaction bankAccountTransaction = new BankAccountTransaction(transactionRequest.getEntityTypeId(),
+                transactionRequest.getEntityId(), transactionRequest.getEntityTxnId(), TransactionStatus.DRAFTED.getValue(),
+                transactionRequest.getDebiter().getId(), transactionRequest.getBeneficiary().getId(), transactionRequest.getAmount(),
+                transactionRequest.getTransferType().getValue(), externalPaymentServiceId, transactionRequest.getReason());
+        Long txnId = writePlatformService.createTransactionEntry(bankAccountTransaction);
 
-		//create workflow
-		if (this.configurationDomainService.isWorkFlowEnabled()) {
-			/**
-			 * Checking is loan product mapped with task configuration
-			 * entity type LOAN_PRODUCT
-			 */
-			final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-					.findOneByEntityTypeAndEntityId(TaskConfigEntityType.BANKTRANSACTION.getValue(), -1L);
-			if (taskConfigEntityTypeMapping != null) {
-				final Client client = transactionRequest.getClient();
-				final Map<TaskConfigKey, String> map = new HashMap<>();
-				map.put(TaskConfigKey.CLIENT_ID, String.valueOf(client.getId()));
-				map.put(TaskConfigKey.BANK_TRANSACTION_ID, String.valueOf(txnId));
-				StringBuilder description = new StringBuilder();
-				description.append("Bank txn #").append(txnId).append(" for amount ").append(transactionRequest.getAmount());
-				if(BankTransactionEntityType.fromInt(transactionRequest.getEntityTypeId()).isLoan()){
-					map.put(TaskConfigKey.LOAN_ID, String.valueOf(transactionRequest.getEntityId()));
-					map.put(TaskConfigKey.LOAN_TRANSACTION_ID, String.valueOf(transactionRequest.getEntityTxnId()));
-					description.append(" | Loan Id #").append(transactionRequest.getEntityId());
-					description.append(" | Loan TxnId #").append(transactionRequest.getEntityTxnId());
-				}
-				description.append(" | Client: ").append(client.getDisplayName())
-						.append("(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()));
-				final AppUser assignedTo = null;
-				final Date dueDate = null;
-				this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-						TaskEntityType.BANK_TRANSACTION, txnId, client,assignedTo,dueDate,
-						client.getOffice(), map, description.toString());
-			}
-		}
+        // create workflow
+        if (this.configurationDomainService.isWorkFlowEnabled()) {
+            /**
+             * Checking is loan product mapped with task configuration entity
+             * type LOAN_PRODUCT
+             */
+            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                    .findOneByEntityTypeAndEntityId(TaskConfigEntityType.BANKTRANSACTION.getValue(), -1L);
+            if (taskConfigEntityTypeMapping != null) {
+                final Client client = transactionRequest.getClient();
+                final Map<TaskConfigKey, String> map = new HashMap<>();
+                map.put(TaskConfigKey.CLIENT_ID, String.valueOf(client.getId()));
+                map.put(TaskConfigKey.BANK_TRANSACTION_ID, String.valueOf(txnId));
+                StringBuilder description = new StringBuilder();
+                description.append("Bank txn #").append(txnId).append(" for amount ").append(transactionRequest.getAmount());
+                if (BankTransactionEntityType.fromInt(transactionRequest.getEntityTypeId()).isLoan()) {
+                    map.put(TaskConfigKey.LOAN_ID, String.valueOf(transactionRequest.getEntityId()));
+                    map.put(TaskConfigKey.LOAN_TRANSACTION_ID, String.valueOf(transactionRequest.getEntityTxnId()));
+                    description.append(" | Loan Id #").append(transactionRequest.getEntityId());
+                    description.append(" | Loan TxnId #").append(transactionRequest.getEntityTxnId());
+                }
+                description.append(" | Client: ").append(client.getDisplayName())
+                        .append("(" + client.getId() + ") in  " + WordUtils.capitalizeFully(client.getOfficeName()));
+                final AppUser assignedTo = null;
+                final Date dueDate = null;
+                final Date dueTime = null;
+                this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
+                        TaskEntityType.BANK_TRANSACTION, txnId, client, assignedTo, dueDate, client.getOffice(), map,
+                        description.toString(), dueTime);
+            }
+        }
 
-		return getTransactionDetail(txnId);
-	}
+        return getTransactionDetail(txnId);
+    }
 
 	@Override public List<BankTransactionDetail> getAllTransaction(BankTransactionEntityType entityType, Long entityId) {
 		return readPlatformService.getAccountTransactionsByEntity(entityType,entityId);
