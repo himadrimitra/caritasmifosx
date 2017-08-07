@@ -724,6 +724,10 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public boolean isDisbursement() {
         return LoanTransactionType.DISBURSEMENT.equals(getTypeOf()) && isNotReversed();
     }
+    
+    public boolean isDisbursementIncludeReversal(){
+        return LoanTransactionType.DISBURSEMENT.equals(getTypeOf());
+    }
 
     public boolean isRepaymentAtDisbursement() {
         return LoanTransactionType.REPAYMENT_AT_DISBURSEMENT.equals(getTypeOf()) && isNotReversed();

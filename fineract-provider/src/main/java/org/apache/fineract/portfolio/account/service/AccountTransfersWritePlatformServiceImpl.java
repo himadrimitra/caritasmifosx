@@ -45,7 +45,7 @@ import org.apache.fineract.portfolio.account.domain.AccountTransferDetails;
 import org.apache.fineract.portfolio.account.domain.AccountTransferRepository;
 import org.apache.fineract.portfolio.account.domain.AccountTransferTransaction;
 import org.apache.fineract.portfolio.account.domain.AccountTransferType;
-import org.apache.fineract.portfolio.account.exception.AccountClosedException;
+import org.apache.fineract.portfolio.account.exception.AccountTransferReverseException;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
@@ -271,12 +271,27 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
      * @param acccountTransfers
      */
     private void undoTransactions(final List<AccountTransferTransaction> acccountTransfers) {
+        final boolean isAccountTransfer = true;
+        final Locale locale = null;
+        final DateTimeFormatter dateFormat = null;
+        final String noteText = null;
+        final PaymentDetail paymentDetail = null;
         for (final AccountTransferTransaction accountTransfer : acccountTransfers) {
-            if (accountTransfer.getFromLoanTransaction() != null) {
-                this.loanAccountDomainService.reverseTransfer(accountTransfer.getFromLoanTransaction());
+            boolean isLoanToLoanTransfer = accountTransfer.getFromLoanTransaction() != null && accountTransfer.getToLoanTransaction() != null;
+            if (accountTransfer.getFromLoanTransaction() != null && accountTransfer.getFromLoanTransaction().isNotReversed()) {
+                isLoanToLoanTransfer = accountTransfer.getFromLoanTransaction().isDisbursementIncludeReversal();
+                if (accountTransfer.getFromLoanTransaction().isDisbursement()) { throw new AccountTransferReverseException(); }
+                this.loanAccountDomainService.reverseLoanTransactions(accountTransfer.getFromLoanTransaction().getLoan(), accountTransfer
+                        .getFromLoanTransaction().getId(), accountTransfer.getFromLoanTransaction().getTransactionDate(), BigDecimal.ZERO,
+                        accountTransfer.getFromLoanTransaction().getExternalId(), locale, dateFormat, noteText, paymentDetail, isAccountTransfer,
+                        isLoanToLoanTransfer);
             }
-            if (accountTransfer.getToLoanTransaction() != null) {
-                this.loanAccountDomainService.reverseTransfer(accountTransfer.getToLoanTransaction());
+            if (accountTransfer.getToLoanTransaction() != null && accountTransfer.getToLoanTransaction().isNotReversed()) {
+                if (accountTransfer.getToLoanTransaction().isDisbursement()) { throw new AccountTransferReverseException(); }
+                this.loanAccountDomainService.reverseLoanTransactions(accountTransfer.getToLoanTransaction().getLoan(), accountTransfer
+                        .getToLoanTransaction().getId(), accountTransfer.getToLoanTransaction().getTransactionDate(), BigDecimal.ZERO,
+                        accountTransfer.getToLoanTransaction().getExternalId(),  locale, dateFormat, noteText, paymentDetail, isAccountTransfer,
+                        isLoanToLoanTransfer);
             }
             if (accountTransfer.getFromTransaction() != null) {
                 this.savingsAccountWritePlatformService.undoTransaction(accountTransfer.accountTransferDetails().fromSavingsAccount()
@@ -296,16 +311,22 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
             AccountTransferTransaction accountTransfer) {
         AdjustedLoanTransactionDetails changedLoanTransactionDetails = null;
         boolean isAccountTransfer = true;
-        if (accountTransfer.getFromLoanTransaction() != null) {
+        boolean isLoanToLoanTransfer = accountTransfer.getFromLoanTransaction() != null && accountTransfer.getToLoanTransaction() != null;
+        if (accountTransfer.getFromLoanTransaction() != null && accountTransfer.getFromLoanTransaction().isNotReversed()) {
+            if (accountTransfer.getFromLoanTransaction().isDisbursement()) { throw new AccountTransferReverseException(); }
+            changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(accountTransferDTO.getLoan(),
+                    accountTransfer.getFromLoanTransaction().getId(), accountTransferDTO.getTransactionDate(),
+                    accountTransferDTO.getTransactionAmount(), accountTransferDTO.getTxnExternalId(), accountTransferDTO.getLocale(),
+                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail(),
+                    isAccountTransfer, isLoanToLoanTransfer);
+        } 
+        if (accountTransfer.getToLoanTransaction() != null && accountTransfer.getToLoanTransaction().isNotReversed()) {
+            if (accountTransfer.getToLoanTransaction().isDisbursement()) { throw new AccountTransferReverseException(); }
             changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(accountTransferDTO.getLoan(),
                     accountTransfer.getToLoanTransaction().getId(), accountTransferDTO.getTransactionDate(),
                     accountTransferDTO.getTransactionAmount(), accountTransferDTO.getTxnExternalId(), accountTransferDTO.getLocale(),
-                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail(), isAccountTransfer);
-        } else if (accountTransfer.getToLoanTransaction() != null) {
-            changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(accountTransferDTO.getLoan(),
-                    accountTransfer.getToLoanTransaction().getId(), accountTransferDTO.getTransactionDate(),
-                    accountTransferDTO.getTransactionAmount(), accountTransferDTO.getTxnExternalId(), accountTransferDTO.getLocale(),
-                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail(), isAccountTransfer);
+                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail(),
+                    isAccountTransfer, isLoanToLoanTransfer);
         }
         if (accountTransfer.getFromTransaction() != null) {
             this.savingsAccountWritePlatformService.undoTransaction(accountTransfer.accountTransferDetails().fromSavingsAccount().getId(),
@@ -586,25 +607,15 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
             final PortfolioAccountType accountType) {
         AdjustedLoanTransactionDetails changedLoanTransactionDetails = null;
         if (accountType.isLoanAccount()) {
-            final AccountTransferTransaction transferTransaction = this.accountTransferRepository.findByToLoanTransactionId(transactionId);
+            final AccountTransferTransaction transferTransaction = this.accountTransferRepository.findByLoanTransactionId(transactionId);
             if (transferTransaction != null) {
-                if (!transferTransaction.accountTransferDetails().fromSavingsAccount().isClosed()) {
-                    changedLoanTransactionDetails = undoTransactions(accountTransferDTO, transferTransaction);
-                    this.reverseTransfersWithFromAccountType(accountTransferDTO.getToAccountId(), PortfolioAccountType.LOAN);
-                } else {
-                    throw new AccountClosedException();
-                }
+                changedLoanTransactionDetails = undoTransactions(accountTransferDTO, transferTransaction);
             }
         }
         if (accountType.isSavingsAccount()) {
-            final AccountTransferTransaction transferFromLoan = this.accountTransferRepository.findByToSavingsTransactionId(transactionId);
+            final AccountTransferTransaction transferFromLoan = this.accountTransferRepository.findBySavingsTransactionId(transactionId);
             if (transferFromLoan != null) {
-                if (!transferFromLoan.accountTransferDetails().fromLoanAccount().isClosed()) {
-                    undoTransactions(accountTransferDTO, transferFromLoan);
-                    this.reverseTransfersWithFromAccountType(accountTransferDTO.getToAccountId(), PortfolioAccountType.LOAN);
-                } else {
-                    throw new AccountClosedException();
-                }
+                undoTransactions(accountTransferDTO, transferFromLoan);
             }
         }
         return changedLoanTransactionDetails;

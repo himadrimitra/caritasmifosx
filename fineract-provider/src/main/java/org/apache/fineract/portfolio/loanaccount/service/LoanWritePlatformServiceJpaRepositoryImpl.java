@@ -913,12 +913,16 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             updateGlimMemberOnUndoLoanDisbursal(loan);
 
         }       
+        LocalDate actualDisbursementDate = loan.getActualDisbursementDate();
         final Map<String, Object> changes = loan.undoDisbursal(scheduleGeneratorDTO, existingTransactionIds,
                 existingReversedTransactionIds, currentUser);
 
         if (!changes.isEmpty()) {
             saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
-            this.accountTransfersWritePlatformService.reverseAllTransactions(loanId, PortfolioAccountType.LOAN);
+            Collection<Long> transactionsIdsWithTransfer =  this.accountTransfersReadPlatformService.retrivePortfolioTransactionIds(loanId, PortfolioAccountType.LOAN);
+            if (!transactionsIdsWithTransfer.isEmpty()) {
+                this.accountTransfersWritePlatformService.reverseAllTransactions(loanId, PortfolioAccountType.LOAN);
+            }
             Collection<Long> deletedIds = this.standingInstructionWritePlatformService.delete(loanId, PortfolioAccountType.LOAN);
             changes.put("deletedInstructions", deletedIds);
             String noteText = null;
@@ -929,10 +933,46 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     this.noteRepository.save(note);
                 }
             }
+            existingReversedTransactionIds.addAll(transactionsIdsWithTransfer);
             boolean isAccountTransfer = false;
             final Map<String, Object> accountingBridgeData = loan.deriveAccountingBridgeData(applicationCurrency.toData(),
                     existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
             this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeData);
+            
+            if (!transactionsIdsWithTransfer.isEmpty()) {
+                isAccountTransfer = true;
+                boolean isLoanToLoanTransfer = false;
+                Long topupTransactionId = null;
+                if (loan.isTopup()) {
+                    for (LoanTransaction transaction : loan.getLoanTransactions()) {
+                        if (transaction.isDisbursementIncludeReversal() && transactionsIdsWithTransfer.contains(transaction.getId())
+                                && transaction.getTransactionDate().isEqual(actualDisbursementDate)) {
+                            topupTransactionId = transaction.getId();
+                            isLoanToLoanTransfer = true;
+                            transactionsIdsWithTransfer.remove(topupTransactionId);
+                            break;
+                        }
+                    }
+                }
+                existingReversedTransactionIds.clear();
+                existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
+                if (!transactionsIdsWithTransfer.isEmpty()) {
+                    existingReversedTransactionIds.removeAll(transactionsIdsWithTransfer);
+                    final Map<String, Object> accountingBridgeDataForTransfers = loan.deriveAccountingBridgeData(
+                            applicationCurrency.toData(), existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
+                    this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeDataForTransfers);
+                }
+                if (isLoanToLoanTransfer) {
+                    existingReversedTransactionIds.addAll(transactionsIdsWithTransfer);
+                    existingReversedTransactionIds.remove(topupTransactionId);
+                    final Map<String, Object> accountingBridgeDataForTopup = loan.deriveAccountingBridgeData(applicationCurrency.toData(),
+                            existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
+                    accountingBridgeDataForTopup.put("isLoanToLoanTransfer", isLoanToLoanTransfer);
+                    this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeDataForTopup);
+                }
+
+            }
+            
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_UNDO_DISBURSAL,
                     constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
             
@@ -1270,8 +1310,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     PortfolioAccountType.LOAN);
         } else {
             boolean isAccountTransfer = false;
+            boolean isLoanToLoanTransfer = false;
             changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(loan, transactionId, transactionDate,
-                    transactionAmount, txnExternalId, locale, fmt, noteText, paymentDetail, isAccountTransfer);
+                    transactionAmount, txnExternalId, locale, fmt, noteText, paymentDetail, isAccountTransfer, isLoanToLoanTransfer);
             this.accountTransfersWritePlatformService.reverseTransfersWithFromAccountType(loanId, PortfolioAccountType.LOAN);
         }
         LoanTransaction newLoanTransaction = changedLoanTransactionDetails.getNewTransactionDetail();

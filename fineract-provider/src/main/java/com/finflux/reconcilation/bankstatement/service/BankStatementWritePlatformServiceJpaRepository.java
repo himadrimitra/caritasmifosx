@@ -545,13 +545,14 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         final String noteText = null;
         final PaymentDetail paymentDetail = null;
         boolean isAccountTransfer = false;
+        boolean isLoanToLoanTransfer = false;
         for (BankStatementDetailsData bankStatementDetailsData : bankStatementDetailsList) {
             Long transactionId = Long.parseLong(bankStatementDetailsData.getTransactionId());
             AdjustedLoanTransactionDetails changedLoanTransactionDetails = null;
             Loan loan = this.loanAssembler.assembleFrom(Long.parseLong(bankStatementDetailsData.getLoanAccountNumber()));
             final LocalDate transactionDate = new LocalDate(bankStatementDetailsData.getTransactionDate());
             changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(loan, transactionId, transactionDate,
-                    transactionAmount, txnExternalId, locale, fmt, noteText, paymentDetail, isAccountTransfer);
+                    transactionAmount, txnExternalId, locale, fmt, noteText, paymentDetail, isAccountTransfer, isLoanToLoanTransfer);
             this.accountTransfersWritePlatformService.reverseTransfersWithFromAccountType(loan.getId(), PortfolioAccountType.LOAN);            
             this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_ADJUST_TRANSACTION,
                     constructEntityMap(BUSINESS_ENTITY.LOAN_ADJUSTED_TRANSACTION, changedLoanTransactionDetails.getTransactionToAdjust()));
