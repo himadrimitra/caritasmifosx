@@ -127,4 +127,8 @@ public class MathUtility {
     public static Integer compareTo(final BigDecimal first, final BigDecimal second) {
         return zeroIfNull(first).compareTo(zeroIfNull(second));
     }
+    
+    public static boolean isInRange(final BigDecimal min, final BigDecimal max, final BigDecimal value) {
+        return isEqualOrGreater(value, min) && isLesserOrEqualTo(value, max);
+    }
 }

@@ -12,6 +12,6 @@ import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 
 public interface ChargeSlabReadPlatformService {
     
-    Collection<ChargeSlabData> retrieveAllChargeSlabsByChargeId(final Long chargeId);
+    Collection<ChargeSlabData> retrieveAllChargeSubSlabsBySlabChargeId(final Long chargeId);
 
 }

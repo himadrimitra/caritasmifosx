@@ -24,11 +24,13 @@ import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 
 
 
@@ -143,4 +145,9 @@ public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownRead
 				glimChargeCalculationType(GlimChargeCalculationType.ROUND_WITH_MAX_CHARGE),
 				glimChargeCalculationType(GlimChargeCalculationType.ROUND_WITHOUT_MAX_CHARGE));
 	}
+
+    @Override
+    public List<EnumOptionData> retrieveSlabChargeTypes() {
+        return Arrays.asList(SlabChargeType.fromInt(SlabChargeType.INSTALLMENT_AMOUNT.getValue()), SlabChargeType.fromInt(SlabChargeType.INSTALLMENT_NUMBER.getValue()));
+    }
 }

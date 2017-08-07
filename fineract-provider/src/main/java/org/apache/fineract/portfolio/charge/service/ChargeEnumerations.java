@@ -24,6 +24,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 
 public class ChargeEnumerations {
 
@@ -223,5 +224,20 @@ public class ChargeEnumerations {
         }
 		return optionData;
  }
+    
+    public static EnumOptionData slabChargeType(final SlabChargeType type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case INSTALLMENT_AMOUNT:
+                optionData = new EnumOptionData(SlabChargeType.INSTALLMENT_AMOUNT.getValue().longValue(), SlabChargeType.INSTALLMENT_AMOUNT.getCode(),
+                        SlabChargeType.INSTALLMENT_AMOUNT.getDisplayValue());
+            break;
+            case INSTALLMENT_NUMBER:
+                optionData = new EnumOptionData(SlabChargeType.INSTALLMENT_NUMBER.getValue().longValue(),
+                        SlabChargeType.INSTALLMENT_NUMBER.getCode(), SlabChargeType.INSTALLMENT_NUMBER.getDisplayValue());
+            break;
+        }
+        return optionData;
+    }
     
 }

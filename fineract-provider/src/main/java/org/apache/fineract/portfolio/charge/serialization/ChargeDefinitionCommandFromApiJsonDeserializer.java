@@ -36,6 +36,7 @@ import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
+import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
@@ -61,7 +62,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             "active", "chargePaymentMode", "feeOnMonthDay", "feeInterval", "monthDayFormat", "minCap", "maxCap", "feeFrequency",
             ChargesApiConstants.glAccountIdParamName, ChargesApiConstants.taxGroupIdParamName, ChargesApiConstants.emiRoundingGoalSeekParamName,
             ChargesApiConstants.isGlimChargeParamName, ChargesApiConstants.glimChargeCalculation, ChargesApiConstants.slabsParamName, ChargesApiConstants.isCapitalizedParamName,
-            ChargesApiConstants.fromLoanAmountParamName, ChargesApiConstants.toLoanAmountParamName));
+            ChargesApiConstants.minValueParamName, ChargesApiConstants.maxValueParamName));
 
 
     private final FromJsonHelper fromApiJsonHelper;
@@ -294,25 +295,41 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
         final JsonArray chargeSlabArray = this.fromApiJsonHelper.extractJsonArrayNamed(ChargesApiConstants.slabsParamName, element);
         if (chargeSlabArray == null) { throw new ChargeSlabNotFoundException(); }
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
+        validateRanges(baseDataValidator, chargeSlabArray, locale);
+    }
+
+    private void validateRanges(final DataValidatorBuilder baseDataValidator, final JsonArray chargeSlabArray, final Locale locale) {
         for (int i = 0; i < chargeSlabArray.size(); i++) {
             final JsonElement jsonElement = chargeSlabArray.get(i);
-            BigDecimal fromAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.fromLoanAmountParamName, jsonElement,
-                    locale);
-            baseDataValidator.reset().parameter("fromLoanAmount").value(fromAmount).notNull().positiveAmount();
-
-            BigDecimal toAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.toLoanAmountParamName, jsonElement,
-                    locale);
-            baseDataValidator.reset().parameter("toLoanAmount").value(toAmount).notNull().positiveAmount();
-
-            BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.amountParamName, jsonElement,
-                    locale);
-            baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().zeroOrPositiveAmount();
-
-            if (fromAmount.compareTo(toAmount) == 1) {
-                baseDataValidator.reset().parameter("fromAmount").value(fromAmount).notGreaterThanMax(toAmount);
-            } else if (fromAmount.compareTo(toAmount) == 0) {
-                baseDataValidator.reset().parameter("toAmount").value(toAmount).notSameAsParameter("fromAmount", fromAmount);
+            if(jsonElement!=null){
+                validateSlabRange(baseDataValidator, locale, jsonElement);
+                if(Charge.isSubSlabExist(jsonElement.getAsJsonObject())){
+                    validateRanges(baseDataValidator,jsonElement.getAsJsonObject().get(ChargesApiConstants.subSlabsParamName).getAsJsonArray(), locale);                
+                }
             }
+        }
+    }
+
+    private void validateSlabRange(final DataValidatorBuilder baseDataValidator, final Locale locale, final JsonElement jsonElement) {
+        BigDecimal min = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.minValueParamName, jsonElement,
+                locale);
+        baseDataValidator.reset().parameter(ChargesApiConstants.minValueParamName).value(min).notNull().positiveAmount();
+
+        BigDecimal max = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.maxValueParamName, jsonElement,
+                locale);
+        baseDataValidator.reset().parameter(ChargesApiConstants.maxValueParamName).value(max).notNull().positiveAmount();
+
+        BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.amountParamName, jsonElement,
+                locale);
+        baseDataValidator.reset().parameter(ChargesApiConstants.amountParamName).value(chargeAmount).notNull().zeroOrPositiveAmount();
+        
+        Integer type = this.fromApiJsonHelper.extractIntegerNamed(ChargesApiConstants.typeParamName, jsonElement,
+                locale);
+        baseDataValidator.reset().parameter(ChargesApiConstants.typeParamName).value(type).notNull().positiveAmount();       
+        if (min.compareTo(max) == 1) {
+            baseDataValidator.reset().parameter(ChargesApiConstants.minValueParamName).value(min).notGreaterThanMax(max);
+        } else if (min.compareTo(max) == 0) {
+            baseDataValidator.reset().parameter(ChargesApiConstants.maxValueParamName).value(min).notSameAsParameter(ChargesApiConstants.minValueParamName, min);
         }
     }
 

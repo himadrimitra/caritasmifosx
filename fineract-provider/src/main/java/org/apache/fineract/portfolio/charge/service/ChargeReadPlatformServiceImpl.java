@@ -40,6 +40,7 @@ import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
@@ -57,7 +58,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
 
 /**
  * @author vishwas
@@ -74,13 +74,15 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
     private final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final TaxReadPlatformService taxReadPlatformService;
+    final ChargeSlabReadPlatformService chargeSlabReadPlatformService;
 
     @Autowired
     public ChargeReadPlatformServiceImpl(final CurrencyReadPlatformService currencyReadPlatformService,
             final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService, final RoutingDataSource dataSource,
             final DropdownReadPlatformService dropdownReadPlatformService, final FineractEntityAccessUtil fineractEntityAccessUtil,
             final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService,
-            final TaxReadPlatformService taxReadPlatformService) {
+            final TaxReadPlatformService taxReadPlatformService,
+            final ChargeSlabReadPlatformService chargeSlabReadPlatformService) {
         this.chargeDropdownReadPlatformService = chargeDropdownReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.currencyReadPlatformService = currencyReadPlatformService;
@@ -89,12 +91,13 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         this.accountingDropdownReadPlatformService = accountingDropdownReadPlatformService;
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.taxReadPlatformService = taxReadPlatformService;
+        this.chargeSlabReadPlatformService = chargeSlabReadPlatformService;
     }
 
     @Override
     @Cacheable(value = "charges", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('ch')")
     public Collection<ChargeData> retrieveAllCharges() {
-        final ChargeMapperDataExtractor rm = new ChargeMapperDataExtractor();
+        final ChargeMapperDataExtractor rm = new ChargeMapperDataExtractor(this.chargeSlabReadPlatformService);       
         String sql = "select " + rm.schema() + " where c.is_deleted=0 ";
         sql += addInClauseToSQL_toLimitChargesMappedToOffice_ifOfficeSpecificProductsEnabled();
         sql += " order by c.name ";
@@ -105,6 +108,12 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
         final ChargeMapper pm = new ChargeMapper();
         final ChargeSlabMapper cm = new ChargeSlabMapper();
+        final ChargeSlabReadPlatformService chargeSlabReadPlatformService;
+        
+        public ChargeMapperDataExtractor(ChargeSlabReadPlatformService chargeSlabReadPlatformService) {
+            this.chargeSlabReadPlatformService = chargeSlabReadPlatformService;
+        }
+
         public String schema() {
             return this.pm.chargeSchemaWithChargeSlabs();
         }
@@ -124,6 +133,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                 }               
                 final ChargeSlabData chargeSlabData = this.cm.mapRow(rs,rowNum);
                 if (chargeSlabData != null) {
+                    chargeSlabData.setSubSlabs(this.chargeSlabReadPlatformService.retrieveAllChargeSubSlabsBySlabChargeId(chargeSlabData.getId()));
                     chargeData.addChargeSlabData(chargeSlabData);
                 }
                 
@@ -148,10 +158,11 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
     @Override
     public ChargeData retrieveCharge(final Long chargeId) {
         try {
-            final ChargeMapperDataExtractor rm = new ChargeMapperDataExtractor();
+            final ChargeMapperDataExtractor rm = new ChargeMapperDataExtractor(this.chargeSlabReadPlatformService);
             String sql = "select " + rm.schema() + " where c.id = ? and c.is_deleted=0 ";
             sql += addInClauseToSQL_toLimitChargesMappedToOffice_ifOfficeSpecificProductsEnabled();
             final Collection<ChargeData> chargeDataList = this.jdbcTemplate.query(sql, rm, new Object[] { chargeId });
+            
             if (!chargeDataList.isEmpty()) { return chargeDataList.iterator().next(); }
             throw new ChargeNotFoundException(chargeId);
         } catch (final EmptyResultDataAccessException e) {
@@ -167,6 +178,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         final List<EnumOptionData> allowedChargeAppliesToOptions = this.chargeDropdownReadPlatformService.retrieveApplicableToTypes();
         final List<EnumOptionData> allowedChargeTimeOptions = this.chargeDropdownReadPlatformService.retrieveCollectionTimeTypes();
         final List<EnumOptionData> chargePaymentOptions = this.chargeDropdownReadPlatformService.retrivePaymentModes();
+        final List<EnumOptionData> slabChargeTypeOptions = this.chargeDropdownReadPlatformService.retrieveSlabChargeTypes();
         final List<EnumOptionData> loansChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService
                 .retrieveLoanCalculationTypes();
         final List<EnumOptionData> loansChargeTimeTypeOptions = this.chargeDropdownReadPlatformService.retrieveLoanCollectionTimeTypes();
@@ -186,12 +198,11 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         final Collection<TaxGroupData> taxGroupOptions = this.taxReadPlatformService.retrieveTaxGroupsForLookUp();
         final List<EnumOptionData> glimChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService
                 .retrieveGlimChargeCalculationTypes();
-        
         return ChargeData.template(currencyOptions, allowedChargeCalculationTypeOptions, allowedChargeAppliesToOptions,
                 allowedChargeTimeOptions, chargePaymentOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
                 savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
                 clientChargeTimeTypeOptions, feeFrequencyOptions, incomeOrLiabilityAccountOptions, taxGroupOptions,
-                shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, glimChargeCalculationTypeOptions);
+                shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, glimChargeCalculationTypeOptions, slabChargeTypeOptions);
     }
 
     @Override
@@ -320,7 +331,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "c.charge_applies_to_enum as chargeAppliesTo, c.charge_time_enum as chargeTime, "
                     + "c.charge_payment_mode_enum as chargePaymentMode, c.emi_rounding_goalseek as emiRoundingGoalSeek, c.glim_charge_calculation_enum as glimChargeCalculation, "
                     + "c.is_glim_charge as isGlimCharge, c.charge_calculation_enum as chargeCalculation, c.is_penalty as penalty, "
-                    + "cs.id as csid, cs.from_loan_amount as fromLoanAmount, cs.to_loan_amount as toLoanAmount, cs.amount as chargeAmount, c.is_capitalized as isCapitalized, "
+                    + "cs.id as csid, cs.from_loan_amount as min, cs.to_loan_amount as max, cs.type as type, cs.amount as chargeAmount, c.is_capitalized as isCapitalized, "
                     + "c.is_active as active, oc.name as currencyName, oc.decimal_places as currencyDecimalPlaces, "
                     + "oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, "
                     + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
@@ -437,18 +448,19 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
     
     private static final class ChargeSlabMapper implements RowMapper<ChargeSlabData> {
 
-        public String chargeSlabSchema() {
-            return "cs.id as csid, cs.from_loan_amount as fromLoanAmount, cs.to_loan_amount as toLoanAmount, cs.amount as chargeAmount, "
+       /* public String chargeSlabSchema() {
+            return "cs.id as csid, cs.from_loan_amount as min, cs.to_loan_amount as max, cs.type as type, cs.amount as chargeAmount, "
                     + "c.is_capitalized as isCapitalized from f_charge_slab cs " + " LEFT JOIN m_charge c on cs.charge_id = c.id ";
-        }
+        }*/
 
         @Override
         public ChargeSlabData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
             final Long id = rs.getLong("csid");
-            final BigDecimal fromLoanAmount = rs.getBigDecimal("fromLoanAmount");
-            final BigDecimal toLoanAmount = rs.getBigDecimal("toLoanAmount");
+            final BigDecimal minValue = rs.getBigDecimal("min");
+            final BigDecimal maxValue = rs.getBigDecimal("max");
             final BigDecimal amount = rs.getBigDecimal("chargeAmount");
-            return ChargeSlabData.createChargeSlabData(id, fromLoanAmount, toLoanAmount, amount);
+            final EnumOptionData type = SlabChargeType.fromInt(rs.getInt("type"));
+            return ChargeSlabData.createChargeSlabData(id, minValue, maxValue, amount, type);
         }
     }
 

@@ -42,7 +42,10 @@ import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAcc
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
+import org.apache.fineract.portfolio.charge.domain.ChargeSlabRepository;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
+import org.apache.fineract.portfolio.charge.service.ChargeSlabReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.domain.LegalForm;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
@@ -84,16 +87,19 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     private final ClientReadPlatformService clientReadPlatformService;
+    final ChargeSlabReadPlatformService chargeSlabReadPlatformService;
 
     @Autowired
     public LoanProductReadPlatformServiceImpl(final PlatformSecurityContext context,
             final ChargeReadPlatformService chargeReadPlatformService, final RoutingDataSource dataSource,
-            final FineractEntityAccessUtil fineractEntityAccessUtil, final ClientReadPlatformService clientReadPlatformService) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil, final ClientReadPlatformService clientReadPlatformService,
+            final ChargeSlabReadPlatformService chargeSlabReadPlatformService) {
         this.context = context;
         this.chargeReadPlatformService = chargeReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.clientReadPlatformService = clientReadPlatformService;
+        this.chargeSlabReadPlatformService = chargeSlabReadPlatformService;
     }
 
     @Override
@@ -177,8 +183,9 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     }
 
     private Collection<ProductLoanChargeData> retrieveProductLoanCharges(final Long loanProductId) {
-        final ProductLoanChargeMapper rm = new ProductLoanChargeMapper(this.chargeReadPlatformService);
+        final ProductLoanChargeMapper rm = new ProductLoanChargeMapper(this.chargeReadPlatformService, this.chargeSlabReadPlatformService);
         final String sql = "SELECT " + rm.schema() + " WHERE plc.product_loan_id=? ";
+        
         return this.jdbcTemplate.query(sql, rm, new Object[] { loanProductId });
     }
 
@@ -787,9 +794,12 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     private static final class ProductLoanChargeMapper implements RowMapper<ProductLoanChargeData> {
 
         final ChargeReadPlatformService chargeReadPlatformService;
+        final ChargeSlabReadPlatformService chargeSlabReadPlatformService;
 
-        private ProductLoanChargeMapper(final ChargeReadPlatformService chargeReadPlatformService) {
+        private ProductLoanChargeMapper(final ChargeReadPlatformService chargeReadPlatformService,
+                final ChargeSlabReadPlatformService chargeSlabReadPlatformService) {
             this.chargeReadPlatformService = chargeReadPlatformService;
+            this.chargeSlabReadPlatformService = chargeSlabReadPlatformService;
         }
 
         public String schema() {
@@ -802,6 +812,12 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final Long productLoanId = rs.getLong("productLoanId");
             final Long chargeId = rs.getLong("chargeId");
             final ChargeData chargeData = this.chargeReadPlatformService.retrieveCharge(chargeId);
+            if(chargeData.getChargeSlabs() != null && !chargeData.getChargeSlabs().isEmpty()){
+                for (ChargeSlabData chargeSlabData : chargeData.getChargeSlabs()) {
+                    this.chargeSlabReadPlatformService.retrieveAllChargeSubSlabsBySlabChargeId(chargeSlabData.getId());
+                    chargeSlabData.setSubSlabs(this.chargeSlabReadPlatformService.retrieveAllChargeSubSlabsBySlabChargeId(chargeSlabData.getId()));
+                }
+            }
             final Boolean isMandatory = rs.getBoolean("isMandatory");
             return ProductLoanChargeData.instance(id, productLoanId, chargeData, isMandatory);
         }

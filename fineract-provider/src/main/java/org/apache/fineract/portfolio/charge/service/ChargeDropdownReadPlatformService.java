@@ -48,4 +48,6 @@ public interface ChargeDropdownReadPlatformService {
     
     List<EnumOptionData> retrieveGlimChargeCalculationTypes() ;
     
+    List<EnumOptionData> retrieveSlabChargeTypes() ;
+    
 }

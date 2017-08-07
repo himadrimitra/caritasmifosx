@@ -31,8 +31,10 @@ import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.domain.ChargeSlab;
+import org.apache.fineract.portfolio.charge.domain.ChargeSlabRepository;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringCharge;
+import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotInSlabExpection;
 import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeAddedException;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
@@ -64,16 +66,18 @@ public class LoanChargeAssembler {
     private final LoanChargeRepository loanChargeRepository;
     private final LoanProductRepository loanProductRepository;
     private final ClientRepositoryWrapper clientRepository;
+    private final ChargeSlabRepository chargeSlabRepository;
 
     @Autowired
     public LoanChargeAssembler(final FromJsonHelper fromApiJsonHelper, final ChargeRepositoryWrapper chargeRepository,
             final LoanChargeRepository loanChargeRepository, final LoanProductRepository loanProductRepository,
-            final ClientRepositoryWrapper clientRepository) {
+            final ClientRepositoryWrapper clientRepository, final ChargeSlabRepository chargeSlabRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.chargeRepository = chargeRepository;
         this.loanChargeRepository = loanChargeRepository;
         this.loanProductRepository = loanProductRepository;
         this.clientRepository = clientRepository;
+        this.chargeSlabRepository= chargeSlabRepository;
     }
 
     @SuppressWarnings("unused")
@@ -137,6 +141,14 @@ public class LoanChargeAssembler {
                             locale);
 
                     final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(chargeId);
+                    if(chargeDefinition.getChargeCalculation().equals(ChargeCalculationType.SLAB_BASED.getValue())){                        
+                        for (ChargeSlab slab : chargeDefinition.getSlabs()) {
+                            List<ChargeSlab> subSlabs = this.chargeSlabRepository.getSubSlabsBySlabId(slab.getId());
+                            if(subSlabs != null && !subSlabs.isEmpty()){
+                                slab.setSubSlabs(subSlabs); 
+                            }
+                        }
+                    }
 
                     if (chargeDefinition.isOverdueInstallment()) {
 
@@ -159,9 +171,9 @@ public class LoanChargeAssembler {
 						String loanTypeStr = this.fromApiJsonHelper.extractStringNamed("loanType", element);
 						
 						if (loanTypeStr.equals(LoanApiConstants.GLIM)) {
-							validateUpfrontChargesAmount(loanChargeElement, chargeDefinition, chargeCalculation, locale);
+							validateUpfrontChargesAmount(loanChargeElement, chargeDefinition, chargeCalculation, locale, numberOfRepayments);
 						} else {
-							validateLoanAmountFallsInSlab(principal, chargeDefinition, chargeCalculation);
+							validateValueFallsInSlab(principal, chargeDefinition, chargeCalculation, numberOfRepayments);
 						}
 
                         ChargePaymentMode chargePaymentModeEnum = null;
@@ -261,9 +273,9 @@ public class LoanChargeAssembler {
                         if (loanCharge != null) {
                             String loanTypeStr = this.fromApiJsonHelper.extractStringNamed("loanType", element);
                         	if (loanTypeStr.equals(LoanApiConstants.GLIM)) {
-                        		validateUpfrontChargesAmount(loanChargeElement, chargeDefinition, chargeCalculation, locale);
+                        		validateUpfrontChargesAmount(loanChargeElement, chargeDefinition, chargeCalculation, locale, numberOfRepayments);
     						} else {
-    							validateLoanAmountFallsInSlab(principal, loanCharge.getCharge(), null);
+    							validateValueFallsInSlab(principal, loanCharge.getCharge(), null, numberOfRepayments);
     						}
                             if (!isMultiDisbursal && loanCharge.isInstalmentFee()
                                     && loanCharge.getCharge().isPercentageOfDisbursementAmount()) {
@@ -286,7 +298,7 @@ public class LoanChargeAssembler {
     }
     
 	private void validateUpfrontChargesAmount(final JsonObject loanChargeElement, final Charge chargeDefinition,
-			final ChargeCalculationType chargeCalculation, final Locale locale) {
+			final ChargeCalculationType chargeCalculation, final Locale locale, Integer numberOfRepayment) {
         if (loanChargeElement.has("upfrontChargesAmount")) {
             final JsonArray upfrontChargesAmountArray = loanChargeElement.get("upfrontChargesAmount").getAsJsonArray();
             for (int j = 0; j < upfrontChargesAmountArray.size(); j++) {
@@ -295,27 +307,31 @@ public class LoanChargeAssembler {
                 if(isClientSelected && upfrontChargesAmountObject.has("transactionAmount")){
                     BigDecimal transactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed("transactionAmount",
                             upfrontChargesAmountObject, locale);
-                    validateLoanAmountFallsInSlab(transactionAmount, chargeDefinition, chargeCalculation);
+                    validateValueFallsInSlab(transactionAmount, chargeDefinition, chargeCalculation, numberOfRepayment);
                 }                
             }
         }
 	    
 	}
 
-    private void validateLoanAmountFallsInSlab(final BigDecimal principal, final Charge chargeDefinition,
-            ChargeCalculationType chargeCalculation) {
+    private void validateValueFallsInSlab(final BigDecimal principal, final Charge chargeDefinition,
+            ChargeCalculationType chargeCalculation, Integer numberOfRepayment) {
         if (chargeDefinition != null) {
             if (chargeCalculation == null) {
                 chargeCalculation = ChargeCalculationType.fromInt(chargeDefinition.getChargeCalculation().intValue());
             }
             if (chargeCalculation.isSlabBased()) {
                 List<ChargeSlab> chargeSlabs = chargeDefinition.getSlabs();
-                boolean isLoanAmountFallsInSlab = false;
+                boolean isValueFallsInSlab = false;
                 for (ChargeSlab chargeSlab : chargeSlabs) {
-                    isLoanAmountFallsInSlab = chargeSlab.isLoanAmountFallsInSlab(principal);
-                    if (isLoanAmountFallsInSlab) { break; }
+                    BigDecimal slabValue = principal;
+                    if(chargeSlab.getType().equals(SlabChargeType.INSTALLMENT_NUMBER.getValue())){
+                        slabValue = new BigDecimal(numberOfRepayment);
+                    }
+                    isValueFallsInSlab = chargeSlab.isValueFallsInSlab(slabValue);
+                    if (isValueFallsInSlab) { break; }
                 }
-                if (!isLoanAmountFallsInSlab) { throw new ChargeNotInSlabExpection(principal.toString()); }
+                if (!isValueFallsInSlab) { throw new ChargeNotInSlabExpection(principal.toString()); }
             }
         }
     }
