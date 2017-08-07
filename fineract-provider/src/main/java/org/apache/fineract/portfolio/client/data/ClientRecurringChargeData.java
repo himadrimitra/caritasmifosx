@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
+import org.apache.fineract.organisation.office.data.OfficeData;
 import org.joda.time.LocalDate;
 
 public class ClientRecurringChargeData {
@@ -11,6 +12,8 @@ public class ClientRecurringChargeData {
     private final Long recurringChargeId;
 
     private final Long clientId;
+    
+    private OfficeData officeData;
 
     private final Long chargeId;
 
@@ -51,12 +54,14 @@ public class ClientRecurringChargeData {
     private final Integer feeFrequency;
 
     private final LocalDate inactivatedOnDate;
+    
+    private final Integer countOfExistingFutureInstallments;
 
     public ClientRecurringChargeData(Long id, Long clientId, Long chargeId, String chargename, LocalDate chargeDueDate,
             CurrencyData currencyCode, EnumOptionData chargeAppliesTo, EnumOptionData chargeTime, EnumOptionData chargeCalculation,
             EnumOptionData chargePaymentMode, BigDecimal amount, Integer feeOnDay, Integer feeInterval,
             Integer feeOnMonth, boolean penalty, Boolean isActive, Boolean isDeleted, Boolean issynchMeeting, BigDecimal minCap,
-            BigDecimal maxCap, Integer feeFrequency, LocalDate inactivatedOnDate) {
+            BigDecimal maxCap, Integer feeFrequency, LocalDate inactivatedOnDate,final Integer countOfExistingFutureInstallments) {
         this.recurringChargeId = id;
         this.clientId = clientId;
         this.chargeId = chargeId;
@@ -79,22 +84,25 @@ public class ClientRecurringChargeData {
         this.maxCap = maxCap;
         this.feeFrequency = feeFrequency;
         this.inactivatedOnDate = inactivatedOnDate;
+        this.countOfExistingFutureInstallments = countOfExistingFutureInstallments;
     }
     
-    public ClientRecurringChargeData(Long id, LocalDate chargeDueDate,Boolean issynchMeeting) {
+    public ClientRecurringChargeData(final Long id, final OfficeData officeData, final LocalDate chargeDueDate,
+            final EnumOptionData chargeTimeType, final Integer feeInterval, Boolean issynchMeeting, final Integer countOfExistingFutureInstallments) {
         this.recurringChargeId = id;
         this.clientId = null;
+        this.officeData = officeData;
         this.chargeId = null;
         this.chargename = null;
         this.chargeDueDate = chargeDueDate;
         this.currency = null;
         this.chargeAppliesTo = null;
-        this.chargeTimeType = null;
+        this.chargeTimeType = chargeTimeType;
         this.chargeCalculationType = null;
         this.chargePaymentMode = null;
         this.amount = null;
         this.feeOnDay = null;
-        this.feeInterval = null;
+        this.feeInterval = feeInterval;
         this.feeOnMonth = null;
         this.penalty = false;
         this.active = null;
@@ -104,6 +112,7 @@ public class ClientRecurringChargeData {
         this.maxCap = null;
         this.feeFrequency = null;
         this.inactivatedOnDate = null;
+        this.countOfExistingFutureInstallments = countOfExistingFutureInstallments;
     }
 
     
@@ -215,8 +224,13 @@ public class ClientRecurringChargeData {
     public LocalDate getInactivatedOnDate() {
         return this.inactivatedOnDate;
     }
-    
-    
 
+    public Integer getCountOfExistingFutureInstallments() {
+        return this.countOfExistingFutureInstallments;
+    }
 
+    public OfficeData getOfficeData() {
+        return this.officeData;
+    }
+    
 }

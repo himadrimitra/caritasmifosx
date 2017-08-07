@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.charge.domain;
 
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 
 public enum ChargeTimeType {
     INVALID(0, "chargeTimeType.invalid"), //
@@ -248,6 +249,25 @@ public enum ChargeTimeType {
     	
     	return sameFrequency;
     	
+    }
+
+    public static PeriodFrequencyType getPeriodFrequencyTypeFromChargeTimeType(final int chargeTime) {
+        PeriodFrequencyType periodFrequencyType = PeriodFrequencyType.INVALID;
+        ChargeTimeType chargeTimeType = fromInt(chargeTime);
+        switch (chargeTimeType) {
+            case WEEKLY_FEE:
+                periodFrequencyType = PeriodFrequencyType.WEEKS;
+            break;
+            case MONTHLY_FEE:
+                periodFrequencyType = PeriodFrequencyType.MONTHS;
+            break;
+            case ANNUAL_FEE:
+                periodFrequencyType = PeriodFrequencyType.YEARS;
+            break;
+            default:
+            break;
+        }
+        return periodFrequencyType;
     }
     
 }

@@ -33,11 +33,13 @@ import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
+import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
-import org.apache.fineract.portfolio.savings.DepositAccountUtils;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
+
+import com.finflux.common.util.WorkingDaysAndHolidaysUtil;
 
 @Entity
 @Table(name = "m_mandatory_savings_schedule")
@@ -270,8 +272,9 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
 
     public AdjustedDateDetailsDTO updateDueDateBasedOnWorkingDaysAndHolidays(AdjustedDateDetailsDTO adjustedDateDetailsDTO,
             final HolidayDetailDTO holidayDetailDTO, final PeriodFrequencyType frequency, final Integer recurringEvery) {
-        adjustedDateDetailsDTO = DepositAccountUtils.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO,
-                holidayDetailDTO, frequency, recurringEvery);
+        final CalendarData calendarData = null;
+        adjustedDateDetailsDTO = WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO,
+                holidayDetailDTO, frequency, recurringEvery, calendarData);
         this.setActualDueDate(adjustedDateDetailsDTO.getChangedActualRepaymentDate().toDate());
         this.setDueDate(adjustedDateDetailsDTO.getChangedScheduleDate().toDate());
         return adjustedDateDetailsDTO;
