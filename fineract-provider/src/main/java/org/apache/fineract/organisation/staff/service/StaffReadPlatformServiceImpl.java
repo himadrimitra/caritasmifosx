@@ -160,7 +160,7 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
 
     @Override
     public Collection<StaffData> retrieveAllLoanOfficersInOfficeById(final Long officeId) {
-        return retrieveAllStaffCollection(" office_id=" + officeId + " and is_loan_officer=1");
+        return retrieveAllStaffCollection(" office_id=" + officeId + " and is_loan_officer=1 and is_active = 1");
     }
 
     @Override
