@@ -961,7 +961,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     @Override
     public AdjustedLoanTransactionDetails reverseLoanTransactions(final Loan loan, final Long transactionId,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final String txnExternalId, final Locale locale,
-            final DateTimeFormatter dateFormat, final String noteText, final PaymentDetail paymentDetail, final boolean isAccountTransfer) {
+            final DateTimeFormatter dateFormat, final String noteText, final PaymentDetail paymentDetail, final boolean isAccountTransfer, 
+            final boolean isLoanToLoanTransfer) {
 
         AppUser currentUser = getAppUserIfPresent();
         final Map<String, Object> changes = new LinkedHashMap<>();
@@ -969,9 +970,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final LoanTransaction transactionToAdjust = this.loanTransactionRepository.findOneWithNotFoundDetection(transactionId);
 
         if (loan.status().isClosed() && loan.getLoanSubStatus() != null
-                && loan.getLoanSubStatus().equals(LoanSubStatus.FORECLOSED.getValue())) {
-            final String defaultUserMessage = "The loan cannot reopend as it is foreclosed.";
-            throw new LoanForeclosureException("loan.cannot.be.reopened.as.it.is.foreclosured", defaultUserMessage, loan.getId());
+                && loan.getLoanSubStatus().equals(LoanSubStatus.FORECLOSED.getValue()) && transactionAmount != null
+                && transactionAmount.compareTo(BigDecimal.ZERO) == 1) {
+            final String defaultUserMessage = "The loan cannot adjusted as it is foreclosed.";
+            throw new LoanForeclosureException("loan.cannot.be.adjusted.as.it.is.foreclosured", defaultUserMessage, loan.getId());
         }
         if (loan.isClosedWrittenOff()
                 && !transactionToAdjust.isRecoveryRepaymentTransaction()) { throw new PlatformServiceUnavailableException(
@@ -982,6 +984,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         changes.put("transactionAmount", transactionAmount);
         changes.put("locale", locale);
         changes.put("dateFormat", dateFormat);
+        this.loanAccountAssembler.setHelpers(loan);
         if (paymentDetail != null) changes.put("paymentTypeId", paymentDetail.getId());
 
         final List<Long> existingTransactionIds = new ArrayList<>(loan.findExistingTransactionIds());
@@ -1111,7 +1114,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             this.noteRepository.save(note);
         }
 
-        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer, isLoanToLoanTransfer);
 
         recalculateAccruals(loan);
 

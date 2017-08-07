@@ -710,5 +710,30 @@ public class AccountTransfersReadPlatformServiceImpl implements
 				new Object[] { this.formatter.print(transactionDate),
 						accountType, accountId, accountId }, BigDecimal.class);
 	}
+	
+    @Override
+    public Collection<Long> retrivePortfolioTransactionIds(final Long entityId, final PortfolioAccountType accountType) {
+        final StringBuilder sql = new StringBuilder();
+
+        if (accountType.isLoanAccount()) {
+            sql.append("select att.from_loan_transaction_id from  m_account_transfer_details  ad ");
+            sql.append(" join m_account_transfer_transaction att on ad.id = att.account_transfer_details_id ");
+            sql.append(" where ad.from_loan_account_id = ? and att.is_reversed = 0");
+            sql.append(" union ");
+            sql.append("select att.to_loan_transaction_id from  m_account_transfer_details  ad ");
+            sql.append(" join m_account_transfer_transaction att on ad.id = att.account_transfer_details_id ");
+            sql.append(" where ad.to_loan_account_id = ? and att.is_reversed = 0");
+        } else {
+            sql.append("select att.from_savings_transaction_id from  m_account_transfer_details  ad ");
+            sql.append(" join m_account_transfer_transaction att on ad.id = att.account_transfer_details_id ");
+            sql.append(" where ad.from_savings_account_id = ? and att.is_reversed = 0");
+            sql.append(" union ");
+            sql.append("select att.to_savings_transaction_id from  m_account_transfer_details  ad ");
+            sql.append(" join m_account_transfer_transaction att on ad.id = att.account_transfer_details_id ");
+            sql.append(" where ad.to_savings_account_id = ? and att.is_reversed = 0");
+        }
+
+        return this.jdbcTemplate.queryForList(sql.toString(), Long.class, entityId, entityId);
+    }
 
 }

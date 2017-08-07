@@ -47,4 +47,6 @@ public interface AccountTransfersReadPlatformService {
 
 	BigDecimal getTotalTransactionAmount(Long accountId, Integer accountType,
 			LocalDate transactionDate);
+
+    Collection<Long> retrivePortfolioTransactionIds(Long entityId, PortfolioAccountType accountType);
 }

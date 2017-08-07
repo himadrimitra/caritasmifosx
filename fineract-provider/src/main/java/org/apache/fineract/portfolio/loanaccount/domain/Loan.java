@@ -3475,7 +3475,7 @@ public class Loan extends AbstractPersistable<Long> {
     private ChangedTransactionDetail handleRepaymentOrRecoveryOrWaiverTransaction(final LoanTransaction loanTransaction,
             final LoanLifecycleStateMachine loanLifecycleStateMachine, final LoanTransaction adjustedTransaction,
             final ScheduleGeneratorDTO scheduleGeneratorDTO, final AppUser currentUser) {
-        
+        MonetaryCurrency currency = getCurrency();
         reverseExistingUnaccountableRefundTransactions();
         ChangedTransactionDetail changedTransactionDetail = null;
 
@@ -3560,7 +3560,6 @@ public class Loan extends AbstractPersistable<Long> {
                 && (!reprocess || !this.repaymentScheduleDetail().isInterestRecalculationEnabled())) {
             loanRepaymentScheduleTransactionProcessor.handleTransaction(loanTransaction, getCurrency(), this.repaymentScheduleInstallments,
                     charges());
-            MonetaryCurrency currency = getCurrency();
             loanTransaction.adjustInterestComponent(currency);
             reprocess = false;
             if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
@@ -3589,6 +3588,9 @@ public class Loan extends AbstractPersistable<Long> {
             }
             if (!loanTransaction.isRecoveryRepayment() && this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
                 regenerateRepaymentScheduleWithInterestRecalculation(scheduleGeneratorDTO, currentUser);
+            } else if (isForeclosure() && isAnyRecognizedPortionAvilable(adjustedTransaction, currency)){
+                regenerateRepaymentSchedule(scheduleGeneratorDTO, currentUser);
+                this.loanSubStatus = null;
             }
             final List<LoanTransaction> allNonContraTransactionsPostDisbursement = retreiveListOfTransactionsPostDisbursement();
             changedTransactionDetail = loanRepaymentScheduleTransactionProcessor.handleTransaction(getDisbursementDate(),
@@ -3635,6 +3637,14 @@ public class Loan extends AbstractPersistable<Long> {
             this.loanTransactions.removeAll(changedTransactionDetail.getNewTransactionMappings().values());
         }
         return changedTransactionDetail;
+    }
+
+    private boolean isAnyRecognizedPortionAvilable(final LoanTransaction adjustedTransaction, MonetaryCurrency currency) {
+        return adjustedTransaction != null
+        && (adjustedTransaction.getPrincipalPortion(currency).isGreaterThanZero()
+                || adjustedTransaction.getInterestPortion(currency).isGreaterThanZero()
+                || adjustedTransaction.getFeeChargesPortion(currency).isGreaterThanZero() || adjustedTransaction
+                .getPenaltyChargesPortion(currency).isGreaterThanZero());
     }
 /*
  * 
@@ -5976,12 +5986,6 @@ public class Loan extends AbstractPersistable<Long> {
                 if (!isOpen()) {
                     final String defaultUserMessage = "Loan Undo disbursal is not allowed. Loan Account is not active.";
                     final ApiParameterError error = ApiParameterError.generalError("error.msg.loan.undo.disbursal.account.is.not.active",
-                            defaultUserMessage);
-                    dataValidationErrors.add(error);
-                }
-                if(isOpen() && this.isTopup()){
-                    final String defaultUserMessage = "Loan Undo disbursal is not allowed on Topup Loans";
-                    final ApiParameterError error = ApiParameterError.generalError("error.msg.loan.undo.disbursal.not.allowed.on.topup.loan",
                             defaultUserMessage);
                     dataValidationErrors.add(error);
                 }
