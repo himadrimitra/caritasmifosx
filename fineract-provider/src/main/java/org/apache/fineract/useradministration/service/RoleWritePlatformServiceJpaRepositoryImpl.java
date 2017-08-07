@@ -49,8 +49,6 @@ import org.apache.fineract.useradministration.serialization.PermissionsCommandFr
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -141,7 +139,7 @@ public class RoleWritePlatformServiceJpaRepositoryImpl implements RoleWritePlatf
         logger.error(dve.getMessage(), dve);
     }
 
-    @Caching(evict = { @CacheEvict(value = "users", allEntries = true), @CacheEvict(value = "usersByUsername", allEntries = true) })
+//    @Caching(evict = { /*@CacheEvict(value = "users", allEntries = true),*/ @CacheEvict(value = "usersByUsername", allEntries = true) })
     @Transactional
     @Override
     public CommandProcessingResult updateRole(final Long roleId, final JsonCommand command) {
@@ -175,7 +173,7 @@ public class RoleWritePlatformServiceJpaRepositoryImpl implements RoleWritePlatf
         }
     }
 
-    @Caching(evict = { @CacheEvict(value = "users", allEntries = true), @CacheEvict(value = "usersByUsername", allEntries = true) })
+//    @Caching(evict = { /*@CacheEvict(value = "users", allEntries = true),*/ @CacheEvict(value = "usersByUsername", allEntries = true) })
     @Transactional
     @Override
     public CommandProcessingResult updateRolePermissions(final Long roleId, final JsonCommand command) {

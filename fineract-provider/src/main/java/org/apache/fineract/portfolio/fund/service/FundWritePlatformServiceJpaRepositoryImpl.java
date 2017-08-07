@@ -57,21 +57,16 @@ import org.apache.fineract.portfolio.fund.data.FundDataValidator;
 import org.apache.fineract.portfolio.fund.data.FundSearchQueryBuilder;
 import org.apache.fineract.portfolio.fund.domain.Fund;
 import org.apache.fineract.portfolio.fund.domain.FundLoanPurpose;
-import org.apache.fineract.portfolio.fund.domain.FundMappingHistory;
-import org.apache.fineract.portfolio.fund.domain.FundMappingHistoryRepository;
-import org.apache.fineract.portfolio.fund.domain.FundMappingHistoryRepositoryWrapper;
 import org.apache.fineract.portfolio.fund.domain.FundRepositoryWrapper;
 import org.apache.fineract.portfolio.fund.exception.CsvDataException;
 import org.apache.fineract.portfolio.fund.exception.FundNotFoundException;
-import org.apache.fineract.portfolio.loanaccount.domain.Loan;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
+import org.apache.fineract.portfolio.fund.exception.InvalidLoanForAssignmentException;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -96,10 +91,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
     private final ContentRepositoryFactory contentRepositoryFactory;
     private final DocumentRepository documentRepository;
     private final JdbcTemplate jdbcTemplate;
-    private final FundMappingHistoryRepositoryWrapper fundMappingHistoryRepositoryWrapper;
-    private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final FundMappingQueryBuilderService fundMappingQueryBuilderService;
-    private final FundMappingHistoryRepository fundMappingHistoryRepository;
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
@@ -107,9 +99,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
             final FundRepositoryWrapper fundRepositoryWrapper, final FundDataValidator fundDataValidator,
             final CodeValueRepositoryWrapper codeValueRepositoryWrapper, final FromJsonHelper fromApiJsonHelper,
             final ContentRepositoryFactory contentRepositoryFactory, final DocumentRepository documentRepository,
-            final RoutingDataSource dataSource, final FundMappingHistoryRepositoryWrapper fundMappingHistoryRepositoryWrapper,
-            final LoanRepositoryWrapper loanRepositoryWrapper, final FundMappingQueryBuilderService fundMappingQueryBuilderService,
-            final FundMappingHistoryRepository fundMappingHistoryRepository) {
+            final RoutingDataSource dataSource, final FundMappingQueryBuilderService fundMappingQueryBuilderService) {
         this.context = context;
         this.fundRepositoryWrapper = fundRepositoryWrapper;
         this.fundDataValidator = fundDataValidator;
@@ -118,15 +108,12 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
         this.contentRepositoryFactory = contentRepositoryFactory;
         this.documentRepository = documentRepository;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.fundMappingHistoryRepositoryWrapper = fundMappingHistoryRepositoryWrapper;
-        this.fundMappingHistoryRepository = fundMappingHistoryRepository;
-        this.loanRepositoryWrapper = loanRepositoryWrapper;
         this.fundMappingQueryBuilderService = fundMappingQueryBuilderService;
     }
 
     @Transactional
     @Override
-    @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
+//    @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
     public CommandProcessingResult createFund(final JsonCommand command) {
         try {
         this.fundDataValidator.validate(command);
@@ -253,7 +240,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
 
     @Transactional
     @Override
-    @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
+//    @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
     public CommandProcessingResult updateFund(final Long fundId, final JsonCommand command) {
 
         try {
@@ -579,33 +566,84 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
         dataMap.put("loanIds", loanIds);
         dataMap.put("errorList", errorList);
         return dataMap;
-    }
+    }    
 
     private void assignLoan(Set<Long> loanIds, Long fundId) {
+        validateLoanForFundMapping(loanIds);
         Fund fund = this.fundRepositoryWrapper.findOneWithNotFoundDetection(fundId);
         fund.setLoanAssigned(true);
-        List<FundMappingHistory> fundMappingHistoryList = new ArrayList<>();
-        for (Long loanId : loanIds) {
-            Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetection(loanId);
-            if (loan.getFund() == null
-                    || !(loan.getFund().getFacilityType().label().equalsIgnoreCase(FundApiConstants.buyoutParam) || loan.getFund()
-                            .getFacilityType().label().equalsIgnoreCase(FundApiConstants.securitizationParam))) {
-                loan.updateFund(fund);
-                List<FundMappingHistory> historyList = this.fundMappingHistoryRepository.findPreviousHistoryByLoan(loanId);
-                FundMappingHistory previousFundMappingHistory = null;
-                if(historyList != null && !historyList.isEmpty()){
-                    previousFundMappingHistory = historyList.get(0);
-                }
-                if (previousFundMappingHistory != null) {
-                    previousFundMappingHistory.setAssignmentEndDate(new Date());
-                    fundMappingHistoryList.add(previousFundMappingHistory);
-                }
-                fundMappingHistoryList.add(FundMappingHistory.instance(loan, fund, this.context.authenticatedUser(), new Date(),
-                        fund.getAssignmentEndDate()));
-                ;
-            }
+        String loanIdsAsString = loanIds.toString().replace('[', '(').replace(']', ')');
+        updateFundToLoans(loanIdsAsString, fundId);
+        updatePreviousFundMappingHistoryEndDate(loanIdsAsString);
+        insertFundMappingHistoryData(loanIds, fund);
+        this.fundRepositoryWrapper.save(fund);
+    }
+
+    public void updateFundToLoans(String loanIdAsString, Long fundId) {
+        String sql = "update m_loan l set l.fund_id = " + fundId + " where l.id in " + loanIdAsString;
+        this.jdbcTemplate.update(sql);
+    }
+
+    public void updatePreviousFundMappingHistoryEndDate(String loanIdAsString) {
+        String fundMappingHistoryIdAsString = getFundAssignmentHistoryIdsToUpdateEndDate(loanIdAsString);
+        LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+        String sql = "update f_fund_mapping_history fmh set fmh.assignment_end_date = '"+currentDate+"' where fmh.id in ("
+                + fundMappingHistoryIdAsString + ")";
+        this.jdbcTemplate.update(sql);
+    }
+
+    public void insertFundMappingHistoryData(Set<Long> loanIds, Fund fund) {
+        String insertFundMappingHIstoryQuery = getHistoryInsertQuery(loanIds, fund);
+        this.jdbcTemplate.update(insertFundMappingHIstoryQuery);
+    }
+
+    private void validateLoanForFundMapping(Set<Long> loanIds) {
+        String sql = "select l.id from m_loan l where l.id in " + loanIds.toString().replace('[', '(').replace(']', ')') + " and ";
+        String criteria = getLoanAssignmentCriteria();
+        sql = sql + criteria;
+        List<Long> loans = this.jdbcTemplate.queryForList(sql, Long.class);
+        if (loanIds.size() != loans.size()) {
+            loanIds.removeAll(loans);
+            String loanIdAsString = loanIds.toString().replace('[', '(').replace(']', ')');
+            throw new InvalidLoanForAssignmentException(loanIdAsString);
         }
-        this.fundMappingHistoryRepositoryWrapper.save(fundMappingHistoryList);
+    }
+
+    private String getLoanAssignmentCriteria() {
+        String criteria = "";
+        String allowedFundSql = "select GROUP_CONCAT(DISTINCT(f.id)) as ids from m_fund f "
+                + "left join  m_code_value cv ON cv.id = f.facility_type " + "where cv.code_value NOT IN ('Buyout','Securitization')";
+        String fundIdAsString = this.jdbcTemplate.queryForObject(allowedFundSql, String.class);
+        criteria = " l.loan_status_id = 300 AND (l.fund_id IS NULL OR l.fund_id IN (" + fundIdAsString + ")) ";
+        return criteria;
+    }
+
+    private String getHistoryInsertQuery(Set<Long> loanIds, Fund fund) {
+        Long userId = this.context.authenticatedUser().getId();
+        StringBuilder insertValuesExcludingLoanId = new StringBuilder();
+        StringBuilder sql = new StringBuilder();
+        LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+        if (fund.getAssignmentEndDate() != null) {
+            sql.append("INSERT INTO f_fund_mapping_history (loan_id, fund_id, assignment_date, assignment_end_date, created_by) VALUES ");
+            insertValuesExcludingLoanId.append(", " + fund.getId() + ", '"+currentDate+"', '" + fund.getAssignmentEndDate() + "'," + userId + "),");
+        } else {
+            sql.append("INSERT INTO f_fund_mapping_history (loan_id, fund_id, assignment_date, created_by) VALUES ");
+            insertValuesExcludingLoanId.append(", " + fund.getId() + ", '"+currentDate+"'," + userId + "),");
+        }
+
+        for (Long id : loanIds) {
+            sql.append("(" + id);
+            sql.append(insertValuesExcludingLoanId);
+        }
+        sql = (sql).deleteCharAt(sql.length() - 1);
+        return sql.toString();
+    }
+
+    private String getFundAssignmentHistoryIdsToUpdateEndDate(String loanIds) {
+        String sql = "select GROUP_CONCAT(id) from (SELECT (MAX(fmh.id)) as id FROM f_fund_mapping_history fmh where fmh.loan_id in "
+                + loanIds + " GROUP BY fmh.loan_id) as x";
+        String fundIdAsString = this.jdbcTemplate.queryForObject(sql, String.class);
+        return fundIdAsString;
     }
 
     @Override

@@ -36,7 +36,6 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +64,7 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
 
     @Transactional
     @Override
-    @CacheEvict(value = "code_values", allEntries = true)
+//    @CacheEvict(value = "code_values", allEntries = true)
     public CommandProcessingResult createCodeValue(final JsonCommand command) {
 
         try {
@@ -113,7 +112,7 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
 
     @Transactional
     @Override
-    @CacheEvict(value = "code_values", allEntries = true)
+//    @CacheEvict(value = "code_values", allEntries = true)
     public CommandProcessingResult updateCodeValue(final Long codeValueId, final JsonCommand command) {
 
         try {
@@ -144,7 +143,7 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
 
     @Transactional
     @Override
-    @CacheEvict(value = "code_values", allEntries = true)
+//    @CacheEvict(value = "code_values", allEntries = true)
     public CommandProcessingResult deleteCodeValue(final Long codeId, final Long codeValueId) {
 
         try {

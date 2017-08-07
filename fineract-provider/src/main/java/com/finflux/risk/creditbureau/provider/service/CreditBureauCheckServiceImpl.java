@@ -23,7 +23,8 @@ import org.springframework.stereotype.Service;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepository;
 import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductMapping;
-import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductMappingRepository;
+import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductOfficeMapping;
+import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductOfficeMappingRepository;
 import com.finflux.risk.creditbureau.configuration.domain.CreditBureauProduct;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauEntityType;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauFileContentData;
@@ -45,7 +46,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
     private CreditBureauProviderFactory creditBureauProviderFactory;
     private CreditBureauEnquiryReadService creditBureauEnquiryReadService;
     private CreditBureauEnquiryWritePlatformService creditBureauEnquiryWritePlatformService;
-    private final CreditBureauLoanProductMappingRepository creditBureauLpMappingRepository;
+    private final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository;
     private final LoanReadPlatformServiceImpl loanReadPlatformServiceImpl;
     private final LoanApplicationReferenceRepository loanApplicationReferenceRepository;
     private final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryRepository;
@@ -54,18 +55,18 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
     public CreditBureauCheckServiceImpl(final RoutingDataSource dataSource, CreditBureauProviderFactory creditBureauProviderFactory,
             CreditBureauEnquiryReadService creditBureauEnquiryReadService,
             CreditBureauEnquiryWritePlatformService creditBureauEnquiryWritePlatformService,
-            CreditBureauLoanProductMappingRepository creditBureauLpMappingRepository,
             final LoanReadPlatformServiceImpl loanReadPlatformServiceImpl,
             final LoanApplicationReferenceRepository loanApplicationReferenceRepository,
-            final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryRepository) {
+            final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryRepository,
+            final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.creditBureauProviderFactory = creditBureauProviderFactory;
         this.creditBureauEnquiryReadService = creditBureauEnquiryReadService;
         this.creditBureauEnquiryWritePlatformService = creditBureauEnquiryWritePlatformService;
-        this.creditBureauLpMappingRepository = creditBureauLpMappingRepository;
         this.loanReadPlatformServiceImpl = loanReadPlatformServiceImpl;
         this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
         this.loanCreditBureauEnquiryRepository = loanCreditBureauEnquiryRepository;
+        this.creditBureauLoanProductOfficeMappingRepository = creditBureauLoanProductOfficeMappingRepository;
     }
 
     @SuppressWarnings("null")
@@ -89,54 +90,63 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
                 enquiryData = this.creditBureauEnquiryReadService.getEnquiryRequestDataForLoan(loanId);
             }
         }
+        CreditBureauLoanProductOfficeMapping creditBureauLoanProductOfficeMapping = this.creditBureauLoanProductOfficeMappingRepository.retrieveCreditBureauAndLoanProductOfficeMapping(enquiryData.getLoanProductId(), enquiryData.getBranchId());
 
-        final CreditBureauLoanProductMapping creditBureauLpMapping = creditBureauLpMappingRepository.findWithLoanProductId(enquiryData
-                .getLoanProductId());
-        final CreditBureauProduct creditBureauProduct = creditBureauLpMapping.getCreditBureauProduct();
-        final Integer stalePeriod = creditBureauLpMapping.getStalePeriod();
+        if (creditBureauLoanProductOfficeMapping == null) {
+            creditBureauLoanProductOfficeMapping = this.creditBureauLoanProductOfficeMappingRepository
+                    .retrieveDefaultCreditBureauAndLoanProductOfficeMapping(enquiryData.getLoanProductId());
+        }
+        if (creditBureauLoanProductOfficeMapping != null) {
+            final CreditBureauLoanProductMapping creditBureauLpMapping = creditBureauLoanProductOfficeMapping
+                    .getCreditBureauLoanProductMapping();
+            final CreditBureauProduct creditBureauProduct = creditBureauLpMapping.getCreditBureauProduct();
+            final Integer stalePeriod = creditBureauLpMapping.getStalePeriod();
 
-        String implementationKey = creditBureauProduct.getImplementationKey();
-        CreditBureauProvider creditBureauProvider = creditBureauProviderFactory.getCreditBureauProvider(implementationKey);
+            String implementationKey = creditBureauProduct.getImplementationKey();
+            CreditBureauProvider creditBureauProvider = creditBureauProviderFactory.getCreditBureauProvider(implementationKey);
 
-        // check whether report is available or stale
+            // check whether report is available or stale
 
-        Long trancheDisbursalId = null;
-        Map<String, Object> data = null;
-        if (loanId != null) {
-            enquiryData.setLoanId(loanId);
-            data = this.loanReadPlatformServiceImpl.retrieveDisbursalDataMap(loanId);
-            if (data.get("trancheDisbursalId") != null) {
-                trancheDisbursalId = (Long) data.get("trancheDisbursalId");
+            Long trancheDisbursalId = null;
+            Map<String, Object> data = null;
+            if (loanId != null) {
+                enquiryData.setLoanId(loanId);
+                data = this.loanReadPlatformServiceImpl.retrieveDisbursalDataMap(loanId);
+                if (data.get("trancheDisbursalId") != null) {
+                    trancheDisbursalId = (Long) data.get("trancheDisbursalId");
+                }
+                if (data.get("principal") != null) {
+                    enquiryData.setLoanAmount((BigDecimal) data.get("principal"));
+                }
             }
-            if (data.get("principal") != null) {
-                enquiryData.setLoanAmount((BigDecimal) data.get("principal"));
+            LoanEnquiryReferenceData loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(
+                    loanApplicationId, creditBureauProduct.getId(), loanId, trancheDisbursalId);
+            Boolean isCBReportExpired = false;
+            if(loanEnquiryReferenceData != null && !loanEnquiryReferenceData.getStatus().isInValid()){
+                isCBReportExpired = loanEnquiryReferenceData.isCBReportGeneratedDaysGreaterThanStalePeriod(stalePeriod);
             }
+            if (loanEnquiryReferenceData == null || loanEnquiryReferenceData.getStatus().isInValid()
+                    || isCBReportExpired) {
+                // fire new request
+                //this.creditBureauEnquiryReadService.inActivePreviousLoanApplicationCreditbureauEnquiries(loanApplicationId);
+                final EnquiryReferenceData enquiryReferenceData = createCreditBureauEnquiry(enquiryData, creditBureauProduct, type,
+                        loanApplicationId, loanId, trancheDisbursalId, isCBReportExpired);
+                final CreditBureauResponse creditBureauResponseEnquire = creditBureauProvider.enquireCreditBureau(enquiryReferenceData);
+                this.creditBureauEnquiryWritePlatformService.saveEnquiryResponseDetails(enquiryReferenceData, creditBureauResponseEnquire);
+                
+                // fetch report
+                /*loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(loanApplicationId,
+                        creditBureauProduct.getId(), loanId, trancheDisbursalId);*/
+                loanEnquiryReferenceData = enquiryReferenceData.getLoansReferenceData().get(0) ;
+                processCreditBureauReportRespon(creditBureauProvider, loanEnquiryReferenceData, loanId, trancheDisbursalId);
+            } else if (loanEnquiryReferenceData.getStatus().isPending()) {
+                // fetch report
+                processCreditBureauReportRespon(creditBureauProvider, loanEnquiryReferenceData, loanId, trancheDisbursalId);
+            }
+            return getOtherInstituteLoansSummary(entityType, entityId, trancheDisbursalId);
         }
-        LoanEnquiryReferenceData loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(
-                loanApplicationId, creditBureauProduct.getId(), loanId, trancheDisbursalId);
-        Boolean isCBReportExpired = false;
-        if(loanEnquiryReferenceData != null && !loanEnquiryReferenceData.getStatus().isInValid()){
-            isCBReportExpired = loanEnquiryReferenceData.isCBReportGeneratedDaysGreaterThanStalePeriod(stalePeriod);
-        }
-        if (loanEnquiryReferenceData == null || loanEnquiryReferenceData.getStatus().isInValid()
-                || isCBReportExpired) {
-            // fire new request
-            //this.creditBureauEnquiryReadService.inActivePreviousLoanApplicationCreditbureauEnquiries(loanApplicationId);
-            final EnquiryReferenceData enquiryReferenceData = createCreditBureauEnquiry(enquiryData, creditBureauProduct, type,
-                    loanApplicationId, loanId, trancheDisbursalId, isCBReportExpired);
-            final CreditBureauResponse creditBureauResponseEnquire = creditBureauProvider.enquireCreditBureau(enquiryReferenceData);
-            this.creditBureauEnquiryWritePlatformService.saveEnquiryResponseDetails(enquiryReferenceData, creditBureauResponseEnquire);
-            
-            // fetch report
-            /*loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(loanApplicationId,
-                    creditBureauProduct.getId(), loanId, trancheDisbursalId);*/
-            loanEnquiryReferenceData = enquiryReferenceData.getLoansReferenceData().get(0) ;
-            processCreditBureauReportRespon(creditBureauProvider, loanEnquiryReferenceData, loanId, trancheDisbursalId);
-        } else if (loanEnquiryReferenceData.getStatus().isPending()) {
-            // fetch report
-            processCreditBureauReportRespon(creditBureauProvider, loanEnquiryReferenceData, loanId, trancheDisbursalId);
-        }
-        return getOtherInstituteLoansSummary(entityType, entityId, trancheDisbursalId);
+        OtherInstituteLoansSummaryData otherInstituteLoansSummaryData = null;
+        return otherInstituteLoansSummaryData;
     }
 
     private void processCreditBureauReportRespon(final CreditBureauProvider creditBureauProvider,
