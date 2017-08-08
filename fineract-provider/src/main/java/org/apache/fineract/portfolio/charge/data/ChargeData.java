@@ -85,6 +85,7 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
     private final List<EnumOptionData> glimChargeCalculationTypeOptions;
     private List<ChargeSlabData> slabs;
     private final boolean isCapitalized;
+    private final List<EnumOptionData> slabChargeTypeOptions;
 
     public static ChargeData template(final Collection<CurrencyData> currencyOptions,
             final List<EnumOptionData> chargeCalculationTypeOptions, final List<EnumOptionData> chargeAppliesToOptions,
@@ -94,7 +95,8 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
             final List<EnumOptionData> clientChargeCalculationTypeOptions, final List<EnumOptionData> clientChargeTimeTypeOptions,
             final List<EnumOptionData> feeFrequencyOptions, final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions,
             final Collection<TaxGroupData> taxGroupOptions, final List<EnumOptionData> shareChargeCalculationTypeOptions,
-            final List<EnumOptionData> shareChargeTimeTypeOptions, final List<EnumOptionData> glimChargeCalculationTypeOptions) {
+            final List<EnumOptionData> shareChargeTimeTypeOptions, final List<EnumOptionData> glimChargeCalculationTypeOptions,
+            final List<EnumOptionData> slabChargeTypeOptions) {
         final GLAccountData account = null;
         final TaxGroupData taxGroupData = null;
         boolean emiRoundingGoalSeek = false;
@@ -108,7 +110,7 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
                 savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions, clientChargeTimeTypeOptions, null, null, null, null,
                 null, feeFrequencyOptions, account, incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions,
                 shareChargeTimeTypeOptions, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions,
-                isCapitalized, slabs);
+                isCapitalized, slabs, slabChargeTypeOptions);
     }
 
     public static ChargeData withTemplate(final ChargeData charge, final ChargeData template) {
@@ -122,7 +124,7 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
                 charge.incomeOrLiabilityAccount, template.incomeOrLiabilityAccountOptions, template.taxGroupOptions,
                 template.shareChargeCalculationTypeOptions, template.shareChargeTimeTypeOptions, charge.emiRoundingGoalSeek,
                 charge.isGlimCharge, charge.glimChargeCalculation, template.glimChargeCalculationTypeOptions, charge.isCapitalized,
-                charge.getChargeSlabs());
+                charge.getChargeSlabs(),template.slabChargeTypeOptions);
     }
 
     public static ChargeData instance(final Long id, final String name, final BigDecimal amount, final CurrencyData currency,
@@ -150,13 +152,15 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         final Collection<TaxGroupData> taxGroupOptions = null;
         final List<EnumOptionData> glimChargeCalculationTypeOptions = null;
         final List<ChargeSlabData> chargeSlabs = null;
+        final List<EnumOptionData> slabChargeTypeOptions = null;
         return new ChargeData(id, name, amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType, chargePaymentMode,
                 penalty, active, taxGroupData, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions,
                 chargeTimeTypeOptions, chargePaymentModeOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
                 savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
                 clientChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, feeFrequencyOptions, accountData,
                 incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, 
-                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs);
+                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs,
+                slabChargeTypeOptions);
     }
     
     public static ChargeData instance(final Long id, final String name, final BigDecimal amount, final CurrencyData currency,
@@ -188,6 +192,7 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         final EnumOptionData glimChargeCalculationType = null;
         final boolean isCapitalized = false;
         final List<ChargeSlabData> chargeSlabs = null;
+        final List<EnumOptionData> slabChargeTypeOptions = null;
 
         return new ChargeData(id, name, amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType, chargePaymentMode,
                 penalty, active, taxGroupData, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions, chargeTimeTypeOptions,
@@ -195,7 +200,8 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
                 savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
                 clientChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, feeFrequencyOptions, accountData,
                 incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,
-                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs);
+                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs,
+                slabChargeTypeOptions);
     }
 
     public static ChargeData lookup(final Long id, final String name, final boolean isPenalty) {
@@ -236,13 +242,15 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         final EnumOptionData glimChargeCalculationType = null;
         final boolean isCapitalized = false;
         final List<ChargeSlabData> chargeSlabs = null;
+        final List<EnumOptionData> slabChargeTypeOptions = null;
         return new ChargeData(id, name, amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType, chargePaymentMode,
                 penalty, active, taxGroupData, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions,
                 chargeTimeTypeOptions, chargePaymentModeOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
                 savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
                 clientChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, feeFrequencyOptions, account,
                 incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, 
-                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs);
+                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs,
+                slabChargeTypeOptions);
     }
 
     private ChargeData(final Long id, final String name, final BigDecimal amount, final CurrencyData currency,
@@ -259,7 +267,8 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
             final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions, final Collection<TaxGroupData> taxGroupOptions,
             final List<EnumOptionData> shareChargeCalculationTypeOptions, final List<EnumOptionData> shareChargeTimeTypeOptions, 
             final boolean emiRoundingGoalSeek, boolean isGlimCharge, final EnumOptionData glimChargeCalculationType, 
-            final List<EnumOptionData> glimChargeCalculationTypeOptions, final boolean isCapitalized, List<ChargeSlabData> chargeSlabs) {
+            final List<EnumOptionData> glimChargeCalculationTypeOptions, final boolean isCapitalized, List<ChargeSlabData> chargeSlabs,
+            final List<EnumOptionData> slabChargeTypeOptions) {
         this.id = id;
         this.name = name;
         this.amount = amount;
@@ -299,6 +308,7 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         this.glimChargeCalculationTypeOptions = glimChargeCalculationTypeOptions;
         this.isCapitalized = isCapitalized;
         this.slabs = chargeSlabs;
+        this.slabChargeTypeOptions = slabChargeTypeOptions;
     }
 
     @Override

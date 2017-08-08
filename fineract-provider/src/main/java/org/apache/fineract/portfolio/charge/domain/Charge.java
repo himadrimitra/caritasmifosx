@@ -50,7 +50,10 @@ import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.exception.ChargeDueAtDisbursementCannotBePenaltyException;
 import org.apache.fineract.portfolio.charge.exception.ChargeMustBePenaltyException;
 import org.apache.fineract.portfolio.charge.exception.ChargeParameterUpdateNotSupportedException;
+import org.apache.fineract.portfolio.charge.exception.ChargeSlabRangeOverlapException;
+import org.apache.fineract.portfolio.charge.exception.SlabChargeTypeException;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
 import org.hibernate.annotations.Cache;
@@ -155,18 +158,9 @@ public class Charge extends AbstractPersistable<Long> {
                 .integerValueOfParameterNamed("chargeCalculationType"));
         final Integer chargePaymentMode = command.integerValueOfParameterNamed("chargePaymentMode");
         boolean isCapitalized = false;
-        List<ChargeSlab> chargeSlab = new ArrayList<>();
+        List<ChargeSlab> chargeSlabs = new ArrayList<>();
         if (chargeCalculationType.isSlabBased()) {
-            JsonArray chargeSlabArray = command.arrayOfParameterNamed(ChargesApiConstants.slabsParamName);
-            if (chargeSlabArray != null) {
-                for (JsonElement element : chargeSlabArray) {
-                    JsonObject jsonObject = element.getAsJsonObject();
-                    BigDecimal fromLoanAmount = jsonObject.get(ChargesApiConstants.fromLoanAmountParamName).getAsBigDecimal();
-                    BigDecimal toLoanAmount = jsonObject.get(ChargesApiConstants.toLoanAmountParamName).getAsBigDecimal();
-                    BigDecimal chargeAmount = jsonObject.get(ChargesApiConstants.amountParamName).getAsBigDecimal();
-                    chargeSlab.add(new ChargeSlab(fromLoanAmount, toLoanAmount, chargeAmount));
-                }
-            }
+            chargeSlabs.addAll(assambleSlabsFromJson(command));
             isCapitalized = command.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.isCapitalizedParamName);
         }
 
@@ -189,11 +183,77 @@ public class Charge extends AbstractPersistable<Long> {
 
         return new Charge(name, amount, currencyCode, chargeAppliesTo, chargeTimeType, chargeCalculationType, penalty, active, paymentMode,
                 feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, account, taxGroup, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation,
-                isCapitalized, chargeSlab);
+                isCapitalized, chargeSlabs);
+    }
+    
+    
+    public static List<ChargeSlab> assambleSlabsFromJson(final JsonCommand command) {        
+        ChargeSlab parent = null;
+        List<ChargeSlab> chargeSlabs = new ArrayList<>();
+        JsonArray chargeSlabArray = command.arrayOfParameterNamed(ChargesApiConstants.slabsParamName);
+        chargeSlabs = getSlab(chargeSlabs,chargeSlabArray,parent);
+        validateSlabType(chargeSlabs);
+        
+        return chargeSlabs;
+    }
+    
+    public static void validateSlabType(final List<ChargeSlab> chargeSlabs){        
+        for (ChargeSlab chargeSlab : chargeSlabs) {
+            Integer type =chargeSlab.getType();
+            if(chargeSlab.getSubSlabs()!=null && chargeSlab.getSubSlabs().size()>0){
+                for (ChargeSlab chargeSubSlab : chargeSlab.getSubSlabs()) {
+                    if(chargeSubSlab.equals(type)){
+                        throw new SlabChargeTypeException();
+                    }
+                }
+            }
+        }
+    }
+    
+    private static List<ChargeSlab> getSlab(List<ChargeSlab> chargeSlabs,JsonArray chargeSlabArray, ChargeSlab parent) {
+        for (JsonElement element : chargeSlabArray) {
+            JsonObject jsonObject = element.getAsJsonObject();
+                ChargeSlab chargeSlab = getSlab(jsonObject, parent);
+                validateSlabRanges(chargeSlabs,chargeSlab);
+                if(isSubSlabExist(jsonObject)){
+                    List<ChargeSlab> subSlabs = new ArrayList<>();                    
+                    subSlabs = getSlab(subSlabs,jsonObject.get(ChargesApiConstants.subSlabsParamName).getAsJsonArray(), chargeSlab);
+                    chargeSlab.setSubSlabs(subSlabs);
+                }                
+                chargeSlabs.add(chargeSlab);
+        }
+        return chargeSlabs;
+    }
+    
+    public static boolean isSubSlabExist(JsonObject jsonObject){
+        if(jsonObject != null && jsonObject.has(ChargesApiConstants.subSlabsParamName)){
+            if(jsonObject.get(ChargesApiConstants.subSlabsParamName)!= null){
+                return jsonObject.get(ChargesApiConstants.subSlabsParamName).getAsJsonArray().size()>0;
+            }
+        }
+         return false; 
+    }
+
+    private static ChargeSlab getSlab(JsonObject jsonObject, ChargeSlab parent) {
+        BigDecimal minValue = jsonObject.get(ChargesApiConstants.minValueParamName).getAsBigDecimal();
+        BigDecimal maxValue = jsonObject.get(ChargesApiConstants.maxValueParamName).getAsBigDecimal();
+        BigDecimal chargeAmount = jsonObject.get(ChargesApiConstants.amountParamName).getAsBigDecimal();
+        Integer type = jsonObject.get(ChargesApiConstants.typeParamName).getAsInt();
+        ChargeSlab chargeSlab = ChargeSlab.createNew(minValue, maxValue, chargeAmount, type, parent);        
+        return chargeSlab;
     }
 
     protected Charge() {
         //
+    }
+    
+    public static void validateSlabRanges(List<ChargeSlab> chargeSlabs,ChargeSlab chargeSlab){
+       for (ChargeSlab slab : chargeSlabs) {
+           if(MathUtility.isInRange(slab.getMinValue(), slab.getMaxValue(), chargeSlab.getMinValue()) || MathUtility.isInRange(chargeSlab.getMinValue(), chargeSlab.getMaxValue(), slab.getMinValue())){
+               throw new ChargeSlabRangeOverlapException(SlabChargeType.fromInt(chargeSlab.getType()).getCode());
+           }
+       } 
+        
     }
 
     private Charge(final String name, final BigDecimal amount, final String currencyCode, final ChargeAppliesTo chargeAppliesTo,
@@ -627,16 +687,6 @@ public class Charge extends AbstractPersistable<Long> {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
         return actualChanges;
-    }
-
-    private String[] getSlabsAsStringArray() {
-        final List<String> slabIds = new ArrayList<>();
-
-        for (final ChargeSlab chargeSlab : this.slabs) {
-            slabIds.add(chargeSlab.getId().toString());
-        }
-
-        return slabIds.toArray(new String[slabIds.size()]);
     }
 
     /**

@@ -175,10 +175,12 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
         final Collection<TaxGroupData> taxGroupOptions = null;
         // TODO AA : revisit for merge conflict - Not sure method signature
         final List<EnumOptionData> glimChargeCalculationOptions = null;
+        final List<EnumOptionData> slabChargeTypeOptions = null;
         return ChargeData.template(null, allowedChargeCalculationTypeOptions, null, allowedChargeTimeOptions, null,
                 loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions,
                 savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions, clientChargeTimeTypeOptions, feeFrequencyOptions,
-                incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,glimChargeCalculationOptions);
+                incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,glimChargeCalculationOptions,
+                slabChargeTypeOptions);
     }
 
     @Override

@@ -8,9 +8,10 @@ package org.apache.fineract.portfolio.charge.exception;
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
 
 
-public class ChargeNotInSlabExpection extends AbstractPlatformDomainRuleException {
+public class SlabChargeTypeException  extends AbstractPlatformDomainRuleException {
 
-    public ChargeNotInSlabExpection(final String value) {
-        super("error.msg.charge.not.falls.in.slab", "Value '" + value + "' does not falls in slab.",value);
+    public SlabChargeTypeException() {
+        super("error.msg.slab.and.subslab.charge.types.can.not.be.same", "Slab and Sub slabs charge types can not be same.");
     }
+
 }

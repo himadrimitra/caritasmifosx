@@ -18,8 +18,6 @@
  */
 package org.apache.fineract.portfolio.charge.service;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -57,9 +55,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 @Service
 public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWritePlatformService {
@@ -177,7 +172,7 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             }
             
             if (ChargeCalculationType.fromInt(chargeForUpdate.getChargeCalculation().intValue()).isSlabBased()) {
-                final List<ChargeSlab> slabList = assembleSetOfChargeSlabs(command);
+                final List<ChargeSlab> slabList = Charge.assambleSlabsFromJson(command);
                 changes.put("isSlabChanged", true);
                 chargeForUpdate.updateSlabCharges(slabList);    
             }
@@ -211,21 +206,6 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
-    }
-
-    private List<ChargeSlab> assembleSetOfChargeSlabs(JsonCommand command) {
-        List<ChargeSlab> slabList = new ArrayList<>();
-        if (command.hasParameter(ChargesApiConstants.slabsParamName)) {
-            JsonArray slabArray = command.arrayOfParameterNamed(ChargesApiConstants.slabsParamName);
-            for (JsonElement element : slabArray) {
-                JsonObject slabObject = element.getAsJsonObject();
-                BigDecimal fromLoanAmount = slabObject.get(ChargesApiConstants.fromLoanAmountParamName).getAsBigDecimal();
-                BigDecimal toLoanAmount = slabObject.get(ChargesApiConstants.toLoanAmountParamName).getAsBigDecimal();
-                BigDecimal amount = slabObject.get(ChargesApiConstants.amountParamName).getAsBigDecimal();
-                slabList.add(new ChargeSlab(fromLoanAmount, toLoanAmount, amount));
-            }
-        }
-        return slabList;
     }
 
     @Transactional
