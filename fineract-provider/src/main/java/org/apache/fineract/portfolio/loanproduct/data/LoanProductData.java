@@ -1297,13 +1297,16 @@ public class LoanProductData {
         final Long loanId = null;
         final CalendarData calendarData = null;
         final CalendarData compoundingCalendarData = null;
+        final LocalDate recalculationRestFrequencyStartDate = null;
+        final LocalDate recalculationCompoundingFrequencyStartDate = null;
         return new LoanInterestRecalculationData(id, loanId, getInterestRecalculationCompoundingType(), getRescheduleStrategyType(),
                 calendarData, getRecalculationRestFrequencyType(), getRecalculationRestFrequencyInterval(),
                 getInterestRecalculationRestNthDayType(), getInterestRecalculationRestWeekDayType(),
                 getInterestRecalculationRestOnDayType(), compoundingCalendarData, getRecalculationCompoundingFrequencyType(),
                 getRecalculationCompoundingFrequencyInterval(), getInterestRecalculationCompoundingNthDayType(),
                 getInterestRecalculationCompoundingWeekDayType(), getInterestRecalculationCompoundingOnDayType(),
-                isCompoundingToBePostedAsTransaction(), allowCompoundingOnEod(), isSubsidyApplicable());
+                isCompoundingToBePostedAsTransaction(), allowCompoundingOnEod(), isSubsidyApplicable(),
+                recalculationRestFrequencyStartDate, recalculationCompoundingFrequencyStartDate);
     }
 
     private EnumOptionData getRescheduleStrategyType() {

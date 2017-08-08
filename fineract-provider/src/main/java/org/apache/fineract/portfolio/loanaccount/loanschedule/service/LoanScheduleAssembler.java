@@ -460,6 +460,11 @@ public class LoanScheduleAssembler {
                         expectedDisbursementDate);
             } else {
                 LocalDate calendarStartDate = expectedDisbursementDate;
+                final LocalDate restStartDate = this.fromApiJsonHelper.extractLocalDateNamed(
+                        LoanApiConstants.recalculationRestFrequencyStartDateParamName, element);
+                if (restStartDate != null) {
+                    calendarStartDate = restStartDate;
+                }
                 restCalendarInstance = createInterestRecalculationCalendarInstance(calendarStartDate, recalculationFrequencyType,
                         frequency, recalculationFrequencyNthDay, repeatsOnDay);
             }
@@ -478,6 +483,11 @@ public class LoanScheduleAssembler {
                             expectedDisbursementDate);
                 } else {
                     LocalDate calendarStartDate = expectedDisbursementDate;
+                    final LocalDate compoundingStartDate = this.fromApiJsonHelper.extractLocalDateNamed(
+                            LoanApiConstants.recalculationCompoundingFrequencyStartDateParamName, element);
+                    if (compoundingStartDate != null) {
+                        calendarStartDate = compoundingStartDate;
+                    }
                     compoundingCalendarInstance = createInterestRecalculationCalendarInstance(calendarStartDate, compoundingFrequencyType,
                             loanProductInterestRecalculationDetails.getCompoundingInterval(), recalculationCompoundingFrequencyNthDay,
                             compoundingRepeatsOnDay);

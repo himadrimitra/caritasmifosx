@@ -1506,6 +1506,9 @@ public class Loan extends AbstractPersistable<Long> {
             actualChanges.put("recalculateLoanSchedule", recalculateLoanSchedule);
             isChargesModified = true;
         }
+        
+        loanInterestRecalculationDetails.update(command, actualChanges);
+        
         final String interestRatePerPeriodParamName = "interestRatePerPeriod";
         if(actualChanges.containsKey(interestRatePerPeriodParamName)){
             if(getFlatInterestRate() != null){
@@ -2272,7 +2275,8 @@ public class Loan extends AbstractPersistable<Long> {
     public void loanApplicationSubmittal(final AppUser currentUser, final LoanScheduleModel loanSchedule,
             final LoanApplicationTerms loanApplicationTerms, final LoanLifecycleStateMachine lifecycleStateMachine,
             final LocalDate submittedOn, final String externalId, final boolean allowTransactionsOnHoliday, final List<Holiday> holidays,
-            final WorkingDays workingDays, final boolean allowTransactionsOnNonWorkingDay, List<GroupLoanIndividualMonitoring> glimList) {
+            final WorkingDays workingDays, final boolean allowTransactionsOnNonWorkingDay, List<GroupLoanIndividualMonitoring> glimList, 
+            final LocalDate restFrequencyStartDate, final LocalDate compoundingFrequencyStartDate) {
 
         updateLoanSchedule(loanSchedule, currentUser);
 
@@ -2339,7 +2343,7 @@ public class Loan extends AbstractPersistable<Long> {
         if (this.loanRepaymentScheduleDetail.isInterestRecalculationEnabled()) {
 
             this.loanInterestRecalculationDetails = LoanInterestRecalculationDetails.createFrom(this.loanProduct
-                    .getProductInterestRecalculationDetails());
+                    .getProductInterestRecalculationDetails(), restFrequencyStartDate, compoundingFrequencyStartDate);
             this.loanInterestRecalculationDetails.updateLoan(this);
         }
 

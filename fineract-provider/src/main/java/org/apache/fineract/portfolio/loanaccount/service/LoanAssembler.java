@@ -322,6 +322,10 @@ public class LoanAssembler {
 
         final String externalId = this.fromApiJsonHelper.extractStringNamed("externalId", element);
         final LocalDate submittedOnDate = this.fromApiJsonHelper.extractLocalDateNamed("submittedOnDate", element);
+        final LocalDate restFrequencyStartDate = this.fromApiJsonHelper.extractLocalDateNamed(
+                LoanApiConstants.recalculationRestFrequencyStartDateParamName, element);
+        final LocalDate compoundingFrequencyStartDate = this.fromApiJsonHelper.extractLocalDateNamed(
+                LoanApiConstants.recalculationCompoundingFrequencyStartDateParamName, element);
 
         if (loanApplication == null) { throw new IllegalStateException("No loan application exists for either a client or group (or both)."); }
         loanApplication.setHelpers(defaultLoanLifecycleStateMachine(), this.loanSummaryWrapper,
@@ -355,7 +359,7 @@ public class LoanAssembler {
                 isHolidayEnabled, holidays, workingDays, element,disbursementDetails, glimList);
         loanApplication.setCalculatedInstallmentAmount(loanApplicationTerms.getFixedEmiAmount());
         loanApplication.loanApplicationSubmittal(currentUser, loanScheduleModel, loanApplicationTerms, defaultLoanLifecycleStateMachine(),
-                submittedOnDate, externalId, allowTransactionsOnHoliday, holidays, workingDays, allowTransactionsOnNonWorkingDay, glimList);
+                submittedOnDate, externalId, allowTransactionsOnHoliday, holidays, workingDays, allowTransactionsOnNonWorkingDay, glimList, restFrequencyStartDate, compoundingFrequencyStartDate);
         loanApplication.updateDefautGlimMembers(glimList);
         if (loanProduct.isFlatInterestRate()) {
             loanApplication.setFlatInterestRate(loanApplicationTerms.getFlatInterestRate());

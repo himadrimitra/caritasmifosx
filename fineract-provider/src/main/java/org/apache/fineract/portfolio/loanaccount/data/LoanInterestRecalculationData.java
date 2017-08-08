@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.loanaccount.data;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
+import org.joda.time.LocalDate;
 
 public class LoanInterestRecalculationData {
 
@@ -46,6 +47,8 @@ public class LoanInterestRecalculationData {
     private final CalendarData compoundingCalendarData;
     private final Boolean allowCompoundingOnEod;
     private final Boolean isSubsidyApplicable;
+    private final LocalDate recalculationRestFrequencyStartDate;
+    private final LocalDate recalculationCompoundingFrequencyStartDate;
 
     public LoanInterestRecalculationData(final Long id, final Long loanId, final EnumOptionData interestRecalculationCompoundingType,
             final EnumOptionData rescheduleStrategyType, final CalendarData calendarData,
@@ -55,7 +58,8 @@ public class LoanInterestRecalculationData {
             final EnumOptionData recalculationCompoundingFrequencyType, final Integer recalculationCompoundingFrequencyInterval,
             final EnumOptionData recalculationCompoundingFrequencyNthDay, final EnumOptionData recalculationCompoundingFrequencyWeekday,
             final Integer recalculationCompoundingFrequencyOnDay, final Boolean isCompoundingToBePostedAsTransaction,
-            final Boolean allowCompoundingOnEod, final Boolean isSubsidyApplicable) {
+            final Boolean allowCompoundingOnEod, final Boolean isSubsidyApplicable, final LocalDate recalculationRestFrequencyStartDate,
+            final LocalDate recalculationCompoundingFrequencyStartDate) {
         this.id = id;
         this.loanId = loanId;
         this.interestRecalculationCompoundingType = interestRecalculationCompoundingType;
@@ -75,6 +79,8 @@ public class LoanInterestRecalculationData {
         this.isCompoundingToBePostedAsTransaction = isCompoundingToBePostedAsTransaction;
         this.allowCompoundingOnEod = allowCompoundingOnEod;
         this.isSubsidyApplicable = isSubsidyApplicable;
+        this.recalculationRestFrequencyStartDate = recalculationRestFrequencyStartDate;
+        this.recalculationCompoundingFrequencyStartDate = recalculationCompoundingFrequencyStartDate;
     }
 
     public static LoanInterestRecalculationData withCalendarData(final LoanInterestRecalculationData recalculationData,
@@ -86,8 +92,9 @@ public class LoanInterestRecalculationData {
                 recalculationData.recalculationRestFrequencyOnDay, compoundingCalendarData,
                 recalculationData.recalculationCompoundingFrequencyType, recalculationData.recalculationCompoundingFrequencyInterval,
                 recalculationData.recalculationCompoundingFrequencyNthDay, recalculationData.recalculationCompoundingFrequencyWeekday,
-                recalculationData.recalculationCompoundingFrequencyOnDay, recalculationData.isCompoundingToBePostedAsTransaction, 
-                recalculationData.allowCompoundingOnEod, recalculationData.isSubsidyApplicable);
+                recalculationData.recalculationCompoundingFrequencyOnDay, recalculationData.isCompoundingToBePostedAsTransaction,
+                recalculationData.allowCompoundingOnEod, recalculationData.isSubsidyApplicable,
+                recalculationData.recalculationRestFrequencyStartDate, recalculationData.recalculationCompoundingFrequencyStartDate);
     }
 
     public Long getId() {

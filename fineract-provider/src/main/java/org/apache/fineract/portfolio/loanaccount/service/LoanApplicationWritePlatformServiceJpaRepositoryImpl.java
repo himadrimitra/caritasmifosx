@@ -701,7 +701,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
     private void createAndPersistCalendarInstanceForInterestRecalculation(final Loan loan) {
 
-        LocalDate calendarStartDate = loan.getExpectedDisbursedOnLocalDate();
+        LocalDate calendarStartDate = loan.loanInterestRecalculationDetails().getRestFrequencyStartDateLocalDate(loan);
         Integer repeatsOnDay = null;
         final RecalculationFrequencyType recalculationFrequencyType = loan.loanInterestRecalculationDetails().getRestFrequencyType();
         Integer recalculationFrequencyNthDay = loan.loanInterestRecalculationDetails().getRestFrequencyOnDay();
@@ -709,7 +709,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             recalculationFrequencyNthDay = loan.loanInterestRecalculationDetails().getRestFrequencyNthDay();
             repeatsOnDay = loan.loanInterestRecalculationDetails().getRestFrequencyWeekday();
         }
-
+        
         Integer frequency = loan.loanInterestRecalculationDetails().getRestInterval();
         CalendarEntityType calendarEntityType = CalendarEntityType.LOAN_RECALCULATION_REST_DETAIL;
         final String title = "loan_recalculation_detail_" + loan.loanInterestRecalculationDetails().getId();
@@ -718,7 +718,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 calendarEntityType, title);
 
         if (loan.loanInterestRecalculationDetails().getInterestRecalculationCompoundingMethod().isCompoundingEnabled()) {
-            LocalDate compoundingStartDate = loan.getExpectedDisbursedOnLocalDate();
+            LocalDate compoundingStartDate = loan.loanInterestRecalculationDetails().getCompoundingFrequencyStartDateLocalDate(loan);
             Integer compoundingRepeatsOnDay = null;
             final RecalculationFrequencyType recalculationCompoundingFrequencyType = loan.loanInterestRecalculationDetails()
                     .getCompoundingFrequencyType();
@@ -1307,8 +1307,27 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             if (productRelatedDetail.isInterestRecalculationEnabled()) {
                 if (changes.containsKey(LoanProductConstants.isInterestRecalculationEnabledParameterName)) {
                     createAndPersistCalendarInstanceForInterestRecalculation(existingLoanApplication);
-
+                } else {
+                    if (changes.containsKey(LoanApiConstants.recalculationRestFrequencyStartDateParamName)) {
+                        CalendarInstance calendarInstance = this.calendarInstanceRepository.findByEntityIdAndEntityTypeIdAndCalendarTypeId(
+                                existingLoanApplication.loanInterestRecalculationDetails().getId(),
+                                CalendarEntityType.LOAN_RECALCULATION_REST_DETAIL.getValue(), CalendarType.COLLECTION.getValue());
+                        LocalDate calendarStartDate = existingLoanApplication.loanInterestRecalculationDetails()
+                                .getRestFrequencyStartDateLocalDate(existingLoanApplication);
+                        calendarInstance.getCalendar().setStartDate(calendarStartDate.toDate());
+                        this.calendarInstanceRepository.save(calendarInstance);
+                    }
+                    if (changes.containsKey(LoanApiConstants.recalculationCompoundingFrequencyStartDateParamName)) {
+                        CalendarInstance calendarInstance = this.calendarInstanceRepository.findByEntityIdAndEntityTypeIdAndCalendarTypeId(
+                                existingLoanApplication.loanInterestRecalculationDetails().getId(),
+                                CalendarEntityType.LOAN_RECALCULATION_COMPOUNDING_DETAIL.getValue(), CalendarType.COLLECTION.getValue());
+                        LocalDate calendarStartDate = existingLoanApplication.loanInterestRecalculationDetails()
+                                .getCompoundingFrequencyStartDateLocalDate(existingLoanApplication);
+                        calendarInstance.getCalendar().setStartDate(calendarStartDate.toDate());
+                        this.calendarInstanceRepository.save(calendarInstance);
+                    }
                 }
+                
 
             }
             
