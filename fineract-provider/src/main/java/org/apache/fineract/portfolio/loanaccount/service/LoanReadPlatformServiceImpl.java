@@ -839,6 +839,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" lir.compounding_frequency_on_day as compoundingFrequencyOnDay, ");
             sb.append(" lir.is_compounding_to_be_posted_as_transaction as isCompoundingToBePostedAsTransaction, ");
             sb.append(" lir.allow_compounding_on_eod as allowCompoundingOnEod, ");
+            sb.append(" lir.rest_frequency_start_date as recalculationRestFrequencyStartDate, ");
+            sb.append(" lir.compounding_frequency_start_date as recalculationCompoundingFrequencyStartDate, ");
             sb.append(" l.is_floating_interest_rate as isFloatingInterestRate, ");
             sb.append("l.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId,pt_disburse.value as disbursementPaymentTypeName, ");
             sb.append("l.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, pt_repayment.value as repaymenPaymentTypeName, ");
@@ -1171,11 +1173,15 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
                 final Boolean isCompoundingToBePostedAsTransaction = rs.getBoolean("isCompoundingToBePostedAsTransaction");
                 final Boolean allowCompoundingOnEod = rs.getBoolean("allowCompoundingOnEod");
+                final LocalDate recalculationRestFrequencyStartDate = JdbcSupport.getLocalDate(rs, "recalculationRestFrequencyStartDate");
+                final LocalDate recalculationCompoundingFrequencyStartDate = JdbcSupport.getLocalDate(rs, "recalculationCompoundingFrequencyStartDate");
+                
                 interestRecalculationData = new LoanInterestRecalculationData(lprId, productId, interestRecalculationCompoundingType,
                         rescheduleStrategyType, calendarData, restFrequencyType, restFrequencyInterval, restFrequencyNthDayEnum,
                         restFrequencyWeekDayEnum, restFrequencyOnDay, compoundingCalendarData, compoundingFrequencyType,
                         compoundingInterval, compoundingFrequencyNthDayEnum, compoundingFrequencyWeekDayEnum, compoundingFrequencyOnDay,
-                        isCompoundingToBePostedAsTransaction, allowCompoundingOnEod, isSubsidyApplicable);
+                        isCompoundingToBePostedAsTransaction, allowCompoundingOnEod, isSubsidyApplicable,
+                        recalculationRestFrequencyStartDate, recalculationCompoundingFrequencyStartDate);
             }
 
             final boolean canUseForTopup = rs.getBoolean("canUseForTopup");

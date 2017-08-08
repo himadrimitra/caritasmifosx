@@ -10122,17 +10122,17 @@
                         </td>
                     </tr>
                     <tr class=alt>
-                        <td>recalculationRestFrequencyDate</td>
+                        <td>recalculationRestFrequencyStartDate</td>
                     </tr>
                     <tr>
-                        <td class=fielddesc>Specifies rest frequency start date for interest recalculation. This date must be before or equal to disbursement date
+                        <td class=fielddesc>Specifies rest frequency start date for interest recalculation.
                         </td>
                     </tr>
                     <tr class=alt>
-                        <td>recalculationCompoundingFrequencyDate</td>
+                        <td>recalculationCompoundingFrequencyStartDate</td>
                     </tr>
                     <tr>
-                        <td class=fielddesc>Specifies compounding frequency start date for interest recalculation. This date must be equal to disbursement date
+                        <td class=fielddesc>Specifies compounding frequency start date for interest recalculation.
                         </td>
                     </tr>
 					<tr class=alt>
@@ -11282,18 +11282,18 @@
                 <br/>
                 <table class=matrixHeading>
                     <tr class="matrixHeadingBG">
-                        <td><div class="fineractHeading2">Additional Mandatory Fields if interest recalculation is enabled for product and Rest frequency  not same as repayment period</div></td>
+                        <td><div class="fineractHeading2">Additional Optional Fields if interest recalculation is enabled for product and Rest frequency  not same as repayment period</div></td>
                     </tr>
                     <tr class=alt>
-                        <td>recalculationRestFrequencyDate</td>
+                        <td>recalculationRestFrequencyStartDate</td>
                     </tr>
                 </table>
                 <table class=matrixHeading>
                     <tr class="matrixHeadingBG">
-                        <td><div class="fineractHeading2">Additional Mandatory Fields if interest recalculation with interest/fee compounding is enabled for product and compounding frequency not same as repayment period</div></td>
+                        <td><div class="fineractHeading2">Additional Optional Fields if interest recalculation with interest/fee compounding is enabled for product and compounding frequency not same as repayment period</div></td>
                     </tr>
                     <tr class=alt>
-                        <td>recalculationCompoundingFrequencyDate</td>
+                        <td>recalculationCompoundingFrequencyStartDate</td>
                     </tr>
                 </table>
                 <br/>
@@ -15553,13 +15553,36 @@
                     <tr>
                         <td class=fielddesc>Specifies compounding frequency interval for interest recalculation.<br>
                     </tr>
-                    <tr class=alt>
-                        <td>recalculationCompoundingFrequencyDate</td>
+					<tr class=alt>
+                        <td>recalculationCompoundingFrequencyDayOfWeekType</td>
                     </tr>
                     <tr>
-                        <td class=fielddesc>Specifies compounding frequency start date for interest recalculation.<br>
+                        <td class=fielddesc>Specifies compounding frequency week day for  interest compounding for weekly or monthly recurrence with week number.<br>
                     </tr>
-
+					<tr class=alt>
+                        <td>recalculationCompoundingFrequencyNthDayType</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Specifies compounding frequency week number for monthly recurrence like first, second,third, fourth and last(this can be to specify last day ) and also has an option like onday for selecting month day<br>
+                    </tr>
+					<tr class=alt>
+                        <td>recalculationCompoundingFrequencyOnDayType</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Specifies month day for interest compounding recurrence<br>
+                    </tr>
+					<tr class=alt>
+                        <td>isCompoundingToBePostedAsTransaction</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Specifies whether to create a income posting transaction on compounding day and update the loan outstanding balance of transactions <br>
+                    </tr>
+					<tr class=alt>
+                        <td>allowCompoundingOnEod</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Specifies whether to include the posting day for compounding. example if compounding day is on 31st and loan start day is 1st then it includes 31 days for compounding on 31st instead of 30 days. and in next compounding calculation system excludes this one day but includes next compounding day for calculation <br>
+                    </tr>
                     <tr class=alt>
                         <td>recalculationRestFrequencyType</td>
                     </tr>
@@ -15573,11 +15596,23 @@
                     <tr>
                         <td class=fielddesc>Specifies rest frequency interval for interest recalculation.<br>
                     </tr>
-                    <tr class=alt>
-                        <td>recalculationRestFrequencyDate</td>
+					<tr class=alt>
+                        <td>recalculationRestFrequencyDayOfWeekType</td>
                     </tr>
                     <tr>
-                        <td class=fielddesc>Specifies rest frequency start date for interest recalculation.<br>
+                        <td class=fielddesc>Specifies rest frequency week day for  interest recalculation for weekly or monthly recurrence with week number.<br>
+                    </tr>
+					<tr class=alt>
+                        <td>recalculationRestFrequencyNthDayType</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Specifies rest frequency week number for monthly recurrence like first, second,third, fourth and last(this can be to specify last day ) and also has an option like onday for selecting month day<br>
+                    </tr>
+					<tr class=alt>
+                        <td>recalculationRestFrequencyOnDayType</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Specifies month day for interest recalculation recurrence<br>
                     </tr>
                     <tr class=alt>
                         <td>preClosureInterestCalculationStrategy</td>
@@ -16930,15 +16965,7 @@
                         <td><div class="fineractHeading2">Additional Optional Fields if interest recalculation is enabled(true) </div></td>
                     </tr>
                     <tr class=alt>
-                        <td>isArrearsBasedOnOriginalSchedule, preClosureInterestCalculationStrategy</td>
-                    </tr>
-                </table>
-                <table class=matrixHeading>
-                    <tr class="matrixHeadingBG">
-                        <td><div class="fineractHeading2">Additional Optional Fields if interest recalculation is enabled(true) and recalculationRestFrequencyType is not same as repayment period</div></td>
-                    </tr>
-                    <tr class=alt>
-                        <td>recalculationRestFrequencyInterval, recalculationRestFrequencyDate</td>
+                        <td>isArrearsBasedOnOriginalSchedule, preClosureInterestCalculationStrategy, recalculationRestFrequencyDayOfWeekType, recalculationRestFrequencyNthDayType, recalculationRestFrequencyOnDayType</td>
                     </tr>
                 </table>
                 <table class=matrixHeading>
@@ -16946,7 +16973,7 @@
                         <td><div class="fineractHeading2">Additional Optional Fields if interest recalculation is enabled(true) and interestRecalculationCompoundingMethod is enabled</div></td>
                     </tr>
                     <tr class=alt>
-                        <td>recalculationCompoundingFrequencyType</td>
+                        <td>recalculationCompoundingFrequencyType, isCompoundingToBePostedAsTransaction, allowCompoundingOnEod</td>
                     </tr>
                 </table>
                 <table class=matrixHeading>
@@ -16955,7 +16982,7 @@
                             recalculationCompoundingFrequencyType is not same as repayment period</div></td>
                     </tr>
                     <tr class=alt>
-                        <td>recalculationCompoundingFrequencyInterval, recalculationCompoundingFrequencyDate</td>
+                        <td>recalculationCompoundingFrequencyInterval, recalculationCompoundingFrequencyDayOfWeekType, recalculationCompoundingFrequencyNthDayType, recalculationCompoundingFrequencyOnDayType  </td>
                     </tr>
                 </table>
                 <table class=matrixHeading>
@@ -47701,18 +47728,18 @@ No Request Body:
                             <br/>
                             <table class=matrixHeading>
                                 <tr class="matrixHeadingBG">
-                                    <td><div class="fineractHeading2">Additional Mandatory Fields if interest recalculation is enabled for product and Rest frequency  not same as repayment period</div></td>
+                                    <td><div class="fineractHeading2">Additional Optional Fields if interest recalculation is enabled for product and Rest frequency  not same as repayment period</div></td>
                                 </tr>
                                 <tr class=alt>
-                                    <td>recalculationRestFrequencyDate</td>
+                                    <td>recalculationRestFrequencyStartDate</td>
                                 </tr>
                             </table>
                             <table class=matrixHeading>
                                 <tr class="matrixHeadingBG">
-                                    <td><div class="fineractHeading2">Additional Mandatory Fields if interest recalculation with interest/fee compounding is enabled for product and compounding frequency not same as repayment period</div></td>
+                                    <td><div class="fineractHeading2">Additional Optional Fields if interest recalculation with interest/fee compounding is enabled for product and compounding frequency not same as repayment period</div></td>
                                 </tr>
                                 <tr class=alt>
-                                    <td>recalculationCompoundingFrequencyDate</td>
+                                    <td>recalculationCompoundingFrequencyStartDate</td>
                                 </tr>
                             </table>
                             <br/>
