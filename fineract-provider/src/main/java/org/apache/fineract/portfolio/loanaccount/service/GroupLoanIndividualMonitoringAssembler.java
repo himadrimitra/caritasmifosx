@@ -414,12 +414,14 @@ public class GroupLoanIndividualMonitoringAssembler {
 
                 // calculate percentage of principal amount
                 percentage = calculatePercentageOfAmount(element, amount, percentage);
+                
+                GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = GroupLoanIndividualMonitoring.createInstance(
+                        newLoanApplication, client, amount, null, null, loanPurpose, isClientSelected, adjustedAmount, installmentAmount,
+                        totalPaybleAmount, paidInterestAmount, paidAmount, totalInterest, clientCharges, percentage, paidPrincipalAmount,
+                        paidChargeAmount, waivedInterestAmount, waivedChargeAmount);
+                glimList.add(groupLoanIndividualMonitoring);
             }
-            GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = GroupLoanIndividualMonitoring.createInstance(
-                    newLoanApplication, client, amount, null, null, loanPurpose, isClientSelected, adjustedAmount, installmentAmount,
-                    totalPaybleAmount, paidInterestAmount, paidAmount, totalInterest, clientCharges, percentage, paidPrincipalAmount,
-                    paidChargeAmount, waivedInterestAmount, waivedChargeAmount);
-            glimList.add(groupLoanIndividualMonitoring);
+            
         }
     }
 
