@@ -11,7 +11,6 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.finflux.reconcilation.ReconciliationApiConstants;
 import com.finflux.reconcilation.bankstatement.service.BankStatementWritePlatformService;
@@ -27,10 +26,8 @@ public class GeneratePortfolioTransactionsCommandHandler  implements NewCommandS
         this.bankStatementWritePlatformService = bankStatementWritePlatformService;
     }
 
-    @Transactional
     @Override
     public CommandProcessingResult processCommand(JsonCommand command) {
-
         return this.bankStatementWritePlatformService.generatePortfolioTransactions(command);
     }
 }
