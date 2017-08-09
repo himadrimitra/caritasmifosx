@@ -42,18 +42,16 @@ import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
-import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
-import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
+import org.apache.fineract.portfolio.client.service.ClientChargeWritePlatformService;
 import org.apache.fineract.portfolio.client.service.ClientRecurringChargeReadPlatformService;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.service.LoanSchedularService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
-import org.apache.fineract.portfolio.savings.DepositAccountUtils;
 import org.apache.fineract.portfolio.savings.data.DepositAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountAnnualFeeData;
 import org.apache.fineract.portfolio.savings.service.DepositAccountReadPlatformService;
@@ -75,6 +73,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import com.finflux.common.util.ScheduleDateGeneratorUtil;
+import com.finflux.common.util.WorkingDaysAndHolidaysUtil;
 import com.finflux.task.data.TaskEntityType;
 import com.finflux.task.data.TaskExecutionData;
 import com.finflux.task.data.TaskMakerCheckerData;
@@ -104,7 +104,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     private final ShareAccountDividendReadPlatformService shareAccountDividendReadPlatformService;
     private final ShareAccountSchedularService shareAccountSchedularService;
     private final ClientRecurringChargeReadPlatformService clientRecurringChargeReadPlatformService;
-    private final CalendarReadPlatformService calanderReadPlatformService;
     private final BankTransactionService bankTransactionService;
     private final BankAccountTransactionRepository bankAccountTransactionRepository;
     private final TaskPlatformReadService taskPlatformReadService;
@@ -113,6 +112,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     private final LoanSchedularService loanSchedularService;
     private final LoanUtilService loanUtilService;
     private final RecurringDepositSchedularService recurringDepositSchedularService;
+    private final ClientChargeWritePlatformService clientChargeWritePlatformService;
 
     @Autowired
     public ScheduledJobRunnerServiceImpl(final RoutingDataSourceServiceFactory dataSourceServiceFactory,
@@ -123,11 +123,11 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
             final ShareAccountDividendReadPlatformService shareAccountDividendReadPlatformService,
             final ShareAccountSchedularService shareAccountSchedularService,
             final ClientRecurringChargeReadPlatformService clientRecurringChargeReadPlatformService,
-            final CalendarReadPlatformService calanderReadPlatformService, final BankTransactionService bankTransactionService,
-            final BankAccountTransactionRepository bankAccountTransactionRepository, final TaskPlatformReadService taskPlatformReadService,
-            final ConfigurationDomainService configurationDomainService, final HolidayRepositoryWrapper holidayRepository,
-            final LoanSchedularService loanSchedularService, final LoanUtilService loanUtilService,
-            final RecurringDepositSchedularService recurringDepositSchedularService) {
+            final BankTransactionService bankTransactionService, final BankAccountTransactionRepository bankAccountTransactionRepository,
+            final TaskPlatformReadService taskPlatformReadService, final ConfigurationDomainService configurationDomainService,
+            final HolidayRepositoryWrapper holidayRepository, final LoanSchedularService loanSchedularService,
+            final LoanUtilService loanUtilService, final RecurringDepositSchedularService recurringDepositSchedularService,
+            final ClientChargeWritePlatformService clientChargeWritePlatformService) {
         this.dataSourceServiceFactory = dataSourceServiceFactory;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
         this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
@@ -136,7 +136,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         this.shareAccountDividendReadPlatformService = shareAccountDividendReadPlatformService;
         this.shareAccountSchedularService = shareAccountSchedularService;
         this.clientRecurringChargeReadPlatformService = clientRecurringChargeReadPlatformService;
-        this.calanderReadPlatformService = calanderReadPlatformService;
         this.bankTransactionService = bankTransactionService;
         this.bankAccountTransactionRepository = bankAccountTransactionRepository;
         this.taskPlatformReadService = taskPlatformReadService;
@@ -145,6 +144,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         this.loanSchedularService = loanSchedularService;
         this.loanUtilService = loanUtilService;
         this.recurringDepositSchedularService = recurringDepositSchedularService;
+        this.clientChargeWritePlatformService = clientChargeWritePlatformService;
     }
 
 	@Transactional
@@ -444,14 +444,15 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                     lastDepositDate.toDate());
             final HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(holidays);
             Integer installmentNumber = (Integer) details.get("installment");
-            while (count < DepositAccountUtils.GENERATE_MINIMUM_NUMBER_OF_FUTURE_INSTALMENTS) {
+            while (count < ScheduleDateGeneratorUtil.GENERATE_MINIMUM_NUMBER_OF_FUTURE_INSTALMENTS) {
                 count++;
                 installmentNumber++;
-                lastDepositDate = DepositAccountUtils.calculateNextDepositDate(lastDepositDate, recurrence);
+                lastDepositDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(lastDepositDate, recurrence);
                 final AdjustedDateDetailsDTO adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(lastDepositDate, lastDepositDate,
                         lastDepositDate);
-                DepositAccountUtils.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO, holidayDetailDTO, frequency,
-                        recurringEvery);
+                final CalendarData calendarData = null;
+                WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO, holidayDetailDTO,
+                        frequency, recurringEvery, calendarData);
                 lastDepositDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
                 if (sb.length() > 0) {
                     sb.append(", ");
@@ -534,151 +535,22 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		}
 	}
 
-	@Transactional
-	@Override
-	@CronTarget(jobName = JobName.APPLY_RECURRING_CHARGE_ON_CLIENT)
-	public void applyClientRecurringCharge() {
-		final JdbcTemplate jdbcTemplate = new JdbcTemplate(
-				this.dataSourceServiceFactory.determineDataSourceService()
-						.retrieveDataSource());
-		LocalDate currentDate = DateUtils.getLocalDateOfTenant();
-
-		List<ClientRecurringChargeData> clientRecurringcharges = this.clientRecurringChargeReadPlatformService
-				.retriveActiveRecurringChargesForJob();
-
-		/***
-		 * Get all Client recurring charges that are synced to a meeting and
-		 * create a Client charge for any meetings within the next 7 days
-		 ***/
-		for (ClientRecurringChargeData clientRecurringChargeData : clientRecurringcharges) {
-			Boolean isSynchMeeting = clientRecurringChargeData
-					.getSynchMeeting();
-			Long clientRecurringChargeId = clientRecurringChargeData
-					.getRecurringChargeId();
-			LocalDate chargeLocalStartDate = clientRecurringChargeData
-					.getChargeDueDate();
-			if (isSynchMeeting) {
-				final StringBuilder selectSqlBuilder = new StringBuilder(900);
-				selectSqlBuilder
-						.append("select calendar_id from m_calendar_instance mci where mci.entity_id="
-								+ clientRecurringChargeId
-								+ " and mci.entity_type_enum="
-								+ CalendarEntityType.CHARGES.getValue());
-				Long calendarId = jdbcTemplate.queryForObject(
-						selectSqlBuilder.toString(), Long.class);
-				CalendarData calendarData = this.calanderReadPlatformService
-						.retrieveCalendar(calendarId, clientRecurringChargeId,
-								CalendarEntityType.CHARGES.getValue());
-				Date dueChargeDate = null;
-				StringBuilder dateSqlBuilder = new StringBuilder(900);
-				dateSqlBuilder
-						.append("SELECT max(charge_due_date) from m_client_charge where client_recurring_charge_id="
-								+ clientRecurringChargeId + " and is_active =1");
-				try {
-					dueChargeDate = jdbcTemplate.queryForObject(
-							dateSqlBuilder.toString(), Date.class);
-				} catch (Exception e) {
-					throw e;
-				}
-				final Collection<LocalDate> recurringDates = CalendarUtils
-						.getRecurringDatesWithNoLimit(calendarData
-								.getRecurrence(), calendarData.getStartDate(),
-								calendarData.getStartDate(), CalendarUtils
-										.getNextRecurringDate(
-												calendarData.getRecurrence(),
-												calendarData.getStartDate(),
-												currentDate));
-				if (dueChargeDate != null) {
-					int count = 0;
-					LocalDate duedate = new LocalDate(dueChargeDate);
-					if (duedate.isBefore(currentDate)) {
-						for (LocalDate recurringDate : recurringDates) {
-							if (count == 1) {
-								applyCharge(recurringDate,
-										clientRecurringChargeId);
-								if (currentDate.isBefore(recurringDate)) {
-									count++;
-									break;
-								}
-							}
-
-							if (duedate.equals(recurringDate)) {
-								count++;
-							}
-
-						}
-
-					}
-				} else {
-					int count = 0, futureCount = 0;
-					LocalDate chargeDate = new LocalDate(chargeLocalStartDate);
-
-					for (LocalDate recurringDate : recurringDates) {
-						if (currentDate.isBefore(recurringDate)) {
-							futureCount++;
-						}
-						// chargeDate is entered by the client and it should
-						// be
-						// one of the meeting date
-						if (chargeDate.equals(recurringDate)) {
-							count++;
-						}
-						if (count == 1) {
-							if (recurringDate.isBefore(currentDate)
-									|| recurringDate.equals(currentDate)) {
-								applyCharge(recurringDate,
-										clientRecurringChargeId);
-								if (currentDate.isBefore(recurringDate)) {
-									count++;
-									break;
-								}
-							} else {
-								if (futureCount == 1) {
-									applyCharge(recurringDate,
-											clientRecurringChargeId);
-								}
-
-							}
-						}
-
-					}
-
-				}
-			} else {
-				int result = 0;
-				// final JdbcTemplate jdbcTemplate = new
-				// JdbcTemplate(this.dataSourceServiceFactory.determineDataSourceService().retrieveDataSource());
-				do {
-					final StringBuilder insertSqlBuilder = new StringBuilder(
-							900);
-					insertSqlBuilder
-							.append("INSERT INTO m_client_charge(client_id,charge_id,is_penalty,charge_time_enum,charge_due_date,charge_calculation_enum,amount,amount_outstanding_derived,is_paid_derived,waived,is_active,inactivated_on_date)")
-							.append("SELECT crc.client_id,crc.charge_id,crc.is_penalty,crc.charge_time_enum, crc.charge_due_date ,crc.charge_calculation_enum ,")
-							.append("crc.amount,crc.amount,0,0,crc.is_active,crc.inactivated_on_date ")
-							.append("from m_client_recurring_charge crc  where crc.id ="
-									+ clientRecurringChargeId
-									+ " and crc.charge_due_date <= ? and is_active = 1");
-					jdbcTemplate.update(insertSqlBuilder.toString(),currentDate);
-					final StringBuilder updateSqlBuilder = new StringBuilder(
-							900);
-					updateSqlBuilder
-							.append("UPDATE m_client_recurring_charge crc ")
-							.append(" SET crc.charge_due_date = ")
-							.append("CASE WHEN crc.charge_time_enum = 7 THEN DATE_ADD(crc.charge_due_date,INTERVAL 1 MONTH)  ")
-							.append(" WHEN crc.charge_time_enum = 11 THEN DATE_ADD(crc.charge_due_date,INTERVAL 7 DAY)")
-							.append("  ELSE DATE_ADD(crc.charge_due_date,INTERVAL 1 YEAR) END  WHERE crc.id ="
-									+ clientRecurringChargeId
-									+ " and is_active = 1 and crc.charge_due_date <= ?");
-					result = jdbcTemplate.update(updateSqlBuilder.toString(),currentDate);
-					// ClientRecurringCharge clientRecurringCharge =
-					// this.clientRecurringChargeRepository.findOne(clientRecurringChargeId);
-
-					logger.info(ThreadLocalContextUtil.getTenant().getName()
-							+ ": Results affected by update: " + result);
-				} while (result == 1);
-			}
-		}
-	}
+    @Override
+    @CronTarget(jobName = JobName.APPLY_RECURRING_CHARGE_ON_CLIENT)
+    public void applyClientRecurringCharge() throws JobExecutionException {
+        final StringBuilder sb = new StringBuilder();
+        final LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+        final List<ClientRecurringChargeData> clientRecurringcharges = this.clientRecurringChargeReadPlatformService
+                .retriveActiveRecurringChargesForJob(currentDate);
+        /***
+         * Get all Client recurring charges that are synced to a meeting and
+         * create a Client charge for any meetings within the next 7 days
+         ***/
+        for (ClientRecurringChargeData clientRecurringChargeData : clientRecurringcharges) {
+            this.clientChargeWritePlatformService.applyClientRecurringCharge(currentDate, clientRecurringChargeData, sb);
+        }
+        if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+    }
 
 	public void applyCharge(LocalDate applyDate, Long recurringId) {
 		String formattedDate = formatterWithDate.print(applyDate);

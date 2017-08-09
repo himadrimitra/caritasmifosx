@@ -7,11 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
+import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
+import org.apache.fineract.portfolio.client.domain.ClientStatus;
 import org.apache.fineract.portfolio.client.exception.ClientRecurringChargeNotFoundException;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,18 +44,40 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
         @Override
         public ClientRecurringChargeData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
             final Long id = rs.getLong("id");
+            final Long officeId = rs.getLong("officeId");
+            final String officeName = null;
+            final OfficeData officeData = OfficeData.lookup(officeId, officeName);
             final LocalDate chargeDueDate = new LocalDate(rs.getDate("chargeduedate"));
+            final Integer chargeTimeEnum = rs.getInt("chargeTimeEnum");
+            final EnumOptionData chargeTimeType = ChargeEnumerations.chargeTimeType(chargeTimeEnum);
+            final Integer feeInterval = rs.getInt("feeInterval");
             final Boolean isSyncMeeting = rs.getBoolean("issynchmeeting");
-            return new ClientRecurringChargeData(id, chargeDueDate, isSyncMeeting);
+            final Integer countOfExistingFutureInstallments = JdbcSupport.getInteger(rs, "countOfExistingFutureInstallments");
+            return new ClientRecurringChargeData(id, officeData, chargeDueDate, chargeTimeType, feeInterval, isSyncMeeting,
+                    countOfExistingFutureInstallments);
         }
-        public String jobSchema(){
-            final StringBuilder sql = new StringBuilder(400); 
-            sql.append("select "); 
-            sql.append("mcrc.id as id, ");
-            sql.append("mcrc.charge_due_date as chargeduedate, ");
-            sql.append("mcrc.is_synch_meeting as issynchmeeting ");
-            sql.append("from "); 
-            sql.append("m_client_recurring_charge mcrc where mcrc.is_active = 1 ");
+
+        public String jobSchema(final LocalDate currentDate) {
+            final StringBuilder sql = new StringBuilder(400);
+            sql.append("select mcrc.id as id ");
+            sql.append(",c.office_id as officeId ");
+            sql.append(",mcrc.charge_due_date as chargeduedate ");
+            sql.append(",mcrc.is_synch_meeting as issynchmeeting ");
+            sql.append(",mcrc.charge_time_enum as chargeTimeEnum ");
+            sql.append(",mcrc.fee_interval as feeInterval ");
+            sql.append(",count(cc.id) as countOfExistingFutureInstallments ");
+            sql.append("from m_client_recurring_charge mcrc ");
+            sql.append("join m_client c on c.status_enum = ? and c.id = mcrc.client_id ");
+            sql.append("left join m_client_charge cc on cc.client_recurring_charge_id = mcrc.id ");
+            sql.append("and cc.is_active = 1 and cc.waived = 0 and cc.is_paid_derived = 0 and cc.charge_actual_due_date > ");
+            sql.append("'");
+            sql.append(currentDate);
+            sql.append("' ");
+            sql.append("where mcrc.charge_due_date = ");
+            sql.append("'");
+            sql.append(currentDate);
+            sql.append("' ");
+            sql.append("and mcrc.is_active = 1 group by mcrc.id ");
             return sql.toString();
         }
     }
@@ -94,9 +119,10 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
             final BigDecimal maxCap = rs.getBigDecimal("maxcap");
             final Integer feeFrequency = rs.getInt("feefrequency");
             final LocalDate inactivatedOnDate = new LocalDate(rs.getDate("inactivatedondate"));
+            final Integer countOfExistingFutureInstallments = null;
             return new ClientRecurringChargeData(id, clientId, chargeId, chargeName, chargeDueDate, currency, chargeAppliesTo,
                     chargeTimeType, chargeCalculationType, chargePaymentMode, amount, feeOnDay, feeInterval, feeOnMonth, isPenalty,
-                    isActive, isDeleted, isSyncMeeting, minCap, maxCap, feeFrequency, inactivatedOnDate);
+                    isActive, isDeleted, isSyncMeeting, minCap, maxCap, feeFrequency, inactivatedOnDate, countOfExistingFutureInstallments);
         }
 
         public String schema() {
@@ -118,7 +144,6 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
     public List<ClientRecurringChargeData> retrieveRecurringClientCharges(Long clientId) {
         try {
             this.context.authenticatedUser();
-            //final ClientRecurringChargeMapper clientRecurringChargeMapper = new ClientRecurringChargeMapper();
             final String sql = "select " + clientRecurringChargeMapper.schema() + " where crc.client_id = ?";
             return this.jdbcTemplate.query(sql, clientRecurringChargeMapper, new Object[] { clientId });
         } catch (final EmptyResultDataAccessException e) {
@@ -139,14 +164,14 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
         }
     }
 
-    @SuppressWarnings("unused")
     @Override
-    public List<ClientRecurringChargeData> retriveActiveRecurringChargesForJob() {
-        try{
-            return this.jdbcTemplate.query(clientRecurringChargeJobMapper.jobSchema(), clientRecurringChargeJobMapper, new Object[] {});    
-        } catch(final EmptyResultDataAccessException e){
+    public List<ClientRecurringChargeData> retriveActiveRecurringChargesForJob(final LocalDate currentDate) {
+        try {
+            return this.jdbcTemplate.query(this.clientRecurringChargeJobMapper.jobSchema(currentDate), this.clientRecurringChargeJobMapper,
+                    new Object[] { ClientStatus.ACTIVE.getValue() });
+        } catch (final EmptyResultDataAccessException e) {
             e.printStackTrace();
         }
-        return new ArrayList<ClientRecurringChargeData>();
+        return new ArrayList<>();
     }
 }

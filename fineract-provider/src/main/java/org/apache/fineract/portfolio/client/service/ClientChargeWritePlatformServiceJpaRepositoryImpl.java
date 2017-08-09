@@ -33,26 +33,34 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
+import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
+import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
+import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeAppliedToException;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.data.ClientChargeDataValidator;
 import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientCharge;
 import org.apache.fineract.portfolio.client.domain.ClientChargePaidBy;
@@ -67,15 +75,17 @@ import org.apache.fineract.portfolio.client.exception.ClientHasNoGroupAssociatio
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.client.exception.DuedateIsNotMeetingDateException;
 import org.apache.fineract.portfolio.client.exception.GroupAndClientChargeNotInSynWithMeeting;
-import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetClientChargeRepaymentCommand;
 import org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants;
 import org.apache.fineract.portfolio.collectionsheet.command.ClientChargeRepaymentCommand;
+import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetClientChargeRepaymentCommand;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformServiceImpl;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
+import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.meeting.exception.MeetingNotFoundException;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -83,16 +93,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.finflux.common.util.ScheduleDateGeneratorUtil;
+import com.finflux.common.util.WorkingDaysAndHolidaysUtil;
 
 @Service
 public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements ClientChargeWritePlatformService {
 
     private final static Logger logger = LoggerFactory.getLogger(ClientChargeWritePlatformServiceJpaRepositoryImpl.class);
 
-
-    private final PlatformSecurityContext context;
     private final ChargeRepositoryWrapper chargeRepository;
     private final ClientRepositoryWrapper clientRepository;
     private final ClientChargeDataValidator clientChargeDataValidator;
@@ -109,21 +121,23 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     private final ClientRecurringChargeRepository clientRecurringChargeRepository;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final ClientRecurringChargeRepositryWrapper clientRecurringChargeWrapper;
+    private final LoanUtilService loanUtilService;
+    private final JdbcTemplate jdbcTemplate;
+    private final CalendarReadPlatformService calendarReadPlatformService;
 
     @Autowired
-    public ClientChargeWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
-            final ChargeRepositoryWrapper chargeRepository, final ClientChargeDataValidator clientChargeDataValidator,
-            final ClientRepositoryWrapper clientRepository, final HolidayRepositoryWrapper holidayRepositoryWrapper,
-            final ConfigurationDomainService configurationDomainService, final ClientChargeRepositoryWrapper clientChargeRepository,
-            final WorkingDaysRepositoryWrapper workingDaysRepository, final ClientTransactionRepository clientTransactionRepository,
+    public ClientChargeWritePlatformServiceJpaRepositoryImpl(final ChargeRepositoryWrapper chargeRepository,
+            final ClientChargeDataValidator clientChargeDataValidator, final ClientRepositoryWrapper clientRepository,
+            final HolidayRepositoryWrapper holidayRepositoryWrapper, final ConfigurationDomainService configurationDomainService,
+            final ClientChargeRepositoryWrapper clientChargeRepository, final WorkingDaysRepositoryWrapper workingDaysRepository,
+            final ClientTransactionRepository clientTransactionRepository,
             final PaymentDetailWritePlatformService paymentDetailWritePlatformService,
             final JournalEntryWritePlatformService journalEntryWritePlatformService,
-            final CalendarInstanceRepository calendarInstanceRepository,
-            final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl,
+            final CalendarInstanceRepository calendarInstanceRepository, final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl,
             final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl,
-            final ClientRecurringChargeRepository clientRecurringChargeRepository,
-            final FineractEntityAccessUtil fineractEntityAccessUtil,final ClientRecurringChargeRepositryWrapper clientRecurringChargeWrapper) {
-        this.context = context;
+            final ClientRecurringChargeRepository clientRecurringChargeRepository, final FineractEntityAccessUtil fineractEntityAccessUtil,
+            final ClientRecurringChargeRepositryWrapper clientRecurringChargeWrapper, final LoanUtilService loanUtilService,
+            final RoutingDataSource dataSource, final CalendarReadPlatformService calendarReadPlatformService) {
         this.chargeRepository = chargeRepository;
         this.clientChargeDataValidator = clientChargeDataValidator;
         this.clientRepository = clientRepository;
@@ -140,6 +154,9 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
         this.clientRecurringChargeRepository = clientRecurringChargeRepository;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.clientRecurringChargeWrapper = clientRecurringChargeWrapper;
+        this.loanUtilService = loanUtilService;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.calendarReadPlatformService = calendarReadPlatformService;
     }
 
     @Override
@@ -479,7 +496,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     }
 
     @Override
-    @SuppressWarnings("unused")
     public CommandProcessingResult inactivateCharge(Long clientId, Long clientRecurringChargeId) {
         try {
             final Client client = this.clientRepository.getActiveClientInUserScope(clientId);
@@ -542,14 +558,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                 if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
             }
         }
-    }
-
-    private AppUser getAppUserIfPresent() {
-        AppUser user = null;
-        if (this.context != null) {
-            user = this.context.getAuthenticatedUserIfPresent();
-        }
-        return user;
     }
 
     private void handleDataIntegrityIssues(@SuppressWarnings("unused") final Long clientId, final Long clientChargeId,
@@ -640,5 +648,102 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         }
 
+    }
+
+    @Override
+    public void applyClientRecurringCharge(final LocalDate fromDate, final ClientRecurringChargeData clientRecurringChargeData,
+            final StringBuilder sb) {
+        final String errorMessage = "Apply client recurring charge :";
+        try {
+            final int minimumNoOfFutureInstallments = ScheduleDateGeneratorUtil.GENERATE_MINIMUM_NUMBER_OF_FUTURE_INSTALMENTS;
+            Integer countOfExistingFutureInstallments = clientRecurringChargeData.getCountOfExistingFutureInstallments();
+            if (countOfExistingFutureInstallments < minimumNoOfFutureInstallments) {
+                final Boolean isSynchMeeting = clientRecurringChargeData.getSynchMeeting();
+                final Long clientRecurringChargeId = clientRecurringChargeData.getRecurringChargeId();
+                LocalDate chargeLocalStartDate = clientRecurringChargeData.getChargeDueDate();
+
+                final PeriodFrequencyType periodFrequencyType = ChargeTimeType
+                        .getPeriodFrequencyTypeFromChargeTimeType(clientRecurringChargeData.getChargeTimeType().getId().intValue());
+                final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(clientRecurringChargeData
+                        .getOfficeData().getId(), chargeLocalStartDate.toDate());
+                final HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(holidays);
+
+                AdjustedDateDetailsDTO adjustedDateDetailsDTO = null;
+                CalendarData calendarData = null;
+                if (isSynchMeeting) {
+                    final StringBuilder selectSqlBuilder = new StringBuilder(900);
+                    selectSqlBuilder.append("select calendar_id from m_calendar_instance mci where mci.entity_id="
+                            + clientRecurringChargeId + " and mci.entity_type_enum=" + CalendarEntityType.CHARGES.getValue());
+                    final Long calendarId = jdbcTemplate.queryForObject(selectSqlBuilder.toString(), Long.class);
+                    calendarData = this.calendarReadPlatformService.retrieveCalendar(calendarId, clientRecurringChargeId,
+                            CalendarEntityType.CHARGES.getValue());
+                }
+
+                while (countOfExistingFutureInstallments <= minimumNoOfFutureInstallments) {
+                    try {
+                        countOfExistingFutureInstallments++;
+                        if (adjustedDateDetailsDTO != null) {
+                            if (calendarData == null) {
+                                chargeLocalStartDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
+                                        adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
+                                        clientRecurringChargeData.getFeeInterval());
+                            } else {
+                                chargeLocalStartDate = CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(),
+                                        calendarData.getStartDate(), adjustedDateDetailsDTO.getChangedActualRepaymentDate());
+                            }
+                        }
+                        adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(chargeLocalStartDate, chargeLocalStartDate,
+                                chargeLocalStartDate);
+                        WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO,
+                                holidayDetailDTO, periodFrequencyType, clientRecurringChargeData.getFeeInterval(), calendarData);
+
+                        final StringBuilder insertSql = new StringBuilder(400);
+                        insertSql
+                                .append("INSERT INTO m_client_charge(client_id,charge_id,is_penalty,charge_time_enum,charge_actual_due_date,charge_due_date,charge_calculation_enum,amount,amount_outstanding_derived,is_paid_derived,waived,is_active,inactivated_on_date,client_recurring_charge_id)");
+                        insertSql.append("SELECT crc.client_id,crc.charge_id,crc.is_penalty,crc.charge_time_enum ");
+                        insertSql.append(",'");
+                        insertSql.append(adjustedDateDetailsDTO.getChangedActualRepaymentDate());
+                        insertSql.append("','");
+                        insertSql.append(adjustedDateDetailsDTO.getChangedScheduleDate());
+                        insertSql.append("'");
+                        insertSql.append(",crc.charge_calculation_enum ");
+                        insertSql.append(",crc.amount,crc.amount,0,0,crc.is_active,crc.inactivated_on_date,crc.id ");
+                        insertSql.append("from m_client_recurring_charge crc  where crc.id = ");
+                        insertSql.append(clientRecurringChargeId);
+                        insertSql.append(" and crc.charge_due_date <= '");
+                        insertSql.append(fromDate).append("' ");
+                        int result = jdbcTemplate.update(insertSql.toString());
+                        logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by update: " + result);
+                        if (countOfExistingFutureInstallments == minimumNoOfFutureInstallments) {
+                            if (isSynchMeeting && calendarData != null) {
+                                chargeLocalStartDate = CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(),
+                                        calendarData.getStartDate(), adjustedDateDetailsDTO.getChangedActualRepaymentDate());
+                            } else {
+                                chargeLocalStartDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
+                                        adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
+                                        clientRecurringChargeData.getFeeInterval());
+                            }
+                            final StringBuilder updateSqlBuilder = new StringBuilder(300);
+                            updateSqlBuilder.append("UPDATE m_client_recurring_charge crc ");
+                            updateSqlBuilder.append("SET crc.charge_due_date = ");
+                            updateSqlBuilder.append("'");
+                            updateSqlBuilder.append(chargeLocalStartDate);
+                            updateSqlBuilder.append("' ");
+                            updateSqlBuilder.append("WHERE crc.id =" + clientRecurringChargeId + " ");
+                            updateSqlBuilder.append("and is_active = 1 and crc.charge_due_date <= '");
+                            updateSqlBuilder.append(fromDate).append("' ");
+                            jdbcTemplate.update(updateSqlBuilder.toString());
+                            break;
+                        }
+                    } catch (final Exception e) {
+                        ExceptionHelper.handleExceptions(e, sb, errorMessage, clientRecurringChargeId, logger);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            final String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+            logger.error("Apply client recurring charge failed  with message " + rootCause);
+            sb.append("Apply client recurring charge failed with message ").append(rootCause);
+        }
     }
 }

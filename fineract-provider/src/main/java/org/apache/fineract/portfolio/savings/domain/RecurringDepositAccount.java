@@ -50,6 +50,7 @@ import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
@@ -58,7 +59,6 @@ import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestRateChart;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.savings.DepositAccountOnClosureType;
-import org.apache.fineract.portfolio.savings.DepositAccountUtils;
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
 import org.apache.fineract.portfolio.savings.PreClosurePenalInterestOnType;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
@@ -76,6 +76,9 @@ import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+
+import com.finflux.common.util.ScheduleDateGeneratorUtil;
+import com.finflux.common.util.WorkingDaysAndHolidaysUtil;
 
 @Entity
 @DiscriminatorValue("300")
@@ -292,10 +295,11 @@ public class RecurringDepositAccount extends SavingsAccount {
         if (!this.depositScheduleInstallments.isEmpty()) {
             final LocalDate actualDueDate = this.depositScheduleInstallments.get(this.depositScheduleInstallments.size() - 1)
                     .getLocalDateActualDueDate();
-            final LocalDate maturityDate = DepositAccountUtils.calculateNextDepositDate(actualDueDate, frequency, recurringEvery);
+            final LocalDate maturityDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(actualDueDate, frequency, recurringEvery);
             final AdjustedDateDetailsDTO adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(maturityDate, maturityDate, maturityDate);
-            DepositAccountUtils.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO, holidayDetails, frequency,
-                    recurringEvery);
+            final CalendarData calendarData = null;
+            WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO, holidayDetails,
+                    frequency, recurringEvery, calendarData);
             return adjustedDateDetailsDTO.getChangedScheduleDate();
         }
         return null;
@@ -1187,14 +1191,15 @@ public class RecurringDepositAccount extends SavingsAccount {
         while (maturityDate.isAfter(actualInstallmentDate)) {
             final AdjustedDateDetailsDTO adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(actualInstallmentDate, actualInstallmentDate,
                     actualInstallmentDate);
-            DepositAccountUtils.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO, holidayDetails, frequency,
-                    recurringEvery);
+            final CalendarData calendarData = null;
+            WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO, holidayDetails,
+                    frequency, recurringEvery, calendarData);
             actualInstallmentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
             installmentDate = adjustedDateDetailsDTO.getChangedScheduleDate();
             final RecurringDepositScheduleInstallment installment = RecurringDepositScheduleInstallment.installment(this,
                     installmentNumber, installmentDate.toDate(), actualInstallmentDate.toDate(), depositAmount);
             this.depositScheduleInstallments.add(installment);
-            actualInstallmentDate = DepositAccountUtils.calculateNextDepositDate(actualInstallmentDate, frequency, recurringEvery);
+            actualInstallmentDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(actualInstallmentDate, frequency, recurringEvery);
             actualInstallmentDate = CalendarUtils.adjustDate(actualInstallmentDate, depositStartDate(), frequency);
             installmentNumber += 1;
         }
@@ -1204,8 +1209,8 @@ public class RecurringDepositAccount extends SavingsAccount {
         LocalDate tillDate = calculateMaturityDate();
         if (tillDate == null) {
             final LocalDate today = DateUtils.getLocalDateOfTenant();
-            tillDate = DepositAccountUtils.calculateNextDepositDate(today, frequency, recurringEvery
-                    * (DepositAccountUtils.GENERATE_MINIMUM_NUMBER_OF_FUTURE_INSTALMENTS + 1));
+            tillDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(today, frequency, recurringEvery
+                    * (ScheduleDateGeneratorUtil.GENERATE_MINIMUM_NUMBER_OF_FUTURE_INSTALMENTS + 1));
         }
         return tillDate;
     }

@@ -40,7 +40,7 @@ public interface ScheduledJobRunnerService {
 
     void postDividends() throws JobExecutionException;
 
-    void applyClientRecurringCharge();
+    void applyClientRecurringCharge() throws JobExecutionException;
 	
     void highmarkEnquiry();
 

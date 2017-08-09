@@ -76,7 +76,6 @@ import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
-import org.apache.fineract.portfolio.savings.DepositAccountUtils;
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.data.DepositAccountDataValidator;
@@ -102,6 +101,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.finflux.common.util.ScheduleDateGeneratorUtil;
 
 @Service
 public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl implements DepositApplicationProcessWritePlatformService {
@@ -780,7 +781,7 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                     adjustedDateDetailsDTO = rdScheduleInstallment.updateDueDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO,
                             holidayDetailDTO, frequencyType, recurringEvery);
                     actualInstallmentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
-                    actualInstallmentDate = DepositAccountUtils.calculateNextDepositDate(actualInstallmentDate, frequencyType, recurringEvery);
+                    actualInstallmentDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(actualInstallmentDate, frequencyType, recurringEvery);
                     actualInstallmentDate = CalendarUtils.adjustDate(actualInstallmentDate, account.depositStartDate(), frequencyType);
                 }
             }
