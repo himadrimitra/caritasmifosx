@@ -909,7 +909,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
         LocalDate startDate = this.loanUtilService.calculateRepaymentStartingFromDate(loan.getExpectedDisbursedOnLocalDate(), loan, scheduleGeneratorDTO.getCalendar(), scheduleGeneratorDTO.getCalendarHistoryDataWrapper());
         scheduleGeneratorDTO.setCalculatedRepaymentsStartingFromDate(startDate);
-        if (loan.isGLIMLoan()) {
+        if (loan.isGLIMLoan() || AccountType.fromInt(loan.getLoanType()).isGLIMAccount()) {
             updateGlimMemberOnUndoLoanDisbursal(loan);
 
         }       
@@ -936,7 +936,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_UNDO_DISBURSAL,
                     constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
             
-            if(loan.isGLIMLoan()){
+            if(loan.isGLIMLoan() || AccountType.fromInt(loan.getLoanType()).isGLIMAccount()){
             	this.glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(loan);
             }
             
