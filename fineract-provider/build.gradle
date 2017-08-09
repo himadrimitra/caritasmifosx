@@ -55,7 +55,10 @@ repositories {
 configurations {
 	providedRuntime // needed for Spring Boot executable WAR
     providedCompile
-	compile
+	compile {
+		exclude module: 'jaxb-impl'
+		exclude module: 'jaxb-api'
+	}
 	runtime
 	all*.exclude group: 'commons-logging'
 }
