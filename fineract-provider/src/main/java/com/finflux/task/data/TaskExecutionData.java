@@ -11,6 +11,7 @@ import com.finflux.ruleengine.execution.data.EligibilityResult;
 
 import org.apache.fineract.useradministration.data.RoleData;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
 
 public class TaskExecutionData implements Serializable{
 
@@ -22,7 +23,7 @@ public class TaskExecutionData implements Serializable{
     private Long entityId;
     private EnumOptionData status;
     private EnumOptionData priority;
-    private Date dueDate;
+    private LocalDate dueDate;
     private EnumOptionData currentAction;
     private Long assignedToId;
     private String assignedTo;
@@ -46,14 +47,15 @@ public class TaskExecutionData implements Serializable{
     private LocalDate createdOn;
     private String description;
     private TaskExecutionData activeTaskData;
+    private LocalTime dueTime;
 
     private TaskExecutionData(final Long id, final Long parentId, final String name, final String shortName,
             final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
-            final Date dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
+            final LocalDate dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
             final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
             final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
             final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
-            final EnumOptionData taskType, final LocalDate createdOn, final String description) {
+            final EnumOptionData taskType, final LocalDate createdOn, final String description, final LocalTime dueTime) {
         this.id = id;
         this.parentId = parentId;
         this.name = name;
@@ -82,18 +84,19 @@ public class TaskExecutionData implements Serializable{
         this.taskType = taskType;
         this.createdOn = createdOn;
         this.description = description;
+        this.dueTime = dueTime;
     }
 
     public static TaskExecutionData instance(final Long id, final Long parentId, final String name, final String shortName,
             final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
-            final Date dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
+            final LocalDate dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
             final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
             final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
             final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
-            EnumOptionData taskType, final LocalDate createdOn, String description) {
+            EnumOptionData taskType, final LocalDate createdOn, String description, final LocalTime dueTime) {
         return new TaskExecutionData(id, parentId, name, shortName, entityType, entityId, status, priority, dueDate, currentAction,
                 assignedToId, assignedTo, order, criteriaId, approvalLogic, rejectionLogic, configValues, clientId, clientName, officeId,
-                officeName, actionGroupId, criteriaResult, criteriaActionId, possibleActions, taskType, createdOn, description);
+                officeName, actionGroupId, criteriaResult, criteriaActionId, possibleActions, taskType, createdOn, description, dueTime);
     }
 
     public Long getId() {
@@ -160,11 +163,11 @@ public class TaskExecutionData implements Serializable{
         this.priority = priority;
     }
 
-    public Date getDueDate() {
+    public LocalDate getDueDate() {
         return this.dueDate;
     }
 
-    public void setDueDate(Date dueDate) {
+    public void setDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
     }
 
@@ -320,5 +323,8 @@ public class TaskExecutionData implements Serializable{
         this.assignedRoles = assignedRoles;
     }
 
+    public LocalTime getDueTime() {
+        return this.dueTime;
+    }
 
 }

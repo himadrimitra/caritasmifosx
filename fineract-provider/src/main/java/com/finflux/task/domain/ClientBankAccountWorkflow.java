@@ -37,12 +37,13 @@ public class ClientBankAccountWorkflow implements WorkflowCreator {
             map.put(TaskConfigKey.CLIENT_ID, String.valueOf(client.getId()));
             AppUser assignedTo = null;
             Date dueDate = null;
+            Date dueTime = null;
             String description = "Bank Account Creation for Client #" + client.getId()
                     + WordUtils.capitalizeFully(client.getFirstname() + " " + client.getLastname()) + " for office - "
                     + WordUtils.capitalizeFully(client.getOfficeName());
             this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                     TaskEntityType.CLIENT_BANKACCOUNT, client.getId(), client, assignedTo, dueDate, client.getOffice(),
-                    map, description);
+                    map, description, dueTime);
             return true;
         }
         return false;// TODO Auto-generated method stub

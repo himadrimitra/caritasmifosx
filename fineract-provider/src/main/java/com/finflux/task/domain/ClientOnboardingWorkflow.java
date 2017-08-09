@@ -40,10 +40,11 @@ public class ClientOnboardingWorkflow implements WorkflowCreator
             map.put(TaskConfigKey.CLIENT_ID, String.valueOf(newClient.getId()));
             AppUser assignedTo=null;
             Date dueDate=null;
+            Date dueTime=null;
             String description = newClient.getId()+"- New Client "+ WordUtils.capitalizeFully(newClient.getFirstname()+" "+newClient.getLastname())+" for office - "+ WordUtils.capitalizeFully(newClient.getOfficeName());
             this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                     TaskEntityType.CLIENT_ONBOARDING, newClient.getId(),newClient,assignedTo,dueDate,
-                    newClient.getOffice(), map, description);
+                    newClient.getOffice(), map, description, dueTime);
             return true;
 		}
 		return false;// TODO Auto-generated method stub

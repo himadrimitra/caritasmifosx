@@ -68,7 +68,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     @Transactional
     @Override
     public Long createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId, final Client client,AppUser assignedTo,final Date dueDate,
-            final Office office, final Map<TaskConfigKey, String> configValues, String description) {
+            final Office office, final Map<TaskConfigKey, String> configValues, String description, final Date dueTime) {
 
         if(assignedTo==null)
         {
@@ -82,7 +82,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
             customConfigMap.put(config.getKey().getValue(), config.getValue());
             }
         }
-        Task parentTask = createTaskFromConfig(entityType, entityId, client,assignedTo,dueDate, office, customConfigMap, taskConfigId, description);
+        Task parentTask = createTaskFromConfig(entityType, entityId, client,assignedTo,dueDate, office, customConfigMap, taskConfigId, description, dueTime);
 
         parentTask.setStatus(TaskStatusType.INITIATED.getValue());
         
@@ -97,8 +97,9 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
         if (!childTaskConfigIds.isEmpty()) {
             int index = 0;
             final List<Task> tasks = new ArrayList<Task>();
+            final Date time = null;
             for (final Long cTaskConfigId : childTaskConfigIds) {
-                Task task = createTaskFromConfig(entityType, entityId, client,null,null ,office, customConfigMap, cTaskConfigId, description);
+                Task task = createTaskFromConfig(entityType, entityId, client,null,null ,office, customConfigMap, cTaskConfigId, description, time);
                 task.setParent(parentTask);
                 if (index == 0) {
                     TaskStatusType status = TaskStatusType.INITIATED;
@@ -116,7 +117,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     }
 
     private Task createTaskFromConfig(TaskEntityType entityType, Long entityId, Client client,AppUser user,Date dueDate, Office office,
-            Map<String, String> customConfigMap, Long cTaskConfigId, String description) {
+            Map<String, String> customConfigMap, Long cTaskConfigId, String description, Date dueTime) {
         final TaskConfig taskConfig = this.taskConfigRepository.findOneWithNotFoundDetection(cTaskConfigId);
         TaskStatusType status = TaskStatusType.INACTIVE;
         Map<String, String> configValueMap = new HashMap<>();
@@ -135,7 +136,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
                 taskConfig.getTaskType(), taskConfig, status.getValue(), TaskPriority.MEDIUM.getValue(), dueDate, currentAction,
                 user, taskConfig.getTaskConfigOrder(), taskConfig.getCriteria(), taskConfig.getApprovalLogic(),
                 taskConfig.getRejectionLogic(), configValueStr, client, office, taskConfig.getActionGroupId(), criteriaResult,
-                criteriaAction, taskConfig.getTaskActivity(), description,taskConfig.getCompleteOnAction());
+                criteriaAction, taskConfig.getTaskActivity(), description,taskConfig.getCompleteOnAction(), dueTime);
     }
 
     /*
@@ -152,14 +153,15 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
                 customConfigMap.put(config.getKey().getValue(), config.getValue());
             }
         }
-        final Integer completeOnAction=null;
+        final Integer completeOnAction = null;
         final String configValueStr = new Gson().toJson(map);
+        final Date dueTime = null;
         Task task = Task.create(null, title, taskActivity.getIdentifier().substring(0, 3), null, null, TaskType.SINGLE.getValue(), null,
-                null, TaskPriority.MEDIUM.getValue(), null, null, null, null, null, null, null, configValueStr, null, office,
-                actionGroupId, null, null, taskActivity, null,completeOnAction);
+                null, TaskPriority.MEDIUM.getValue(), null, null, null, null, null, null, null, configValueStr, null, office, actionGroupId,
+                null, null, taskActivity, null, completeOnAction, dueTime);
         TaskStatusType status = TaskStatusType.INITIATED;
         task.setStatus(status.getValue());
-        taskExecutionService.updateActionAndAssignedTo(context.authenticatedUser(),task, status);
+        taskExecutionService.updateActionAndAssignedTo(context.authenticatedUser(), task, status);
         return task.getId();
     }
 

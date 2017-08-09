@@ -27,6 +27,7 @@ import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.domain.Role;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -197,6 +198,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sb.append(",t.status AS taskStatusId ");
             sb.append(",t.priority AS taskPriorityId ");
             sb.append(",t.due_date AS taskDueDate ");
+            sb.append(",t.due_time AS taskDueTime ");
             sb.append(",t.task_type AS taskType ");
             sb.append(",t.current_action AS taskCurrentActionId ");
             sb.append(",t.created_date AS taskCreatedOn ");
@@ -259,7 +261,8 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             if (taskPriorityId != null && taskPriorityId > 0) {
                 taskPriority = TaskPriority.fromInt(taskPriorityId).getEnumOptionData();
             }
-            final Date taskDueDate = rs.getTimestamp("taskDueDate");
+            final LocalDate taskDueDate = JdbcSupport.getLocalDate(rs,"taskDueDate");
+            final LocalTime taskDueTime = JdbcSupport.getLocalTime(rs, "taskDueTime");
             final Integer taskTypeId = JdbcSupport.getIntegeActualValue(rs, "taskType");
             EnumOptionData taskType = null;
             if (taskTypeId != null && taskTypeId >= 0) {
@@ -298,7 +301,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                     taskEntityId, taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder,
                     taskCriteriaId, taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId,
                     taskOfficeName, taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions, taskType,
-                    taskCreatedOn, description);
+                    taskCreatedOn, description, taskDueTime);
 
             final Long taskActivityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskActivityId");
             if (taskActivityId != null) {
