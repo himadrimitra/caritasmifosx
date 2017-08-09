@@ -58,6 +58,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeAppliedToException;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
+import org.apache.fineract.portfolio.client.data.ClientChargeData;
 import org.apache.fineract.portfolio.client.data.ClientChargeDataValidator;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
@@ -680,17 +681,12 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                 AdjustedDateDetailsDTO adjustedDateDetailsDTO = null;
                 CalendarData calendarData = null;
                 if (isSynchMeeting) {
-                    final StringBuilder selectSqlBuilder = new StringBuilder(900);
-                    selectSqlBuilder.append("select calendar_id from m_calendar_instance mci where mci.entity_id="
-                            + clientRecurringChargeId + " and mci.entity_type_enum=" + CalendarEntityType.CHARGES.getValue());
-                    final Long calendarId = jdbcTemplate.queryForObject(selectSqlBuilder.toString(), Long.class);
-                    calendarData = this.calendarReadPlatformService.retrieveCalendar(calendarId, clientRecurringChargeId,
+                    calendarData = this.calendarReadPlatformService.retrieveCalendarByEntityIdAndEntityType(clientRecurringChargeId,
                             CalendarEntityType.CHARGES.getValue());
                 }
-
                 while (countOfExistingFutureInstallments <= minimumNoOfFutureInstallments) {
                     try {
-                        countOfExistingFutureInstallments++;
+                        countOfExistingFutureInstallments++;                        
                         if (adjustedDateDetailsDTO != null) {
                             if (calendarData == null) {
                                 chargeLocalStartDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
@@ -721,7 +717,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                         insertSql.append(clientRecurringChargeId);
                         insertSql.append(" and crc.charge_due_date <= '");
                         insertSql.append(fromDate).append("' ");
-                        int result = jdbcTemplate.update(insertSql.toString());
+                        int result = this.jdbcTemplate.update(insertSql.toString());
                         logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by update: " + result);
                         if (countOfExistingFutureInstallments == minimumNoOfFutureInstallments) {
                             if (isSynchMeeting && calendarData != null) {
@@ -732,16 +728,14 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                                         adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
                                         clientRecurringChargeData.getFeeInterval());
                             }
-                            final StringBuilder updateSqlBuilder = new StringBuilder(300);
+                            final StringBuilder updateSqlBuilder = new StringBuilder(100);
                             updateSqlBuilder.append("UPDATE m_client_recurring_charge crc ");
                             updateSqlBuilder.append("SET crc.charge_due_date = ");
                             updateSqlBuilder.append("'");
                             updateSqlBuilder.append(chargeLocalStartDate);
                             updateSqlBuilder.append("' ");
                             updateSqlBuilder.append("WHERE crc.id =" + clientRecurringChargeId + " ");
-                            updateSqlBuilder.append("and is_active = 1 and crc.charge_due_date <= '");
-                            updateSqlBuilder.append(fromDate).append("' ");
-                            jdbcTemplate.update(updateSqlBuilder.toString());
+                            this.jdbcTemplate.update(updateSqlBuilder.toString());
                             break;
                         }
                     } catch (final Exception e) {
@@ -755,4 +749,85 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
             sb.append("Apply client recurring charge failed with message ").append(rootCause);
         }
     }
+
+    @Override
+    public void applyHolidaysToClientRecurringCharge(final ClientRecurringChargeData clientRecurringChargeData,
+            final HolidayDetailDTO holidayDetailDTO, final StringBuilder sb) {
+        final String errorMessage = "Apply client recurring charge : ";
+        try {
+            if (!clientRecurringChargeData.getClientChargeDatas().isEmpty()) {
+                final Boolean isSynchMeeting = clientRecurringChargeData.getSynchMeeting();
+                final Long clientRecurringChargeId = clientRecurringChargeData.getRecurringChargeId();
+                final PeriodFrequencyType periodFrequencyType = ChargeTimeType
+                        .getPeriodFrequencyTypeFromChargeTimeType(clientRecurringChargeData.getChargeTimeType().getId().intValue());
+                AdjustedDateDetailsDTO adjustedDateDetailsDTO = null;
+                CalendarData calendarData = null;
+                if (isSynchMeeting) {
+                    calendarData = this.calendarReadPlatformService.retrieveCalendarByEntityIdAndEntityType(clientRecurringChargeId,
+                            CalendarEntityType.CHARGES.getValue());
+                }
+                LocalDate recurringChargeDueDate = null;
+                for (final ClientChargeData clientChargeData : clientRecurringChargeData.getClientChargeDatas()) {
+                    try {
+                        if (recurringChargeDueDate == null) {
+                            recurringChargeDueDate = clientChargeData.getActualDueDate();
+                        }else{
+                            if (adjustedDateDetailsDTO != null) {
+                                if (calendarData == null) {
+                                    recurringChargeDueDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
+                                            adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
+                                            clientRecurringChargeData.getFeeInterval());
+                                } else {
+                                    recurringChargeDueDate = CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(),
+                                            calendarData.getStartDate(), adjustedDateDetailsDTO.getChangedActualRepaymentDate());
+                                }
+                            }
+                        }
+                        adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(recurringChargeDueDate, recurringChargeDueDate,
+                                recurringChargeDueDate);
+
+                        WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO,
+                                holidayDetailDTO, periodFrequencyType, clientRecurringChargeData.getFeeInterval(), calendarData);
+
+                        final StringBuilder updateSqlBuilder = new StringBuilder(100);
+                        updateSqlBuilder.append("UPDATE m_client_charge cc ");
+                        updateSqlBuilder.append("SET cc.charge_actual_due_date = '");
+                        updateSqlBuilder.append(adjustedDateDetailsDTO.getChangedActualRepaymentDate());
+                        updateSqlBuilder.append("', ");
+                        updateSqlBuilder.append("cc.charge_due_date = '");
+                        updateSqlBuilder.append(adjustedDateDetailsDTO.getChangedScheduleDate());
+                        updateSqlBuilder.append("' ");
+                        updateSqlBuilder.append("WHERE cc.id =" + clientChargeData.getId() + " ");
+                        int result = this.jdbcTemplate.update(updateSqlBuilder.toString());
+                        logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by update: " + result);
+                    } catch (final Exception e) {
+                        ExceptionHelper.handleExceptions(e, sb, errorMessage, clientRecurringChargeId, logger);
+                    }
+                }
+                if (adjustedDateDetailsDTO != null) {
+                    if (isSynchMeeting && calendarData != null) {
+                        recurringChargeDueDate = CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(),
+                                calendarData.getStartDate(), adjustedDateDetailsDTO.getChangedActualRepaymentDate());
+                    } else {
+                        recurringChargeDueDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
+                                adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
+                                clientRecurringChargeData.getFeeInterval());
+                    }
+                    final StringBuilder updateSqlBuilder = new StringBuilder(100);
+                    updateSqlBuilder.append("UPDATE m_client_recurring_charge crc ");
+                    updateSqlBuilder.append("SET crc.charge_due_date = ");
+                    updateSqlBuilder.append("'");
+                    updateSqlBuilder.append(recurringChargeDueDate);
+                    updateSqlBuilder.append("' ");
+                    updateSqlBuilder.append("WHERE crc.id =" + clientRecurringChargeId + " ");
+                    this.jdbcTemplate.update(updateSqlBuilder.toString());
+                }
+            }
+        } catch (Exception e) {
+            final String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+            logger.error("Apply client recurring charge failed  with message " + rootCause);
+            sb.append("Apply client recurring charge failed with message ").append(rootCause);
+        }
+    }
+        
 }

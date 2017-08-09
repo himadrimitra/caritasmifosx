@@ -759,9 +759,9 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     public void updateScheduleDates(final Long savingsId, HolidayDetailDTO holidayDetailDTO, final LocalDate recalculateFrom) {
         final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler.assembleFrom(savingsId,
                 DepositAccountType.RECURRING_DEPOSIT);
-        final List<Holiday> holidaysToBeProcessForLoan = this.holidayRepository.findByOfficeIdAndGreaterThanDate(account.officeId(),
+        final List<Holiday> holidaysToBeProcess = this.holidayRepository.findByOfficeIdAndGreaterThanDate(account.officeId(),
                 recalculateFrom.toDate());
-        holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, holidaysToBeProcessForLoan);
+        holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, holidaysToBeProcess);
         final List<CalendarInstance> calendarInstances = (List<CalendarInstance>) this.calendarInstanceRepository
                 .findByEntityIdAndEntityTypeId(account.getId(), CalendarEntityType.SAVINGS.getValue());
         if (calendarInstances != null && !calendarInstances.isEmpty()) {

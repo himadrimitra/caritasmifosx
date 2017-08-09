@@ -4,12 +4,16 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
@@ -17,10 +21,13 @@ import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.apache.fineract.portfolio.client.domain.ClientStatus;
 import org.apache.fineract.portfolio.client.exception.ClientRecurringChargeNotFoundException;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,6 +37,8 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
     private final PlatformSecurityContext context;
     private final ClientRecurringChargeMapper clientRecurringChargeMapper;
     private final ClientRecurringChargeJobMapper clientRecurringChargeJobMapper;
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Autowired
     public ClientRecurringChargeReadPlatformServiceImpl(PlatformSecurityContext context, final RoutingDataSource dataSource) {
@@ -37,6 +46,7 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.clientRecurringChargeMapper = new ClientRecurringChargeMapper();
         this.clientRecurringChargeJobMapper = new ClientRecurringChargeJobMapper();
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
     }
     
     public static final class ClientRecurringChargeJobMapper implements RowMapper<ClientRecurringChargeData> {
@@ -173,5 +183,26 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
             e.printStackTrace();
         }
         return new ArrayList<>();
+    }
+    
+    @Override
+    public Collection<Map<String, Object>> retrieveClientRecurringChargeIdByOfficesAndHoliday(final Long officeId,
+            final List<Holiday> holidays, final Collection<Integer> chargeTimeTypes, final LocalDate recalculateFrom) {
+        final StringBuilder sql = new StringBuilder(1000);
+        sql.append("SELECT DISTINCT(cc.id) as clientChargeId, cc.client_recurring_charge_id as clientRecurringChargeId, cc.charge_actual_due_date as actualDueDate ");
+        sql.append(",cc.charge_due_date as dueDate,cc.charge_time_enum as chargeTimeTypeId,crc.is_synch_meeting as isSynchMeeting,crc.fee_interval as feeInterval ");
+        sql.append("FROM m_office mo ");
+        sql.append("JOIN m_client mc ON mc.office_id = mo.id ");
+        sql.append("JOIN m_client_charge cc on cc.client_id = mc.id ");
+        sql.append("and cc.is_active = 1 and cc.waived = 0 and cc.is_paid_derived = 0 and cc.charge_due_date >= :date ");
+        sql.append("and cc.charge_time_enum in (:status) ");
+        sql.append("JOIN m_client_recurring_charge crc on crc.id and cc.client_recurring_charge_id ");
+        sql.append("WHERE mo.id = :officeId ");
+        sql.append("order by cc.client_recurring_charge_id ");
+        final Map<String, Object> paramMap = new HashMap<>(4);
+        paramMap.put("date", this.formatter.print(recalculateFrom));
+        paramMap.put("status", chargeTimeTypes);
+        paramMap.put("officeId", officeId);
+        return this.namedParameterJdbcTemplate.queryForList(sql.toString(), paramMap);
     }
 }

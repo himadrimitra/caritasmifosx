@@ -26,6 +26,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetClientChargeRepaymentCommand;
 import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.joda.time.LocalDate;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,5 +57,9 @@ public interface ClientChargeWritePlatformService {
     @Transactional
     Map<String, Object> payChargeFromCollectionsheet(CollectionSheetClientChargeRepaymentCommand ChargeRepaymentCommand,
             PaymentDetail paymentDetail, final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetails);
+
+    @Transactional
+    void applyHolidaysToClientRecurringCharge(final ClientRecurringChargeData clientRecurringChargeData,
+            final HolidayDetailDTO holidayDetailDTO, final StringBuilder sb);
 
 }

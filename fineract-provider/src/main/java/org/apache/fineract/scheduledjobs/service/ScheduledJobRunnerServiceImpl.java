@@ -20,6 +20,7 @@ package org.apache.fineract.scheduledjobs.service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,6 +31,8 @@ import java.util.Set;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSourceServiceFactory;
@@ -39,11 +42,15 @@ import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
+import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
+import org.apache.fineract.portfolio.client.data.ClientChargeData;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.apache.fineract.portfolio.client.service.ClientChargeWritePlatformService;
 import org.apache.fineract.portfolio.client.service.ClientRecurringChargeReadPlatformService;
@@ -94,7 +101,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     private final static Logger logger = LoggerFactory.getLogger(ScheduledJobRunnerServiceImpl.class);
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatterWithTime = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-    private final DateTimeFormatter formatterWithDate = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     private final RoutingDataSourceServiceFactory dataSourceServiceFactory;
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
@@ -552,30 +558,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
     }
 
-	public void applyCharge(LocalDate applyDate, Long recurringId) {
-		String formattedDate = formatterWithDate.print(applyDate);
-		final JdbcTemplate jdbcTemplate = new JdbcTemplate(
-				this.dataSourceServiceFactory.determineDataSourceService()
-						.retrieveDataSource());
-
-		final StringBuilder insertSqlBuilder = new StringBuilder(900);
-		insertSqlBuilder
-				.append("INSERT INTO m_client_charge(client_id,charge_id,is_penalty,charge_time_enum,charge_due_date,charge_calculation_enum,amount,")
-				.append("amount_outstanding_derived,is_paid_derived,waived,is_active,inactivated_on_date,client_recurring_charge_id) ")
-				.append("SELECT crc.client_id,crc.charge_id,crc.is_penalty,crc.charge_time_enum,crc.charge_due_date,crc.charge_calculation_enum ,")
-				.append("crc.amount,crc.amount,0,0,crc.is_active,crc.inactivated_on_date,crc.id ")
-				.append("from m_client_recurring_charge crc  where crc.id="
-						+ recurringId);
-		jdbcTemplate.update(insertSqlBuilder.toString());
-		@SuppressWarnings("deprecation")
-		final Long clientChargeId = jdbcTemplate
-				.queryForLong("SELECT LAST_INSERT_ID()");
-		final StringBuilder updateSqlBuilder = new StringBuilder(900);
-		updateSqlBuilder.append("update m_client_charge set charge_due_date='"
-				+ formattedDate + "' where id=" + clientChargeId);
-		jdbcTemplate.update(updateSqlBuilder.toString());
-	}
-
 	@Override
 	@CronTarget(jobName = JobName.INITIATE_BANK_TRANSACTION)
 	public void initiateBankTransactions() throws JobExecutionException {
@@ -753,6 +735,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         this.loanSchedularService.applyHolidaysToLoans(holidayDetailDTO, officeIds, failedForOffices, sb);
 
         this.recurringDepositSchedularService.applyHolidaysToRecurringDeposits(holidayDetailDTO, officeIds, failedForOffices, sb);
+        
+        applyHolidaysToClientRecurringCharge(holidayDetailDTO, officeIds, failedForOffices, sb);
 
         boolean holidayStatusChanged = false;
         for (final Holiday holiday : holidays) {
@@ -777,6 +761,73 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
             this.holidayRepository.save(holidays);
         }
         if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+    }
+
+    private void applyHolidaysToClientRecurringCharge(HolidayDetailDTO holidayDetailDTO, final Map<Long, List<Holiday>> officeIds,
+            final Set<Long> failedForOffices, final StringBuilder sb) {
+        final Collection<Integer> chargeTimeTypes = new ArrayList<>(Arrays.asList(ChargeTimeType.WEEKLY_FEE.getValue(),
+                ChargeTimeType.MONTHLY_FEE.getValue(), ChargeTimeType.ANNUAL_FEE.getValue()));
+        for (final Map.Entry<Long, List<Holiday>> entry : officeIds.entrySet()) {
+            try {
+                final LocalDate recalculateFrom = DateUtils.getLocalDateOfTenant();
+                final List<Holiday> holidays = entry.getValue();
+                final List<Holiday> applicableHolidays = new ArrayList<>();
+                for (final Holiday holiday : holidays) {
+                    if (!holiday.getFromDateLocalDate().isBefore(recalculateFrom)) {
+                        applicableHolidays.add(holiday);
+                    }
+                }
+                if (!applicableHolidays.isEmpty()) {
+                    holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, applicableHolidays);
+                    final Collection<Map<String, Object>> clientRecurringChargeForProcess = this.clientRecurringChargeReadPlatformService
+                            .retrieveClientRecurringChargeIdByOfficesAndHoliday(entry.getKey(), applicableHolidays, chargeTimeTypes,
+                                    recalculateFrom);
+                    final Collection<ClientRecurringChargeData> clientRecurringChargeDatas = new ArrayList<>();
+                    ClientRecurringChargeData clientRecurringChargeData = null;
+                    Long previousClientRecurringChargeId = 0l;
+                    for (final Map<String, Object> clientRecurringCharge : clientRecurringChargeForProcess) {
+                        try {
+                            final Long clientChargeId = (Long) clientRecurringCharge.get("clientChargeId");
+                            final Long clientRecurringChargeId = (Long) clientRecurringCharge.get("clientRecurringChargeId");
+                            final LocalDate actualDueDate = new LocalDate(clientRecurringCharge.get("actualDueDate"));
+                            final Integer chargeTimeTypeId = (Integer) clientRecurringCharge.get("chargeTimeTypeId");
+                            final Boolean isSynchMeeting = (Boolean) clientRecurringCharge.get("isSynchMeeting");
+                            final Integer feeInterval = (Integer) clientRecurringCharge.get("feeInterval");
+                            if (!previousClientRecurringChargeId.equals(clientRecurringChargeId)) {
+                                previousClientRecurringChargeId = clientRecurringChargeId;
+                                final OfficeData officeData = null;
+                                final LocalDate chargeDueDate = null;
+                                final EnumOptionData chargeTimeType = ChargeEnumerations.chargeTimeType(chargeTimeTypeId);
+                                final Integer countOfExistingFutureInstallments = 0;
+                                clientRecurringChargeData = new ClientRecurringChargeData(clientRecurringChargeId, officeData,
+                                        chargeDueDate, chargeTimeType, feeInterval, isSynchMeeting, countOfExistingFutureInstallments);
+                                clientRecurringChargeDatas.add(clientRecurringChargeData);
+                            }
+                            if (clientRecurringChargeData != null) {
+                                final ClientChargeData clientChargeData = ClientChargeData.lookUp(clientChargeId, actualDueDate);
+                                clientRecurringChargeData.addClientChargeData(clientChargeData);
+                            }
+                        } catch (final Exception e) {
+
+                        }
+                    }
+                    if (!clientRecurringChargeDatas.isEmpty()) {
+                        for (final ClientRecurringChargeData clientRecurringCharge : clientRecurringChargeDatas) {
+                            holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, applicableHolidays);
+                            this.clientChargeWritePlatformService.applyHolidaysToClientRecurringCharge(clientRecurringCharge,
+                                    holidayDetailDTO, sb);
+                        }
+                    }
+                }
+
+            } catch (Exception e) {
+                final String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+                logger.error("Apply Holidays for recurring deposit failed  with message " + rootCause);
+                sb.append("Apply Holidays for recurring deposit failed with message ").append(rootCause);
+                failedForOffices.add(entry.getKey());
+            }
+
+        }
     }
 
     private Map<Long, List<Holiday>> getMapWithEachOfficeHolidays(final List<Holiday> holidays) {
