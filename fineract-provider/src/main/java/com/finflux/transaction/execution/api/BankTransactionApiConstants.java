@@ -10,6 +10,7 @@ public class BankTransactionApiConstants {
 
     public static final String transferType = "transferType";
     public static final String rejectCommandParam="reject";
+    public static final String CLOSE_COMMAND_PARAM="close";
 
     public static final Set<String> SUBMIT_TRANSACTION_PARAMETERS = new HashSet<>(Arrays.asList(
             transferType));

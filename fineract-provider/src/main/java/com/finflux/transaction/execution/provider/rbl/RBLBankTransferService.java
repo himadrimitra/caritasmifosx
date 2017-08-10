@@ -157,167 +157,155 @@ public class RBLBankTransferService implements BankTransferService {
 				keyValueMap.get(KEY_CORPORATE_ID));
 	}
 
-	@Override
-	public BankTransactionResponse doTransaction(Long internalBankTransactionId,
-												 String internalTransactionReference,
-												 BigDecimal amount, String reason,
-												 BankAccountDetailData debitAccount,
-												 BankAccountDetailData beneficiaryAccount,
-												 TransferType transferType, String debitParticulars,
-												 String debitremarks, String beneficiaryParticulars,
-												 String beneficiaryRemarks, Long makerUserId,
-												 Long checkerUserId, Long approverUserId) {
+    @Override
+    public BankTransactionResponse doTransaction(Long internalBankTransactionId, String internalTransactionReference, BigDecimal amount,
+            String reason, BankAccountDetailData debitAccount, BankAccountDetailData beneficiaryAccount, TransferType transferType,
+            String debitParticulars, String debitremarks, String beneficiaryParticulars, String beneficiaryRemarks, Long makerUserId,
+            Long checkerUserId, Long approverUserId) {
 
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		headers.add("Content-Type", "application/json");
-		headers.add("Authorization", "Basic " + authorizationCode);
-		RBLSinglePaymentRequest.Header header = new RBLSinglePaymentRequest.Header(
-				internalTransactionReference, corporateId, makerUserId, checkerUserId, approverUserId);
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.add("Content-Type", "application/json");
+        headers.add("Authorization", "Basic " + authorizationCode);
+        RBLSinglePaymentRequest.Header header = new RBLSinglePaymentRequest.Header(internalTransactionReference, corporateId, makerUserId,
+                checkerUserId, approverUserId);
 
-		RBLSinglePaymentRequest.Body body = new RBLSinglePaymentRequest.Body(
-				formatter.format(amount), debitAccount.getAccountNumber(),
-				debitAccount.getName(), debitAccount.getIfscCode(),
-				debitAccount.getMobileNumber(), debitParticulars, debitremarks,
-				beneficiaryAccount.getIfscCode(),
-				beneficiaryAccount.getAccountNumber(),
-				beneficiaryAccount.getName(), beneficiaryAccount.getBankCity(),
-				beneficiaryAccount.getBankName(),
-				beneficiaryAccount.getEmail(),
-				beneficiaryAccount.getMobileNumber(), beneficiaryParticulars,
-				beneficiaryRemarks, transferType.toString(), rptCode, reason);
+        RBLSinglePaymentRequest.Body body = new RBLSinglePaymentRequest.Body(formatter.format(amount), debitAccount.getAccountNumber(),
+                debitAccount.getName(), debitAccount.getIfscCode(), debitAccount.getMobileNumber(), debitParticulars, debitremarks,
+                beneficiaryAccount.getIfscCode(), beneficiaryAccount.getAccountNumber(), beneficiaryAccount.getName(),
+                beneficiaryAccount.getBankCity(), beneficiaryAccount.getBankName(), beneficiaryAccount.getEmail(),
+                beneficiaryAccount.getMobileNumber(), beneficiaryParticulars, beneficiaryRemarks, transferType.toString(), rptCode, reason);
 
-		String signatureStr = "Finflux";
+        String signatureStr = "Finflux";
 
-		RBLSinglePaymentRequest.Signature signature = new RBLSinglePaymentRequest.Signature(
-				signatureStr);
+        RBLSinglePaymentRequest.Signature signature = new RBLSinglePaymentRequest.Signature(signatureStr);
 
-		RBLSinglePaymentRequest singlePaymentRequest = new RBLSinglePaymentRequest(
-				header, body, signature);
-		RBLPaymentRequestValidator requestValidator=new RBLPaymentRequestValidator();
-		requestValidator.validateNEFTSinglePaymentRequest(singlePaymentRequest);
-		RBLFundTransferRequest rblFundTransferRequest = new RBLFundTransferRequest(
-				singlePaymentRequest);
+        RBLSinglePaymentRequest singlePaymentRequest = new RBLSinglePaymentRequest(header, body, signature);
+        RBLPaymentRequestValidator requestValidator = new RBLPaymentRequestValidator();
+        requestValidator.validateNEFTSinglePaymentRequest(singlePaymentRequest);
+        RBLFundTransferRequest rblFundTransferRequest = new RBLFundTransferRequest(singlePaymentRequest);
 
-		// Gson gson = new Gson();
-		// String requestData = gson.toJson(rblFundTransferRequest);
-		// System.out.println(requestData);
-		HttpEntity<RBLFundTransferRequest> request = new HttpEntity<>(
-				rblFundTransferRequest, headers);
+        // Gson gson = new Gson();
+        // String requestData = gson.toJson(rblFundTransferRequest);
+        // System.out.println(requestData);
+        HttpEntity<RBLFundTransferRequest> request = new HttpEntity<>(rblFundTransferRequest, headers);
 
-		UriComponentsBuilder builder = UriComponentsBuilder
-				.fromUriString(doSingleTxnResource)
-				.queryParam("client_id", clientId)
-				.queryParam("client_secret", clientSecret);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(doSingleTxnResource).queryParam("client_id", clientId)
+                .queryParam("client_secret", clientSecret);
 
-		BasicHttpResponse basicHttpResponse = new BasicHttpResponse();
-		TransactionStatus txnStatus = TransactionStatus.ERROR;
-		String referenceNumber = null;
-		String utrNumber = null;
-		String poNumber = null;
-		String responseBody = null;
-		DateTime txnTime = null;
-		HttpStatus responseHttpStatus = null;
-		HttpHeaders responseHttpHeaders = null;
-		StopWatch stopWatch = new StopWatch();
-		String completeUrl = rblEndPoint + builder.build().toUriString();
-		Long requestLogId = requestResponseLogWriter.registerRequest(ThirdPartyRequestEntityType.BANKTRANSACTION,internalBankTransactionId,
-				HttpMethod.POST,rblEndPoint+doSingleTxnResource,convertToJsonStr(rblFundTransferRequest));
-		stopWatch.start();
-		try {
-			ResponseEntity<RBLFundTransferResponse> response = restTemplate
-					.exchange(completeUrl, HttpMethod.POST,
-							request, RBLFundTransferResponse.class);
+        BasicHttpResponse basicHttpResponse = new BasicHttpResponse();
+        TransactionStatus txnStatus = TransactionStatus.ERROR;
+        String referenceNumber = null;
+        String utrNumber = null;
+        String poNumber = null;
+        String responseBody = null;
+        DateTime txnTime = null;
+        HttpStatus responseHttpStatus = null;
+        HttpHeaders responseHttpHeaders = null;
+        StopWatch stopWatch = new StopWatch();
+        String completeUrl = rblEndPoint + builder.build().toUriString();
+        Long requestLogId = requestResponseLogWriter.registerRequest(ThirdPartyRequestEntityType.BANKTRANSACTION, internalBankTransactionId,
+                HttpMethod.POST, rblEndPoint + doSingleTxnResource, convertToJsonStr(rblFundTransferRequest));
+        stopWatch.start();
+        try {
+            ResponseEntity<RBLFundTransferResponse> response = restTemplate.exchange(completeUrl, HttpMethod.POST, request,
+                    RBLFundTransferResponse.class);
 
-			stopWatch.stop();
-			responseBody = convertToJsonStr(response.getBody());
-			responseHttpHeaders = response.getHeaders();
-			responseHttpStatus = response.getStatusCode();
+            stopWatch.stop();
+            responseBody = convertToJsonStr(response.getBody());
+            responseHttpHeaders = response.getHeaders();
+            responseHttpStatus = response.getStatusCode();
 
-			basicHttpResponse.setHttpStatusCode(response.getStatusCode()
-					.toString());
-			RBLSinglePaymentResponse paymentResponse = response.getBody()
-					.getPaymentResponse();
+            basicHttpResponse.setHttpStatusCode(response.getStatusCode().toString());
+            RBLSinglePaymentResponse paymentResponse = response.getBody().getPaymentResponse();
 
-			String requestStatus = null;
-			String responseCode = null;
+            String requestStatus = null;
+            String responseCode = null;
+            String paymentResponseStatus = null;
+            String statusDescription = null;
 
-			if (paymentResponse != null) {
-				if (paymentResponse.getHeader() != null) {
-					requestStatus = paymentResponse.getHeader().getStatus();
-					responseCode = paymentResponse.getHeader().getResponseCode();
-					basicHttpResponse.setErrorCode(paymentResponse
-							.getHeader().getErrorCode());
-					basicHttpResponse.setErrorMessage(paymentResponse
-							.getHeader().getErrorDescription());
-				}
-				if (paymentResponse.getBody() != null) {
-					referenceNumber = paymentResponse.getBody()
-							.getReferenceNumber();
-					utrNumber = paymentResponse.getBody().getUtrNumber();
-					poNumber = paymentResponse.getBody().getPoNumber();
-					if(paymentResponse.getBody().getTxnTime()!=null){
-						txnTime = DateTime.parse(paymentResponse.getBody().getTxnTime(),
-								dateTimeFormatter);
-					}
-				}
-			}
-			basicHttpResponse.setSuccess(true);
-			if(STATUS_FAILED.equalsIgnoreCase(requestStatus) || STATUS_FAILURE.equalsIgnoreCase(requestStatus)) {
-				txnStatus = TransactionStatus.FAILED;
-			}else if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
-				if (StringUtils.isNotEmpty(responseCode)){
-					if(RESPONSECODE_SUCCESS.equalsIgnoreCase(responseCode)){
-						txnStatus = TransactionStatus.SUCCESS;
-					}else{
-						txnStatus = TransactionStatus.PENDING;
-					}
-				}else {
-					txnStatus = TransactionStatus.SUCCESS;
-				}
-			}else if(STATUS_INITIATED.equalsIgnoreCase(requestStatus)){
-				txnStatus = TransactionStatus.PENDING;
-			} else{
-				txnStatus = TransactionStatus.PENDING;
-			}
+            if (paymentResponse != null) {
+                if (paymentResponse.getHeader() != null) {
+                    requestStatus = paymentResponse.getHeader().getStatus();
+                    responseCode = paymentResponse.getHeader().getResponseCode();
+                    basicHttpResponse.setErrorCode(paymentResponse.getHeader().getErrorCode());
+                    basicHttpResponse.setErrorMessage(paymentResponse.getHeader().getErrorDescription());
+                }
+                if (paymentResponse.getBody() != null) {
+                    referenceNumber = paymentResponse.getBody().getReferenceNumber();
+                    utrNumber = paymentResponse.getBody().getUtrNumber();
+                    poNumber = paymentResponse.getBody().getPoNumber();
+                    paymentResponseStatus = paymentResponse.getBody().getTransactionStatus();
+                    statusDescription = paymentResponse.getBody().getStatusDescription();
+                    if (paymentResponse.getBody().getTxnTime() != null) {
+                        txnTime = DateTime.parse(paymentResponse.getBody().getTxnTime(), dateTimeFormatter);
+                    }
+                }
+            }
+            basicHttpResponse.setSuccess(true);
+            if (STATUS_FAILED.equalsIgnoreCase(requestStatus) || STATUS_FAILURE.equalsIgnoreCase(requestStatus)) {
+                txnStatus = TransactionStatus.FAILED;
+            } else if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
+                if (paymentResponseStatus != null && StringUtils.isNotEmpty(paymentResponseStatus)) {
+                    if (STATUS_SUCCESS.equalsIgnoreCase(paymentResponseStatus)) {
+                        txnStatus = TransactionStatus.SUCCESS;
+                    } else if (STATUS_FAILURE.equalsIgnoreCase(paymentResponseStatus)
+                            || STATUS_FAILED.equalsIgnoreCase(paymentResponseStatus)) {
+                        txnStatus = TransactionStatus.FAILED;
+                        if (statusDescription != null && StringUtils.isNotBlank(statusDescription)) {
+                            basicHttpResponse.setErrorMessage(statusDescription);
+                        }
+                    }
+                } else if (StringUtils.isNotEmpty(responseCode)) {
+                    if (!RESPONSECODE_SUCCESS.equalsIgnoreCase(responseCode)) {
+                        txnStatus = TransactionStatus.PENDING;
+                    }
+                } else {
+                    txnStatus = TransactionStatus.FAILED;
+                }
+            } else if (STATUS_INITIATED.equalsIgnoreCase(requestStatus)) {
+                txnStatus = TransactionStatus.PENDING;
+            } else {
+                txnStatus = TransactionStatus.PENDING;
+            }
 
-		} catch(HttpStatusCodeException e){
-			stopWatch.stop();
-			responseBody = e.getResponseBodyAsString();
-			if(responseBody!=null){
-				RBLHttpErrorResponse httpErrorResponse = gson.fromJson(responseBody,RBLHttpErrorResponse.class);
-				if(httpErrorResponse!=null) {
-					basicHttpResponse.setErrorMessage(httpErrorResponse.getMoreInformation());
-					basicHttpResponse.setErrorCode(httpErrorResponse.getHttpCode() + "-" + httpErrorResponse.getHttpMessage());
-				}
-			}
-			responseHttpStatus = e.getStatusCode();
-			responseHttpHeaders = e.getResponseHeaders();
-			logger.warn("RBL Initiate Transaction  HttpStatusCodeException Exception", e);
-			basicHttpResponse.setSuccess(false);
-		} catch (RestClientException e) {
-			stopWatch.stop();
-			responseBody = e.getMessage();
-			basicHttpResponse.setErrorMessage(e.getMessage());
-			logger.warn("RBL Initiate Transaction RestClientException", e);
-			basicHttpResponse.setSuccess(false);
-		} catch(Exception e){
-			if(stopWatch.isStarted()){
-				stopWatch.stop();
-			}
-			if(responseBody==null) {
-				responseBody = e.getMessage();
-			}
-			basicHttpResponse.setErrorMessage(e.getMessage());
-			logger.warn("RBL Initiate Transaction unknown exception", e);
-			basicHttpResponse.setSuccess(false);
-		}
-		final String loggableResponse = constructResponseString(responseHttpStatus, responseHttpHeaders,responseBody);
-		requestResponseLogWriter.registerResponse(requestLogId,loggableResponse,stopWatch.getTime(),
-				responseHttpStatus!=null?responseHttpStatus.value():null);
+        } catch (HttpStatusCodeException e) {
+            stopWatch.stop();
+            responseBody = e.getResponseBodyAsString();
+            if (responseBody != null) {
+                RBLHttpErrorResponse httpErrorResponse = gson.fromJson(responseBody, RBLHttpErrorResponse.class);
+                if (httpErrorResponse != null) {
+                    basicHttpResponse.setErrorMessage(httpErrorResponse.getMoreInformation());
+                    basicHttpResponse.setErrorCode(httpErrorResponse.getHttpCode() + "-" + httpErrorResponse.getHttpMessage());
+                }
+            }
+            responseHttpStatus = e.getStatusCode();
+            responseHttpHeaders = e.getResponseHeaders();
+            logger.warn("RBL Initiate Transaction  HttpStatusCodeException Exception", e);
+            basicHttpResponse.setSuccess(false);
+        } catch (RestClientException e) {
+            stopWatch.stop();
+            responseBody = e.getMessage();
+            basicHttpResponse.setErrorMessage(e.getMessage());
+            logger.warn("RBL Initiate Transaction RestClientException", e);
+            basicHttpResponse.setSuccess(false);
+        } catch (Exception e) {
+            if (stopWatch.isStarted()) {
+                stopWatch.stop();
+            }
+            if (responseBody == null) {
+                responseBody = e.getMessage();
+            }
+            basicHttpResponse.setErrorMessage(e.getMessage());
+            logger.warn("RBL Initiate Transaction unknown exception", e);
+            basicHttpResponse.setSuccess(false);
+        }
+        final String loggableResponse = constructResponseString(responseHttpStatus, responseHttpHeaders, responseBody);
+        requestResponseLogWriter.registerResponse(requestLogId, loggableResponse, stopWatch.getTime(),
+                responseHttpStatus != null ? responseHttpStatus.value() : null);
 
-		return new BankTransactionResponse(basicHttpResponse, internalTransactionReference,
-				referenceNumber, txnStatus, utrNumber,poNumber, txnTime);
-	}
+        return new BankTransactionResponse(basicHttpResponse, internalTransactionReference, referenceNumber, txnStatus, utrNumber, poNumber,
+                txnTime);
+    }
 
 	private String convertToJsonStr(Object object) {
 		try {
@@ -401,6 +389,8 @@ public class RBLBankTransferService implements BankTransferService {
 			String txnStatusStr = null;
 			String paymentStatus = null;
 			String errorCode = null;
+			String paymentResponseStatus = null;
+			String statusDescription = null;
 
 			if (paymentResponse != null) {
 				if (paymentResponse.getHeader() != null) {
@@ -418,6 +408,8 @@ public class RBLBankTransferService implements BankTransferService {
 							.getPaymentStatus();
 					utrNumber = paymentResponse.getBody().getUtrNumber();
 					poNumber = paymentResponse.getBody().getPoNumber();
+					paymentResponseStatus = paymentResponse.getBody().getTransactionStatus();
+					statusDescription = paymentResponse.getBody().getStatusDescription();
 					if(paymentResponse.getBody().getTxnTime()!=null){
 						txnTime = DateTime.parse(paymentResponse.getBody().getTxnTime(),
 								dateTimeFormatter);
@@ -430,7 +422,18 @@ public class RBLBankTransferService implements BankTransferService {
 			if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
 				if (StringUtils.isNotEmpty(txnStatusStr)) {
 					if (STATUS_SUCCESS.equalsIgnoreCase(txnStatusStr)) {
-						txnStatus = TransactionStatus.SUCCESS;
+					    if(paymentResponseStatus != null && StringUtils.isNotEmpty(paymentResponseStatus)){
+					        if(STATUS_SUCCESS.equalsIgnoreCase(paymentResponseStatus)){
+	                                                txnStatus = TransactionStatus.SUCCESS;
+	                                            }else if(STATUS_FAILURE.equalsIgnoreCase(paymentResponseStatus) || STATUS_FAILED.equalsIgnoreCase(paymentResponseStatus)){
+	                                                    txnStatus = TransactionStatus.FAILED;
+	                                                    if (statusDescription != null && StringUtils.isNotBlank(statusDescription)) {
+	                                                        basicHttpResponse.setErrorMessage(statusDescription);
+	                                                    }
+	                                            } 
+					    }else{
+					        txnStatus = TransactionStatus.FAILED;
+					    }
 					} else if (STATUS_FAILED.equalsIgnoreCase(txnStatusStr) || STATUS_FAILURE.equalsIgnoreCase(txnStatusStr)) {
 						txnStatus = TransactionStatus.FAILED;
 					} else if (STATUS_INPROGRESS.equalsIgnoreCase(txnStatusStr)) {

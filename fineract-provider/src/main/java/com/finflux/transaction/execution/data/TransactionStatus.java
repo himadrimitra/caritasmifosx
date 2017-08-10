@@ -17,7 +17,8 @@ public enum TransactionStatus {
         FAILED(6, "transactionStatus.failed"),
         CLOSED(7, "transactionStatus.closed"),
         ERROR(8, "transactionStatus.error"),
-        RETRIED(9, "transactionStatus.retried");
+        RETRIED(9, "transactionStatus.retried"),
+        REJECTED(10, "transactionStatus.rejected");
 
         private static final Map<Integer, TransactionStatus> intToEnumMap = new HashMap<>();
 
