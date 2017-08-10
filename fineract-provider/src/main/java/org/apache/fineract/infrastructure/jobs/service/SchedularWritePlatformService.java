@@ -37,8 +37,6 @@ public interface SchedularWritePlatformService {
 
     public void saveOrUpdate(ScheduledJobDetail scheduledJobDetails, ScheduledJobRunHistory scheduledJobRunHistory);
 
-    public Long fetchMaxVersionBy(String triggerKey);
-
     public ScheduledJobDetail findByJobId(Long jobId);
 
     public CommandProcessingResult updateJobDetail(Long jobId, JsonCommand command);

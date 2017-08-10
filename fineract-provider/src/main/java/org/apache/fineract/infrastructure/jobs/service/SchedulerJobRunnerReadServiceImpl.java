@@ -29,6 +29,7 @@ import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.data.JobDetailData;
 import org.apache.fineract.infrastructure.jobs.data.JobDetailHistoryData;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
@@ -68,11 +69,11 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
     public JobDetailData retrieveOne(final Long jobId) {
         try {
             final JobDetailMapper detailMapper = new JobDetailMapper();
-            final String sql = detailMapper.schema() + " where job.id=?";
+            final String sql = detailMapper.schema() + " where job.id=? order by runHistory.version DESC limit 1";
             return this.jdbcTemplate.queryForObject(sql, detailMapper, new Object[] { jobId });
         } catch (final EmptyResultDataAccessException e) {
             throw new JobNotFoundException(String.valueOf(jobId));
-        }
+        } 
     }
 
     @Override
@@ -195,21 +196,27 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
 
     }
 
-	@Override
-	public String getDependentJobs(String jobName) {
-		return this.jdbcTemplate.queryForObject("select j.depands_on_job_name from job j where j.name = '"+jobName+"'", String.class);
-	}
+    @Override
+    public String getDependentJobs(String jobName) {
+        return this.jdbcTemplate.queryForObject("select j.depands_on_job_name from job j where j.name = '" + jobName + "'", String.class);
+    }
 
-	@Override
-	public Date getLastRunDate(String jobName) {
-		return this.jdbcTemplate.queryForObject(
-				"select DATE(max(jh.end_time)) from job j join job_run_history jh on j.id = jh.job_id where jh.`status` = 'success' and j.currently_running = 0 and j.name = '"+jobName+"'",
-				Date.class);
-	}
+    @Override
+    public Date getLastRunDate(String jobName) {
+        return this.jdbcTemplate
+                .queryForObject(
+                        "select DATE(max(jh.end_time)) from job j join job_run_history jh on j.id = jh.job_id where jh.`status` = 'success' and j.currently_running = 0 and j.name = '"
+                                + jobName + "'", Date.class);
+    }
 
     @Override
     public boolean isActive(String jobName) {
         return this.jdbcTemplate.queryForObject("select j.is_active from job j where j.name='" + jobName + "'", Boolean.class);
+    }
+    
+    @Override
+    public Map<String,Object> getDependentJobStatusAndLastRunDate(String jobName) {
+        return this.jdbcTemplate.queryForMap("select j.is_active as active,   DATE(max(jrh.end_time)) as lastSuccessRunDate from job j left join job_run_history jrh on j.is_active = 1 and j.id = jrh.job_id and jrh.`status` = 'success' where j.name='" + jobName + "'");
     }
 
     @Override
@@ -234,6 +241,17 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
             paramMap.put(key, paramValue);
         }
         return paramMap;
+    }
+
+    @Override
+    public Long findMaxVersionByJobKey(String jobKey) {
+        Long version = 0L;
+        String sql = "select max(sjrh.version) from job sj join  job_run_history sjrh on sj.id = sjrh.job_id where sj.job_key = ?";
+        final Long versionFromDB =  this.jdbcTemplate.queryForObject(sql, Long.class, jobKey);
+        if (versionFromDB != null) {
+            version = versionFromDB;
+        }
+        return version;
     }
 
 }
