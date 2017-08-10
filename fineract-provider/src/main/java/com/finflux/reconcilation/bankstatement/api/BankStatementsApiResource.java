@@ -255,7 +255,7 @@ public class BankStatementsApiResource {
         
         final CommandWrapper commandRequest = builder.generatePortfolioTransactions(bankStatementId).build();
         
-        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest,false);
 
         return this.toBankStatementDetailsApiJsonSerializer.serialize(result);
         

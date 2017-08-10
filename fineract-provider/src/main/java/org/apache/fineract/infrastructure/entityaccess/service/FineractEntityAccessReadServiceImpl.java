@@ -26,7 +26,6 @@ import java.util.Date;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.dataqueries.service.GenericDataServiceImpl;
-import org.apache.fineract.infrastructure.entityaccess.FineractEntityAccessConstants;
 import org.apache.fineract.infrastructure.entityaccess.data.FineractEntityAccessData;
 import org.apache.fineract.infrastructure.entityaccess.data.FineractEntityRelationData;
 import org.apache.fineract.infrastructure.entityaccess.data.FineractEntityToEntityMappingData;
@@ -35,7 +34,6 @@ import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAcce
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityRelation;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityRelationRepositoryWrapper;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType;
-import org.apache.fineract.infrastructure.entityaccess.exception.FineractEntityAccessConfigurationException;
 import org.apache.fineract.infrastructure.entityaccess.exception.FineractEntityMappingConfigurationException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -390,9 +388,19 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
     }
 
     private boolean hasAccessToEntity(final Long fromID, final Long toId, FineractEntityAccessType type) {
-        final String sql = "SELECT  count(eem.id) FROM m_entity_to_entity_mapping eem LEFT JOIN m_office off ON eem.from_id = off.id "
-                + "left join m_entity_relation er on er.id = eem.rel_id WHERE eem.from_id =? AND eem.to_id=? and er.code_name=? ";
-        Integer count = this.jdbcTemplate.queryForObject(sql, Integer.class, fromID, toId, type.toStr());
+        final AppUser currentUser = this.context.authenticatedUser();
+        final String hierarchy = currentUser.getOffice().getHierarchy();
+        final StringBuffer str = new StringBuffer("SELECT count(eem.id) FROM m_entity_to_entity_mapping eem ");
+        str.append("LEFT JOIN m_office off ON eem.from_id = off.id ");
+        str.append("LEFT JOIN m_entity_relation er on er.id = eem.rel_id ");
+        str.append("WHERE eem.to_id=? and er.code_name=? ");
+        str.append("AND ");
+        str.append("(");
+        str.append("(eem.allowed_for_child_offices = 0 AND eem.from_id = ?) ");
+        str.append("OR ");
+        str.append("(eem.allowed_for_child_offices = 1 AND ? like concat(off.hierarchy,'%')) ");
+        str.append(")");
+        Integer count = this.jdbcTemplate.queryForObject(str.toString(), Integer.class, toId, type.toStr(), fromID, hierarchy);
         return count > 0;
     }
 
