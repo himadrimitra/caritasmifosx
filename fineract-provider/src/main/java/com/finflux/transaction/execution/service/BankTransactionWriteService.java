@@ -14,5 +14,7 @@ public interface BankTransactionWriteService {
     CommandProcessingResult submitTransaction(Long transactionId, JsonCommand command);
 
     Long createTransactionEntry(BankAccountTransaction bankAccountTransaction);
+    
+    CommandProcessingResult closeTransaction(Long transactionId);
 
 }

@@ -2,7 +2,6 @@ package com.finflux.transaction.execution.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -62,7 +61,7 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
         final BankAccountTransaction bankTransaction = this.repositoryWrapper.findOneWithNotFoundDetection(transactionId);
         TransactionStatus status = TransactionStatus.fromInt(bankTransaction.getStatus());
         if(TransactionStatus.DRAFTED.equals(status)){
-            bankTransactionDataValidator.validateForSubmitTransaction(command.json());
+            bankTransactionDataValidator.validateForSubmitTransaction(bankTransaction, command.json());
             bankTransactionDataAssembler.assembleSubmitBankTransction(bankTransaction,command);
             bankTransaction.setStatus(TransactionStatus.SUBMITTED.getValue());
             this.repository.save(bankTransaction);
@@ -73,7 +72,7 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
     @Override
     public Long createTransactionEntry(BankAccountTransaction txn) {
         //checkIfthereANyActiveTransactionisthere
-        List<Integer> activeStatuses = new ArrayList<Integer>(Arrays.asList(TransactionStatus.DRAFTED.getValue(),
+        List<Integer> activeStatuses = new ArrayList<>(Arrays.asList(TransactionStatus.DRAFTED.getValue(),
                 TransactionStatus.SUBMITTED.getValue(), TransactionStatus.INITIATED.getValue(),
                 TransactionStatus.PENDING.getValue(),TransactionStatus.ERROR.getValue()));
         Long activeTransactionCount = repository.countByEntityTypeAndEntityIdAndEntityTransactionIdAndStatusIsIn(
@@ -96,10 +95,26 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
         this.context.authenticatedUser().validateHasPermissionTo(BankTransactionPermissionConstants.rejectPermissionParam);
         final BankAccountTransaction bankTransaction = this.repositoryWrapper.findOneWithNotFoundDetection(transactionId);
         TransactionStatus status = TransactionStatus.fromInt(bankTransaction.getStatus());
-        if (TransactionStatus.SUBMITTED.equals(status)) {
-            bankTransaction.setStatus(TransactionStatus.CLOSED.getValue());
-            this.repository.save(bankTransaction);
+        if (TransactionStatus.DRAFTED.equals(status)) {
+            bankTransaction.setStatus(TransactionStatus.REJECTED.getValue());
+        } else if (TransactionStatus.SUBMITTED.equals(status)) {
+            bankTransaction.setStatus(TransactionStatus.REJECTED.getValue());
         }
+        this.repository.save(bankTransaction);
+        return new CommandProcessingResultBuilder().withEntityId(transactionId).build();
+    }
+
+    @Override
+    public CommandProcessingResult closeTransaction(Long transactionId) {
+        this.context.authenticatedUser().validateHasPermissionTo(BankTransactionPermissionConstants.rejectPermissionParam);
+        final BankAccountTransaction bankTransaction = this.repositoryWrapper.findOneWithNotFoundDetection(transactionId);
+        TransactionStatus status = TransactionStatus.fromInt(bankTransaction.getStatus());
+        if (TransactionStatus.FAILED.equals(status)) {
+            bankTransaction.setStatus(TransactionStatus.CLOSED.getValue());
+        } else if (TransactionStatus.SUCCESS.equals(status)) {
+            bankTransaction.setStatus(TransactionStatus.CLOSED.getValue());
+        }
+        this.repository.save(bankTransaction);
         return new CommandProcessingResultBuilder().withEntityId(transactionId).build();
     }
 }
