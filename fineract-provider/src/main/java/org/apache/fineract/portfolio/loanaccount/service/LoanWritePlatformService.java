@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -30,6 +31,7 @@ import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkDisbursalCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkRepaymentCommand;
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
@@ -43,13 +45,14 @@ public interface LoanWritePlatformService {
     CommandProcessingResult disburseLoan(Long loanId, JsonCommand command, Boolean isAccountTransfer);
 
     Map<String, Object> bulkLoanDisbursal(JsonCommand command, CollectionSheetBulkDisbursalCommand bulkDisbursalCommand,
-            Boolean isAccountTransfer);
+            Boolean isAccountTransfer, final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetails);
 
     CommandProcessingResult undoLoanDisbursal(Long loanId, JsonCommand command);
 
     CommandProcessingResult makeLoanRepayment(Long loanId, JsonCommand command, boolean isRecoveryRepayment);
 
-    Map<String, Object> makeLoanBulkRepayment(CollectionSheetBulkRepaymentCommand bulkRepaymentCommand);
+    Map<String, Object> makeLoanBulkRepayment(CollectionSheetBulkRepaymentCommand bulkRepaymentCommand,
+            final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetails);
 
     CommandProcessingResult adjustLoanTransaction(Long loanId, Long transactionId, JsonCommand command);
 

@@ -26,6 +26,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
@@ -92,7 +93,8 @@ public interface SavingsAccountWritePlatformService {
 
     void postInterest(SavingsAccount account, boolean postInterestAs, LocalDate transactionDate);
     
-    List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions);
+    List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions,
+            final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetailsList);
     
     CommandProcessingResult blockAccount(Long savingsId);
 
