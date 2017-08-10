@@ -196,12 +196,24 @@ public class SavingsAccountHelper {
     }
 
     public Object withdrawalFromSavingsAccount(final Integer savingsId, final String amount, String date, String jsonAttributeToGetback) {
+        // to fix issue with rounding milliseconds   to second
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+
+        }
         System.out.println("\n--------------------------------- SAVINGS TRANSACTION WITHDRAWAL --------------------------------");
         return performSavingActions(createSavingsTransactionURL(WITHDRAW_SAVINGS_COMMAND, savingsId),
                 getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);
     }
 
     public Object withdrawalFromWalletAccount(final String mobileno, final String amount, String date, String jsonAttributeToGetback) {
+        // to fix issue with rounding milliseconds   to second
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+
+        }
         System.out.println("\n--------------------------------- SAVINGS TRANSACTION WITHDRAWAL --------------------------------");
         return performSavingActions(createWalletTransactionURL(WITHDRAW_WALLET_COMMAND, mobileno),
                 getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);

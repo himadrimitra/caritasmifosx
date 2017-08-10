@@ -89,16 +89,6 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
     }
 
     @Override
-    public Long fetchMaxVersionBy(final String jobKey) {
-        Long version = 0L;
-        final Long versionFromDB = this.scheduledJobRunHistoryRepository.findMaxVersionByJobKey(jobKey);
-        if (versionFromDB != null) {
-            version = versionFromDB;
-        }
-        return version;
-    }
-
-    @Override
     public ScheduledJobDetail findByJobId(final Long jobId) {
         return this.scheduledJobDetailsRepository.findByJobId(jobId);
     }
@@ -158,9 +148,10 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
             String[] dependentJobList = dependentJobs.split(":");
 
             for (String job : dependentJobList) {
-                Boolean isActive = this.schedulerJobRunnerReadService.isActive(job);
+                Map<String, Object> dependentDetail = this.schedulerJobRunnerReadService.getDependentJobStatusAndLastRunDate(job);
+                Boolean isActive = (Boolean) dependentDetail.get("active");
                 if (isActive) {
-                    Date lastRunDate = this.schedulerJobRunnerReadService.getLastRunDate(job);
+                    Date lastRunDate = (Date) dependentDetail.get("lastSuccessRunDate");
                     if ((lastRunDate == null || lastRunDate.before(DateUtils.getLocalDateOfTenant().toDate()))) {
                         isStopExecution = true;
                         break;

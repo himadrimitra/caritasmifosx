@@ -56,16 +56,19 @@ public class SchedulerJobListener implements JobListener {
     private final String name = SchedulerServiceConstants.DEFAULT_LISTENER_NAME;
 
     private final SchedularWritePlatformService schedularService;
+    
+    private final SchedulerJobRunnerReadService schedulerJobRunnerReadService;
 
     private final AppUserRepositoryWrapper userRepository ;
     
     private final GrantedAuthoritiesMapper authoritiesMapper = new NullAuthoritiesMapper();
     
     @Autowired
-    public SchedulerJobListener(final SchedularWritePlatformService schedularService,
-            final AppUserRepositoryWrapper userRepository) {
+    public SchedulerJobListener(final SchedularWritePlatformService schedularService, final AppUserRepositoryWrapper userRepository,
+            final SchedulerJobRunnerReadService schedulerJobRunnerReadService) {
         this.schedularService = schedularService;
         this.userRepository = userRepository ;
+        this.schedulerJobRunnerReadService = schedulerJobRunnerReadService;
     }
 
     @Override
@@ -102,7 +105,7 @@ public class SchedulerJobListener implements JobListener {
             try {
 
                 ScheduledJobDetail scheduledJobDetails = this.schedularService.findByJobKey(jobKey);
-                final Long version = this.schedularService.fetchMaxVersionBy(jobKey) + 1;
+                final Long version = this.schedulerJobRunnerReadService.findMaxVersionByJobKey(jobKey) + 1;
                 String status = SchedulerServiceConstants.STATUS_SUCCESS;
                 String errorMessage = null;
                 String errorLog = null;

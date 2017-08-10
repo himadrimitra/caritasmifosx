@@ -93,7 +93,7 @@ public class CashFlowCategoryHelper {
 
     private static String getCreateIncomeExpenseRequestBodyAsJSON(final Integer cashFlowCategoryId) {
         final HashMap<String, Object> map = new HashMap<>();
-        map.put("cashFlowCategoryId", cashFlowCategoryId);
+        map.put("cashflowCategoryId", cashFlowCategoryId);
         map.put("name", Utils.randomNameGenerator("Income Expense Name", 8));
         map.put("description", "Income Expense Description");
         map.put("isQuantifierNeeded", true);
