@@ -115,8 +115,10 @@ import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulk
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkRepaymentCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.SingleDisbursalCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.SingleRepaymentCommand;
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
@@ -742,7 +744,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     @Transactional
     @Override
     public Map<String, Object> bulkLoanDisbursal(final JsonCommand command, final CollectionSheetBulkDisbursalCommand bulkDisbursalCommand,
-            Boolean isAccountTransfer) {
+            Boolean isAccountTransfer, final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetailsList) {
         final AppUser currentUser = getAppUserIfPresent();
 
         final SingleDisbursalCommand[] disbursalCommand = bulkDisbursalCommand.getDisburseTransactions();
@@ -824,6 +826,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 } else {
                     changedTransactionDetail = loan.disburse(currentUser, command, changes, scheduleGeneratorDTO, null);
                 }
+                final boolean transactionStatus = true;
+                final String errorMessage = null;
+                CollectionSheetTransactionDetails collectionSheetTransactionDetails = CollectionSheetTransactionDetails
+                        .formCollectionSheetTransactionDetails(loan.getId(), disbursementTransaction.getId(), transactionStatus,
+                                errorMessage, EntityType.LOAN.getValue());
+                collectionSheetTransactionDetailsList.add(collectionSheetTransactionDetails);
             }
             if (!changes.isEmpty()) {
                 if (changedTransactionDetail != null) {
@@ -1173,7 +1181,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     
     @Transactional
     @Override
-    public Map<String, Object> makeLoanBulkRepayment(final CollectionSheetBulkRepaymentCommand bulkRepaymentCommand) {
+    public Map<String, Object> makeLoanBulkRepayment(final CollectionSheetBulkRepaymentCommand bulkRepaymentCommand,
+            final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetails) {
 
         final SingleRepaymentCommand[] repaymentCommand = bulkRepaymentCommand.getLoanTransactions();
         final Map<String, Object> changes = new LinkedHashMap<>();
@@ -1219,6 +1228,15 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                         bulkRepaymentCommand.getNote(), null, isRecoveryRepayment, isAccountTransfer, holidayDetailDTO,
                         isHolidayValidationDone);
                 transactionIds.add(loanTransaction.getId());
+                final String errorMessage = null;
+                Boolean transactionStatus = false;
+                if (loanTransaction.getId() != null) {
+                    transactionStatus = true;
+                }
+                CollectionSheetTransactionDetails singleCollectionSheetTransactionDetails = CollectionSheetTransactionDetails
+                        .formCollectionSheetTransactionDetails(loan.getId(), loanTransaction.getId(), transactionStatus, errorMessage,
+                                EntityType.LOAN.getValue());
+                collectionSheetTransactionDetails.add(singleCollectionSheetTransactionDetails);
             }
         }
         changes.put("loanTransactions", transactionIds);

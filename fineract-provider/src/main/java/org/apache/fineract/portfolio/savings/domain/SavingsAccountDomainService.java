@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.SavingsTransactionBooleanValues;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
@@ -43,7 +44,8 @@ public interface SavingsAccountDomainService {
 	List<Long> handleDepositAndwithdrawal(Long accountId, List<SavingsAccountTransactionDTO> savingstransactions,
 			SavingsTransactionBooleanValues transactionBooleanValues,
 			boolean isSavingsInterestPostingAtCurrentPeriodEnd, Integer financialYearBeginningMonth, 
-			final boolean isSavingAccountsInculdedInCollectionSheet, final boolean isWithDrawForSavingsIncludedInCollectionSheet);
+			final boolean isSavingAccountsInculdedInCollectionSheet, final boolean isWithDrawForSavingsIncludedInCollectionSheet,
+			final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetailsList);
 
     SavingsAccountTransaction handleDeposit(String savingsAccountNumber, LocalDate transactionDate, BigDecimal transactionAmount,
             String paymentTypeName, String paymentDetailAccountNumber, String paymentDetailChequeNumber, String routingCode,

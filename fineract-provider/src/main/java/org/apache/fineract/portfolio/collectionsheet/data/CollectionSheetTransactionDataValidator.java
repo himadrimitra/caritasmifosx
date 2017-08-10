@@ -48,7 +48,9 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants;
 import org.apache.fineract.portfolio.paymentdetail.PaymentDetailConstants;
+import org.apache.xmlbeans.impl.xb.xsdschema.Element;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -91,6 +93,13 @@ public class CollectionSheetTransactionDataValidator {
 
         final Long calendarId = this.fromApiJsonHelper.extractLongNamed(calendarIdParamName, element);
         baseDataValidator.reset().parameter(calendarIdParamName).value(calendarId).notNull();
+
+        if (element.getAsJsonObject().has(CollectionSheetConstants.searchParamsParamName)) {
+            JsonElement searchParmeterJson = element.getAsJsonObject().getAsJsonObject(CollectionSheetConstants.searchParamsParamName);
+            LocalDate meetingDate = this.fromApiJsonHelper.extractLocalDateNamed(transactionDateParamName, searchParmeterJson);
+            baseDataValidator.reset().parameter(transactionDateParamName).value(meetingDate).notNull();
+
+        }
 
         validateAttendanceDetails(element, baseDataValidator);
 

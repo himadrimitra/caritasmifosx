@@ -67,6 +67,8 @@ import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.client.exception.DuedateIsNotMeetingDateException;
 import org.apache.fineract.portfolio.client.exception.GroupAndClientChargeNotInSynWithMeeting;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetClientChargeRepaymentCommand;
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants;
 import org.apache.fineract.portfolio.collectionsheet.command.ClientChargeRepaymentCommand;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
@@ -548,11 +550,12 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
         throw new PlatformDataIntegrityException("error.msg.client.charges.unknown.data.integrity.issue",
                 "Unknown data integrity issue with resource.");
     }
-    
-	@Transactional
-	@Override
-	public Map<String, Object> payChargeFromCollectionsheet(CollectionSheetClientChargeRepaymentCommand chargeRepaymentCommand, PaymentDetail paymentDetail){
-		
+
+    @Transactional
+    @Override
+    public Map<String, Object> payChargeFromCollectionsheet(CollectionSheetClientChargeRepaymentCommand chargeRepaymentCommand,
+            PaymentDetail paymentDetail, final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetailsList) {
+
 		final ClientChargeRepaymentCommand[] payChargeCommand = chargeRepaymentCommand.getChargeTransactions();
 		final Locale locale=chargeRepaymentCommand.getLocale();
 		final LocalDate transactionDate = chargeRepaymentCommand.getTransactionDate();
@@ -590,6 +593,12 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 					clientCharge.getClient(), clientCharge.getClient().getOffice(), paymentDetail, transactionDate,
 					chargePaid, clientCharge.getCurrency().getCode());
 			this.clientTransactionRepository.save(clientTransaction);
+                final Boolean transactionStatus = true;
+                final String errorMessage = null;
+                CollectionSheetTransactionDetails collectionSheetTransactionDetails = CollectionSheetTransactionDetails
+                        .formCollectionSheetTransactionDetails(clientChargeId, clientTransaction.getId(), transactionStatus, errorMessage,
+                                EntityType.CLIENT.getValue());
+                collectionSheetTransactionDetailsList.add(collectionSheetTransactionDetails);
 
 			// update charge paid by associations
 			final ClientChargePaidBy chargePaidBy = ClientChargePaidBy

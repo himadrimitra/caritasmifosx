@@ -79,6 +79,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
@@ -1404,7 +1405,8 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
     }
 
     @Override
-    public List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions) {
+    public List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions,
+            final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetailsList) {
         List<Long> savingsTransactionIds = new ArrayList<>();
         boolean isRegularTransaction = false;
         boolean isAccountTransfer = false;
@@ -1423,10 +1425,10 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         Set<Long> savingsIds = savingstransactions.keySet();
         for (Long savingId : savingsIds) {
             try {
-                savingsTransactionIds
-                        .addAll(this.savingsAccountDomainService.handleDepositAndwithdrawal(savingId, savingstransactions.get(savingId),
-                                transactionBooleanValues, isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth,
-                                isSavingAccountsInculdedInCollectionSheet, isWithDrawForSavingsIncludedInCollectionSheet));
+                savingsTransactionIds.addAll(this.savingsAccountDomainService.handleDepositAndwithdrawal(savingId,
+                        savingstransactions.get(savingId), transactionBooleanValues, isSavingsInterestPostingAtCurrentPeriodEnd,
+                        financialYearBeginningMonth, isSavingAccountsInculdedInCollectionSheet,
+                        isWithDrawForSavingsIncludedInCollectionSheet, collectionSheetTransactionDetailsList));
             } catch (Exception e) {
                 throw e;
             }

@@ -44,6 +44,7 @@ public class CollectionSheetConstants {
 	public static final String forcedSubmitOfCollectionSheet = "forcedSubmitOfCollectionSheet";
 	public static final String withdrawAmountParamName = "withdrawAmount";
 	public static final String bulkSavingsDueTransactionsParamName = "bulkSavingsDueTransactions";
+	public static final String searchParamsParamName = "searchParams";
 
     // attendance parameters
     public static final String clientsAttendanceParamName = "clientsAttendance";
@@ -55,6 +56,10 @@ public class CollectionSheetConstants {
     public static final String transactionAmountParamName = "transactionAmount";
     public static final String clientChargeTransactionsParamName = "clientChargeTransactions";
     public static final String chargeIdParamName = "chargeId";
+    public static final String groupIdParamName = "groupId";
+    public static final String centerIdParamName = "centerId";
+    public static final String collectionSheetId = "collectionSheetId";
+   
 
     public static final Set<String> COLLECTIONSHEET_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, transactionDateParamName, actualDisbursementDateParamName, bulkRepaymentTransactionsParamName,
@@ -64,7 +69,7 @@ public class CollectionSheetConstants {
             PaymentDetailConstants.routingCodeParamName, PaymentDetailConstants.receiptNumberParamName,
 					PaymentDetailConstants.bankNumberParamName,
 					isTransactionDateOnNonMeetingDateParamName,
-					forcedSubmitOfCollectionSheet, clientChargeTransactionsParamName));
+					forcedSubmitOfCollectionSheet, clientChargeTransactionsParamName, searchParamsParamName, groupIdParamName, centerIdParamName));
 
     public static final Set<String> INDIVIDUAL_COLLECTIONSHEET_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, transactionDateParamName, actualDisbursementDateParamName, bulkRepaymentTransactionsParamName,

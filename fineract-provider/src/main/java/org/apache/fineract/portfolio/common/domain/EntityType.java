@@ -14,7 +14,8 @@ public enum EntityType {
     OFFICE(4, "entityType.office", "office"), //
     TASK(5, "entityType.tasks", "task"), //
     STAFF(6, "entityType.STAFF", "staff"), // ;
-    LOAN(7, "entityType.loan", "loan");
+    LOAN(7, "entityType.loan", "loan"), //
+    SAVINGS(8, "entityType.savings", "savings");
 
     private final Integer value;
     private final String code;
@@ -62,6 +63,9 @@ public enum EntityType {
             case STAFF:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Staff");
             break;
+            case SAVINGS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "savings");
+            break;
             default:
             break;
         }
@@ -93,6 +97,9 @@ public enum EntityType {
                 case 6:
                     entityType = EntityType.STAFF;
                 break;
+                case 8:
+                    entityType = EntityType.SAVINGS;
+                break;
 
             }
         }
@@ -121,6 +128,10 @@ public enum EntityType {
 
     public boolean isLoan() {
         return this.value.equals(EntityType.LOAN.getValue());
+    }
+    
+    public boolean isSavings() {
+        return this.value.equals(EntityType.SAVINGS.getValue());
     }
 
     private static final Map<String, EntityType> entityTypes = new HashMap<>();
