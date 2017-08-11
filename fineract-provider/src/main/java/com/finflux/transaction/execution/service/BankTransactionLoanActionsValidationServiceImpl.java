@@ -31,7 +31,7 @@ public class BankTransactionLoanActionsValidationServiceImpl implements BankTran
         Long activeTransactionCount = this.bankTransactionRepository.countByEntityTypeAndEntityIdAndStatusIsIn(entityType, loanId,
                 statusList);
         if (activeTransactionCount > 0) {
-            final String globalisationMessageCode = "all.transactions.are.not.in.reject.or.retried.or.closed.status";
+            final String globalisationMessageCode = "all.transactions.are.not.in.reject.or.closed.status";
             final String defaultUserMessage = "Can not undo disbursal of loan, as transactions are found not in reject, retried or closed status";
             throwGeneralPlatformDomainRuleException(globalisationMessageCode, defaultUserMessage, loanId);
 

@@ -99,6 +99,8 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
             bankTransaction.setStatus(TransactionStatus.REJECTED.getValue());
         } else if (TransactionStatus.SUBMITTED.equals(status)) {
             bankTransaction.setStatus(TransactionStatus.REJECTED.getValue());
+        }else if (TransactionStatus.FAILED.equals(status)) {
+            bankTransaction.setStatus(TransactionStatus.REJECTED.getValue());
         }
         this.repository.save(bankTransaction);
         return new CommandProcessingResultBuilder().withEntityId(transactionId).build();
@@ -109,9 +111,7 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
         this.context.authenticatedUser().validateHasPermissionTo(BankTransactionPermissionConstants.rejectPermissionParam);
         final BankAccountTransaction bankTransaction = this.repositoryWrapper.findOneWithNotFoundDetection(transactionId);
         TransactionStatus status = TransactionStatus.fromInt(bankTransaction.getStatus());
-        if (TransactionStatus.FAILED.equals(status)) {
-            bankTransaction.setStatus(TransactionStatus.CLOSED.getValue());
-        } else if (TransactionStatus.SUCCESS.equals(status)) {
+        if (TransactionStatus.SUCCESS.equals(status)) {
             bankTransaction.setStatus(TransactionStatus.CLOSED.getValue());
         }
         this.repository.save(bankTransaction);
