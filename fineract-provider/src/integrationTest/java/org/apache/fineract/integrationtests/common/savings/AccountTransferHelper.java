@@ -76,6 +76,12 @@ public class AccountTransferHelper {
 
     public Integer accountTransfer(final Integer fromClientId, final Integer fromAccountId, final Integer toClientId,
             final Integer toAccountId, final String fromAccountType, final String toAccountType, final String transferAmount) {
+     // to fix issue with rounding milliseconds   to second
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+
+        }
         System.out.println("--------------------------------ACCOUNT TRANSFER--------------------------------");
         final String accountTransferJSON = new AccountTransferHelper(this.requestSpec, this.responseSpec) //
                 .withTransferOnDate(ACCOUNT_TRANSFER_DATE) //
@@ -87,6 +93,12 @@ public class AccountTransferHelper {
     
     public Integer refundLoanByTransfer(final String date, final Integer fromClientId, final Integer fromAccountId, final Integer toClientId,
             final Integer toAccountId, final String fromAccountType, final String toAccountType, final String transferAmount) {
+     // to fix issue with rounding milliseconds   to second
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+
+        }
         System.out.println("--------------------------------ACCOUNT TRANSFER--------------------------------");
         final String accountTransferJSON = new AccountTransferHelper(this.requestSpec, this.responseSpec) //
                 .withTransferOnDate(date) //

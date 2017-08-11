@@ -46,5 +46,9 @@ public interface SchedulerJobRunnerReadService {
     public Map<String,String>  getJobParams(Long jobId);
     
     public Map<String,String>  getJobParams(String jobName);
+    
+    public Long findMaxVersionByJobKey(String jobKey);
+
+    Map<String, Object> getDependentJobStatusAndLastRunDate(String jobName);
 
 }
