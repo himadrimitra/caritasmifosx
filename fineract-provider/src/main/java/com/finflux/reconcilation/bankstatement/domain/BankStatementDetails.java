@@ -174,7 +174,7 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     
     public BankStatementDetails(final BankStatement bankStatement, final Date transactionDate,
             final BigDecimal amount, final String loanAccountNumber, final String receiptNumber,
-            final Integer bankStatementDetailType, Boolean isManualReconciled) {
+            final Integer bankStatementDetailType, Boolean isManualReconciled, final String paymentTypeName, boolean isError) {
         this.bankStatement = bankStatement;
         this.loanAccountNumber = loanAccountNumber;
         this.transactionDate = transactionDate;
@@ -194,14 +194,17 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
         this.transactionType = null;
         this.updatedDate = null;
         this.isManualReconciled = isManualReconciled;
+        this.isError = isError;
+        this.paymentTypeName = paymentTypeName;
     }
 
     public static BankStatementDetails simplifiedBankDetails(final BankStatement bankStatement, final Date transactionDate,
-            final BigDecimal amount, final String loanAccountNumber, final String receiptNumber,
-            final Integer bankStatementDetailType, Boolean isManualReconciled) {
+            final BigDecimal amount, final String loanAccountNumber, final String receiptNumber, final Integer bankStatementDetailType,
+            Boolean isManualReconciled, final String paymentTypeName, boolean isError) {
 
-        return new BankStatementDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber,  bankStatementDetailType, isManualReconciled);
-    } 
+        return new BankStatementDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber, bankStatementDetailType,
+                isManualReconciled, paymentTypeName, isError);
+    }
 
     public void setBankStatement(BankStatement bankStatement) {
         this.bankStatement = bankStatement;
