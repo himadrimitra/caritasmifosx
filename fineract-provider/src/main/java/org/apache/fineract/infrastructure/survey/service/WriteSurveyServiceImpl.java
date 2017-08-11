@@ -51,7 +51,8 @@ public class WriteSurveyServiceImpl implements WriteSurveyService {
 
     }
 
-    private String _getPermissionSql(final String dataTableName) {
+    private String _getPermissionSql(String dataTableName) {
+    	dataTableName=dataTableName.toLowerCase();
         final String createPermission = "'CREATE_" + dataTableName + "'";
         final String createPermissionChecker = "'CREATE_" + dataTableName + "_CHECKER'";
         final String readPermission = "'READ_" + dataTableName + "'";
