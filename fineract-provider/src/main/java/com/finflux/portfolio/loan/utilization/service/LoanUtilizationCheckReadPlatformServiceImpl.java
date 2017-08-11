@@ -52,9 +52,8 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
                 true);
         final LoanUtilizationCheckTemplateDataMapper utilizationChecksDataMapper = new LoanUtilizationCheckTemplateDataMapper(
                 loanPurposeDatas);
-        final String sql = "SELECT " + utilizationChecksDataMapper.schema() + " WHERE g.id = ? ";
+        final String sql = "SELECT " + utilizationChecksDataMapper.schema() + " WHERE g.id = ? GROUP BY l.id ";
         return this.jdbcTemplate.query(sql, utilizationChecksDataMapper, new Object[] { centerId });
-
     }
 
     @Override
@@ -63,9 +62,8 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
                 true);
         final LoanUtilizationCheckTemplateDataMapper utilizationChecksDataMapper = new LoanUtilizationCheckTemplateDataMapper(
                 loanPurposeDatas);
-        final String sql = "SELECT " + utilizationChecksDataMapper.schema() + " WHERE g.parent_id = ? ";
+        final String sql = "SELECT " + utilizationChecksDataMapper.schema() + " WHERE g.parent_id = ? GROUP BY l.id ";
         return this.jdbcTemplate.query(sql, utilizationChecksDataMapper, new Object[] { centerId });
-
     }
 
     private static final class LoanUtilizationCheckTemplateDataMapper implements RowMapper<LoanUtilizationCheckTemplateData> {
@@ -79,8 +77,11 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
             sql.append("g.id AS groupId,g.display_name AS groupName,c.id AS clientId, c.display_name AS clientName ");
             sql.append(",l.id AS loanId, l.loan_status_id AS loanStatusId, l.loan_type_enum AS loanTypeId ");
             sql.append(",lp.id AS loanPurposeId, lp.name AS loanPurposeName, l.principal_amount AS principalAmount ");
+            sql.append(",IFNULL(SUM(IFNULL(lucd.amount,0)),0) AS totalUtilizedAmount ");
             sql.append("FROM m_group g ");
             sql.append("JOIN m_loan l ON l.group_id = g.id ");
+            sql.append("LEFT JOIN f_loan_utilization_check luc ON luc.loan_id = l.id ");
+            sql.append("LEFT JOIN f_loan_utilization_check_detail lucd ON lucd.loan_utilization_check_id = luc.id ");
             sql.append("JOIN m_client c ON c.id = l.client_id ");
             sql.append("JOIN f_loan_purpose lp ON lp.id = l.loan_purpose_id ");
             this.schema = sql.toString();
@@ -108,8 +109,9 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
             final Long loanPurposeId = rs.getLong("loanPurposeId");
             final String loanPurposeName = rs.getString("loanPurposeName");
             final BigDecimal principalAmount = rs.getBigDecimal("principalAmount");
+            final BigDecimal totalUtilizedAmount = rs.getBigDecimal("totalUtilizedAmount");
             return LoanUtilizationCheckTemplateData.template(groupId, groupName, clientId, clientName, loanId, loanStatus, loanType,
-                    loanPurposeId, loanPurposeName, principalAmount, this.loanPurposeDatas);
+                    loanPurposeId, loanPurposeName, principalAmount, this.loanPurposeDatas, totalUtilizedAmount);
         }
     }
 

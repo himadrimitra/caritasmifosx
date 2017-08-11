@@ -21,10 +21,12 @@ public class LoanUtilizationCheckTemplateData {
     private final String loanPurposeName;
     private final BigDecimal principalAmount;
     private final Collection<LoanPurposeData> loanPurposeDatas;
+    private final BigDecimal totalUtilizedAmount;
 
     private LoanUtilizationCheckTemplateData(final Long groupId, final String groupName, final Long clientId, final String clientName,
             final Long loanId, final LoanStatusEnumData loanStatus, final EnumOptionData loanType, final Long loanPurposeId,
-            final String loanPurposeName, final BigDecimal principalAmount, final Collection<LoanPurposeData> loanPurposeDatas) {
+            final String loanPurposeName, final BigDecimal principalAmount, final Collection<LoanPurposeData> loanPurposeDatas,
+            final BigDecimal totalUtilizedAmount) {
         this.groupId = groupId;
         this.groupName = groupName;
         this.clientId = clientId;
@@ -36,13 +38,14 @@ public class LoanUtilizationCheckTemplateData {
         this.loanPurposeName = loanPurposeName;
         this.principalAmount = principalAmount;
         this.loanPurposeDatas = loanPurposeDatas;
+        this.totalUtilizedAmount = totalUtilizedAmount;
     }
 
     public static LoanUtilizationCheckTemplateData template(final Long groupId, final String groupName, final Long clientId,
             final String clientName, final Long loanId, final LoanStatusEnumData loanStatus, final EnumOptionData loanType,
             final Long loanPurposeId, final String loanPurposeName, final BigDecimal principalAmount,
-            final Collection<LoanPurposeData> loanPurposeDatas) {
+            final Collection<LoanPurposeData> loanPurposeDatas, final BigDecimal totalUtilizedAmount) {
         return new LoanUtilizationCheckTemplateData(groupId, groupName, clientId, clientName, loanId, loanStatus, loanType, loanPurposeId,
-                loanPurposeName, principalAmount, loanPurposeDatas);
+                loanPurposeName, principalAmount, loanPurposeDatas, totalUtilizedAmount);
     }
 }
