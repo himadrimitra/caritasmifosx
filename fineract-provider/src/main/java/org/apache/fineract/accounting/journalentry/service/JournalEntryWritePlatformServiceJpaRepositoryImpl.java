@@ -53,6 +53,7 @@ import org.apache.fineract.accounting.journalentry.domain.JournalEntryRepository
 import org.apache.fineract.accounting.journalentry.domain.JournalEntryRepositoryWrapper;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntryType;
 import org.apache.fineract.accounting.journalentry.exception.JournalEntriesNotFoundException;
+import org.apache.fineract.accounting.journalentry.exception.JournalEntryCnnotReverseException;
 import org.apache.fineract.accounting.journalentry.exception.JournalEntryInvalidException;
 import org.apache.fineract.accounting.journalentry.exception.JournalEntryInvalidException.GL_JOURNAL_ENTRY_INVALID_REASON;
 import org.apache.fineract.accounting.journalentry.serialization.JournalEntryCommandFromApiJsonDeserializer;
@@ -346,6 +347,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
         String reversalTransactionId = null;
         JournalEntry reversalJournalEntryDetail = null;
         for (JournalEntry journalEntry : journalEntries) {
+            if (journalEntry.isReversalEntry()) { throw new JournalEntryCnnotReverseException(journalEntry.getId()); }
             final Long officeId = journalEntry.getOfficeId();
             reversalTransactionId = generateTransactionId(officeId);
             final boolean manualEntry = true;
@@ -376,6 +378,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
                 JournalEntryDetail reversalJournalEntry = journalEntryDetail.reversalJournalEntry();
                 reversalJournalEntryDetail.addJournalEntryDetail(reversalJournalEntry);
             }
+            reversalJournalEntryDetail.setIsReversalEntry(true);
             this.journalEntryRepositoryWrapper.save(reversalJournalEntryDetail);
             journalEntry.setReversed(true);
             journalEntry.setReversalJournalEntry(reversalJournalEntryDetail);
