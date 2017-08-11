@@ -63,16 +63,21 @@ public class FlatInterestLoanScheduleGenerator extends AbstractLoanScheduleGener
         if (!loanApplicationTerms.getLoanTermVariations().hasVariations(variations)) {
             Money emiAmount = principalForThisInstallment.plus(interestForThisInstallment);
             double roundedEmiAmount = loanApplicationTerms.roundInstallmentInMultiplesOf(emiAmount.getAmount().doubleValue());
-            if (!loanApplicationTerms.isPrincipalGraceApplicableForThisPeriod(periodNumber)
-                    && !loanApplicationTerms.isInterestPaymentGraceApplicableForThisPeriod(periodNumber)
-                    && !(periodNumber == 1 && loanApplicationTerms.getBrokenPeriodMethod().isAdjustmentInFirstEMI())) {
-                loanApplicationTerms.setFixedEmiAmount(BigDecimal.valueOf(roundedEmiAmount));
+            if(loanApplicationTerms.isGlim()){
+                principalForThisInstallment = Money.of(loanApplicationTerms.getCurrency(), loanApplicationTerms.getFixedEmiAmount().subtract(interestForThisInstallment.getAmount())); 
+            }else{
+                if (!loanApplicationTerms.isPrincipalGraceApplicableForThisPeriod(periodNumber)
+                        && !loanApplicationTerms.isInterestPaymentGraceApplicableForThisPeriod(periodNumber)
+                        && !(periodNumber == 1 && loanApplicationTerms.getBrokenPeriodMethod().isAdjustmentInFirstEMI())) {
+                    loanApplicationTerms.setFixedEmiAmount(BigDecimal.valueOf(roundedEmiAmount));
+                }
+                if (loanApplicationTerms.isPrincipalGraceApplicableForThisPeriod(periodNumber)) {
+                    interestForThisInstallment = interestForThisInstallment.minus(emiAmount.minus(BigDecimal.valueOf(roundedEmiAmount)));
+                } else {
+                    principalForThisInstallment = principalForThisInstallment.minus(emiAmount.minus(BigDecimal.valueOf(roundedEmiAmount)));
+                }
             }
-            if (loanApplicationTerms.isPrincipalGraceApplicableForThisPeriod(periodNumber)) {
-                interestForThisInstallment = interestForThisInstallment.minus(emiAmount.minus(BigDecimal.valueOf(roundedEmiAmount)));
-            } else {
-                principalForThisInstallment = principalForThisInstallment.minus(emiAmount.minus(BigDecimal.valueOf(roundedEmiAmount)));
-            }
+            
 
             // First EMI Rounding logic
             if (loanApplicationTerms.isAdjustFirstEMIAmount() && periodNumber == 1) {
