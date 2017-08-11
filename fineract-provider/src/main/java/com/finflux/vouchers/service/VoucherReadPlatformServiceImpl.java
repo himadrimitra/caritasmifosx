@@ -142,7 +142,7 @@ public class VoucherReadPlatformServiceImpl implements VoucherReadPlatformServic
             this.buff
                     .append("voucher.id as voucherId, voucher.voucher_number as voucherNumber, voucher.voucher_type as voucherType, voucher.jentry_id as journalEntryId,")
                     .append("journalEntry.office_id as officeId, office.name as officeName, journalEntry.entry_date as entryDate, journalEntry.value_date as valueDate, ")
-                    .append(" journalEntry.effective_date as effectiveDate, journalEntry.reversal_id as reversalId, journalEntry.reversed as isReversed,")
+                    .append(" journalEntry.effective_date as effectiveDate, journalEntry.reversal_id as reversalId, journalEntry.reversed as isReversed, journalEntry.is_reversal_entry as isReversalEntry ")
                     .append("journalEntry.manual_entry as isManualEntry, journalEntry.transaction_identifier as transactionIdentifier, journalEntry.payment_details_id as paymentDetailsId, ")
                     .append("journalEntry.description as narration, paymentDetails.payment_type_id as paymentTypeId, paymentDetails.check_number as instrumentationNo, paymentDetails.payment_date as paymentDate, ")
                     .append("paymentDetails.bank_number as bankNo, paymentDetails.branch_name as branchName, paymentType.value as paymentType, currency.code as currencyCode, ")
@@ -215,10 +215,13 @@ public class VoucherReadPlatformServiceImpl implements VoucherReadPlatformServic
             final String referenceNumber = null;
             Collection<JournalEntryDetailData> journalEntryDetails = new ArrayList<>();
             TransactionDetailData transactionDetailData = new TransactionDetailData(null, paymentDetailData, null, null);
+            
+            final Boolean isReversalEntry = rs.getBoolean("isReversalEntry");
+            
             JournalEntryData journalEntryData = new JournalEntryData(journalEntryId, officeId, officeName, journalEntryDate,
                     journalValueDate, journalEffectiveDate, transactionIdentifier, isManualEntry, entityType, entityId,
                     entityTransactionId, createdByUserId, createdDate, createdByUserName, narration, isReversed, referenceNumber,
-                    transactionDetailData, currency, journalEntryDetails, reversalId);
+                    transactionDetailData, currency, journalEntryDetails, reversalId, isReversalEntry);
             return VoucherData.instance(voucherId, voucherNumber, VoucherType.voucherType(voucherType), journalEntryData, voucherAmount);
         }
 

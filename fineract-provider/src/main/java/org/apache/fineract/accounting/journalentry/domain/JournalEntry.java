@@ -62,6 +62,9 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "reversed", nullable = false)
     private boolean reversed = false;
     
+    @Column(name = "is_reversal_entry", nullable = false)
+    private boolean isReversalEntry = false;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reversal_id")
     private JournalEntry reversalJournalEntry;
@@ -106,6 +109,7 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
         return new JournalEntry(officeId, paymentDetailId, currencyCode, transactionIdentifier, manualEntry, transactionDate,
                 valueDate, effectiveDate, description, entityType, entityId, referenceNumber, entityTransactionId);
     }
+    
 
     public static JournalEntry createNewForSystemEntries(final Long officeId, final String currencyCode,
             final String transactionIdentifier, final Date transactionDate, final Date valueDate, final Date effectiveDate,
@@ -141,6 +145,7 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
         this.referenceNumber = referenceNumber;
         this.currencyCode = currencyCode;
         this.entityTransactionId = entityTransactionId;
+        this.isReversalEntry = false;
     }
 
     public void setReversalJournalEntry(final JournalEntry reversalJournalEntry) {
@@ -149,6 +154,10 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
 
     public void setReversed(final boolean reversed) {
         this.reversed = reversed;
+    }
+    
+    public void setIsReversalEntry(final boolean isReversalEntry){
+        this.isReversalEntry = isReversalEntry;
     }
 
     public void addJournalEntryDetail(final JournalEntryDetail journalEntryDetail) {
@@ -201,6 +210,10 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
     
     public boolean isReversed() {
         return this.reversed;
+    }
+    
+    public boolean isReversalEntry() {
+        return this.isReversalEntry;
     }
 
     

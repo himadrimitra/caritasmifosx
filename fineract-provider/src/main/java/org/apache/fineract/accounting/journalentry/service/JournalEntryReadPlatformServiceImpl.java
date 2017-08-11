@@ -116,7 +116,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                     .append(" journalEntry.entity_transaction_id as entityTransactionId,")
                      .append("creatingUser.id as createdByUserId, ")
                     .append(" creatingUser.username as createdByUserName, journalEntry.description as comments, ")
-                    .append(" journalEntry.created_date as createdDate, journalEntry.reversed as reversed, ")
+                    .append(" journalEntry.created_date as createdDate,journalEntry.is_reversal_entry as isReversalEntry, journalEntry.reversed as reversed, ")
                     .append(" journalEntry.currency_code as currencyCode, curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ")
                     .append(" curr.display_symbol as currencyDisplaySymbol, curr.decimal_places as currencyDigits, curr.currency_multiplesof as inMultiplesOf ");
             if (associationParametersData.isTransactionDetailsRequired()) {
@@ -172,6 +172,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
             final String createdByUserName = rs.getString("createdByUserName");
             final String comments = rs.getString("comments");
             final Boolean reversed = rs.getBoolean("reversed");
+            final Boolean isReversalEntry = rs.getBoolean("isReversalEntry");
             final String referenceNumber = rs.getString("referenceNumber");
 
             final String currencyCode = rs.getString("currencyCode");
@@ -243,7 +244,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
             final Long reversalId = null ;
             return new JournalEntryData(id, officeId, officeName, transactionDate, valueDate, effectiveDate, transactionId, manualEntry,
                     entityType, entityId, entityTransactionId, createdByUserId, createdDate, createdByUserName, comments, reversed,
-                    referenceNumber, transactionDetailData, currency, journalEntryDetails, reversalId);
+                    referenceNumber, transactionDetailData, currency, journalEntryDetails, reversalId, isReversalEntry);
         }
     }
     
@@ -327,7 +328,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                 .append(" journalEntry.entity_transaction_id as entityTransactionId,")
                 .append("creatingUser.id as createdByUserId, ")
                 .append(" creatingUser.username as createdByUserName, journalEntry.description as comments, ")
-                .append(" journalEntry.created_date as createdDate, journalEntry.reversed as reversed, ")
+                .append(" journalEntry.created_date as createdDate, journalEntry.reversed as reversed, journalEntry.is_reversal_entry as isReversalEntry, ")
                 .append(" journalEntry.currency_code as currencyCode, curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ")
                 .append(" curr.display_symbol as currencyDisplaySymbol, curr.decimal_places as currencyDigits, curr.currency_multiplesof as inMultiplesOf ");
         if (associationParametersData != null && associationParametersData.isTransactionDetailsRequired()) {
