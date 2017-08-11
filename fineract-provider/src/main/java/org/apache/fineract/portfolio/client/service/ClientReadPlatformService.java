@@ -55,4 +55,6 @@ public interface ClientReadPlatformService {
 	Long retrieveSavingsAccountIdByMobileNo(String mobileno);
 
     ClientData retrieveHierarchyLookupForClient(ClientData clientData);
+    
+    Long retrieveOfficeId(Long clientId);
 }

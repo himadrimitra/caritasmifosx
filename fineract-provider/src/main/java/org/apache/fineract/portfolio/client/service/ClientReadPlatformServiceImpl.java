@@ -978,6 +978,9 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         }
     }
 
-
-
+    @Override
+    public Long retrieveOfficeId(Long clientId) {
+       String sql = "select office_id as officeId from m_client where id = ?";
+       return this.jdbcTemplate.queryForObject(sql, Long.class, clientId);
+    }
 }
