@@ -33,6 +33,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessReadService;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepository;
 import org.apache.fineract.organisation.holiday.domain.HolidayStatusType;
@@ -41,6 +43,7 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepos
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
+import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
@@ -79,6 +82,7 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.finflux.common.exception.OfficeToEnityAccessException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -95,8 +99,7 @@ public class LoanUtilService {
     private final FromJsonHelper fromApiJsonHelper;
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
-    
-    
+    private final FineractEntityAccessReadService fineractEntityAccessReadService;
 
     @Autowired
     public LoanUtilService(final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
@@ -104,7 +107,8 @@ public class LoanUtilService {
             final HolidayRepository holidayRepository, final WorkingDaysRepositoryWrapper workingDaysRepository,
             final LoanScheduleGeneratorFactory loanScheduleFactory, final FloatingRatesReadPlatformService floatingRatesReadPlatformService,
             final FromJsonHelper fromApiJsonHelper, final CalendarReadPlatformService calendarReadPlatformService,
-            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService) {
+            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
+            final FineractEntityAccessReadService fineractEntityAccessReadService) {
         this.applicationCurrencyRepository = applicationCurrencyRepository;
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.configurationDomainService = configurationDomainService;
@@ -115,6 +119,7 @@ public class LoanUtilService {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
+        this.fineractEntityAccessReadService = fineractEntityAccessReadService;
     }
 
     public ScheduleGeneratorDTO buildScheduleGeneratorDTO(final Loan loan, final LocalDate recalculateFrom) {
@@ -620,5 +625,40 @@ public class LoanUtilService {
     		
     	}
     	return false;
+    }
+    
+    public void validateOfficetoProductAccess(final Loan loan) {
+        final Long productId = loan.productId();
+        final Office office = loan.getOffice();
+        Boolean isOfficeProductMapped = this.fineractEntityAccessReadService.hasUserOfficeToEnityAccess(office.getId(), productId,
+                FineractEntityAccessType.OFFICE_ACCESS_TO_LOAN_PRODUCTS);
+        if (!isOfficeProductMapped) {
+            isOfficeProductMapped = this.fineractEntityAccessReadService.hasClientOfficeToEnityAccess(office, productId,
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_LOAN_PRODUCTS);
+        }
+        if (!isOfficeProductMapped) {
+            final String globalisationMessageCode = "error.msg.loan.cannot.be.submit.as.loan.product.is.not.mapped.to.this.office";
+            final String defaultUserMessage = "Loan can't be submited as " + productId + " is not mapped to this office";
+            throw new OfficeToEnityAccessException(globalisationMessageCode, defaultUserMessage, productId);
+        }
+    }
+
+    public void validateOfficetoChargeAccess(final Loan loan) {
+        final Office office = loan.getOffice();
+        for (final LoanCharge loanCharge : loan.charges()) {
+            final Long chargeId = loanCharge.getCharge().getId();
+            Boolean isOfficeProductMapped = this.fineractEntityAccessReadService.hasUserOfficeToEnityAccess(office.getId(), chargeId,
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES);
+            if (!isOfficeProductMapped) {
+                isOfficeProductMapped = this.fineractEntityAccessReadService.hasClientOfficeToEnityAccess(office, chargeId,
+                        FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES);
+            }
+            if (!isOfficeProductMapped) {
+                final String globalisationMessageCode = "error.msg.loan.cannot.be.submit.as.loan.charge.is.not.mapped.to.this.office";
+                final String defaultUserMessage = "Loan can't be submited as " + chargeId + " is not mapped to this office";
+                throw new OfficeToEnityAccessException(globalisationMessageCode, defaultUserMessage, chargeId, loanCharge.getCharge()
+                        .getName());
+            }
+        }
     }
 }

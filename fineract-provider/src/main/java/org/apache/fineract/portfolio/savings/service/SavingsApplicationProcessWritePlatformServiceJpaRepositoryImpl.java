@@ -21,16 +21,17 @@ package org.apache.fineract.portfolio.savings.service;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.productIdParamName;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
-import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
-import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandProcessingService;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -46,8 +47,12 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessReadService;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepository;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
@@ -77,12 +82,19 @@ import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
 import org.apache.fineract.portfolio.savings.domain.SavingsProductRepository;
 import org.apache.fineract.portfolio.savings.exception.SavingsProductNotFoundException;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.finflux.common.exception.OfficeToEnityAccessException;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 
 @Service
 public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl implements SavingsApplicationProcessWritePlatformService {
@@ -109,6 +121,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final ConfigurationDomainService configurationDomainService;
+    private final FineractEntityAccessReadService fineractEntityAccessReadService;
 
     @Autowired
     public SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -123,7 +136,8 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final ClientRepository clientrepo,
             final StaffRepository staffRepo,
-            final FineractEntityAccessUtil fineractEntityAccessUtil, final ConfigurationDomainService configurationDomainService) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil, final ConfigurationDomainService configurationDomainService,
+            final FineractEntityAccessReadService fineractEntityAccessReadService) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingAccountAssembler = savingAccountAssembler;
@@ -144,6 +158,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         this.staffRepo = staffRepo;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.configurationDomainService = configurationDomainService;
+        this.fineractEntityAccessReadService = fineractEntityAccessReadService;
     }
 
     /*
@@ -174,7 +189,6 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         throw new PlatformDataIntegrityException(errorCodeBuilder.toString(), "Unknown data integrity issue with savings account.");
     }
 
-    @Transactional
     @Override
     public CommandProcessingResult submitApplication(final JsonCommand command) {
         try {
@@ -190,6 +204,10 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                             FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
 
             final SavingsAccount account = this.savingAccountAssembler.submitApplicationAssembleFrom(command, submittedBy);
+            
+            validateOfficeToProductAccess(account);
+            validateOfficetoChargeAccess(account);
+            
             this.savingAccountRepository.save(account);
 
             generateAccountNumber(account);
@@ -209,6 +227,41 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         }
     }
 
+    private void validateOfficeToProductAccess(final SavingsAccount account) {
+        final Long productId = account.productId();
+        final Office office = account.office();
+        Boolean isOfficeProductMapped = this.fineractEntityAccessReadService.hasUserOfficeToEnityAccess(office.getId(), productId,
+                FineractEntityAccessType.OFFICE_ACCESS_TO_SAVINGS_PRODUCTS);
+        if (!isOfficeProductMapped) {
+            isOfficeProductMapped = this.fineractEntityAccessReadService.hasClientOfficeToEnityAccess(office, productId,
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_SAVINGS_PRODUCTS);
+        }
+        if (!isOfficeProductMapped) {
+            final String globalisationMessageCode = "error.msg.savings.account.cannot.be.submit.as.savings.product.is.not.mapped.to.this.office";
+            final String defaultUserMessage = "Savings account can't be submited as " + productId + " is not mapped to this office";
+            throw new OfficeToEnityAccessException(globalisationMessageCode, defaultUserMessage, productId);
+        }
+    }
+    
+    private void validateOfficetoChargeAccess(final SavingsAccount account) {
+        final Office office = account.office();
+        for (final SavingsAccountCharge savingsAccountCharge : account.charges()) {
+            final Long chargeId = savingsAccountCharge.getCharge().getId();
+            Boolean isOfficeProductMapped = this.fineractEntityAccessReadService.hasUserOfficeToEnityAccess(office.getId(), chargeId,
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES);
+            if (!isOfficeProductMapped) {
+                isOfficeProductMapped = this.fineractEntityAccessReadService.hasClientOfficeToEnityAccess(office, chargeId,
+                        FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES);
+            }
+            if (!isOfficeProductMapped) {
+                final String globalisationMessageCode = "error.msg.savings.account.cannot.be.submit.as.savings.charge.is.not.mapped.to.this.office";
+                final String defaultUserMessage = "Savings account can't be submited as " + chargeId + " is not mapped to this office";
+                throw new OfficeToEnityAccessException(globalisationMessageCode, defaultUserMessage, chargeId, savingsAccountCharge
+                        .getCharge().getName());
+            }
+        }
+    }
+    
     private void generateAccountNumber(final SavingsAccount account) {
         if (account.isAccountNumberRequiresAutoGeneration()) {
             final AccountNumberFormat accountNumberFormat = this.accountNumberFormatRepository.findByAccountType(EntityAccountType.SAVINGS);
@@ -218,7 +271,6 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         }
     }
 
-    @Transactional
     @Override
     public CommandProcessingResult modifyApplication(final Long savingsId, final JsonCommand command) {
         try {
@@ -305,7 +357,10 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                     }
                 }
 
-                this.savingAccountRepository.saveAndFlush(account);
+                validateOfficeToProductAccess(account);
+                validateOfficetoChargeAccess(account);
+                
+                this.savingAccountRepository.save(account);
             }
 
             return new CommandProcessingResultBuilder() //
@@ -559,7 +614,6 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
 
     @Override
     public CommandProcessingResult createOrActivateSavingsApplication(JsonCommand command) {
-        // TODO Auto-generated method stub
         try {
 
             final AppUser submittedBy = this.context.authenticatedUser();

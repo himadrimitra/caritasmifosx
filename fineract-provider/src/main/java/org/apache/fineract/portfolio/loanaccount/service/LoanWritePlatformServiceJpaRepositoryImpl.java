@@ -569,6 +569,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             map.put(BUSINESS_ENTITY.LOAN_TRANSACTION, disbursementTransaction);
         }
         map.putAll(notifyParamMap);
+        
+        this.loanUtilService.validateOfficetoProductAccess(loan);
+        
+        this.loanUtilService.validateOfficetoChargeAccess(loan);
+        
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, map);
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
