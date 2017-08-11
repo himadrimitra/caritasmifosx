@@ -12,7 +12,6 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,7 +59,6 @@ import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.B
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
-import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
@@ -385,7 +383,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         return fileDataMap;
     }
     
-    public static Map<String, Object> createMapOfSimplifiedFileData(File file) {
+    public static Map<String, Object> createMapOfSimplifiedFileData(File file, String paymentTypeName) {
         Map<String, Object> fileDataMap = new HashMap<>();
         Set<Integer> errorRows = new TreeSet<>();
         Map<Integer, List<String>> errorRowMap = new LinkedHashMap<>();
@@ -453,8 +451,10 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                     	Integer bankStatementDetailType = BankStatementDetailType.SIMPLIFIED_PORTFOLIO.getValue();                	
                     	BankStatement bankStatement = null;
                     	boolean isManualReconciled = false;
-                        BankStatementDetails bankStatementDetails = BankStatementDetails.simplifiedBankDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber, bankStatementDetailType, isManualReconciled);
-                        bankStatementDetails.setIsError(false);
+                    	boolean isError = false;
+                        BankStatementDetails bankStatementDetails = BankStatementDetails.simplifiedBankDetails(bankStatement,
+                                transactionDate, amount, loanAccountNumber, receiptNumber, bankStatementDetailType, isManualReconciled,
+                                paymentTypeName, isError);
                         bankStatementDetailsList.add(bankStatementDetails);
                 		
                 	}else if(rowError.size() > 0){
@@ -670,12 +670,12 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     @SuppressWarnings("unchecked")
     public BankStatement saveBankStatementDetails(final Long cpifDocumentId, final BankStatement bankStatement, Boolean isSimplifiedExcel) {
     	File file = this.bankStatementReadPlatformService.retrieveFile(cpifDocumentId);
-    	Map<String, Object> fileContent = isSimplifiedExcel?createMapOfSimplifiedFileData(file):createMapOfFileData(file);
+    	String paymentTypeName = ExcelUtility.getPaymentType(file);
+    	Map<String, Object> fileContent = isSimplifiedExcel?createMapOfSimplifiedFileData(file, paymentTypeName):createMapOfFileData(file);
         List<BankStatementDetails> bankStatementDetailsList = (List<BankStatementDetails>) fileContent.get(ReconciliationApiConstants.BANK_STATEMENT_DETAIL_LIST);
         Map<Integer, List<String>> errorRows = (Map<Integer, List<String>>) fileContent.get(ReconciliationApiConstants.ERROR_ROWS);
         if (errorRows.size() == 0) {
-            if (isSimplifiedExcel) {
-                String paymentTypeName = ExcelUtility.getPaymentType(file);
+            if (isSimplifiedExcel) {                
                 if (paymentTypeName != null && StringUtils.isNotEmpty(paymentTypeName)) {
                     bankStatement.setPaymentType(paymentTypeName);
                     savePaymentType(paymentTypeName);

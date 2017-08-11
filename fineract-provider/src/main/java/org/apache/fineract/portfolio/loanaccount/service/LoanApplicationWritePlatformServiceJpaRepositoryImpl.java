@@ -43,7 +43,6 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
-import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessReadService;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.staff.domain.Staff;
@@ -203,7 +202,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
     private final LoanScheduleValidator loanScheduleValidator;
-    private final FineractEntityAccessReadService fineractEntityAccessReadService;
 
     @Autowired
     public LoanApplicationWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final FromJsonHelper fromJsonHelper,
@@ -227,13 +225,14 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final CalendarReadPlatformService calendarReadPlatformService,
             final LoanProductReadPlatformService loanProductReadPlatformService,
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
-            final FineractEntityAccessUtil fineractEntityAccessUtil,
-            final LoanRepositoryWrapper  loanRepositoryWrapper,final GroupLoanIndividualMonitoringRepository groupLoanIndividualMonitoringRepository,  
-            final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler, final ChargeRepositoryWrapper chargeRepositoryWrapper,
+            final FineractEntityAccessUtil fineractEntityAccessUtil, final LoanRepositoryWrapper loanRepositoryWrapper,
+            final GroupLoanIndividualMonitoringRepository groupLoanIndividualMonitoringRepository,
+            final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler,
+            final ChargeRepositoryWrapper chargeRepositoryWrapper,
             final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository,
             final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl, final PaymentTypeRepositoryWrapper paymentTypeRepository,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
-            final LoanScheduleValidator loanScheduleValidator, final FineractEntityAccessReadService fineractEntityAccessReadService) {
+            final LoanScheduleValidator loanScheduleValidator) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -278,7 +277,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.paymentTypeRepository = paymentTypeRepository;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
         this.loanScheduleValidator = loanScheduleValidator;
-        this.fineractEntityAccessReadService = fineractEntityAccessReadService;        
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -300,23 +298,16 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, command.parsedJson());
             
             final Loan newLoanApplication = validateAndAssembleSubmitLoanApplication(loanProduct, command);
-            Long officeId = null;
-            final Long clientId = this.fromJsonHelper.extractLongNamed("clientId", command.parsedJson());
-            if (clientId != null) {
-                Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
-                officeId = client.officeId();
-            }
-            final Long groupId = this.fromJsonHelper.extractLongNamed("groupId", command.parsedJson());
-            if (groupId != null) {
-                Group group = this.groupRepository.findOneWithNotFoundDetection(groupId);
-                officeId = group.officeId();
-            }
             
-            validateOfficetoProductAcess(productId, officeId);
+            this.loanUtilService.validateOfficetoProductAccess(newLoanApplication);
+            
+            this.loanUtilService.validateOfficetoChargeAccess(newLoanApplication);
+            
             if (!command.parameterExists("isonlyloanappcreate")) {
                 this.loanRepository.save(newLoanApplication);
             }
-
+            
+            final Long clientId = this.fromJsonHelper.extractLongNamed("clientId", command.parsedJson());
             if(loanProduct.canUseForTopup() && clientId != null){
                 final Boolean isTopup = command.booleanObjectValueOfParameterNamed(LoanApiConstants.isTopup);
                 if(null == isTopup){
@@ -493,17 +484,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         } catch (final DataIntegrityViolationException dve) {
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
-        }
-    }
-    
-    private void validateForCapitalizedCharge(final Loan loan){
-        boolean isCapitalChargePresent = false;
-        for(LoanCharge charge : loan.charges()){
-            if(charge.isCapitalized()){
-                if(isCapitalChargePresent){
-                    
-                }isCapitalChargePresent = true;
-            }
         }
     }
 
@@ -788,11 +768,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             LoanProduct newLoanProduct = null;
             if (command.isChangeInLongParameterNamed(productIdParamName, existingLoanApplication.loanProduct().getId())) {
                 final Long productId = command.longValueOfParameterNamed(productIdParamName);
-                Long officeId = existingLoanApplication.getOfficeId();
-                validateOfficetoProductAcess(productId, officeId);
                 newLoanProduct = this.loanProductRepository.findOne(productId);
                 if (newLoanProduct == null) { throw new LoanProductNotFoundException(productId); }
                 existingLoanApplication.updateLoanProduct(newLoanProduct);
+                this.loanUtilService.validateOfficetoProductAccess(existingLoanApplication);
             }
 
             LoanProduct loanProductForValidations = newLoanProduct == null ? existingLoanApplication.loanProduct() : newLoanProduct;
@@ -1293,7 +1272,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     }
                 }
             }
-
+            this.loanUtilService.validateOfficetoChargeAccess(existingLoanApplication);
             // updating loan interest recalculation details throwing null
             // pointer exception after saveAndFlush
             // http://stackoverflow.com/questions/17151757/hibernate-cascade-update-gives-null-pointer/17334374#17334374
@@ -1378,11 +1357,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     glimList);
             this.groupLoanIndividualMonitoringRepository.save(glimList);
         }
-    }
-
-    private void validateOfficetoProductAcess(final Long productId, Long officeId) {
-        Boolean isOfficeProductMapped = fineractEntityAccessReadService.hasAcsessToLoanProduct(officeId, productId);
-        if (!isOfficeProductMapped) { throw new LoanApplicationCannotbeSubmittedException(productId); }
     }
 
     /*
