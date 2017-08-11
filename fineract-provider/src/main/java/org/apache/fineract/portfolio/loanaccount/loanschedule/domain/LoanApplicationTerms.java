@@ -846,9 +846,14 @@ public final class LoanApplicationTerms {
 
         switch (this.interestMethod) {
             case FLAT:
-                final BigDecimal interestRateForLoanTerm = calculateFlatInterestRateForLoanTerm(calculator, mc);
-                totalInterestDue = this.principal.minus(totalPrincipalAccountedForInterestCalcualtion).multiplyRetainScale(interestRateForLoanTerm,
-                        mc.getRoundingMode());
+                final BigDecimal interestRateForLoanTerm = calculateFlatInterestRateForLoanTerm(calculator, mc);                
+                if(this.isGlim()){
+                    updateTotalGlimInterest();
+                }else{
+                    totalInterestDue = this.principal.minus(totalPrincipalAccountedForInterestCalcualtion).multiplyRetainScale(interestRateForLoanTerm,
+                            mc.getRoundingMode());
+                }
+                
 
             break;
             case DECLINING_BALANCE:
@@ -1992,7 +1997,6 @@ public final class LoanApplicationTerms {
         return this.adjustFirstEMIAmount && !isPrincipalGraceApplicableForThisPeriod(1)
                 && !isInterestPaymentGraceApplicableForThisPeriod(1);
     }
-
     
     public void setActualFixedEmiAmount(final BigDecimal actualFixedEmiAmount) {
         this.actualFixedEmiAmount = actualFixedEmiAmount;
@@ -2006,6 +2010,7 @@ public final class LoanApplicationTerms {
                 totalInterestDueForGlim = totalInterestDueForGlim.plus(glim.getInterestAmount());
             }
         }
+        this.totalInterestDue = totalInterestDueForGlim;
         this.totalInterestForGlim = totalInterestDueForGlim;
     }
     
@@ -2394,6 +2399,28 @@ public final class LoanApplicationTerms {
     
     public BigDecimal getAmountForUpfrontCollection() {
         return this.amountForUpfrontCollection;
+    }
+    
+    public boolean isGlim(){
+        return (this.glimMembers!=null && this.glimMembers.size()>0);
+    }
+    
+    public void updateTotalInterestDueForGlim(final Money totalInterestForGlim) {
+        this.totalInterestForGlim = totalInterestForGlim;
+    }
+    
+    public void updateTotalGlimInterest(){
+        if(isGlim()){
+            Money totalInterestDueForGlim = Money.zero(getCurrency());
+            for (GroupLoanIndividualMonitoring glim : this.glimMembers) {
+                if (glim.isClientSelected()) {
+                    totalInterestDueForGlim = totalInterestDueForGlim.plus(glim.getInterestAmount());
+                }
+            }
+            this.totalInterestDue = totalInterestDueForGlim;
+            this.totalInterestForGlim = totalInterestDueForGlim;
+        }
+        
     }
     
 }

@@ -482,13 +482,13 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 totalOutstanding);
     }
 
-    private Money getGlimLoanTotalFlatInterestAmount(final LoanApplicationTerms loanApplicationTerms, Money totalInterestChargedForFullLoanTerm) {
-        if (loanApplicationTerms.getGroupLoanIndividualMonitoring() != null
-                && loanApplicationTerms.getGroupLoanIndividualMonitoring().size() > 0 && loanApplicationTerms.getInterestMethod().isFlat()) {
+    private Money getGlimLoanTotalFlatInterestAmount(LoanApplicationTerms loanApplicationTerms, Money totalInterestChargedForFullLoanTerm) {
+        if (loanApplicationTerms.isGlim() && loanApplicationTerms.getInterestMethod().isFlat()) {
             totalInterestChargedForFullLoanTerm = Money.zero(loanApplicationTerms.getCurrency());
             for (GroupLoanIndividualMonitoring glim : loanApplicationTerms.getGroupLoanIndividualMonitoring()) {
                 totalInterestChargedForFullLoanTerm = totalInterestChargedForFullLoanTerm.plus(glim.getInterestAmount());
             }
+            loanApplicationTerms.updateTotalInterestDueForGlim(totalInterestChargedForFullLoanTerm);
         }
         return totalInterestChargedForFullLoanTerm;
     }
