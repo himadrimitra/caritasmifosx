@@ -15,6 +15,7 @@ import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.exception.InvalidClientStateTransitionException;
@@ -54,7 +55,17 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
 
     @PostConstruct
     public void registerForNotification() {
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_CREATE,
+                new GlimLoanRepaymentSchedulaEventListner());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_MODIFY,
+                new GlimLoanRepaymentSchedulaEventListner());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_APPROVED,
+                new GlimLoanRepaymentSchedulaEventListner());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_UNDO_APPROVAL,
+                new GlimLoanRepaymentSchedulaEventListner());
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_DISBURSAL,
+                new GlimLoanRepaymentSchedulaEventListner());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_UNDO_DISBURSAL,
                 new GlimLoanRepaymentSchedulaEventListner());
         this.businessEventNotifierService.addBusinessEventPreListners(BUSINESS_EVENTS.CLIENT_CLOSE,
                 new GLIMValidatationEventListner());
@@ -67,7 +78,7 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
     
     @Override
     public void generateGlimLoanRepaymentSchedule(final Loan loan) {
-        if (loan.isGLIMLoan()) {
+        if (AccountType.fromInt(loan.getLoanType()).isGLIMAccount()) {
             final List<LoanRepaymentScheduleInstallment> installments = loan.getRepaymentScheduleInstallments();
             final List<GroupLoanIndividualMonitoring> glimMembers = loan.getGroupLoanIndividualMonitoringList();
             final List<LoanGlimRepaymentScheduleInstallment> loanGlimRepaymentScheduleInstallments = new LinkedList<>();

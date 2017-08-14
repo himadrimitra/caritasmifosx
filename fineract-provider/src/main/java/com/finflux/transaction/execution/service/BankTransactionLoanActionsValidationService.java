@@ -9,6 +9,6 @@ import java.util.List;
 
 public interface BankTransactionLoanActionsValidationService {
 
-    public void validateForInactiveBankTransactions(Long loanId, List<Integer> statusList);
+    public void validateForInactiveBankTransactions(Long loanId, List<Integer> statusList, Boolean isSubmitBankTransaction);
 
 }

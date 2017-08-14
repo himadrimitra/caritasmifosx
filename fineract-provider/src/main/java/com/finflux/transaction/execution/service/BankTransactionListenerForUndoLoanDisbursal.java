@@ -37,7 +37,8 @@ public class BankTransactionListenerForUndoLoanDisbursal implements BusinessEven
             List<Integer> statusList = new ArrayList<>(Arrays.asList(TransactionStatus.DRAFTED.getValue(),
                     TransactionStatus.SUBMITTED.getValue(), TransactionStatus.INITIATED.getValue(), TransactionStatus.PENDING.getValue(),
                     TransactionStatus.SUCCESS.getValue(), TransactionStatus.FAILED.getValue(), TransactionStatus.ERROR.getValue()));
-            this.bankTransactionLoanActionsValidationService.validateForInactiveBankTransactions(loan.getId(), statusList);
+            Boolean isSubmitBankTransaction = false;
+            this.bankTransactionLoanActionsValidationService.validateForInactiveBankTransactions(loan.getId(), statusList, isSubmitBankTransaction);
         }
 
     }
