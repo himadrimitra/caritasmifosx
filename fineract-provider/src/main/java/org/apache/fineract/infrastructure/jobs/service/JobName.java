@@ -51,7 +51,8 @@ public enum JobName {
     UPDATE_BANK_TRANSACTION_STATUS("Update Bank Transaction Status"),
     HIGHMARK_ENQUIRY("Highmark Enquiry"),
     REDUCE_DP_LIMIT_FOR_SAVINGS("Reduce Dp Limit For Savings"),
-    FUND_STATUS_UPDATE("Fund Status update");
+    FUND_STATUS_UPDATE("Fund Status update"),
+    UPDATE_NEXT_RECURRING_DATE("Update Next Recurring Date");
 
     private final String name;
 
