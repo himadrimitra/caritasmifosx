@@ -105,6 +105,10 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
     
     private boolean useCalendar(final LocalDate lastRepaymentDate, final LoanApplicationTerms loanApplicationTerms,
             final Calendar currentCalendar) {
+        LocalDate calendarCreationDate = DateUtils.getLocalDateOfTenant().withDayOfMonth(1).withYear(2017).withMonthOfYear(8);
+        if(currentCalendar.getCreatedDate().toDate().after(calendarCreationDate.toDate())){
+            return true;
+        }
         LocalDate newCodeMigrationDate = DateUtils.getLocalDateOfTenant().withDayOfMonth(8).withYear(2016).withMonthOfYear(4);
         boolean useCalendar = lastRepaymentDate.isAfter(newCodeMigrationDate);
         if (useCalendar) {
