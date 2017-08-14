@@ -25,14 +25,21 @@ public class BankTransactionLoanActionsValidationServiceImpl implements BankTran
     }
 
     @Override
-    public void validateForInactiveBankTransactions(Long loanId, List<Integer> statusList) {
+    public void validateForInactiveBankTransactions(Long loanId, List<Integer> statusList, Boolean isSubmitBankTransaction) {
 
         Integer entityType = BankTransactionEntityType.LOANS.getValue();
         Long activeTransactionCount = this.bankTransactionRepository.countByEntityTypeAndEntityIdAndStatusIsIn(entityType, loanId,
                 statusList);
         if (activeTransactionCount > 0) {
-            final String globalisationMessageCode = "all.transactions.are.not.in.reject.or.closed.status";
-            final String defaultUserMessage = "Can not undo disbursal of loan, as transactions are found not in reject, retried or closed status";
+            String globalisationMessageCode = null;
+            String defaultUserMessage = null;
+            if (isSubmitBankTransaction) {
+                globalisationMessageCode = "error.msg.unable.to.submit.bank.transaction.since.all.bank.transactions.are.not.in.closed.or.rejected.status";
+                defaultUserMessage = "To submit a bank transaction all bank transactions must be closed or rejected.";
+            } else {
+                globalisationMessageCode = "error.msg.unable.to.undo.disbursal.of.loan.as.all.transactions.are.not.in.rejected.or.closed.status";
+                defaultUserMessage = "Can not undo disbursal of loan, as transactions are found not in reject or closed status";
+            }
             throwGeneralPlatformDomainRuleException(globalisationMessageCode, defaultUserMessage, loanId);
 
         }

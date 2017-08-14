@@ -55,7 +55,9 @@ public class BankTransactionDataValidator {
                 TransactionStatus.INITIATED.getValue(), TransactionStatus.PENDING.getValue(), TransactionStatus.SUCCESS.getValue(),
                 TransactionStatus.FAILED.getValue(), TransactionStatus.ERROR.getValue()));
 
-        this.bankTransactionLoanActionsValidationService.validateForInactiveBankTransactions(bankTransaction.getEntityId(), statusList);
+        Boolean isSubmitBankTransaction = true;
+        this.bankTransactionLoanActionsValidationService.validateForInactiveBankTransactions(bankTransaction.getEntityId(), statusList,
+                isSubmitBankTransaction);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
