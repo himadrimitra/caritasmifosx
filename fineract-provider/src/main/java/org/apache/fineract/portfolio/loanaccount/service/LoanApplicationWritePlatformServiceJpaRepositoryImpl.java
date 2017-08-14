@@ -199,7 +199,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler;
     private final ChargeRepositoryWrapper chargeRepositoryWrapper;
     private final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository;
-    private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
     private final LoanScheduleValidator loanScheduleValidator;
@@ -231,7 +230,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final LoanRepositoryWrapper  loanRepositoryWrapper,final GroupLoanIndividualMonitoringRepository groupLoanIndividualMonitoringRepository,  
             final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler, final ChargeRepositoryWrapper chargeRepositoryWrapper,
             final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository,
-            final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl, final PaymentTypeRepositoryWrapper paymentTypeRepository,
+            final PaymentTypeRepositoryWrapper paymentTypeRepository,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
             final LoanScheduleValidator loanScheduleValidator, final FineractEntityAccessReadService fineractEntityAccessReadService) {
         this.context = context;
@@ -274,7 +273,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.groupLoanIndividualMonitoringAssembler = groupLoanIndividualMonitoringAssembler;
         this.chargeRepositoryWrapper = chargeRepositoryWrapper;
         this.groupLoanIndividualMonitoringChargeRepository = groupLoanIndividualMonitoringChargeRepository;
-        this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
         this.paymentTypeRepository = paymentTypeRepository;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
         this.loanScheduleValidator = loanScheduleValidator;
@@ -475,7 +473,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 // save GroupLoanIndividualMonitoring clients
                 final List<GroupLoanIndividualMonitoring> glimList = newLoanApplication.getGroupLoanIndividualMonitoringList();
                 this.groupLoanIndividualMonitoringRepository.save(glimList);
-                this.glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(newLoanApplication);
             }
             
             final Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.JSON_COMMAND, command);
@@ -493,17 +490,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         } catch (final DataIntegrityViolationException dve) {
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
-        }
-    }
-    
-    private void validateForCapitalizedCharge(final Loan loan){
-        boolean isCapitalChargePresent = false;
-        for(LoanCharge charge : loan.charges()){
-            if(charge.isCapitalized()){
-                if(isCapitalChargePresent){
-                    
-                }isCapitalChargePresent = true;
-            }
         }
     }
 
@@ -1122,10 +1108,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 updateGlimMemberOnModifyApplication(existingLoanApplication, glimList);
             }
 	    	     
-            
-
-            /*saveAndFlushLoanWithDataIntegrityViolationChecks(existingLoanApplication);*/
-
             final String submittedOnNote = command.stringValueOfParameterNamed("submittedOnNote");
             if (StringUtils.isNotBlank(submittedOnNote)) {
                 final Note note = Note.loanNote(existingLoanApplication, submittedOnNote);
@@ -1315,14 +1297,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             this.loanScheduleValidator.validateRepaymentFrequencyAsMeetingFrequencyAndMinimumDaysBetweenDisbursalAndFirstRepayment(
                     existingLoanApplication, calendar);
 
-            if(existingLoanApplication.isGLIMLoan()){
-            	glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(existingLoanApplication);
-            }
-
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_MODIFY,
-                    eventDetailMap);
-            
-            
+                    eventDetailMap);            
             
             return new CommandProcessingResultBuilder() //
                     .withEntityId(loanId) //
@@ -1580,11 +1556,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_APPROVED,
                     eventDetailMap);
             
-
-            
-            if(loan.isGLIMLoan()){
-            	glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(loan);
-            }
         }   
         
         return new CommandProcessingResultBuilder() //
@@ -1675,6 +1646,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         }
         this.groupLoanIndividualMonitoringAssembler.updateLoanChargesForGlim(loan, chargesMap);
         loan.updateGlim(glimList);
+        loan.updateDefautGlimMembers(glimList);
         this.groupLoanIndividualMonitoringAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(),
                 loan.fetchNumberOfInstallmensAfterExceptions(), glimList);
     }

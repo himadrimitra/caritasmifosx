@@ -264,7 +264,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GroupLoanIndividualMonitoringRepository glimRepository;
     private final GroupLoanIndividualMonitoringAssembler glimAssembler;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
-    private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
     private final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler;
     private final LoanScheduleValidator loanScheduleValidator;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
@@ -303,7 +302,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final GroupLoanIndividualMonitoringRepository glimRepository,
             final GroupLoanIndividualMonitoringAssembler glimAssembler,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
-            final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl,
             final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,            
             final LoanScheduleValidator loanScheduleValidator, final FineractEntityAccessUtil fineractEntityAccessUtil,
             final LoanRescheduleRequestReadPlatformService loanRescheduleRequestReadPlatformService) {
@@ -350,7 +348,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.glimRepository = glimRepository;
         this.glimAssembler = glimAssembler;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
-        this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
         this.glimTransactionAssembler = glimTransactionAssembler;
         this.loanScheduleValidator = loanScheduleValidator;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
@@ -486,16 +483,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             }
             
             //update disbursed amount for each client in glim
-            if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
-                final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
-            	List<GroupLoanIndividualMonitoring> glimList = this.glimAssembler.updateFromJson(command.parsedJson(), "disbursedAmount", 
-                        loan, loan.fetchNumberOfInstallmensAfterExceptions(), loan.getLoanProductRelatedDetail().getAnnualNominalInterestRate(), clientMembers);
-                loan.updateGlim(glimList);
-                loan.updateDefautGlimMembers(glimList);
-                this.glimAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(), loan.fetchNumberOfInstallmensAfterExceptions(),
-                        glimList);
-                changes.put("clientMembers", clientMembers);
-            }
+            updateGlimMembers(command, loan, changes);
             
             regenerateScheduleOnDisbursement(command, loan, recalculateSchedule, scheduleGeneratorDTO, nextPossibleRepaymentDate, rescheduledRepaymentDate);
             if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
@@ -570,6 +558,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }
         map.putAll(notifyParamMap);
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, map);
+        
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
                 .withEntityId(loan.getId()) //
@@ -579,6 +568,28 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .withLoanId(loanId) //
                 .with(changes) //
                 .build();
+    }
+
+    private void updateGlimMembers(final JsonCommand command, final Loan loan, final Map<String, Object> changes) {
+        if(loan.isGLIMLoan()){
+            List<GroupLoanIndividualMonitoring> glimList = null;
+            if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
+                final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
+                glimList = this.glimAssembler.updateFromJson(command.parsedJson(), "disbursedAmount", 
+                        loan, loan.fetchNumberOfInstallmensAfterExceptions(), loan.getLoanProductRelatedDetail().getAnnualNominalInterestRate(), clientMembers);
+                changes.put("clientMembers", clientMembers);
+            }else{
+                glimList = this.glimRepository.findByLoanId(loan.getId());
+                for (GroupLoanIndividualMonitoring glim : glimList) {
+                    glim.setDisbursedAmount(glim.getApprovedAmount());
+                }
+            }
+            loan.updateGlim(glimList);
+            loan.updateDefautGlimMembers(glimList);
+            this.glimAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(), loan.fetchNumberOfInstallmensAfterExceptions(),
+                    glimList);
+            
+        }        
     }
 
     private void disbursePartialAmountToSavings(final JsonCommand command, final Loan loan, final List<Long> existingTransactionIds,
@@ -934,11 +945,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
             this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeData);
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_UNDO_DISBURSAL,
-                    constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
-            
-            if(loan.isGLIMLoan() || AccountType.fromInt(loan.getLoanType()).isGLIMAccount()){
-            	this.glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(loan);
-            }
+                    constructEntityMap(BUSINESS_ENTITY.LOAN, loan));            
             
         }
 
