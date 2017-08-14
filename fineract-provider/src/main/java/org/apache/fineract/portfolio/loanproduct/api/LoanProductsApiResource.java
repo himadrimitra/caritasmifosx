@@ -62,6 +62,7 @@ import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformSer
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.client.domain.LegalForm;
+import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
 import org.apache.fineract.portfolio.floatingrates.data.FloatingRateData;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformService;
@@ -86,6 +87,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.finflux.portfolio.loanproduct.creditbureau.data.CreditBureauLoanProductMappingData;
+import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductOfficeMapping;
+import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductOfficeMappingRepository;
 import com.finflux.portfolio.loanproduct.creditbureau.service.CreditBureauLoanProductMappingReadPlatformService;
 import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityData;
 import com.finflux.ruleengine.eligibility.service.LoanProductEligibilityReadPlatformService;
@@ -139,6 +142,8 @@ public class LoanProductsApiResource {
     private final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService;
     private final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
+    private final ClientReadPlatformService clientReadPlatformService;
+    private final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository;
 
     @Autowired
     public LoanProductsApiResource(final PlatformSecurityContext context, final LoanProductReadPlatformService readPlatformService,
@@ -157,7 +162,9 @@ public class LoanProductsApiResource {
             final FloatingRatesReadPlatformService floatingRateReadPlatformService,
             final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer,
             final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService,final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService,
-            final CodeValueReadPlatformService codeValueReadPlatformService) {
+            final CodeValueReadPlatformService codeValueReadPlatformService,
+            final ClientReadPlatformService clientReadPlatformService,
+            final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository) {
         this.context = context;
         this.loanProductReadPlatformService = readPlatformService;
         this.chargeReadPlatformService = chargeReadPlatformService;
@@ -179,6 +186,8 @@ public class LoanProductsApiResource {
         this.productEligibilityDataToApiJsonSerializer = productEligibilityDataToApiJsonSerializer;
         this.productEligibilityReadPlatformService = productEligibilityReadPlatformService;
         this.codeValueReadPlatformService = codeValueReadPlatformService;
+        this.clientReadPlatformService = clientReadPlatformService;
+        this.creditBureauLoanProductOfficeMappingRepository = creditBureauLoanProductOfficeMappingRepository;
     }
 
     @POST
@@ -249,13 +258,33 @@ public class LoanProductsApiResource {
     @Path("{productId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveLoanProductDetails(@PathParam("productId") final Long productId, @Context final UriInfo uriInfo) {
+    public String retrieveLoanProductDetails(@PathParam("productId") final Long productId, @Context final UriInfo uriInfo,
+            @QueryParam("clientId") final Long clientId) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
         final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         if (associationParameters.contains("creditBureaus")) {
-            final CreditBureauLoanProductMappingData creditBureauLoanProductMappingData = this.creditBureauLoanProductMappingReadPlatformService.retrieveCreditbureauLoanproductMappingData(productId);
+            CreditBureauLoanProductMappingData creditBureauLoanProductMappingData = null;
+            Long mappingId = null;
+            if (clientId != null) {
+                CreditBureauLoanProductOfficeMapping creditBureauLoanProductOfficeMapping = null;
+                Long officeId = this.clientReadPlatformService.retrieveOfficeId(clientId);
+                creditBureauLoanProductOfficeMapping = this.creditBureauLoanProductOfficeMappingRepository
+                        .retrieveCreditBureauAndLoanProductOfficeMapping(productId, officeId);
+                if (creditBureauLoanProductOfficeMapping == null) {
+                    creditBureauLoanProductOfficeMapping = this.creditBureauLoanProductOfficeMappingRepository
+                            .retrieveDefaultCreditBureauAndLoanProductOfficeMapping(productId);
+                }
+                if (creditBureauLoanProductOfficeMapping != null) {
+                    mappingId = creditBureauLoanProductOfficeMapping.getCreditBureauLoanProductMapping().getId();
+                }
+            } else {
+                mappingId = productId;
+            }
+            creditBureauLoanProductMappingData = this.creditBureauLoanProductMappingReadPlatformService
+                    .retrieveCreditbureauLoanproductMappingData(mappingId);
+
             return this.creditbureauLoanproductDataApiJsonSerializer.serialize(settings, creditBureauLoanProductMappingData);
         }
         LoanProductData loanProduct = this.loanProductReadPlatformService.retrieveLoanProduct(productId);

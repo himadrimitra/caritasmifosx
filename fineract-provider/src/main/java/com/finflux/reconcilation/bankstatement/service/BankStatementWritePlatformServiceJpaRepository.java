@@ -12,7 +12,6 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,23 +59,18 @@ import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.B
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
-import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailRepository;
-import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransactionRepository;
-import org.apache.fineract.portfolio.savings.exception.SavingsAccountTransactionNotFoundException;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -126,7 +120,6 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepositoryWrapper;
     private final DocumentWritePlatformService documentWritePlatformService;
     private final LoanTransactionRepositoryWrapper loanTransactionRepository;
-    private final LoanTransactionRepository loanTransactionRepositoryy;
     private final BankRepositoryWrapper bankRepository;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final JournalEntryRepository journalEntryRepository;
@@ -143,9 +136,6 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final OfficeReadPlatformService readPlatformService;
     private final JournalEntryWritePlatformService journalEntryWritePlatformService;
     private final SavingsAccountDomainService savingsAccountDomainService;
-    private final SavingsAccountTransactionRepository savingsAccountTransactionRepository;
-    private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
-    private final LoanTransactionRepositoryWrapper loanTransactionRepositoryWrapper;
     private final LoanReadPlatformService loanReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
 
@@ -169,9 +159,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             final BankStatementDetailsRepository bankStatementDetailsRepository,
             final OfficeReadPlatformService readPlatformService,
             final JournalEntryWritePlatformService journalEntryWritePlatformService,
-            final SavingsAccountDomainService savingsAccountDomainService, final PaymentDetailWritePlatformService paymentDetailWritePlatformService,
-            final SavingsAccountTransactionRepository savingsAccountTransactionRepository,final LoanTransactionRepository loanTransactionRepositoryy,
-            final LoanTransactionRepositoryWrapper loanTransactionRepositoryWrapper, final LoanReadPlatformService loanReadPlatformService,
+            final SavingsAccountDomainService savingsAccountDomainService, final LoanReadPlatformService loanReadPlatformService,
             final SavingsAccountReadPlatformService savingsAccountReadPlatformService) {
         this.context = context;
         this.documentRepository = documentRepository;
@@ -197,10 +185,6 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         this.readPlatformService = readPlatformService;
         this.journalEntryWritePlatformService = journalEntryWritePlatformService;
         this.savingsAccountDomainService = savingsAccountDomainService;
-        this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
-        this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
-        this.loanTransactionRepositoryy = loanTransactionRepositoryy;
-        this.loanTransactionRepositoryWrapper = loanTransactionRepositoryWrapper;
         this.loanReadPlatformService = loanReadPlatformService;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
     }
@@ -399,7 +383,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         return fileDataMap;
     }
     
-    public static Map<String, Object> createMapOfSimplifiedFileData(File file) {
+    public static Map<String, Object> createMapOfSimplifiedFileData(File file, String paymentTypeName) {
         Map<String, Object> fileDataMap = new HashMap<>();
         Set<Integer> errorRows = new TreeSet<>();
         Map<Integer, List<String>> errorRowMap = new LinkedHashMap<>();
@@ -467,8 +451,10 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                     	Integer bankStatementDetailType = BankStatementDetailType.SIMPLIFIED_PORTFOLIO.getValue();                	
                     	BankStatement bankStatement = null;
                     	boolean isManualReconciled = false;
-                        BankStatementDetails bankStatementDetails = BankStatementDetails.simplifiedBankDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber, bankStatementDetailType, isManualReconciled);
-                        bankStatementDetails.setIsError(false);
+                    	boolean isError = false;
+                        BankStatementDetails bankStatementDetails = BankStatementDetails.simplifiedBankDetails(bankStatement,
+                                transactionDate, amount, loanAccountNumber, receiptNumber, bankStatementDetailType, isManualReconciled,
+                                paymentTypeName, isError);
                         bankStatementDetailsList.add(bankStatementDetails);
                 		
                 	}else if(rowError.size() > 0){
@@ -685,12 +671,12 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     @SuppressWarnings("unchecked")
     public BankStatement saveBankStatementDetails(final Long cpifDocumentId, final BankStatement bankStatement, Boolean isSimplifiedExcel) {
     	File file = this.bankStatementReadPlatformService.retrieveFile(cpifDocumentId);
-    	Map<String, Object> fileContent = isSimplifiedExcel?createMapOfSimplifiedFileData(file):createMapOfFileData(file);
+    	String paymentTypeName = ExcelUtility.getPaymentType(file);
+    	Map<String, Object> fileContent = isSimplifiedExcel?createMapOfSimplifiedFileData(file, paymentTypeName):createMapOfFileData(file);
         List<BankStatementDetails> bankStatementDetailsList = (List<BankStatementDetails>) fileContent.get(ReconciliationApiConstants.BANK_STATEMENT_DETAIL_LIST);
         Map<Integer, List<String>> errorRows = (Map<Integer, List<String>>) fileContent.get(ReconciliationApiConstants.ERROR_ROWS);
         if (errorRows.size() == 0) {
-            if (isSimplifiedExcel) {
-                String paymentTypeName = ExcelUtility.getPaymentType(file);
+            if (isSimplifiedExcel) {                
                 if (paymentTypeName != null && StringUtils.isNotEmpty(paymentTypeName)) {
                     bankStatement.setPaymentType(paymentTypeName);
                     savePaymentType(paymentTypeName);
@@ -1005,50 +991,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     public CommandProcessingResult generatePortfolioTransactions(JsonCommand command) {
         this.context.authenticatedUser();
         List<BankStatementDetailsData> bankStatementDetailsDataList = this.bankStatementDetailsReadPlatformService
-                .retrieveGeneratePortfolioData(command.entityId(), " and bsd.is_reconciled = 0 ");
-        Collection<BankStatementDetails> collection = new ArrayList<>();
-        for (BankStatementDetailsData bankStatementDetailsData:bankStatementDetailsDataList) {
-            BankStatementDetails  bankStatementDetail = this.bankStatementDetailsRepositoryWrapper.findOneWithNotFoundDetection(bankStatementDetailsData.getId());
-            final Date transactionDate = bankStatementDetail.getTransactionDate();
-            final boolean isSimplified = bankStatementDetail.getBankStatement().getBank().getSupportSimplifiedStatement();
-            final BigDecimal transactionAmount = bankStatementDetail.getAmount();
-            Loan loan = this.loanAssembler.getActiveLoanByAccountNumber(bankStatementDetail.getLoanAccountNumber());
-            if(loan != null){
-            	loan = this.loanAssembler.assembleFrom(loan.getId());
-            	PaymentDetail paymentDetail = null;
-                if(isSimplified){
-                	String accountNumber = null;
-                	String checkNumber = null;
-                	String routingCode = null;
-                	String bankNumber = null;            	
-                	paymentDetail = PaymentDetail.instance(this.paymentTypeRepository.findByPaymentTypeName(bankStatementDetail.getBankStatement().getPaymentType()), accountNumber, checkNumber, routingCode, bankStatementDetail.getReceiptNumber(), bankNumber);
-                	this.paymentDetailRepository.save(paymentDetail);
-                }
-                
-                final Boolean isHolidayValidationDone = false;
-                final HolidayDetailDTO holidayDetailDto = null;
-                boolean isAccountTransfer = false;
-                boolean isRecoveryRepayment = false;
-                final String txnExternalId = null;
-                final String noteText = null;
-                final CommandProcessingResultBuilder commandProcessingResultBuilder = new CommandProcessingResultBuilder();
-                
-                LoanTransaction loanTransaction =  this.loanAccountDomainService.makeRepayment(loan, commandProcessingResultBuilder, new LocalDate(transactionDate), transactionAmount,
-                        paymentDetail, noteText, txnExternalId, isRecoveryRepayment, isAccountTransfer, holidayDetailDto, isHolidayValidationDone);
-                loanTransaction.setReconciled(true);
-                bankStatementDetail.setLoanTransaction(loanTransaction);
-                bankStatementDetail.setTransactionId(loanTransaction.getId().toString());
-                bankStatementDetail.setIsReconciled(true);
-                collection.add(bankStatementDetail);
-            }else{
-            	bankStatementDetail.setIsError(true);
-            	collection.add(bankStatementDetail);
-            }
-            
-            
-        }
-        this.bankStatementDetailsRepositoryWrapper.save(collection);
-        
+                .retrieveGeneratePortfolioData(command.entityId(), " and bsd.is_reconciled = 0 and bsd.is_error = 0 ");
+        completePortfolioTransactions(bankStatementDetailsDataList);
         return new CommandProcessingResultBuilder() //
         .withEntityId(command.entityId()) //
         .build();
@@ -1062,6 +1006,15 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 .retrieveGeneratePortfolioData(command.entityId(), " and bsd.is_reconciled = 0 and bsd.is_error = 0 ");
         bankStatement.setIsReconciled(true);
         this.bankStatementRepository.save(bankStatement);
+        completePortfolioTransactions(bankStatementDetailsDataList);
+
+        return new CommandProcessingResultBuilder() //
+                .withEntityId(command.entityId()) //
+                .build();
+    }
+
+    private void completePortfolioTransactions(List<BankStatementDetailsData> bankStatementDetailsDataList) {
+        final DateTimeFormatter fmt = null;
         for (BankStatementDetailsData bankStatementDetailsData : bankStatementDetailsDataList) {
             BankStatementDetails bankStatementDetail = this.bankStatementDetailsRepositoryWrapper
                     .findOneWithNotFoundDetection(bankStatementDetailsData.getId());
@@ -1076,7 +1029,6 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             final String paymentDetailBankNumber = bankStatementDetail.getPaymentDetailBankNumber();
             final String receiptNumber = bankStatementDetail.getReceiptNumber();
             final String note = bankStatementDetail.getNote();
-            final Locale locale = command.extractLocale();
             final String errmsg = bankStatementDetail.getErrmsg();
             final Long transactionIdForUpdate = bankStatementDetail.getTransactionIdForUpdate();
             final String accountType = bankStatementDetail.getAccountingType();
@@ -1084,7 +1036,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 continue;
             }
             Long paymentDetailId = null;
-            final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
+            
             try {
                 if (transactionIdForUpdate != null) {
                     if (accountType == null || accountType.equals("loans")) {
@@ -1144,10 +1096,6 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             }
             this.bankStatementDetailsRepository.save(bankStatementDetail);
         }
-
-        return new CommandProcessingResultBuilder() //
-                .withEntityId(command.entityId()) //
-                .build();
     }
 
     public static String getFormattedDate(Date transactionDate, DateFormat formatFromExcel, DateFormat targetFormat){

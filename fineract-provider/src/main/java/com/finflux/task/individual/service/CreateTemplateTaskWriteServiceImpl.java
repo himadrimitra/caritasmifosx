@@ -12,6 +12,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.joda.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -64,6 +65,11 @@ public class CreateTemplateTaskWriteServiceImpl implements CreateTemplateTaskWri
         this.context.authenticatedUser();
         this.taskAssignDataValidator.validateForAssignTask(command.json());
         final Date dueDate = command.DateValueOfParameterNamed(CreateTemplateTaskApiConstants.DueDateParamName);
+        Date dueTime = null;
+        final LocalDateTime time = command.localTimeValueOfParameterNamed(CreateTemplateTaskApiConstants.DueTimeParamName);
+        if (time != null) {
+            dueTime = time.toDate();
+        }
         CreateTemplateTaskForm form=fromApiJsonHelper.fromJson(command.json(), CreateTemplateTaskForm.class);
         TaskConfigTemplate taskConfigTemplate=this.taskConfigTemplateRepository.findOne(form.getTemplateId());
         TaskConfig taskConfig= taskConfigTemplate.getTaskConfig();
@@ -75,7 +81,7 @@ public class CreateTemplateTaskWriteServiceImpl implements CreateTemplateTaskWri
         configValues.put(taskConfigTemplateEntityType.getCorrespondingTaskConfigKey(), String.valueOf(form.getEntity_id()));
         configValues.put(TaskConfigKey.TASKTEMPLATEENTITY_ID,String.valueOf(form.getEntity_id()));
         Client client=null;
-        Long taskId=this.taskPlatformWriteService.createTaskFromConfig(taskConfig.getId(),taskEntity,form.getEntity_id(),client,this.appUserRepository.findOne(form.getUserId()),dueDate,office,configValues,description);
+        Long taskId=this.taskPlatformWriteService.createTaskFromConfig(taskConfig.getId(),taskEntity,form.getEntity_id(),client,this.appUserRepository.findOne(form.getUserId()),dueDate,office,configValues,description, dueTime);
         return new CommandProcessingResultBuilder().withResourceIdAsString(taskId.toString()).build();
     }
 

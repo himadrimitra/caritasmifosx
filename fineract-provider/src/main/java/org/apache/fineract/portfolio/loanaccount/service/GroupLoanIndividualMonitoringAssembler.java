@@ -297,7 +297,7 @@ public class GroupLoanIndividualMonitoringAssembler {
             BigDecimal beforeRoundingEmiAmount = BigDecimal.valueOf((totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment
                     .doubleValue()));
 
-            if(upfrontFeeAmount.compareTo(BigDecimal.ZERO) == 1 || MathUtility.isZero(totalCharge)) {
+            if(MathUtility.isGreaterThanZero(upfrontFeeAmount)|| MathUtility.isZero(totalCharge)) {
                 emiAmount = BigDecimal.valueOf(Math.round(totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment.doubleValue()));
                 glim.setInstallmentAmount(emiAmount);
                 glim.setTotalPaybleAmount(totalAmountBeforeAdjustment.add(upfrontFeeAmount));
@@ -355,7 +355,7 @@ public class GroupLoanIndividualMonitoringAssembler {
                 }
             }
             // add upfront fee amount
-            if (upfrontFeeAmount.compareTo(BigDecimal.ZERO) == 1) {
+            if (MathUtility.isGreaterThanZero(upfrontFeeAmount)) {
                 glim.setChargeAmount(BigDecimal.valueOf(Math.round(upfrontFeeAmount.doubleValue())));
             } else {
                 glim.setChargeAmount(BigDecimal.valueOf(Math.round(totalCharge.doubleValue())));
@@ -413,13 +413,15 @@ public class GroupLoanIndividualMonitoringAssembler {
                 }                
 
                 // calculate percentage of principal amount
-                percentage = calculatePercentageOfAmount(element, amount, percentage);
+                percentage = null;
+                
+                GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = GroupLoanIndividualMonitoring.createInstance(
+                        newLoanApplication, client, amount, null, null, loanPurpose, isClientSelected, adjustedAmount, installmentAmount,
+                        totalPaybleAmount, paidInterestAmount, paidAmount, totalInterest, clientCharges, percentage, paidPrincipalAmount,
+                        paidChargeAmount, waivedInterestAmount, waivedChargeAmount);
+                glimList.add(groupLoanIndividualMonitoring);
             }
-            GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = GroupLoanIndividualMonitoring.createInstance(
-                    newLoanApplication, client, amount, null, null, loanPurpose, isClientSelected, adjustedAmount, installmentAmount,
-                    totalPaybleAmount, paidInterestAmount, paidAmount, totalInterest, clientCharges, percentage, paidPrincipalAmount,
-                    paidChargeAmount, waivedInterestAmount, waivedChargeAmount);
-            glimList.add(groupLoanIndividualMonitoring);
+            
         }
     }
 
@@ -625,7 +627,7 @@ public class GroupLoanIndividualMonitoringAssembler {
                 }
             }
             installmentAmountWithoutFee = totalInstallmentAmount.subtract(feeAmount);
-            if (installmentAmountWithoutFee.compareTo(BigDecimal.ZERO) == 1) {
+            if (MathUtility.isGreaterThanZero(installmentAmountWithoutFee)) {
                 loanApplicationTerms.setFixedEmiAmount(installmentAmountWithoutFee);
             }
         }
@@ -719,7 +721,11 @@ public class GroupLoanIndividualMonitoringAssembler {
         	for (GroupLoanIndividualMonitoring glim : loanApplicationTerms.getGroupLoanIndividualMonitoring()) {
     			BigDecimal principalAndInterest = MathUtility.subtract(glim.getTotalPaybleAmount(),glim.getChargeAmount());
     			BigDecimal beforeAdjustmentAmount = MathUtility.multiply(glim.getInstallmentAmount(), (loanApplicationTerms.fetchNumberOfRepaymentsAfterExceptions()-1));
+    			if(loanApplicationTerms.isFirstEmiAdjusted()){    			
     			firstInstallmentAmount = MathUtility.add(firstInstallmentAmount, MathUtility.subtract(principalAndInterest, beforeAdjustmentAmount));
+    			}else{
+    			firstInstallmentAmount = MathUtility.add(firstInstallmentAmount, glim.getInstallmentAmount());
+    			}
     		}
         	return firstInstallmentAmount;	
         }

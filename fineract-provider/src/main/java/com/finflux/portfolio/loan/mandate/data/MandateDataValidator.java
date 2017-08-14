@@ -70,7 +70,7 @@ public class MandateDataValidator {
                 baseDataValidator.reset().parameter(MandateApiConstants.micr).value(micr).ignoreIfNull().notExceedingLengthOf(10);
 
                 final String ifsc = this.fromApiJsonHelper.extractStringNamed(MandateApiConstants.ifsc, element);
-                baseDataValidator.reset().parameter(MandateApiConstants.ifsc).value(ifsc).notBlank().notExceedingLengthOf(11);
+                baseDataValidator.reset().parameter(MandateApiConstants.ifsc).value(ifsc).notBlank().notExceedingLengthOf(15);
 
                 final Integer accountType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(MandateApiConstants.accountType, element);
                 baseDataValidator.reset().parameter(MandateApiConstants.accountType).value(accountType).notNull().inMinMaxRange(1,6);

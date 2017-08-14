@@ -54,7 +54,7 @@ public class LoanUtilizationCheckHelper {
         loanUtilizationCheck.put("auditDoneOn", "15 Dec 2014");
         final Map<String, Object> utilizationDetail = new LinkedHashMap<>();
         utilizationDetail.put("isSameAsOriginalPurpose", true);
-        utilizationDetail.put("amount", 50000.00);
+        utilizationDetail.put("amount", 1000.00);
         utilizationDetail.put("comment", "ok");
         utilizationDetail.put("locale", "en");
         utilizationDetail.put("dateFormat", DATE_FORMAT);
@@ -76,7 +76,7 @@ public class LoanUtilizationCheckHelper {
         map.put("auditDoneOn", "15 Dec 2014");
         final Map<String, Object> utilizationDetail = new LinkedHashMap<>();
         utilizationDetail.put("isSameAsOriginalPurpose", true);
-        utilizationDetail.put("amount", 50000.00);
+        utilizationDetail.put("amount", 1000.00);
         utilizationDetail.put("comment", "ok edited");
         utilizationDetail.put("locale", "en");
         utilizationDetail.put("dateFormat", DATE_FORMAT);

@@ -46,6 +46,8 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
@@ -283,9 +285,10 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
     public List<Long> handleDepositAndwithdrawal(final Long accountId, final List<SavingsAccountTransactionDTO> savingstransactions,
             final SavingsTransactionBooleanValues transactionBooleanValues, final boolean isSavingsInterestPostingAtCurrentPeriodEnd,
             final Integer financialYearBeginningMonth, final boolean isSavingAccountsInculdedInCollectionSheet,
-            final boolean isWithDrawForSavingsIncludedInCollectionSheet) {
-        LocalDate postAsInterestOn = null;
-        final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions = null;
+            final boolean isWithDrawForSavingsIncludedInCollectionSheet,
+            final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetailsList) {
+    	LocalDate postAsInterestOn = null;
+    	final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions = null;
         final SavingsAccount account = this.savingsAccountAssembler.assembleFrom(accountId);
         List<Long> savingsTreansactionIds = new ArrayList<>();
         final MathContext mc = MathContext.DECIMAL64;
@@ -294,37 +297,56 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         updateExistingTransactionsDetails(account, existingTransactionIds, existingReversedTransactionIds);
         for (SavingsAccountTransactionDTO transactionDTO : savingstransactions) {
             if (transactionDTO.getIsDeposit()) {
-                if (account.depositAccountType().isSavingsDeposit() && !isSavingAccountsInculdedInCollectionSheet) { throw new DepositAccountTransactionNotAllowedException(
-                        "error.msg.deposit.for.account." + account.getId() + ".not.allowed.due.to.configiration", "deposit for account "
-                                + account.getId() + " not allowed due to configuration", account.getId() + account.accountType); }
-                if (transactionBooleanValues.isRegularTransaction() && !account.allowDeposit()) { throw new DepositAccountTransactionNotAllowedException(
-                        "error.msg.deposit.for.account." + account.getId() + ".not.allowed", "deposit for account " + account.getId()
-                                + " not allowed", account.getId() + account.accountType); }
+                if (account.depositAccountType().isSavingsDeposit()
+                        && !isSavingAccountsInculdedInCollectionSheet) { throw new DepositAccountTransactionNotAllowedException(
+                                "error.msg.deposit.for.account." + account.getId() + ".not.allowed.due.to.configiration",
+                                "deposit for account " + account.getId() + " not allowed due to configuration",
+                                account.getId() + account.accountType); }
+                if (transactionBooleanValues.isRegularTransaction()
+                        && !account.allowDeposit()) { throw new DepositAccountTransactionNotAllowedException(
+                                "error.msg.deposit.for.account." + account.getId() + ".not.allowed",
+                                "deposit for account " + account.getId() + " not allowed", account.getId() + account.accountType); }
                 final SavingsAccountTransaction deposit = account.deposit(transactionDTO);
+
                 if (account.depositAccountType().isRecurringDeposit()) {
-                    final RecurringDepositAccount rd = (RecurringDepositAccount) account;
+                    RecurringDepositAccount rd = (RecurringDepositAccount) account;
                     rd.handleScheduleInstallments(deposit);
                     updateMaturityDateAndAmount(rd);
                     rd.updateOverduePayments(DateUtils.getLocalDateOfTenant());
                 }
                 saveTransactionToGenerateTransactionId(account.getTransactions());
                 savingsTreansactionIds.add(deposit.getId());
+                final Boolean transactionStatus = true;
+                final String errorMessage = null;
+                CollectionSheetTransactionDetails collectionSheetTransactionDetails = CollectionSheetTransactionDetails
+                        .formCollectionSheetTransactionDetails(accountId, deposit.getId(), transactionStatus, errorMessage,
+                                EntityType.SAVINGS.getValue());
+                collectionSheetTransactionDetailsList.add(collectionSheetTransactionDetails);
             } else {
                 if (isWithDrawForSavingsIncludedInCollectionSheet) {
-                    if (transactionBooleanValues.isRegularTransaction() && !account.allowWithdrawal()) { throw new DepositAccountTransactionNotAllowedException(
-                            "error.msg.withdraw.for.account." + account.getId() + ".not.allowed", "withdraw for account " + account.getId()
-                                    + " not allowed", account.getId() + account.accountType); }
+                    if (transactionBooleanValues.isRegularTransaction()
+                            && !account.allowWithdrawal()) { throw new DepositAccountTransactionNotAllowedException(
+                                    "error.msg.withdraw.for.account." + account.getId() + ".not.allowed",
+                                    "withdraw for account " + account.getId() + " not allowed", account.getId() + account.accountType); }
 
                     final SavingsAccountTransaction withdrawal = account.withdraw(transactionDTO,
                             transactionBooleanValues.isApplyWithdrawFee());
+
                     account.validateAccountBalanceDoesNotBecomeNegative(transactionDTO.getTransactionAmount(),
                             transactionBooleanValues.isExceptionForBalanceCheck(), depositAccountOnHoldTransactions);
                     saveTransactionToGenerateTransactionId(account.getTransactions());
                     savingsTreansactionIds.add(withdrawal.getId());
+                    final Boolean transactionStatus = true;
+                    final String errorMessage = null;
+                    CollectionSheetTransactionDetails collectionSheetTransactionDetails = CollectionSheetTransactionDetails
+                            .formCollectionSheetTransactionDetails(accountId, withdrawal.getId(), transactionStatus, errorMessage,
+                                    EntityType.SAVINGS.getValue());
+                    collectionSheetTransactionDetailsList.add(collectionSheetTransactionDetails);
                 } else {
-                    throw new DepositAccountTransactionNotAllowedException("error.msg.withdraw.for.account." + account.getId()
-                            + ".not.allowed.due.to.configiration", "withdraw for account " + account.getId()
-                            + " not allowed due to configuration", account.getId() + account.accountType);
+                    throw new DepositAccountTransactionNotAllowedException(
+                            "error.msg.withdraw.for.account." + account.getId() + ".not.allowed.due.to.configiration",
+                            "withdraw for account " + account.getId() + " not allowed due to configuration",
+                            account.getId() + account.accountType);
                 }
             }
             if (account.isBeforeLastPostingPeriod(transactionDTO.getTransactionDate())) {

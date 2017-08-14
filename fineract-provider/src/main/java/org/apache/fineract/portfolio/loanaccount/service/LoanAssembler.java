@@ -343,9 +343,11 @@ public class LoanAssembler {
         final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();        
         final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(loanApplication,
         		element, interestRate, numberOfRepayments, loanApplicationTerms.getInterestMethod());
-        loanApplicationTerms.updateTotalInterestDueForGlim(glimList);
-        final BigDecimal firstInstallmentEmiAmount = GroupLoanIndividualMonitoringAssembler.calculateGlimFirstInstallmentAmount(loanApplicationTerms);
-     	loanApplicationTerms.setFirstFixedEmiAmount(firstInstallmentEmiAmount);
+        loanApplicationTerms.updateTotalInterestDueForGlim(glimList);        
+     	
+     	final BigDecimal firstInstallmentEmiAmount = GroupLoanIndividualMonitoringAssembler.calculateGlimFirstInstallmentAmount(loanApplicationTerms);
+        loanApplicationTerms.setFirstFixedEmiAmount(firstInstallmentEmiAmount);
+     	
         //capitalization of charges
         loanApplication.setTotalCapitalizedCharges(LoanUtilService.getCapitalizedChargeAmount(loanCharges));
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(loanCharges));

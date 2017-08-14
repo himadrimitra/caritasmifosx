@@ -106,6 +106,10 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "complete_on_action")
     private Integer completeOnAction;
     
+    @Column(name="due_time",nullable=true)
+    @Temporal(TemporalType.TIME)
+    private Date dueTime;
+    
     protected Task() {}
 
     private Task(final Task parent, final String name, final String shortName, final Integer entityType, final Long entityId,
@@ -113,7 +117,7 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
             final Integer currentAction, final AppUser assignedTo, final Integer taskOrder, final RuleModel criteria,
             final String approvalLogic, final String rejectionLogic, final String configValues, final Client client, final Office office,
             final Long actionGroupId, final String criteriaResult, final Integer criteriaAction, final TaskActivity taskActivity,
-            final String description,final Integer completeOnAction) {
+            final String description, final Integer completeOnAction, final Date dueTime) {
 
         this.parent = parent;
         this.name = name;
@@ -140,17 +144,19 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
         this.criteriaAction = criteriaAction;
         this.taskActivity = taskActivity;
         this.description = description;
-        this.completeOnAction=completeOnAction;
+        this.completeOnAction = completeOnAction;
+        this.dueTime = dueTime;
     }
 
     public static Task create(final Task parent, final String name, final String shortName, final Integer entityType, final Long entityId,
             final Integer taskType, final TaskConfig taskConfig, final Integer status, final Integer priority, final Date dueDate,
             final Integer currentAction, final AppUser assignedTo, final Integer taskOrder, final RuleModel criteria,
             final String approvalLogic, final String rejectionLogic, final String configValues, final Client client, final Office office,
-            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction,final TaskActivity taskActivity, String description,Integer completeOnAction) {
+            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction, final TaskActivity taskActivity,
+            String description, Integer completeOnAction, Date dueTime) {
         return new Task(parent, name, shortName, entityType, entityId, taskType, taskConfig, status, priority, dueDate, currentAction,
                 assignedTo, taskOrder, criteria, approvalLogic, rejectionLogic, configValues, client, office, actionGroupId,
-                criteriaResult, criteriaAction, taskActivity, description,completeOnAction);
+                criteriaResult, criteriaAction, taskActivity, description, completeOnAction, dueTime);
     }
 
     public Task getParent() {
@@ -341,14 +347,20 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
         this.description = description;
     }
 
-    
     public Integer getCompleteOnAction() {
         return this.completeOnAction;
     }
 
-    
     public void setCompleteOnAction(Integer completeOnAction) {
         this.completeOnAction = completeOnAction;
     }
-    
+
+    public Date getDueTime() {
+        return this.dueTime;
+    }
+
+    public void setDueTime(Date dueTime) {
+        this.dueTime = dueTime;
+    }
+
 }

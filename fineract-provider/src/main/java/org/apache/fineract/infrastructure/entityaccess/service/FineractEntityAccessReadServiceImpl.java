@@ -26,7 +26,6 @@ import java.util.Date;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.dataqueries.service.GenericDataServiceImpl;
-import org.apache.fineract.infrastructure.entityaccess.FineractEntityAccessConstants;
 import org.apache.fineract.infrastructure.entityaccess.data.FineractEntityAccessData;
 import org.apache.fineract.infrastructure.entityaccess.data.FineractEntityRelationData;
 import org.apache.fineract.infrastructure.entityaccess.data.FineractEntityToEntityMappingData;
@@ -35,9 +34,9 @@ import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAcce
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityRelation;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityRelationRepositoryWrapper;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType;
-import org.apache.fineract.infrastructure.entityaccess.exception.FineractEntityAccessConfigurationException;
 import org.apache.fineract.infrastructure.entityaccess.exception.FineractEntityMappingConfigurationException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -382,18 +381,42 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
     }
 
     @Override
-    public boolean hasAcsessToLoanProduct(final Long officeId, final Long productId) {
-        if (configurationDomainService.isOfficeSpecificProductsEnabled()) { return hasAccessToEntity(officeId, productId,
-                FineractEntityAccessType.OFFICE_ACCESS_TO_LOAN_PRODUCTS); }
+    public boolean hasUserOfficeToEnityAccess(final Long officeId, final Long entityId, final FineractEntityAccessType type) {
+        if (this.configurationDomainService.isOfficeSpecificProductsEnabled()) {
+            final String hierarchy = this.context.authenticatedUser().getOffice().getHierarchy();
+            final String appendQuery = "(eem.allowed_for_child_offices = 1 AND ? like concat(off.hierarchy,'%'))) ";
+            return hasAccessToEntity(officeId, entityId, type, hierarchy, appendQuery);
+        }
         return true;
-
     }
 
-    private boolean hasAccessToEntity(final Long fromID, final Long toId, FineractEntityAccessType type) {
-        final String sql = "SELECT  count(eem.id) FROM m_entity_to_entity_mapping eem LEFT JOIN m_office off ON eem.from_id = off.id "
-                + "left join m_entity_relation er on er.id = eem.rel_id WHERE eem.from_id =? AND eem.to_id=? and er.code_name=? ";
-        Integer count = this.jdbcTemplate.queryForObject(sql, Integer.class, fromID, toId, type.toStr());
-        return count > 0;
+    private boolean hasAccessToEntity(final Long fromID, final Long toId, final FineractEntityAccessType type, final String hierarchy,
+            final String appendQuery) {
+        final StringBuilder queryBuilder = buildSQLQueryForToCheckHasAccessToEntity();
+        queryBuilder.append(appendQuery);
+        return this.jdbcTemplate.queryForObject(queryBuilder.toString(), Integer.class, toId, type.toStr(), fromID, hierarchy) > 0;
+    }
+
+    private StringBuilder buildSQLQueryForToCheckHasAccessToEntity() {
+        final StringBuilder queryBuilder = new StringBuilder("SELECT count(eem.id) FROM m_entity_to_entity_mapping eem ");
+        queryBuilder.append("LEFT JOIN m_office off ON eem.from_id = off.id ");
+        queryBuilder.append("LEFT JOIN m_entity_relation er on er.id = eem.rel_id ");
+        queryBuilder.append("WHERE eem.to_id=? and er.code_name=? ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("(");
+        queryBuilder.append("(eem.allowed_for_child_offices = 0 AND eem.from_id = ?) ");
+        queryBuilder.append("OR ");
+        return queryBuilder;
+    }
+
+    @Override
+    public boolean hasClientOfficeToEnityAccess(final Office office, final Long entityId, final FineractEntityAccessType type) {
+        if (this.configurationDomainService.isOfficeSpecificProductsEnabled()) {
+            final String hierarchy = office.getHierarchy();
+            final String appendQuery = "(eem.allowed_for_child_offices = 1 AND off.hierarchy = ?))";
+            return hasAccessToEntity(office.getId(), entityId, type, hierarchy, appendQuery);
+        }
+        return true;
     }
 
 }

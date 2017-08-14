@@ -123,7 +123,10 @@ public class BankTransactionApiResource {
         } else if (is(commandParam, BankTransactionApiConstants.rejectCommandParam)) {
             CommandWrapper commandRequest = builder.rejectBankTransaction(transactionId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        }
+        }  else if (is(commandParam, BankTransactionApiConstants.CLOSE_COMMAND_PARAM)) {
+            CommandWrapper commandRequest = builder.closeBankTransaction(transactionId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } 
         if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam,
                 new Object[] { "activate", "deactivate" }); }
         return this.toApiJsonSerializer.serialize(result);

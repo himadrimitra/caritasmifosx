@@ -79,6 +79,7 @@ public class BankTransactionReadPlatformServiceImpl implements BankTransactionRe
 			sb.append(" bat.utr_number as utrNumber, bat.po_number as poNumber, ");
 			sb.append(" bat.error_code as errorCode, bat.error_message as errorMessage, ");
 			sb.append(" bat.transaction_date as transactionDate, ");
+			sb.append(" bat.created_date as createdDate, ");
 			sb.append(" debbad.account_type_enum as  debAccountType,");
 			sb.append(" debbad.id as debitAccountid, debbad.name as debitAccountName, ");
 			sb.append(" debbad.account_number as debitAccountNumber,  debbad.ifsc_code as debitIfscCode, ");
@@ -116,7 +117,8 @@ public class BankTransactionReadPlatformServiceImpl implements BankTransactionRe
 			final String errorCode = rs.getString("errorCode");
 			final String errorMessage = rs.getString("errorMessage");
 			final Date transactionDate = rs.getTimestamp("transactionDate");
-
+			final Date createdDate = rs.getDate("createdDate");
+			
 			final Long debitAccountid = rs.getLong("debitAccountid");
 			final String debitAccountName = rs.getString("debitAccountName");
 			final String debitAccountNumber = rs.getString("debitAccountNumber");
@@ -164,7 +166,7 @@ public class BankTransactionReadPlatformServiceImpl implements BankTransactionRe
 					beneficiaryAccount, entityType, entityId, entityTxnId, amount,
 					TransferType.fromInt(transferType).getEnumOptionData(),
 					TransactionStatus.fromInt(status).getEnumOptionData(), referenceNumber, utrNumber, poNumber,
-					errorCode, errorMessage, transactionDate);
+					errorCode, errorMessage, transactionDate, createdDate);
 
 			return accountTransactionDetail;
 		}

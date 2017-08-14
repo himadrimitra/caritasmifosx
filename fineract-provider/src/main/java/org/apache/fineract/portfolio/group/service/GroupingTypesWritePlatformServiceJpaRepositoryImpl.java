@@ -299,31 +299,32 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         }
     }
 
-	private boolean createGroupWorkflow(Group group) {
+    private boolean createGroupWorkflow(Group group) {
 
-		if (this.configurationDomainService.isWorkFlowEnabled()) {
-			/**
-			 * Checking is loan product mapped with task configuration entity
-			 * type LOAN_PRODUCT
-			 */
-			final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-					.findOneByEntityTypeAndEntityId(TaskConfigEntityType.GROUPONBARDING.getValue(), -1L);
-			if (taskConfigEntityTypeMapping != null) {
-				final Long groupId = group.getId();
-				final Map<TaskConfigKey, String> map = new HashMap<>();
-				map.put(TaskConfigKey.GROUP_ID, String.valueOf(groupId));
-				Client client = null;
-				AppUser assignedTo = null;
-				Date dueDate = null;
-				String description = "On-boarding for group" + group.getName() + " (#" + group.getId() + ") ";
-				this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-						TaskEntityType.GROUP_ONBOARDING, group.getId(), client, assignedTo, dueDate, group.getOffice(),
-						map, description);
-				return true;
-			}
-		}
-		return false;
-	}
+        if (this.configurationDomainService.isWorkFlowEnabled()) {
+            /**
+             * Checking is loan product mapped with task configuration entity
+             * type LOAN_PRODUCT
+             */
+            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                    .findOneByEntityTypeAndEntityId(TaskConfigEntityType.GROUPONBARDING.getValue(), -1L);
+            if (taskConfigEntityTypeMapping != null) {
+                final Long groupId = group.getId();
+                final Map<TaskConfigKey, String> map = new HashMap<>();
+                map.put(TaskConfigKey.GROUP_ID, String.valueOf(groupId));
+                Client client = null;
+                AppUser assignedTo = null;
+                Date dueDate = null;
+                Date dueTime = null;
+                String description = "On-boarding for group" + group.getName() + " (#" + group.getId() + ") ";
+                this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
+                        TaskEntityType.GROUP_ONBOARDING, group.getId(), client, assignedTo, dueDate, group.getOffice(), map, description,
+                        dueTime);
+                return true;
+            }
+        }
+        return false;
+    }
 
 	private void updateLoanAndSavingsOfficer(final Group group) {
 		if (group.getStaff() == null) {

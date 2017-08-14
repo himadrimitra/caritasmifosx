@@ -55,4 +55,6 @@ public interface ClientReadPlatformService {
     ClientData retrieveHierarchyLookupForClient(ClientData clientData);
     
     ClientData retrieveOneWithBasicDetails(final Long clientId);
+
+    Long retrieveOfficeId(Long clientId);
 }

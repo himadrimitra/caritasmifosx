@@ -334,6 +334,14 @@ public class CommandWrapperBuilder {
         return this;
     }
     
+    public CommandWrapperBuilder closeBankTransaction(Long transactionId) {
+        this.actionName = "CLOSE";
+        this.entityName = "BANK_TRANSACTION";
+        this.entityId = transactionId;
+        this.href = "/banktransaction/" + transactionId + "?command=close";
+        return this;
+    }
+    
     /**
      * Create PDC
      * 
