@@ -1114,14 +1114,24 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions) {
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
         Money runningBalance = Money.zero(this.currency);
+        Money overdraftInterest = Money.zero(this.currency);
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
         LocalDate lastSavingsDate = null;
         final BigDecimal withdrawalFee = null;
         for (final SavingsAccountTransaction transaction : transactionsSortedByDate) {
             if (transaction.isNotReversed() && transaction.isCredit()) {
                 runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
+                if (overdraftInterest.isGreaterThanZero()) {
+                    overdraftInterest = overdraftInterest.minus(transaction.getAmount(this.currency));
+                    if (overdraftInterest.isLessThanZero()) {
+                        overdraftInterest = overdraftInterest.zero();
+                    }
+                }
             } else if (transaction.isNotReversed() && transaction.isDebit()) {
                 runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
+                if (transaction.isOverdraftInterestAndNotReversed()) {
+                    overdraftInterest = overdraftInterest.plus(transaction.getAmount(this.currency));
+                }
             } else {
                 continue;
             }
@@ -1134,8 +1144,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             if (depositAccountOnHoldTransactions != null) {
                 for (final DepositAccountOnHoldTransaction onHoldTransaction : depositAccountOnHoldTransactions) {
                     // Compare the balance of the on hold:
-                    if ((onHoldTransaction.getTransactionDate().isBefore(transaction.transactionLocalDate()) || onHoldTransaction
-                            .getTransactionDate().isEqual(transaction.transactionLocalDate()))
+                    if ((onHoldTransaction.getTransactionDate().isBefore(transaction.transactionLocalDate())
+                            || onHoldTransaction.getTransactionDate().isEqual(transaction.transactionLocalDate()))
                             && (lastSavingsDate == null || onHoldTransaction.getTransactionDate().isAfter(lastSavingsDate))) {
                         if (onHoldTransaction.getTransactionType().isHold()) {
                             minRequiredBalance = minRequiredBalance.plus(onHoldTransaction.getAmountMoney(this.currency));
@@ -1149,17 +1159,18 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             // deal with potential minRequiredBalance and
             // enforceMinRequiredBalance
             if (!isException && transaction.canProcessBalanceCheck()) {
-                if (runningBalance.minus(minRequiredBalance).isLessThanZero()) {
-                    insufficientBalanceException(transactionAmount,withdrawalFee);
+                if (runningBalance.minus(minRequiredBalance).plus(overdraftInterest).isLessThanZero()) {
+                    insufficientBalanceException(transactionAmount, withdrawalFee);
                 }
             }
             lastSavingsDate = transaction.transactionLocalDate();
         }
-        if(MathUtility.isGreaterThanZero(this.getSavingsHoldAmount())){
-            if(runningBalance.minus(this.getSavingsHoldAmount()).isLessThanZero()){
-                insufficientBalanceException(transactionAmount,withdrawalFee);
+        if (MathUtility.isGreaterThanZero(this.getSavingsHoldAmount())) {
+            if (runningBalance.minus(this.getSavingsHoldAmount()).isLessThanZero()) {
+                insufficientBalanceException(transactionAmount, withdrawalFee);
             }
         }
+
     }
     
     private void insufficientBalanceException(final BigDecimal transactionAmount, final BigDecimal withdrawalFee) {
