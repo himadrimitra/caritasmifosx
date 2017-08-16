@@ -450,6 +450,97 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
         return highmarkCredentialsData;
     }
 
+    @Override
+    public CibilCredentialsData getCibilCredentials() {
+        final ResultSetExtractor<CibilCredentialsData> resultSetExtractor = new CibilCredentialsDataExtractor();
+        final String sql = "SELECT esp.name, esp.value FROM c_external_service_properties esp inner join c_external_service es on esp.external_service_id = es.id where es.name = '"
+                + ExternalServicesConstants.CIBIL_SERVICE_NAME + "'";
+        final CibilCredentialsData equifaxCredentialsData = this.jdbcTemplate.query(sql, resultSetExtractor, new Object[] {});
+        return equifaxCredentialsData;
+    }
+    
+    private final static class CibilCredentialsDataExtractor implements ResultSetExtractor<CibilCredentialsData> {
+
+        @Override
+        public CibilCredentialsData extractData(ResultSet rs) throws SQLException, DataAccessException {
+            String userId = null;
+            String password = null;
+            String documentTypePassport = null;
+            String documentTypePan = null;
+            String documentTypeVoterId = null;
+            String documentTypeAadhar = null;
+            String documentTypeRation = null;
+            String documentTypeDrivingLicense = null;
+            String documentTypeOther = null;
+            String genderTypeFemale = null;
+            String genderTypeMale = null;
+            String hostName = null;
+            Integer port = null;
+            String addressTypeResidence = null;
+            String addressTypePermanent = null;
+            String addressTypeOffice = null;
+            while (rs.next()) {
+                final String name = rs.getString("name");
+                switch (name) {
+                    case ExternalServicesConstants.USER_NAME:
+                        userId = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.PASSWORD:
+                        password = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.DOCUMENT_TYPE_PASSPORT:
+                        documentTypePassport = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.DOCUMENT_TYPE_VOTER_ID:
+                        documentTypeVoterId = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.DOCUMENT_TYPE_UID:
+                        documentTypeAadhar = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.DOCUMENT_TYPE_RATION_CARD:
+                        documentTypeRation = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.DOCUMENT_TYPE_PAN:
+                        documentTypePan = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.DOCUMENT_TYPE_DRIVING_CARD:
+                        documentTypeDrivingLicense = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.DOCUMENT_TYPE_OTHER:
+                        documentTypeOther = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.GENDER_TYPE_FEMALE:
+                        genderTypeFemale = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.GENDER_TYPE_MALE:
+                        genderTypeMale = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.ADDRESSTYPE_RESIDENCE:
+                        addressTypeResidence = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.ADDRESSTYPE_PERMANENT:
+                        addressTypePermanent = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.ADDRESSTYPE_OFFICE:
+                        addressTypeOffice = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.CIBIL_HOSTNAME:
+                        hostName = rs.getString("value");
+                    break;
+                    case ExternalServicesConstants.CIBIL_PORT:
+                        port = rs.getInt("value");
+                    break;
+                }
+            }
+
+            final CibilAddressTypes addressTypes = new CibilAddressTypes(addressTypeResidence, addressTypePermanent, addressTypeOffice);
+            CibilDocumentTypes documentTypes = new CibilDocumentTypes(documentTypePassport, documentTypePan, documentTypeAadhar,
+                    documentTypeVoterId, documentTypeDrivingLicense, documentTypeRation, documentTypeOther);
+            return new CibilCredentialsData(hostName, port, userId, password, documentTypes, genderTypeFemale, genderTypeMale,
+                    addressTypes);
+        }
+
+    }
 	@Override
 	public EquifaxCredentialsData getEquifaxCredentials() {
 		final ResultSetExtractor<EquifaxCredentialsData> resultSetExtractor = new EquifaxCredentialsDataExtractor();
@@ -629,5 +720,4 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
                     SPONSOR_BANK, SPONSOR_BANK_CODE);
         }
     }
-
 }

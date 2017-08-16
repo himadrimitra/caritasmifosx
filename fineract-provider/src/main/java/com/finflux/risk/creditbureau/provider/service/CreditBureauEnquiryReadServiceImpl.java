@@ -216,8 +216,9 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
             final String clientAddress = rs.getString(ClientDataRequestConstants.clientAddress);
             final String clientCity = rs.getString(ClientDataRequestConstants.clientCity);
             final String clientStateCode = rs.getString(ClientDataRequestConstants.clientStateShortCode);
+            final String clientState = rs.getString("clientState") ;
             final String clientPin = rs.getString(ClientDataRequestConstants.clientPin);
-            return new EnquiryAddressData(clientAddressTypeId, clientAddressType, clientAddress, clientCity, clientStateCode, clientPin);
+            return new EnquiryAddressData(clientAddressTypeId, clientAddressType, clientAddress, clientCity, clientStateCode, clientState, clientPin);
         }
     }
 

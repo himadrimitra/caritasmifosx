@@ -240,7 +240,7 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
             Date reportGeneratedTime=null;
             String fileName=null;
             String reportId=null;
-            CreditScore creditScore = null;
+            List<CreditScore> creditScore = null;
             EnquiryResponse enquiryResponse = new EnquiryResponse(acknowledgementNumber, requestString, responseString, reportGeneratedTime, fileName,
                     CreditBureauEnquiryStatus.ERROR, reportId);
             

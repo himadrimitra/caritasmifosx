@@ -34,7 +34,8 @@ public interface ExternalServicesPropertiesReadPlatformService {
 
     NACHCredentialsData getNACHCredentials();
     
-    
     public EquifaxCredentialsData getEquifaxCredentials() ;
+    
+    public CibilCredentialsData getCibilCredentials() ;
     
 }

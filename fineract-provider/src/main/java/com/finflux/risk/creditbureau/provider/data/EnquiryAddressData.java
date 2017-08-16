@@ -8,15 +8,17 @@ public class EnquiryAddressData {
     final String clientCity;
     final String clientStateCode;
     final String clientPin;
-
+    final String stateName ;
+    
     public EnquiryAddressData(final String clientAddressTypeId, final String clientAddressType, final String clientAddress,
-            final String clientCity, final String clientStateCode, final String clientPin) {
+            final String clientCity, final String clientStateCode, final String stateName, final String clientPin) {
         super();
         this.clientAddressTypeId = clientAddressTypeId;
         this.clientAddressType = clientAddressType;
         this.clientAddress = clientAddress;
         this.clientCity = clientCity;
         this.clientStateCode = clientStateCode;
+        this.stateName = stateName ;
         this.clientPin = clientPin;
     }
 
@@ -35,7 +37,11 @@ public class EnquiryAddressData {
     public String getClientStateCode() {
         return clientStateCode;
     }
-
+    
+    public String getClientStateName() {
+        return this.stateName ;
+    }
+    
     public String getClientPin() {
         return clientPin;
     }
