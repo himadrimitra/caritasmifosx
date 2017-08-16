@@ -386,21 +386,17 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
     }
 
     @Override
-    public CalendarData retrieveLoanCalendar(final Long loanId) {
+    public CalendarData retrieveCalendarByEntityIdAndEntityType(final Long entityId, Integer entityType) {
         final CalendarDataMapper rm = new CalendarDataMapper();
-
         final String sql = rm.schema() + " and ci.entity_id = ? and ci.entity_type_enum = ? order by c.start_date ";
         CalendarData calendarData = null;
-        final Collection<CalendarData> calendars = this.jdbcTemplate.query(sql, rm,
-                new Object[] { loanId, CalendarEntityType.LOANS.getValue() });
-
+        final Collection<CalendarData> calendars = this.jdbcTemplate.query(sql, rm, new Object[] { entityId, entityType });
         if (!CollectionUtils.isEmpty(calendars)) {
             for (final CalendarData calendar : calendars) {
                 calendarData = calendar;
                 break;// Loans are associated with only one calendar
             }
         }
-
         return calendarData;
     }
 

@@ -183,5 +183,4 @@ public class ClientChargeReadPlatformServiceImpl implements ClientChargeReadPlat
 			throw new ClientChargeNotFoundException(clientRecurringChargeId);
 		}
 	}
-
 }

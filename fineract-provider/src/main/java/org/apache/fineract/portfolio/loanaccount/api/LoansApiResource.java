@@ -599,7 +599,8 @@ public class LoansApiResource {
 
             if (associationParameters.contains("meeting")) {
                 mandatoryResponseParameters.add("meeting");
-                meeting = this.calendarReadPlatformService.retrieveLoanCalendar(loanId);
+                meeting = this.calendarReadPlatformService.retrieveCalendarByEntityIdAndEntityType(loanId,
+                        CalendarEntityType.LOANS.getValue());
             }
 
             if (associationParameters.contains("notes")) {

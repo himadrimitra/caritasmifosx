@@ -45,7 +45,7 @@ public interface CalendarReadPlatformService {
 
     Collection<CalendarData> updateWithRecurringDates(final Collection<CalendarData> calendarsData);
 
-    CalendarData retrieveLoanCalendar(final Long loanId);
+    CalendarData retrieveCalendarByEntityIdAndEntityType(final Long entityId, Integer entityType);
 
     CalendarData retrieveCollctionCalendarByEntity(final Long entityId, final Integer entityTypeId);
 

@@ -26,7 +26,6 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.joda.time.LocalDate;
 
-@SuppressWarnings("unused")
 public class ClientChargeData {
 
     private final Long id;
@@ -38,6 +37,8 @@ public class ClientChargeData {
     private final String name;
 
     private final EnumOptionData chargeTimeType;
+
+    private LocalDate actualDueDate;
 
     private final LocalDate dueDate;
 
@@ -142,8 +143,149 @@ public class ClientChargeData {
         // template related fields
         this.chargeOptions = chargeOptions;
 
-        /// associations
+        // associations
         this.clientTransactionDatas = clientTransactionDatas;
     }
 
+    private ClientChargeData(Long id, Long clientId, Long chargeId, String name, EnumOptionData chargeTimeType, LocalDate actualDueDate,
+            LocalDate dueDate, EnumOptionData chargeCalculationType, CurrencyData currency, BigDecimal amount, BigDecimal amountPaid,
+            BigDecimal amountWaived, BigDecimal amountWrittenOff, BigDecimal amountOutstanding, boolean penalty, Boolean isPaid,
+            Boolean isWaived, Boolean isActive, LocalDate inactivationDate, Collection<ChargeData> chargeOptions,
+            Collection<ClientTransactionData> clientTransactionDatas) {
+        super();
+        this.id = id;
+        this.clientId = clientId;
+        this.chargeId = chargeId;
+        this.name = name;
+        this.chargeTimeType = chargeTimeType;
+        this.actualDueDate = actualDueDate;
+        this.dueDate = dueDate;
+        this.chargeCalculationType = chargeCalculationType;
+        this.currency = currency;
+        this.amount = amount;
+        this.amountPaid = amountPaid;
+        this.amountWaived = amountWaived;
+        this.amountWrittenOff = amountWrittenOff;
+        this.amountOutstanding = amountOutstanding;
+        this.penalty = penalty;
+        this.isPaid = isPaid;
+        this.isWaived = isWaived;
+        this.isActive = isActive;
+        this.inactivationDate = inactivationDate;
+
+        // template related fields
+        this.chargeOptions = chargeOptions;
+
+        // associations
+        this.clientTransactionDatas = clientTransactionDatas;
+    }
+    
+    public static ClientChargeData lookUp(final Long id, final LocalDate actualDueDate) {
+        final Long clientId = null;
+        final Long chargeId = null;
+        final String name = null;
+        final EnumOptionData chargeTimeType = null;
+        final LocalDate dueDate = null;
+        final EnumOptionData chargeCalculationType = null;
+        final CurrencyData currency = null;
+        final BigDecimal amount = null;
+        final BigDecimal amountPaid = null;
+        final BigDecimal amountWaived = null;
+        final BigDecimal amountWrittenOff = null;
+        final BigDecimal amountOutstanding = null;
+        final Boolean penalty = false;
+        final Boolean isPaid = null;
+        final Boolean isActive = null;
+        final Boolean isWaived = null;
+        final LocalDate inactivationDate = null;
+        final Collection<ClientTransactionData> clientTransactionDatas = null;
+        final Collection<ChargeData> chargeOptions = null;
+        return new ClientChargeData(id, clientId, chargeId, name, chargeTimeType, actualDueDate, dueDate, chargeCalculationType, currency,
+                amount, amountPaid, amountWaived, amountWrittenOff, amountOutstanding, penalty, isPaid, isWaived, isActive,
+                inactivationDate, chargeOptions, clientTransactionDatas);
+    }
+
+    public Long getId() {
+        return this.id;
+    }
+
+    public Long getClientId() {
+        return this.clientId;
+    }
+
+    public Long getChargeId() {
+        return this.chargeId;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public EnumOptionData getChargeTimeType() {
+        return this.chargeTimeType;
+    }
+
+    public LocalDate getActualDueDate() {
+        return this.actualDueDate;
+    }
+
+    public LocalDate getDueDate() {
+        return this.dueDate;
+    }
+
+    public EnumOptionData getChargeCalculationType() {
+        return this.chargeCalculationType;
+    }
+
+    public CurrencyData getCurrency() {
+        return this.currency;
+    }
+
+    public BigDecimal getAmount() {
+        return this.amount;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return this.amountPaid;
+    }
+
+    public BigDecimal getAmountWaived() {
+        return this.amountWaived;
+    }
+
+    public BigDecimal getAmountWrittenOff() {
+        return this.amountWrittenOff;
+    }
+
+    public BigDecimal getAmountOutstanding() {
+        return this.amountOutstanding;
+    }
+
+    public boolean isPenalty() {
+        return this.penalty;
+    }
+
+    public Boolean getIsActive() {
+        return this.isActive;
+    }
+
+    public Boolean getIsPaid() {
+        return this.isPaid;
+    }
+
+    public Boolean getIsWaived() {
+        return this.isWaived;
+    }
+
+    public LocalDate getInactivationDate() {
+        return this.inactivationDate;
+    }
+
+    public Collection<ChargeData> getChargeOptions() {
+        return this.chargeOptions;
+    }
+
+    public Collection<ClientTransactionData> getClientTransactionDatas() {
+        return this.clientTransactionDatas;
+    }
 }

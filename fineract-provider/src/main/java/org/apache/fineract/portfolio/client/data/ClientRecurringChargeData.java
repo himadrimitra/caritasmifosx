@@ -1,6 +1,8 @@
 package org.apache.fineract.portfolio.client.data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
@@ -56,6 +58,8 @@ public class ClientRecurringChargeData {
     private final LocalDate inactivatedOnDate;
     
     private final Integer countOfExistingFutureInstallments;
+    
+    private List<ClientChargeData> clientChargeDatas;
 
     public ClientRecurringChargeData(Long id, Long clientId, Long chargeId, String chargename, LocalDate chargeDueDate,
             CurrencyData currencyCode, EnumOptionData chargeAppliesTo, EnumOptionData chargeTime, EnumOptionData chargeCalculation,
@@ -231,6 +235,21 @@ public class ClientRecurringChargeData {
 
     public OfficeData getOfficeData() {
         return this.officeData;
+    }
+
+    public List<ClientChargeData> getClientChargeDatas() {
+        return this.clientChargeDatas;
+    }
+
+    public void setClientChargeDatas(final List<ClientChargeData> clientChargeDatas) {
+        this.clientChargeDatas = clientChargeDatas;
+    }
+
+    public void addClientChargeData(final ClientChargeData clientChargeData) {
+        if (this.clientChargeDatas == null) {
+            this.clientChargeDatas = new ArrayList<>();
+        }
+        this.clientChargeDatas.add(clientChargeData);
     }
     
 }
