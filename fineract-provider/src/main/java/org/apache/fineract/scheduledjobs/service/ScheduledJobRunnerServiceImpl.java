@@ -19,6 +19,7 @@
 package org.apache.fineract.scheduledjobs.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.calendar.service.CalendarWritePlatformService;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.apache.fineract.portfolio.client.service.ClientRecurringChargeReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanSchedularService;
@@ -101,6 +103,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 	private final BankAccountTransactionRepository bankAccountTransactionRepository;
 	private final TaskPlatformReadService taskPlatformReadService;
 	private final LoanSchedularService loanSchedularService;
+	private final CalendarWritePlatformService calendarWritePlatformService;
 
 	@Autowired
 	public ScheduledJobRunnerServiceImpl(
@@ -117,7 +120,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 			final BankTransactionReadPlatformService accountTransferReadPlatformService,
 			final BankAccountTransactionRepository bankAccountTransactionRepository,
 			final TaskPlatformReadService taskPlatformReadService,
-			final LoanSchedularService loanSchedularService) {
+			final LoanSchedularService loanSchedularService,
+			final CalendarWritePlatformService calendarWritePlatformService) {
 		this.dataSourceServiceFactory = dataSourceServiceFactory;
 		this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
 		this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
@@ -132,6 +136,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		this.bankAccountTransactionRepository = bankAccountTransactionRepository;
 		this.taskPlatformReadService = taskPlatformReadService;
 		this.loanSchedularService = loanSchedularService;
+		this.calendarWritePlatformService = calendarWritePlatformService;
 	}
 
 	@Transactional
@@ -838,5 +843,21 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 			throw new JobExecutionException(errorMsg.toString());
 		}
 	}
+
+    @Override
+    @CronTarget(jobName = JobName.UPDATE_NEXT_RECURRING_DATE)
+    public void generateNextRecurringDate() {
+        Collection<CalendarData> calendars = calanderReadPlatformService.retrieveAllCalendarsForNextRecurringDate();
+        if (!calendars.isEmpty()) {
+            for (CalendarData calendar : calendars) {
+                String recurringRule = calendar.getRecurrence();
+                LocalDate seedDate = calendar.getStartDate();
+                LocalDate startDate = DateUtils.getLocalDateOfTenant();
+                Long calendarId = calendar.getId();
+                LocalDate nextRecurringDate = CalendarUtils.getNextRecurringDate(recurringRule, seedDate, startDate);
+                this.calendarWritePlatformService.updateCalendarNextRecurringDate(calendarId, nextRecurringDate);
+            }
+        }
+    }
 
 }

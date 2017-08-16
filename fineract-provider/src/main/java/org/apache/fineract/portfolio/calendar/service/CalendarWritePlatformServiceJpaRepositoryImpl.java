@@ -35,6 +35,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.calendar.CalendarConstants.CALENDAR_SUPPORTED_PARAMETERS;
 import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
@@ -62,6 +63,7 @@ import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -77,14 +79,16 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
     private final GroupRepositoryWrapper groupRepository;
     private final LoanRepository loanRepository;
     private final ClientRepositoryWrapper clientRepository;
-	private final DepositAccountWritePlatformService depositAccountWritePlatformService;
+    private final DepositAccountWritePlatformService depositAccountWritePlatformService;
+    private final JdbcTemplate jdbcTemplate;
     @Autowired
     public CalendarWritePlatformServiceJpaRepositoryImpl(final CalendarRepository calendarRepository,
             final CalendarHistoryRepository calendarHistoryRepository,
             final CalendarCommandFromApiJsonDeserializer fromApiJsonDeserializer,
             final CalendarInstanceRepository calendarInstanceRepository, final LoanWritePlatformService loanWritePlatformService,
             final ConfigurationDomainService configurationDomainService, final GroupRepositoryWrapper groupRepository,
-            final LoanRepository loanRepository, final ClientRepositoryWrapper clientRepository, final DepositAccountWritePlatformService depositAccountWritePlatformService) {
+            final LoanRepository loanRepository, final ClientRepositoryWrapper clientRepository, final DepositAccountWritePlatformService depositAccountWritePlatformService,
+            final RoutingDataSource dataSource) {
         this.calendarRepository = calendarRepository;
         this.calendarHistoryRepository = calendarHistoryRepository;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
@@ -95,6 +99,7 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
         this.loanRepository = loanRepository;
         this.clientRepository = clientRepository;
         this.depositAccountWritePlatformService = depositAccountWritePlatformService;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
     @Override
@@ -307,6 +312,7 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
         if (!changes.isEmpty()) {
             // update calendar history table only if there is a change in
             // calendar start date.
+            calendarForUpdate.updateNextnextRecurringDate(null);
             Set<CalendarHistory> historys = calendarForUpdate.getCalendarHistory();
             CalendarHistoryDataWrapper calendarHistoryDataWrapper = new CalendarHistoryDataWrapper(historys);
             LocalDate endDate = null;
@@ -429,5 +435,12 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
                 .withCommandId(null) //
                 .withEntityId(calendarForUpdate.getId()) //
                 .build();
+    }
+    
+    @Override
+    public void updateCalendarNextRecurringDate(Long calendarId, LocalDate nextRecurringDate) {
+        // TODO Auto-generated method stub
+        String sql = "update m_calendar SET m_calendar.next_recurring_date = '" + nextRecurringDate + "' where m_calendar.id = " + calendarId;
+        this.jdbcTemplate.execute(sql);
     }
 }

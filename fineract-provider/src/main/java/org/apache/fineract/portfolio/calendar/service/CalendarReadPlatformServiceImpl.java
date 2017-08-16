@@ -23,7 +23,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -38,10 +40,13 @@ import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.meeting.data.MeetingData;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -50,11 +55,14 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
 
     private final JdbcTemplate jdbcTemplate;
     private final ConfigurationDomainService configurationDomainService;
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Autowired
     public CalendarReadPlatformServiceImpl(final RoutingDataSource dataSource, final ConfigurationDomainService configurationDomainService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.configurationDomainService = configurationDomainService;
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
     }
 
     private static final class CalendarDataMapper implements RowMapper<CalendarData> {
@@ -403,6 +411,15 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
 
         return calendarData;
     }
+    
+    @Override
+    public Collection<CalendarData> retrieveAllCalendarsForNextRecurringDate() {
+        final CalendarDataHistoryMapper rm = new CalendarDataHistoryMapper();
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("currentDate", formatter.print(DateUtils.getLocalDateOfTenant()));
+        final String sql = rm.schema();
+        return this.namedParameterJdbcTemplate.query(sql, paramMap, rm);
+    }
 
     public static String getParentHierarchyCondition(final CalendarEntityType calendarEntityType) {
         String conditionSql = "";
@@ -522,6 +539,33 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
             return "select c.id as id,ch.start_date as startDate,ch.recurrence as recurrence , ch.end_date as endDate from m_calendar c "
                     + "join m_calendar_instance ci on ci.calendar_id = c.id " + "join m_calendar_history ch on c.id = ch.calendar_id "
                     + "where ci.id = ?  and (? BETWEEN ch.start_date and ch.end_date)";
+        }
+
+        @Override
+        public CalendarData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final LocalDate startDate = JdbcSupport.getLocalDate(rs, "startDate");
+            final LocalDate endDate = JdbcSupport.getLocalDate(rs, "endDate");
+            final String recurrence = rs.getString("recurrence");
+            return CalendarData.instance(id, startDate, recurrence, endDate);
+        }
+    }
+    
+    private static final class CalendarDataHistoryMapper implements RowMapper<CalendarData> {
+
+        public String schema() {
+            StringBuilder schema = new StringBuilder("SELECT");
+            schema.append(" IF(c.start_date > :currentDate,hh.calendar_id,c.id) id,");
+            schema.append(" if(c.start_date > :currentDate,hh.start_date,c.start_date) startDate,");
+            schema.append(" if(c.start_date > :currentDate,hh.recurrence,c.recurrence) recurrence,");
+            schema.append(" if(c.start_date > :currentDate,hh.end_date,c.end_date) endDate ");
+            schema.append(
+                    " FROM m_calendar c left join m_calendar_history hh on hh.calendar_id = c.id and hh.id in (SELECT MAX(h.id) clid ");
+            schema.append(" FROM m_calendar_history h WHERE h.is_active = 1 GROUP BY h.calendar_id) ");
+            schema.append(" where (ISNULL(c.next_recurring_date) OR c.next_recurring_date < :currentDate)");
+
+            return schema.toString();
         }
 
         @Override
