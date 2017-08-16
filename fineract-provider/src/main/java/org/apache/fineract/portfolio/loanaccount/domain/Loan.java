@@ -3828,15 +3828,7 @@ public class Loan extends AbstractPersistable<Long> {
                             && currentInstallmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment) {
                         amountToBePaidInCurrentInstallment = amount;
                     } else {
-                        if (currentInstallmentNumber != this.fetchNumberOfInstallmensAfterExceptions()) {
-                            amountToBePaidInCurrentInstallment = installmentAmount;
-                        } else {
-                            BigDecimal defaultInstallmentAmount = MathUtility.getInstallmentAmount(amount,
-                                    this.fetchNumberOfInstallmensAfterExceptions(), getCurrency(), 1);
-                            amountToBePaidInCurrentInstallment = MathUtility.subtract(amount, MathUtility
-                                    .multiply(defaultInstallmentAmount, currentInstallmentNumber - 1));
-
-                        }
+                        amountToBePaidInCurrentInstallment = installmentAmount;
                     }
 
                     if (MathUtility.isGreaterThanZero(amountToBePaidInCurrentInstallment)) {
@@ -8158,16 +8150,17 @@ public class Loan extends AbstractPersistable<Long> {
     
     public BigDecimal getInstallmentChargeAmountToBeWaived(BigDecimal paidAmount, BigDecimal totalChargeAmount,
             BigDecimal installmentCharge, int numberOfRepayment, int installmentNumber) {
-        BigDecimal chargeToBeCompleted = MathUtility.multiply(installmentCharge, installmentNumber);
+        BigDecimal chargeToBeCompleted = totalChargeAmount;
+        if (installmentNumber != numberOfRepayment){
+            chargeToBeCompleted = MathUtility.multiply(installmentCharge, installmentNumber);
+        }                
         BigDecimal chargeToBePaid = MathUtility.subtract(chargeToBeCompleted, paidAmount);
 
         // when current installment charge completed
         if (MathUtility.isNegative(chargeToBePaid)) { return BigDecimal.ZERO; }
         // this is for partial installment
         if (MathUtility.isLesser(chargeToBePaid, installmentCharge)) { return chargeToBePaid; }
-        // for last installment
-        if (installmentNumber == numberOfRepayment) { return totalChargeAmount.subtract(MathUtility.multiply(installmentCharge,
-                numberOfRepayment - 1)); }
+        
         // for unpaid installment
         return installmentCharge;
     }
