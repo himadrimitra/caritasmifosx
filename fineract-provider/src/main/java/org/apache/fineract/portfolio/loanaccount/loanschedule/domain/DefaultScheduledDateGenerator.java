@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 
 
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
@@ -106,7 +107,8 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
     private boolean useCalendar(final LocalDate lastRepaymentDate, final LoanApplicationTerms loanApplicationTerms,
             final Calendar currentCalendar) {
         LocalDate calendarCreationDate = DateUtils.getLocalDateOfTenant().withDayOfMonth(1).withYear(2017).withMonthOfYear(8);
-        if(currentCalendar.getCreatedDate().toDate().after(calendarCreationDate.toDate())){
+        Date calendarStartDate = currentCalendar.getCreatedDate() == null ? DateUtils.getLocalDateOfTenant().toDate() : currentCalendar.getCreatedDate().toDate();
+        if(calendarStartDate.after(calendarCreationDate.toDate())){
             return true;
         }
         LocalDate newCodeMigrationDate = DateUtils.getLocalDateOfTenant().withDayOfMonth(8).withYear(2016).withMonthOfYear(4);
