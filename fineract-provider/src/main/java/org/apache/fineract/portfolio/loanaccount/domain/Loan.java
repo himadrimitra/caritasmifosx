@@ -3054,7 +3054,8 @@ public class Loan extends AbstractPersistable<Long> {
         this.setTotalCapitalizedCharges(LoanUtilService.getCapitalizedChargeAmount(this.getLoanCharges()));
         final LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(scheduleGeneratorDTO);
         updateInstallmentAmountForGlim(loanApplicationTerms);
-        loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList);        
+        loanApplicationTerms.updateGlimMembers(this.glimList);
+        loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList); 
         final LoanScheduleGenerator loanScheduleGenerator = scheduleGeneratorDTO.getLoanScheduleFactory().create(interestMethod);
         final BigDecimal firstFixedInstallmentEmiAmount = GroupLoanIndividualMonitoringAssembler.calculateGlimFirstInstallmentAmount(loanApplicationTerms);
     	loanApplicationTerms.setFirstFixedEmiAmount(firstFixedInstallmentEmiAmount);
