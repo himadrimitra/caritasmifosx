@@ -4,15 +4,14 @@ import java.util.List;
 
 public class CreditBureauResponse {
 
-    final CreditScore creditScore;
+    final List<CreditScore> creditScores;
     final List<CreditBureauExistingLoan> creditBureauExistingLoans;
     final CreditBureauReportFile creditBureauReportFile;
     final EnquiryResponse enquiryResponse;
-
-    public CreditBureauResponse(final EnquiryResponse enquiryResponse, final CreditScore creditScore,
+    public CreditBureauResponse(final EnquiryResponse enquiryResponse, final List<CreditScore> creditScores,
             final List<CreditBureauExistingLoan> creditBureauExistingLoans, final CreditBureauReportFile creditBureauReportFile) {
         this.enquiryResponse = enquiryResponse;
-        this.creditScore = creditScore;
+        this.creditScores = creditScores;
         this.creditBureauExistingLoans = creditBureauExistingLoans;
         this.creditBureauReportFile = creditBureauReportFile;
     }
@@ -21,8 +20,8 @@ public class CreditBureauResponse {
         return enquiryResponse;
     }
 
-    public CreditScore getCreditScore() {
-        return creditScore;
+    public List<CreditScore> getCreditScore() {
+        return creditScores;
     }
 
     public List<CreditBureauExistingLoan> getCreditBureauExistingLoans() {

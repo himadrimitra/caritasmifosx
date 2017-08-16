@@ -125,6 +125,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             if(loanEnquiryReferenceData != null && !loanEnquiryReferenceData.getStatus().isInValid()){
                 isCBReportExpired = loanEnquiryReferenceData.isCBReportGeneratedDaysGreaterThanStalePeriod(stalePeriod);
             }
+
             if (loanEnquiryReferenceData == null || loanEnquiryReferenceData.getStatus().isInValid()
                     || isCBReportExpired) {
                 // fire new request

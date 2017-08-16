@@ -23,16 +23,18 @@ import com.finflux.risk.creditbureau.provider.data.CreditBureauExistingLoan;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauExistingLoanPaymentDetail;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauReportFile;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauResponse;
+import com.finflux.risk.creditbureau.provider.data.CreditScore;
 import com.finflux.risk.creditbureau.provider.data.EnquiryReferenceData;
 import com.finflux.risk.creditbureau.provider.data.EnquiryResponse;
 import com.finflux.risk.creditbureau.provider.data.LoanEnquiryReferenceData;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiry;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryRepository;
+import com.finflux.risk.creditbureau.provider.domain.CreditBureauScore;
 import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiry;
 import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiryRepository;
+import com.finflux.risk.existingloans.domain.CreditBureauPaymentDetails;
 import com.finflux.risk.existingloans.domain.ExistingLoan;
 import com.finflux.risk.existingloans.domain.ExistingLoanRepositoryWrapper;
-import com.finflux.risk.existingloans.domain.CreditBureauPaymentDetails;
 import com.google.gson.Gson;
 
 @Service
@@ -91,7 +93,6 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
     @Override
     public void saveReportResponseDetails(LoanEnquiryReferenceData loanEnquiryReferenceData, CreditBureauResponse responseData) {
         try {
-            //logger.info(this.gson.toJson(responseData));
             EnquiryResponse response = responseData.getEnquiryResponse();
             CreditBureauEnquiry creditBureauEnquiry = this.creditBureauEnquiryRepository.findOne(loanEnquiryReferenceData.getEnquiryId());
             creditBureauEnquiry.setStatus(response.getStatus().getValue());
@@ -102,12 +103,18 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
                 loanEnquiry.setRequest(response.getRequest());
                 loanEnquiry.setResponse(response.getResponse());
                 loanEnquiry.setStatus(response.getStatus().getValue());
-
+                
                 if (responseData.getCreditBureauReportFile() != null) {
                     CreditBureauReportFile reportFile = responseData.getCreditBureauReportFile();
                     loanEnquiry.setFileName(reportFile.getFileName());
                     loanEnquiry.setFileType(reportFile.getFileType().getValue());
                     loanEnquiry.setFileContent(reportFile.getFileContent());
+                }
+                List<CreditScore> creditScores = responseData.getCreditScore() ;
+                if(creditScores != null && creditScores.size() > 0) {
+                	for(CreditScore score: creditScores) {
+                		loanEnquiry.addCreditScore(new CreditBureauScore(loanEnquiry, score)); 
+                	}
                 }
                 this.loanCreditBureauEnquiryRepository.save(loanEnquiry);
             }

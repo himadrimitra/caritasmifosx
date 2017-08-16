@@ -159,6 +159,17 @@ public class ExternalServicesConstants {
     
     //End Equifax
     
+    //CIBIL
+    public static final String CIBIL_SERVICE_NAME = "CIBIL" ;
+    public static final String CIBIL_HOSTNAME = "CIBIL_HOST" ;
+    public static final String CIBIL_PORT = "CIBIL_PORT" ;
+    public final static String USER_NAME = "USER_NAME" ;
+    public final static String ADDRESSTYPE_RESIDENCE = "ADDRESSTYPE_RESIDENCE";
+    public final static String ADDRESSTYPE_PERMANENT = "ADDRESSTYPE_PERMANENT";
+    public final static String ADDRESSTYPE_OFFICE = "ADDRESSTYPE_OFFICE";
+    public final static String ADDRESSTYPE_OTHER = "ADDRESSTYPE_OTHER";
+    
+    //END    
     public static final String NACH_SERVICE_NAME = "NACH";
     public static final String PROCESSOR_QUALIFIER = "PROCESSOR_QUALIFIER";
     public static final String CORPORATE_UTILITY_CODE = "CORPORATE_UTILITY_CODE";
