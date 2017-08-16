@@ -2003,15 +2003,18 @@ public final class LoanApplicationTerms {
     }
 
     public void updateTotalInterestDueForGlim(final List<GroupLoanIndividualMonitoring> glimList) {
-        Money totalInterestDueForGlim = Money.zero(getCurrency());
-        updateGlimMembers(glimList);
-        for (GroupLoanIndividualMonitoring glim : glimList) {
-            if (glim.isClientSelected()) {
-                totalInterestDueForGlim = totalInterestDueForGlim.plus(glim.getInterestAmount());
+        if(this.isGlim()){
+            Money totalInterestDueForGlim = Money.zero(getCurrency());
+            updateGlimMembers(glimList);
+            for (GroupLoanIndividualMonitoring glim : glimList) {
+                if (glim.isClientSelected()) {
+                    totalInterestDueForGlim = totalInterestDueForGlim.plus(glim.getInterestAmount());
+                }
             }
+            this.totalInterestDue = totalInterestDueForGlim;
+            this.totalInterestForGlim = totalInterestDueForGlim;
         }
-        this.totalInterestDue = totalInterestDueForGlim;
-        this.totalInterestForGlim = totalInterestDueForGlim;
+        
     }
     
     public Money getTotalInterestForGlim() {
