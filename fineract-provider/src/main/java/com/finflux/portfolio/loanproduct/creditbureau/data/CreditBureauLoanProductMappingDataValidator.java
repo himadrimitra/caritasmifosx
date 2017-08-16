@@ -86,12 +86,7 @@ public class CreditBureauLoanProductMappingDataValidator {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(
                         CreditBureauApiConstants.DEFAULT_LOAN_PRODUCT_AND_CREDIT_BUREAU_COMBINATION, defaultUserMessageArgs);
             }
-        } else {
-            if (count < 1) {
-                baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(
-                        CreditBureauApiConstants.DEFAULT_LOAN_PRODUCT_AND_CREDIT_BUREAU_COMBINATION_NOT_FOUND, defaultUserMessageArgs);
-            }
-        }
+        } 
 
         Integer productAndCreditBureauCount = this.creditBureauLoanProductOfficeMappingReadPlatformService
                 .retrieveCreditBureauAndLoanProductMappingCount(creditBureauProductId, loanProductId);
@@ -103,7 +98,7 @@ public class CreditBureauLoanProductMappingDataValidator {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
-    public void validateForUpdate(final String json) {
+    public void validateForUpdate(final String json, final Long creditBureauLoanProductMappingId) {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
@@ -151,11 +146,19 @@ public class CreditBureauLoanProductMappingDataValidator {
 
         if (offices == null || offices.size() == 0) {
             Integer count = this.creditBureauLoanProductOfficeMappingReadPlatformService
-                    .retrieveDefaultCreditBureauAndLoanProductMappingCount(creditBureauProductId, loanProductId);
+                    .retrieveDefaultCreditBureauAndLoanProductMappingCount(creditBureauLoanProductMappingId, loanProductId);
             if (count > 0) {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(
-                        CreditBureauApiConstants.DUPLICATE_LOAN_PRODUCT_AND_CREDIT_BUREAU_COMBINATION, "This combination for default!!");
+                        CreditBureauApiConstants.DEFAULT_LOAN_PRODUCT_AND_CREDIT_BUREAU_COMBINATION, "Default mapping for loan product and credit bureau found!!");
             }
+
+        }
+        Integer count = this.creditBureauLoanProductOfficeMappingReadPlatformService
+                .retrieveCurrentCreditBureauAndLoanProductMappingCount(creditBureauProductId, loanProductId, creditBureauLoanProductMappingId);
+        if (count > 0) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(
+                    CreditBureauApiConstants.DUPLICATE_LOAN_PRODUCT_AND_CREDIT_BUREAU_COMBINATION,
+                    "Duplicate credit bureau and loan product combination!!");
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

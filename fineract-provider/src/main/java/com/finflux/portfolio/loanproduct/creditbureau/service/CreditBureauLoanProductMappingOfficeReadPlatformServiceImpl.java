@@ -31,15 +31,22 @@ public class CreditBureauLoanProductMappingOfficeReadPlatformServiceImpl
     // check for bureau id, product mapping
 
     @Override
-    public Integer retrieveCreditBureauAndLoanProductMappingCount(Long creditBureauProductMappingId, Long loanProductId) {
-        final String sql = "select count(*) from f_creditbureau_loanproduct_office_mapping clo inner join f_creditbureau_loanproduct_mapping cl on clo.credit_bureau_loan_product_mapping_id = cl.id and clo.loan_product_id = ? and clo.office_id IS NOT NULL and cl.creditbureau_product_id = ? ";
-        return this.jdbcTemplate.queryForObject(sql, Integer.class, loanProductId, creditBureauProductMappingId);
+    public Integer retrieveCreditBureauAndLoanProductMappingCount(Long creditBureauProductId, Long loanProductId) {
+        final String sql = "select count(*) from f_creditbureau_loanproduct_office_mapping clo inner join f_creditbureau_loanproduct_mapping cl on clo.credit_bureau_loan_product_mapping_id = cl.id and clo.loan_product_id = ? and cl.creditbureau_product_id = ? ";
+        return this.jdbcTemplate.queryForObject(sql, Integer.class, loanProductId, creditBureauProductId);
     }
 
     @Override
     public Integer retrieveDefaultCreditBureauAndLoanProductMappingCount(Long creditBureauProductMappingId, Long loanProductId) {
-        final String sql = "select count(*) from f_creditbureau_loanproduct_office_mapping clo inner join f_creditbureau_loanproduct_mapping cl on clo.credit_bureau_loan_product_mapping_id = cl.id and clo.loan_product_id = ? and clo.office_id IS NULL and cl.creditbureau_product_id = ? ";
+        final String sql = "select count(*) from f_creditbureau_loanproduct_office_mapping clo inner join f_creditbureau_loanproduct_mapping cl on clo.credit_bureau_loan_product_mapping_id = cl.id and clo.loan_product_id = ? and clo.office_id IS NULL and clo.credit_bureau_loan_product_mapping_id != ?";
         return this.jdbcTemplate.queryForObject(sql, Integer.class, loanProductId, creditBureauProductMappingId);
+    }
+
+    @Override
+    public Integer retrieveCurrentCreditBureauAndLoanProductMappingCount(Long creditBureauProductId, Long loanProductId,
+            Long creditBureauLoanProductMappingId) {
+        final String sql = "select count(*) from f_creditbureau_loanproduct_office_mapping clo inner join f_creditbureau_loanproduct_mapping cl on clo.credit_bureau_loan_product_mapping_id = cl.id and clo.loan_product_id = ? and cl.creditbureau_product_id = ?  and clo.credit_bureau_loan_product_mapping_id != ?";
+        return this.jdbcTemplate.queryForObject(sql, Integer.class, loanProductId, creditBureauProductId, creditBureauLoanProductMappingId);
     }
 
 }
