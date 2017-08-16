@@ -8132,13 +8132,7 @@ public class Loan extends AbstractPersistable<Long> {
                                         installmentChargeAmount, this.fetchNumberOfInstallmensAfterExceptions(),
                                         currentInstallment.getInstallmentNumber());
                             } else {
-
-                                if (this.fetchNumberOfInstallmensAfterExceptions() == currentInstallment.getInstallmentNumber().intValue()) {
-                                    chargeAmountToBeWaived = chargeAmount.subtract(MathUtility.multiply(installmentChargeAmount,
-                                            this.fetchNumberOfInstallmensAfterExceptions() - 1));
-                                } else {
-                                    chargeAmountToBeWaived = installmentChargeAmount;
-                                }
+                                chargeAmountToBeWaived = installmentChargeAmount;
                             }
                         }
 
