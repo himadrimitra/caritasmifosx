@@ -11,6 +11,9 @@ public interface CreditBureauLoanProductOfficeMappingReadPlatformService {
 
     Integer retrieveLoanProductDefaultMappingCount(Long loanProductId);
 
-    Integer retrieveDefaultCreditBureauAndLoanProductMappingCount(Long creditBureauProductId, Long loanProductId);
+    Integer retrieveDefaultCreditBureauAndLoanProductMappingCount(Long creditBureauProductMappingId, Long loanProductId);
+
+    Integer retrieveCurrentCreditBureauAndLoanProductMappingCount(Long creditBureauProductId, Long loanProductId,
+            Long creditBureauLoanProductMappingId);
 
 }

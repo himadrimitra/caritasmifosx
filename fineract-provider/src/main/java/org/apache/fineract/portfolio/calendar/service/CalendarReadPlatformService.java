@@ -54,4 +54,6 @@ public interface CalendarReadPlatformService {
     Boolean isCalendarAssociatedWithEntity(final Long entityId, final Long calendarId, Long entityTypeId);
     
     CalendarData retrieveCalendarHistoryByCalendarInstanceAndDueDate(final Date dueDate, final Long calendatInstanceId);
+    
+    Collection<CalendarData> retrieveAllCalendarsForNextRecurringDate();
 }

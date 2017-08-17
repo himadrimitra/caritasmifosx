@@ -47,7 +47,9 @@ import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.calendar.service.CalendarWritePlatformService;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
 import org.apache.fineract.portfolio.client.data.ClientChargeData;
@@ -119,6 +121,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     private final LoanUtilService loanUtilService;
     private final RecurringDepositSchedularService recurringDepositSchedularService;
     private final ClientChargeWritePlatformService clientChargeWritePlatformService;
+	private final CalendarReadPlatformService calanderReadPlatformService;
+	private final CalendarWritePlatformService calendarWritePlatformService;
 
     @Autowired
     public ScheduledJobRunnerServiceImpl(final RoutingDataSourceServiceFactory dataSourceServiceFactory,
@@ -133,7 +137,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
             final TaskPlatformReadService taskPlatformReadService, final ConfigurationDomainService configurationDomainService,
             final HolidayRepositoryWrapper holidayRepository, final LoanSchedularService loanSchedularService,
             final LoanUtilService loanUtilService, final RecurringDepositSchedularService recurringDepositSchedularService,
-            final ClientChargeWritePlatformService clientChargeWritePlatformService) {
+            final ClientChargeWritePlatformService clientChargeWritePlatformService,
+            final CalendarReadPlatformService calanderReadPlatformService, final CalendarWritePlatformService calendarWritePlatformService) {
         this.dataSourceServiceFactory = dataSourceServiceFactory;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
         this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
@@ -151,7 +156,12 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         this.loanUtilService = loanUtilService;
         this.recurringDepositSchedularService = recurringDepositSchedularService;
         this.clientChargeWritePlatformService = clientChargeWritePlatformService;
+        this.calanderReadPlatformService = calanderReadPlatformService;
+        this.calendarWritePlatformService = calendarWritePlatformService;
     }
+
+
+	
 
 	@Transactional
 	@Override
@@ -846,6 +856,22 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
             }
         }
         return officeIds;
+    }
+
+    @Override
+    @CronTarget(jobName = JobName.UPDATE_NEXT_RECURRING_DATE)
+    public void generateNextRecurringDate() {
+        Collection<CalendarData> calendars = calanderReadPlatformService.retrieveAllCalendarsForNextRecurringDate();
+        if (!calendars.isEmpty()) {
+            for (CalendarData calendar : calendars) {
+                String recurringRule = calendar.getRecurrence();
+                LocalDate seedDate = calendar.getStartDate();
+                LocalDate startDate = DateUtils.getLocalDateOfTenant();
+                Long calendarId = calendar.getId();
+                LocalDate nextRecurringDate = CalendarUtils.getNextRecurringDate(recurringRule, seedDate, startDate);
+                this.calendarWritePlatformService.updateCalendarNextRecurringDate(calendarId, nextRecurringDate);
+            }
+        }
     }
 
 }

@@ -104,6 +104,10 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "calendar_id")
     private Set<CalendarHistory> calendarHistory = new HashSet<>();
+    
+    @Column(name = "next_recurring_date", nullable = true)
+    @Temporal(TemporalType.DATE)
+    private Date nextRecurringDate;
 
     protected Calendar() {
 
@@ -549,6 +553,10 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
             if (getEndDateLocalDate() == null || isEndDateAfterOrEqual(compareDate)) { return true; }
         }
         return false;
+    }
+    
+    public void updateNextnextRecurringDate(Date nextRecurringDate){
+        this.nextRecurringDate = nextRecurringDate;
     }
 
     private static String constructRecurrence(final JsonCommand command, final Calendar calendar) {

@@ -43,6 +43,8 @@ public interface ScheduledJobRunnerService {
     void applyClientRecurringCharge() throws JobExecutionException;
 	
     void highmarkEnquiry();
+    
+    void generateNextRecurringDate();
 
     @CronTarget(jobName = JobName.INITIATE_BANK_TRANSACTION)
     void initiateBankTransactions() throws JobExecutionException;

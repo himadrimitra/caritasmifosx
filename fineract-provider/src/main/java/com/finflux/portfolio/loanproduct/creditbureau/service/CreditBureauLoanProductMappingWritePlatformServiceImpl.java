@@ -63,7 +63,7 @@ public class CreditBureauLoanProductMappingWritePlatformServiceImpl implements C
             this.context.authenticatedUser();
             final CreditBureauLoanProductMapping creditBureauLoanProductMapping = this.repository
                     .findOneWithNotFoundDetection(cblpMappingId);
-            this.validator.validateForUpdate(command.json());
+            this.validator.validateForUpdate(command.json(), cblpMappingId);
             final Map<String, Object> changes = this.assembler.assembleUpdateForm(creditBureauLoanProductMapping, command);
             if (!changes.isEmpty()) {
                 this.repository.saveAndFlush(creditBureauLoanProductMapping);
