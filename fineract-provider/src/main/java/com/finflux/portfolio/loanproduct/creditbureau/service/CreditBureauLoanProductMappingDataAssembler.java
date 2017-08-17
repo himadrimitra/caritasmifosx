@@ -6,12 +6,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
 import org.apache.fineract.organisation.office.exception.OfficeNotFoundException;
-import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
-import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -30,18 +29,15 @@ public class CreditBureauLoanProductMappingDataAssembler {
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CreditBureauProductRepositoryWrapper creditBureauProductRepository;
-    private final LoanProductRepository loanProductRepository;
     private final OfficeRepository officeRepository;
     private final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository;
 
     @Autowired
     public CreditBureauLoanProductMappingDataAssembler(final FromJsonHelper fromApiJsonHelper,
-            final CreditBureauProductRepositoryWrapper creditBureauProductRepository, final LoanProductRepository loanProductRepository,
-            final OfficeRepository officeRepository,
+            final CreditBureauProductRepositoryWrapper creditBureauProductRepository, final OfficeRepository officeRepository,
             final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.creditBureauProductRepository = creditBureauProductRepository;
-        this.loanProductRepository = loanProductRepository;
         this.officeRepository = officeRepository;
         this.creditBureauLoanProductOfficeMappingRepository = creditBureauLoanProductOfficeMappingRepository;
     }
@@ -108,7 +104,13 @@ public class CreditBureauLoanProductMappingDataAssembler {
                         mappingList.add(CreditBureauLoanProductOfficeMapping.create(creditBureauLoanProductMapping, loanProductId,
                                 Long.parseLong(officeId)));
                     } else {
+                        if (creditBureauLoanProductMapping.getId() != creditBureauLoanProductOfficeMapping
+                                .getCreditBureauLoanProductMapping().getId()) {
+
+                        throw new GeneralPlatformDomainRuleException(CreditBureauApiConstants.LOAN_PRODUCT_AND_OFFICE_COMBINATION,
+                                "Loan Product and Office combination exists!!", office.getName()); }
                         mappingList.add(creditBureauLoanProductOfficeMapping);
+
                     }
 
                 }

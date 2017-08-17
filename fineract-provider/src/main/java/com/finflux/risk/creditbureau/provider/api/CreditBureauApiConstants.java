@@ -25,8 +25,7 @@ public class CreditBureauApiConstants {
     public static final String OFFICES = "offices";
     public static final String DUPLICATE_LOAN_PRODUCT_AND_CREDIT_BUREAU_COMBINATION = "duplicate.loan.product.and.credit.bureau.product.combination";
     public static final String DEFAULT_LOAN_PRODUCT_AND_CREDIT_BUREAU_COMBINATION = "default.loan.product.and.credit.bureau.product.combination.exists";
-    public static final String DEFAULT_LOAN_PRODUCT_AND_CREDIT_BUREAU_COMBINATION_NOT_FOUND = "default.loan.product.and.credit.bureau.product.combination.does.not.exists";
-    public static final String LOAN_PRODUCT_AND_OFFICE_COMBINATION = "loan.product.and.office.combination.exists";
+    public static final String LOAN_PRODUCT_AND_OFFICE_COMBINATION = "validation.msg.loan.product.and.office.combination.exists";
 
     public static final Set<String> HIGHMARK_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(ACTIVELOANCOUNTPARAMNAME,
             CLOSEDlOANCOUNTPARAMNAME, TOTALOUTSTANDINGPARAMNAME, TOTALOVERDUEPARAMNAME, TOTALINSTALMENTPARAMNAME, RESPONSEDATE));
