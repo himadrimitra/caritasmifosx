@@ -564,6 +564,7 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
                     " FROM m_calendar c left join m_calendar_history hh on hh.calendar_id = c.id and hh.id in (SELECT MAX(h.id) clid ");
             schema.append(" FROM m_calendar_history h WHERE h.is_active = 1 GROUP BY h.calendar_id) ");
             schema.append(" where (ISNULL(c.next_recurring_date) OR c.next_recurring_date < :currentDate)");
+            schema.append(" and IF(c.start_date > :currentDate,hh.calendar_id,c.id) is not null");
 
             return schema.toString();
         }
