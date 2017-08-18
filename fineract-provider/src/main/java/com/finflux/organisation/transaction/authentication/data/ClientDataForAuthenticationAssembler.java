@@ -43,7 +43,7 @@ public class ClientDataForAuthenticationAssembler {
 			final ClientIdentifierReadPlatformService clientIdentifierReadPlatformService,
 			final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
 			final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
-			 final FromJsonHelper fromJsonHelper) {
+			final FromJsonHelper fromJsonHelper) {
 		this.codeValueReadPlatformService = codeValueReadPlatformService;
 		this.clientIdentifierReadPlatformService = clientIdentifierReadPlatformService;
 		this.transactionAuthenticationReadPlatformService = transactionAuthenticationReadPlatformService;
@@ -52,8 +52,8 @@ public class ClientDataForAuthenticationAssembler {
 	}
 
 	public ClientDataForAuthentication validateAndAssembleClientDataForAuthentication(JsonCommand command,
-			final Integer productType, final Integer transactionType, final SecondaryAuthenticationService secondaryAuthenticationService,
- final Long productId,
+			final Integer productType, final Integer transactionType,
+			final SecondaryAuthenticationService secondaryAuthenticationService, final Long productId,
 			final Loan loan) {
 
 		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -120,7 +120,7 @@ public class ClientDataForAuthenticationAssembler {
 
 	}
 
-	public String getAadhaarNumberOfClient(final Long clientId,final Long identifierTypeId) {
+	public String getAadhaarNumberOfClient(final Long clientId, final Long identifierTypeId) {
 		Collection<CodeValueData> codeValues = this.codeValueReadPlatformService
 				.retrieveCodeValuesByCode("Customer Identifier");
 		CodeValueData customerDocumentType = null;
@@ -151,5 +151,5 @@ public class ClientDataForAuthenticationAssembler {
 		return aadhaarNumber;
 
 	}
-	
+
 }

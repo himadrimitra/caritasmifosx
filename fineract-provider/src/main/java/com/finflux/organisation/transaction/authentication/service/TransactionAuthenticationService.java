@@ -18,12 +18,9 @@ import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.B
 import org.apache.fineract.portfolio.common.service.BusinessEventListner;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
-import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.aadhaarconnect.bridge.capture.model.common.Location;
-import com.aadhaarconnect.bridge.capture.model.common.LocationType;
 import com.finflux.infrastructure.external.authentication.domain.SecondaryAuthenticationService;
 import com.finflux.infrastructure.external.authentication.domain.SecondaryAuthenticationServiceRepositoryWrapper;
 import com.finflux.infrastructure.external.authentication.service.GenerateOtpFactory;
@@ -89,7 +86,7 @@ public class TransactionAuthenticationService {
 		public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
 			JsonCommand jsonCommand = (JsonCommand) businessEventEntity.get(BUSINESS_ENTITY.JSON_COMMAND);
 			Loan loan = (Loan) businessEventEntity.get(BUSINESS_ENTITY.LOAN);
-			//executeTransactionAuthenticationService(jsonCommand, loan);
+			executeTransactionAuthenticationService(jsonCommand, loan);
 		}
 
 		@Override

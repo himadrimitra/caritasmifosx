@@ -20,20 +20,16 @@ import org.springframework.util.MultiValueMap;
 import com.aadhaarconnect.bridge.capture.model.auth.AuthCaptureData;
 import com.aadhaarconnect.bridge.capture.model.auth.AuthCaptureRequest;
 import com.aadhaarconnect.bridge.capture.model.common.ConsentType;
-import com.aadhaarconnect.bridge.capture.model.common.Location;
-import com.aadhaarconnect.bridge.capture.model.common.LocationType;
 import com.aadhaarconnect.bridge.capture.model.common.request.CertificateType;
 import com.aadhaarconnect.bridge.capture.model.common.request.Modality;
 import com.aadhaarconnect.bridge.capture.model.common.response.Modalities;
 import com.aadhaarconnect.bridge.capture.model.common.response.Pid;
 import com.aadhaarconnect.bridge.capture.model.common.response.PidType;
 import com.aadhaarconnect.bridge.capture.model.common.response.SessionKey;
-import com.aadhaarconnect.bridge.capture.model.kyc.KycCaptureData;
 import com.aadhaarconnect.bridge.capture.model.otp.AMType;
 import com.aadhaarconnect.bridge.capture.model.otp.OtpCaptureRequest;
 import com.aadhaarconnect.bridge.capture.model.otp.OtpChannel;
 import com.finflux.infrastructure.external.authentication.aadhar.api.AadhaarApiConstants;
-import com.finflux.infrastructure.external.authentication.aadhar.exception.AuthRequestDataBuldFailedException;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -44,90 +40,51 @@ public class AadhaarServiceDataAssembler {
 
 	private final DefaultToApiJsonSerializer jsonSerializer;
 	private final FromJsonHelper fromJsonHelper;
-	
+
 	@Autowired
-    public AadhaarServiceDataAssembler(final DefaultToApiJsonSerializer jsonSerializer, final FromJsonHelper fromJsonHelper) {
-        this.jsonSerializer = jsonSerializer;
-        this.fromJsonHelper = fromJsonHelper;
-    }
-	
-    public String otpRequestDataAssembler(final String aadhaarNumber) {
-        OtpCaptureRequest otpCaptureRequest = new OtpCaptureRequest();
-        otpCaptureRequest.setAadhaar(aadhaarNumber);
-        otpCaptureRequest.setChannel(OtpChannel.SMS);
-        otpCaptureRequest.setType(AMType.A);
-        String json = new Gson().toJson(otpCaptureRequest);
-        return json;
-    }
+	public AadhaarServiceDataAssembler(final DefaultToApiJsonSerializer jsonSerializer,
+			final FromJsonHelper fromJsonHelper) {
+		this.jsonSerializer = jsonSerializer;
+		this.fromJsonHelper = fromJsonHelper;
+	}
 
-    private Location setLocation(final LocationType locationType, final String pincode, final String latitude, final String longitude) {
-        Location location = new Location();
-        location.setType(locationType);
-        if (locationType == LocationType.pincode) {
-            location.setPincode(pincode);
-        } else if (locationType == LocationType.gps) {
-            location.setLatitude(latitude);
-            location.setLongitude(longitude);
-        }
-        return location;
-    }
+	public String otpRequestDataAssembler(final String aadhaarNumber) {
+		OtpCaptureRequest otpCaptureRequest = new OtpCaptureRequest();
+		otpCaptureRequest.setAadhaar(aadhaarNumber);
+		otpCaptureRequest.setChannel(OtpChannel.SMS);
+		otpCaptureRequest.setType(AMType.A);
+		String json = new Gson().toJson(otpCaptureRequest);
+		return json;
+	}
 
-    public String authenticateUserUsingOtpDataAssembler(String aadhaarNumber, String otp, CertificateType certificateType,
-            final String transactionId) {
-        AuthCaptureRequest authCaptureRequest = assembleAuthRequestUsingOtp(aadhaarNumber, otp, certificateType,transactionId);
-        String json = new Gson().toJson(authCaptureRequest);
-        return json;
-    }
+	public String authenticateUserUsingOtpDataAssembler(String aadhaarNumber, String otp,
+			CertificateType certificateType, final String transactionId) {
+		AuthCaptureRequest authCaptureRequest = assembleAuthRequestUsingOtp(aadhaarNumber, otp, certificateType,
+				transactionId);
+		String json = new Gson().toJson(authCaptureRequest);
+		return json;
+	}
 
-    private AuthCaptureRequest assembleAuthRequestUsingOtp(String aadhaarNumber, final String otp, CertificateType certificateType,
-            final String transactionId) {
-        AuthCaptureRequest authCaptureRequest = new AuthCaptureRequest();
-        authCaptureRequest.setAadhaar(aadhaarNumber);
-        authCaptureRequest.setConsent(ConsentType.Y);
-        authCaptureRequest.setCertificateType(certificateType);
-        authCaptureRequest.setTxnId(transactionId);
-        authCaptureRequest.setModality(Modality.otp);
-        authCaptureRequest.setOtp(otp);
-        return authCaptureRequest;
-    }
+	private AuthCaptureRequest assembleAuthRequestUsingOtp(String aadhaarNumber, final String otp,
+			CertificateType certificateType, final String transactionId) {
+		AuthCaptureRequest authCaptureRequest = new AuthCaptureRequest();
+		authCaptureRequest.setAadhaar(aadhaarNumber);
+		authCaptureRequest.setConsent(ConsentType.Y);
+		authCaptureRequest.setCertificateType(certificateType);
+		authCaptureRequest.setTxnId(transactionId);
+		authCaptureRequest.setModality(Modality.otp);
+		authCaptureRequest.setOtp(otp);
+		return authCaptureRequest;
+	}
 
-    public String authenticateUserUsingFingerprintDataAssembler(final String aadharNumber, final String authData) {
-        final AuthCaptureData authCaptureData = assembleAndGetAuthCaptureDataForFingerPrint(aadharNumber, authData);
-       return this.jsonSerializer.serialize(authCaptureData);
-    }
+	public String authenticateUserUsingBiometricDataAssembler(final String aadharNumber, final String authData) {
+		final AuthCaptureData authCaptureData = assembleAndGetAuthCaptureDataForBioMetric(aadharNumber, authData);
+		return this.jsonSerializer.serialize(authCaptureData);
+	}
 
-    public String getKycCaptureData(String aadhaarNumber, String authData, CertificateType certificateType, final String transactionId,
-            final String authType) {
-        KycCaptureData kycCaptureData = new KycCaptureData();
-        kycCaptureData.setConsent(ConsentType.Y);
-        AuthCaptureData authCaptureData = null;
-
-        switch (authType) {
-            case AadhaarApiConstants.AUTHTYPE_FINGERPRINT:
-                //authCaptureData = assembleAndGetAuthCaptureDataForFingerPrint(aadhaarNumber, authData, certificateType, location);
-            break;
-            case AadhaarApiConstants.AUTHTYPE_OTP:
-                AuthCaptureRequest authCaptureRequest = assembleAuthRequestUsingOtp(aadhaarNumber, authData, certificateType, transactionId);
-                try {
-                    //authCaptureData = AadhaarBridgeUtil.buildAuthRequest(authCaptureRequest);
-                } catch (Exception e) {
-                    throw new AuthRequestDataBuldFailedException(authType);
-                }
-             break ;
-            case AadhaarApiConstants.AUTHTYPE_IRIS:
-                //authCaptureData = assembleAndGetAuthCaptureDataForIris(aadhaarNumber, authData, certificateType, location) ;
-                break ;
-        }
-        kycCaptureData.setAuthCaptureData(authCaptureData); // refer
-                                                            // authCaptureData
-                                                            // for fp
-       //kycCaptureData.setTs(ISO8601.now());
-        String json = new Gson().toJson(kycCaptureData);
-        return json;
-    }
-
-    public AuthCaptureData assembleAndGetAuthCaptureDataForFingerPrint(final String aadharNumber, final String authData) {
-    	if (StringUtils.isBlank(authData)) {
+	public AuthCaptureData assembleAndGetAuthCaptureDataForBioMetric(final String aadharNumber,
+			final String authData) {
+		if (StringUtils.isBlank(authData)) {
 			throw new InvalidJsonException();
 		}
 
@@ -158,16 +115,13 @@ public class AadhaarServiceDataAssembler {
 		Pid pid = new Pid();
 		final String pidType = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.TYPE, pidData);
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.TYPE).value(pidType).notNull().notBlank();
-		;
 		pid.setType(PidType.valueOf(pidType));
 		final String pidAuthData = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.PID_VALUE, pidData);
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.PID_VALUE).value(pidAuthData).notNull().notBlank();
-		;
 		pid.setValue(pidAuthData);
 		authCaptureData.setPid(pid);
 		final String hmac = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.HMAC, element);
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.HMAC).value(hmac).notNull().notBlank();
-		;
 		authCaptureData.setHmac(hmac);
 		final JsonElement sessionData = parentObject.get(AadhaarApiConstants.SESSION_KEY);
 		SessionKey sessionKey = new SessionKey();
@@ -175,17 +129,17 @@ public class AadhaarServiceDataAssembler {
 				sessionData);
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.CERTIFICATE_ID).value(certificateId).notNull()
 				.notBlank();
-		;
 		final String keyValue = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.CERTIFICATE_VALUE,
 				sessionData);
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.CERTIFICATE_VALUE).value(sessionKey).notNull()
 				.notBlank();
-		;
 		sessionKey.setCertificateId(certificateId);
 		sessionKey.setValue(keyValue);
 		authCaptureData.setSessionKey(sessionKey);
 		final String uniqueDeviceCode = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.UNIQUE_DEVICE_CODE,
 				element);
+		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.UNIQUE_DEVICE_CODE).value(uniqueDeviceCode).notNull()
+				.notBlank();
 		authCaptureData.setUniqueDeviceCode(uniqueDeviceCode);
 		final String dpId = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.DPID, element);
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.DPID).value(dpId).notNull().notBlank();
@@ -207,61 +161,63 @@ public class AadhaarServiceDataAssembler {
 		authCaptureData.setMi(mi);
 		throwExceptionIfValidationWarningsExist(dataValidationErrors);
 		return authCaptureData;
-    }
-    
-    private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
-        if (!dataValidationErrors.isEmpty()) {
-            //
-            throw new PlatformApiDataValidationException(dataValidationErrors);
-        }
-    }
+	}
 
-    public MultiValueMap<String, String> otpRequestDataAssembler(final String redirectUrl, final String aadhaarNumber,
-            final String requestId, final String purposeType, final String saCode, final String hash) {
-        /**
-         * constructing the url query parameters
-         **/
-        	MultiValueMap<String, String> urlParam = new LinkedMultiValueMap<>();
-            urlParam.add(AadhaarApiConstants.SACODE, saCode);
-            urlParam.add(AadhaarApiConstants.AADHAARID, aadhaarNumber);
-            urlParam.add(AadhaarApiConstants.SUCCESSURL, redirectUrl);
-            urlParam.add(AadhaarApiConstants.FAILUREURL, redirectUrl);
-            urlParam.add(AadhaarApiConstants.REQUESTID, requestId);
-            urlParam.add(AadhaarApiConstants.PURPOSE, purposeType);
-            urlParam.add(AadhaarApiConstants.MODALITY, AadhaarApiConstants.AUTHTYPE_OTP);
-            urlParam.add(AadhaarApiConstants.HASH, hash);
-            urlParam.add(AadhaarApiConstants.CHANNEL,OtpChannel.SMS.toString());
-            return urlParam;
-    }
+	private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
+		if (!dataValidationErrors.isEmpty()) {
+			//
+			throw new PlatformApiDataValidationException(dataValidationErrors);
+		}
+	}
 
-    public String getEkycCaptureData(final String aadhaarNumber, final String requestId, final String uuId, final String saCode,
-            final String hash) {
+	public MultiValueMap<String, String> otpRequestDataAssembler(final String redirectUrl, final String aadhaarNumber,
+			final String requestId, final String purposeType, final String saCode, final String hash) {
+		/**
+		 * constructing the url query parameters
+		 **/
+		MultiValueMap<String, String> urlParam = new LinkedMultiValueMap<>();
+		urlParam.add(AadhaarApiConstants.SACODE, saCode);
+		urlParam.add(AadhaarApiConstants.AADHAARID, aadhaarNumber);
+		urlParam.add(AadhaarApiConstants.SUCCESSURL, redirectUrl);
+		urlParam.add(AadhaarApiConstants.FAILUREURL, redirectUrl);
+		urlParam.add(AadhaarApiConstants.REQUESTID, requestId);
+		urlParam.add(AadhaarApiConstants.PURPOSE, purposeType);
+		urlParam.add(AadhaarApiConstants.MODALITY, AadhaarApiConstants.AUTHTYPE_OTP);
+		urlParam.add(AadhaarApiConstants.HASH, hash);
+		urlParam.add(AadhaarApiConstants.CHANNEL, OtpChannel.SMS.toString());
+		return urlParam;
+	}
 
-        EkycRequestData kycRequestData = new EkycRequestData();
-        kycRequestData.setSaCode(saCode);
-        kycRequestData.setAadhaarId(aadhaarNumber);
-        kycRequestData.setRequestId(requestId);
-        kycRequestData.setHash(hash);
-        kycRequestData.setUuid(uuId);
-        String json = new Gson().toJson(kycRequestData);
-        return json;
-    }
-    public MultiValueMap<String, String> initiateBiometricRequest(final String redirectUrl, final String aadhaarNumber,
-            final String requestId, final String purposeType, final String saCode, final String hash,final AuthCaptureData authCaptureData) {
-        /**
-         * constructing the request body parameters
-         **/
-    	MultiValueMap<String, String> requestParams = new LinkedMultiValueMap<>();
-    	requestParams.add(AadhaarApiConstants.SACODE, saCode);
-    	requestParams.add(AadhaarApiConstants.AADHAARID, aadhaarNumber);
-    	requestParams.add(AadhaarApiConstants.SUCCESSURL, redirectUrl);
-    	requestParams.add(AadhaarApiConstants.FAILUREURL, redirectUrl);
-    	requestParams.add(AadhaarApiConstants.REQUESTID, requestId);
-    	requestParams.add(AadhaarApiConstants.PURPOSE, purposeType);
-    	requestParams.add(AadhaarApiConstants.MODALITY, AadhaarApiConstants.BIOMETRIC);
-    	requestParams.add(AadhaarApiConstants.AUTH_CAPTURED_DATA, this.jsonSerializer.serialize(authCaptureData));
-    	requestParams.add(AadhaarApiConstants.HASH, hash);
-        return requestParams;
-    }
-    
+	public String getEkycCaptureData(final String aadhaarNumber, final String requestId, final String uuId,
+			final String saCode, final String hash) {
+
+		EkycRequestData kycRequestData = new EkycRequestData();
+		kycRequestData.setSaCode(saCode);
+		kycRequestData.setAadhaarId(aadhaarNumber);
+		kycRequestData.setRequestId(requestId);
+		kycRequestData.setHash(hash);
+		kycRequestData.setUuid(uuId);
+		String json = new Gson().toJson(kycRequestData);
+		return json;
+	}
+
+	public MultiValueMap<String, String> initiateBiometricRequest(final String redirectUrl, final String aadhaarNumber,
+			final String requestId, final String purposeType, final String saCode, final String hash,
+			final AuthCaptureData authCaptureData) {
+		/**
+		 * constructing the request body parameters
+		 **/
+		MultiValueMap<String, String> requestParams = new LinkedMultiValueMap<>();
+		requestParams.add(AadhaarApiConstants.SACODE, saCode);
+		requestParams.add(AadhaarApiConstants.AADHAARID, aadhaarNumber);
+		requestParams.add(AadhaarApiConstants.SUCCESSURL, redirectUrl);
+		requestParams.add(AadhaarApiConstants.FAILUREURL, redirectUrl);
+		requestParams.add(AadhaarApiConstants.REQUESTID, requestId);
+		requestParams.add(AadhaarApiConstants.PURPOSE, purposeType);
+		requestParams.add(AadhaarApiConstants.MODALITY, AadhaarApiConstants.BIOMETRIC);
+		requestParams.add(AadhaarApiConstants.AUTH_CAPTURED_DATA, this.jsonSerializer.serialize(authCaptureData));
+		requestParams.add(AadhaarApiConstants.HASH, hash);
+		return requestParams;
+	}
+
 }
