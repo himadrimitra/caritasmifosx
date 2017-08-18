@@ -77,9 +77,9 @@
 		overflowToDisk="false" />
 	<cache name="officesForDropdown" maxEntriesLocalHeap="10000"
 		eternal="true" overflowToDisk="false" />
- 	<cache name="hooks" maxEntriesLocalHeap="10000" eternal="true"
+ 	<!-- cache name="hooks" maxEntriesLocalHeap="10000" eternal="true"
 		overflowToDisk="false" />	
-	<!-- cache name="users" maxEntriesLocalHeap="10000" eternal="true"
+	<cache name="users" maxEntriesLocalHeap="10000" eternal="true"
 		overflowToDisk="false" />
 	<cache name="usersByUsername" maxEntriesLocalHeap="10000"
 		eternal="true" overflowToDisk="false" />
