@@ -1506,8 +1506,9 @@ public class Loan extends AbstractPersistable<Long> {
             actualChanges.put("recalculateLoanSchedule", recalculateLoanSchedule);
             isChargesModified = true;
         }
-        
-        loanInterestRecalculationDetails.update(command, actualChanges);
+		if (isInterestRecalculationEnabled()) {
+			loanInterestRecalculationDetails.update(command, actualChanges);
+		}
         
         final String interestRatePerPeriodParamName = "interestRatePerPeriod";
         if(actualChanges.containsKey(interestRatePerPeriodParamName)){
