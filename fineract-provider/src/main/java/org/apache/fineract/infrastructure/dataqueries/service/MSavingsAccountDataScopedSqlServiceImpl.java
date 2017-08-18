@@ -15,7 +15,7 @@ public class MSavingsAccountDataScopedSqlServiceImpl implements DataScopedSqlSer
                 + " join m_client c on c.id = s.client_id " + " join m_office o on o.id = c.office_id and o.hierarchy like '"
                 + currentUser.getOffice().getHierarchy() + "%'" + " where s.id = " + apptableIdentifier + ")" + " union all "
                 + " (select o.id as officeId, s.group_id as groupId, s.client_id as clientId, s.id as savingsId, null as loanId, null as loanApplicationReferenceId, "
-                + " null as entityId, null as transactionId from m_savings_account s " + " join m_group g on g.id = s.group_id "
+                + " null as entityId, null as transactionId, null as villageId from m_savings_account s " + " join m_group g on g.id = s.group_id "
                 + " join m_office o on o.id = g.office_id and o.hierarchy like '" + currentUser.getOffice().getHierarchy() + "%'"
                 + " where s.id = " + apptableIdentifier + ")" + " ) x";
 
