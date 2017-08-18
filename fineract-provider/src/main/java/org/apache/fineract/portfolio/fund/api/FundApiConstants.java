@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -238,4 +239,8 @@ public class FundApiConstants {
             "loanProducts", "loanPurposeCategories", "loanPurposes", "approvedDate", "disbursementDate", "pendingRepayment",
             "paidRepayment", "principalOutstanding", "overDueFromDays", "funds", "trancheDisburse", "dateFormat", "locale"));
     
+    public static final String fundAssignmentValidLoanStatusAsString = "("+ LoanStatus.ACTIVE.getValue()+" ,"
+    +LoanStatus.CLOSED_OBLIGATIONS_MET.getValue()+","
+    +LoanStatus.OVERPAID.getValue()+")";
+             
 }
