@@ -85,6 +85,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.constant.CommonConstants;
+
 @Service
 public class CenterReadPlatformServiceImpl implements CenterReadPlatformService {
 
@@ -137,15 +139,19 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
     // caused by the same name of columns in m_office and m_group tables
     private String getCenterExtraCriteria(final SearchParameters searchCriteria) {
 
-        StringBuffer extraCriteria = new StringBuffer(200);
+        final StringBuffer extraCriteria = new StringBuffer(200);
         extraCriteria.append(" and g.level_id = " + GroupTypes.CENTER.getId());
 
-        String sqlQueryCriteria = searchCriteria.getSqlSearch();
-        if (StringUtils.isNotBlank(sqlQueryCriteria)) {
-            sqlQueryCriteria = sqlQueryCriteria.replaceAll(" display_name ", " g.display_name ");
-            sqlQueryCriteria = sqlQueryCriteria.replaceAll("display_name ", "g.display_name ");
-            extraCriteria.append(" and (").append(sqlQueryCriteria).append(") ");
-        }
+        final Map<String, String> searchConditions = searchCriteria.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.GROUP_DISPLAY_NAME:
+                    extraCriteria.append(" and ( g.display_name = '").append(value).append("' ) ");
+                break;
+                default:
+                break;
+            }
+        });
 
         final Long officeId = searchCriteria.getOfficeId();
         if (officeId != null) {

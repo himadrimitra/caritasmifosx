@@ -21,6 +21,7 @@ package org.apache.fineract.infrastructure.codes.service;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 
 /**
  * A service for retrieving code value information based on the code itself.
@@ -49,7 +50,7 @@ public interface CodeValueReadPlatformService {
 
     CodeValueData retrieveCodeValue(final Long codeValueId);
     
-    Collection<CodeValueData> retrieveCodeValuesByCode(final String code, String sqlSearch);
+    Collection<CodeValueData> retrieveCodeValuesByCode(final String code, final SearchParameters searchParameters);
 	
     CodeValueData retriveCodeValueByCodeValueName(final String codeValueName);
 

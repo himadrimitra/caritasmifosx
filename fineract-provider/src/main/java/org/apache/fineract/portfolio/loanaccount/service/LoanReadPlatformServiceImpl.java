@@ -140,6 +140,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.constant.CommonConstants;
 import com.finflux.fingerprint.data.FingerPrintData;
 import com.finflux.fingerprint.services.FingerPrintReadPlatformServices;
 import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServiceData;
@@ -360,11 +361,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         extraCriterias.add(hierarchySearchString);
         extraCriterias.add(hierarchySearchString);
 
-        String sqlQueryCriteria = searchParameters.getSqlSearch();
-        if (StringUtils.isNotBlank(sqlQueryCriteria)) {
-            sqlQueryCriteria = sqlQueryCriteria.replaceAll("accountNo", "l.account_no");
-            sqlBuilder.append(" and (").append(sqlQueryCriteria).append(")");
-        }
+        final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.LOAN_ACCOUNT_NO:
+                    sqlBuilder.append(" and ( l.account_no = '").append(value).append("' ) ");
+                break;
+                default:
+                break;
+            }
+        });
 
         if (StringUtils.isNotBlank(searchParameters.getExternalId())) {
             sqlBuilder.append(" and l.external_id = ?");
@@ -1274,87 +1280,77 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
     @Override
     public Collection<LoanAccountData> retrieveAllForTaskLookupBySearchParameters(final SearchParameters searchParameters) {
-		final AppUser currentUser = this.context.authenticatedUser();
-		String hierarchy = currentUser.getOffice().getHierarchy() + "%";
-        final StringBuilder builder = new StringBuilder(400);
-        final LoanTaskLookupMapper mapper= new LoanTaskLookupMapper();
-		Boolean whereused = false;
-         List<Object> params = new ArrayList<>();
-         String sqlSearch = searchParameters.getSqlSearch();
-         builder.append("select ");
-         builder.append("ml.id as id, ml.account_no AS accountNo,ml.loan_status_id AS lifeCycleStatusId, ");
-         builder.append("g.id as groupId, ");
-         builder.append("g.account_no as groupAccountNo, ");
-         builder.append("g.display_name as groupName, ");
-         builder.append("g.level_id as groupLevel, ");
-         builder.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
-         builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName, ");
-         builder.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");
-         builder.append("ml.principal_amount as principal, dd.principal as firstTrancheAmount, ml.loan_type_enum as loanType, ");
-         builder.append("pt.value as paymentTypeName, ml.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId ");
-         builder.append("from m_loan ml ");
-         builder.append("join m_product_loan mp on mp.id = ml.product_id ");
-         builder.append("LEFT JOIN m_staff s ON s.id = ml.loan_officer_id ");
-         builder.append(" left join m_loan_disbursement_detail dd on dd.loan_id = ml.id and dd.expected_disburse_date = ml.expected_disbursedon_date ");
-         builder.append(" left join f_loan_purpose flp on flp.id = ml.loan_purpose_id  ");
-         builder.append(" left join m_client c on ml.client_id = c.id ");
-         builder.append(" left JOIN m_group g ON g.id = ml.group_id ");
-         builder.append(" JOIN m_office o ON (o.id = g.office_id or o.id = c.office_id) AND o.hierarchy LIKE ? ");
-         builder.append(" left JOIN m_payment_type pt ON ml.expected_disbursal_payment_type_id = pt.id ");
-         params.add(hierarchy);
+        final AppUser currentUser = this.context.authenticatedUser();
+        String hierarchy = currentUser.getOffice().getHierarchy() + "%";
+        final StringBuilder builderSelectQuery = new StringBuilder(400);
+        /**
+         * This is used for to build the multiple where conditions.
+         */
+        final StringBuilder builderWhereConditions = new StringBuilder(100);
+        final LoanTaskLookupMapper mapper = new LoanTaskLookupMapper();
+        List<Object> params = new ArrayList<>();
+        builderSelectQuery.append("select ");
+        builderSelectQuery.append("ml.id as id, ml.account_no AS accountNo,ml.loan_status_id AS lifeCycleStatusId, ");
+        builderSelectQuery.append("g.id as groupId, ");
+        builderSelectQuery.append("g.account_no as groupAccountNo, ");
+        builderSelectQuery.append("g.display_name as groupName, ");
+        builderSelectQuery.append("g.level_id as groupLevel, ");
+        builderSelectQuery.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
+        builderSelectQuery
+                .append("mp.id as loanProductId,  mp.name as loanProductName, ml.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName, ");
+        builderSelectQuery.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");
+        builderSelectQuery.append("ml.principal_amount as principal, dd.principal as firstTrancheAmount, ml.loan_type_enum as loanType, ");
+        builderSelectQuery.append("pt.value as paymentTypeName, ml.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId ");
+        builderSelectQuery.append("from m_loan ml ");
+        builderSelectQuery.append("join m_product_loan mp on mp.id = ml.product_id ");
+        builderSelectQuery.append("LEFT JOIN m_staff s ON s.id = ml.loan_officer_id ");
+        builderSelectQuery
+                .append(" left join m_loan_disbursement_detail dd on dd.loan_id = ml.id and dd.expected_disburse_date = ml.expected_disbursedon_date ");
+        builderSelectQuery.append(" left join f_loan_purpose flp on flp.id = ml.loan_purpose_id  ");
+        builderSelectQuery.append(" left join m_client c on ml.client_id = c.id ");
+        builderSelectQuery.append(" left JOIN m_group g ON g.id = ml.group_id ");
+        builderSelectQuery.append(" JOIN m_office o ON (o.id = g.office_id or o.id = c.office_id) AND o.hierarchy LIKE ? ");
+        builderSelectQuery.append(" left JOIN m_payment_type pt ON ml.expected_disbursal_payment_type_id = pt.id ");
+        params.add(hierarchy);
         if (searchParameters.getOfficeId() != null) {
-            builder.append(" WHERE o.id = ? ");
+            builderWhereConditions.append(" and o.id = ? ");
             params.add(searchParameters.getOfficeId());
-            whereused = true;
         }
         if (searchParameters.getStaffId() != null) {
-            if (whereused) {
-                builder.append(" and s.id = ?");
-            } else {
-                builder.append(" where s.id = ?");
-                whereused = true;
-
-            }
+            builderWhereConditions.append(" and s.id = ?");
             params.add(searchParameters.getStaffId());
         }
         if (searchParameters.getGroupId() != null) {
-            if (whereused) {
-                builder.append(" and g.id = ?");
-            } else {
-                builder.append(" where g.id = ?");
-                whereused = true;
-            }
+            builderWhereConditions.append(" and g.id = ?");
             params.add(searchParameters.getGroupId());
         }
         if (searchParameters.getCenterId() != null) {
-            if (whereused) {
-                builder.append(" and g.parent_id = ?");
-            } else {
-                builder.append(" where g.parent_id = ?");
-                whereused = true;
-            }
+            builderWhereConditions.append(" and g.parent_id = ?");
             params.add(searchParameters.getCenterId());
         }
         if (searchParameters.getPaymentType() != null) {
-            if (whereused) {
-                builder.append(" and ml.expected_disbursal_payment_type_id = ?");
-            } else {
-                builder.append(" where ml.expected_disbursal_payment_type_id = ?");
-                whereused = true;
-            }
+            builderWhereConditions.append(" and ml.expected_disbursal_payment_type_id = ? ");
             params.add(searchParameters.getPaymentType());
         }
-        if (sqlSearch != null) {
-            if (whereused) {
-                builder.append(" and (" + sqlSearch + ")");
-            } else {
-                builder.append(" where (" + sqlSearch + ")");
-                whereused = true;
+        
+        final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.LOAN_STATUS:
+                    builderWhereConditions.append(" and ( ml.loan_status_id = ").append(value).append(" ) ");
+                break;
+                case CommonConstants.LOAN_EXPECTED_DISBURSEDON_DATE:
+                    builderWhereConditions.append(" and ( ml.expected_disbursedon_date = '").append(value).append("' ) ");
+                break;
+                default:
+                break;
             }
-        }
-         
-         return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
+        });
+        
+        builderSelectQuery.append(builderWhereConditions.toString().replaceFirst("(?i)and", " where "));
+        return this.jdbcTemplate.query(builderSelectQuery.toString(), mapper, params.toArray());
     }
+    
     private static final class LoanTaskLookupMapper implements RowMapper<LoanAccountData> {
         @Override
         public LoanAccountData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {

@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.account.api;
 
 import java.util.Date;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -67,19 +68,18 @@ public class StandingInstructionHistoryApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
-            @QueryParam("externalId") final String externalId, @QueryParam("offset") final Integer offset,
-            @QueryParam("limit") final Integer limit, @QueryParam("orderBy") final String orderBy,
-            @QueryParam("sortOrder") final String sortOrder, @QueryParam("transferType") final Integer transferType,
-            @QueryParam("clientName") final String clientName, @QueryParam("clientId") final Long clientId,
-            @QueryParam("fromAccountId") final Long fromAccount, @QueryParam("fromAccountType") final Integer fromAccountType,
-            @QueryParam("locale") final String locale, @QueryParam("dateFormat") final String dateFormat,
-            @QueryParam("fromDate") final DateParam fromDateParam, @QueryParam("toDate") final DateParam toDateParam) {
-
+    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("externalId") final String externalId,
+            @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
+            @QueryParam("transferType") final Integer transferType, @QueryParam("clientName") final String clientName,
+            @QueryParam("clientId") final Long clientId, @QueryParam("fromAccountId") final Long fromAccount,
+            @QueryParam("fromAccountType") final Integer fromAccountType, @QueryParam("locale") final String locale,
+            @QueryParam("dateFormat") final String dateFormat, @QueryParam("fromDate") final DateParam fromDateParam,
+            @QueryParam("toDate") final DateParam toDateParam) {
+        final Map<String, String> searchConditionsMap = null;
         this.context.authenticatedUser().validateHasReadPermission(StandingInstructionApiConstants.STANDING_INSTRUCTION_RESOURCE_NAME);
-
-        final SearchParameters searchParameters = SearchParameters.forAccountTransfer(sqlSearch, externalId, offset, limit, orderBy,
-                sortOrder);
+        final SearchParameters searchParameters = SearchParameters.forAccountTransfer(searchConditionsMap, externalId, offset, limit,
+                orderBy, sortOrder);
         Date startDateRange = null;
         Date endDateRange = null;
         if (fromDateParam != null) {

@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
@@ -64,6 +65,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.constant.CommonConstants;
 import com.finflux.kyc.address.data.AddressData;
 import com.finflux.kyc.address.service.AddressReadPlatformService;
 
@@ -205,59 +207,58 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     }
 
     private String buildSqlStringFromClientCriteria(final SearchParameters searchParameters) {
-
-        String sqlSearch = searchParameters.getSqlSearch();
         final Long officeId = searchParameters.getOfficeId();
         final String externalId = searchParameters.getExternalId();
         final String displayName = searchParameters.getName();
         final String firstname = searchParameters.getFirstname();
         final String lastname = searchParameters.getLastname();
-
-        String extraCriteria = "";
-        if (sqlSearch != null) {
-            sqlSearch = sqlSearch.replaceAll(" display_name ", " c.display_name ");
-            sqlSearch = sqlSearch.replaceAll("display_name ", "c.display_name ");
-            extraCriteria = " and (" + sqlSearch + ")";
-        }
+        final StringBuilder sqlBuilder = new StringBuilder(200);
+        final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.CLIENT_DISPLAY_NAME:
+                    sqlBuilder.append(" and ( c.display_name = '").append(value).append("' ) ");
+                break;
+                default:
+                break;
+            }
+        });
 
         if (officeId != null) {
-            extraCriteria += " and c.office_id = " + officeId;
+            sqlBuilder.append(" and c.office_id = ").append(officeId);
         }
 
         if (externalId != null) {
-            extraCriteria += " and c.external_id like " + ApiParameterHelper.sqlEncodeString(externalId);
+            sqlBuilder.append(" and c.external_id like ").append(ApiParameterHelper.sqlEncodeString(externalId));
         }
 
         if (displayName != null) {
-            //extraCriteria += " and concat(ifnull(c.firstname, ''), if(c.firstname > '',' ', '') , ifnull(c.lastname, '')) like "
-			extraCriteria += " and c.display_name like "
-                    + ApiParameterHelper.sqlEncodeString("%" + displayName + "%");
+            sqlBuilder.append(" and c.display_name like ").append(ApiParameterHelper.sqlEncodeString("%" + displayName + "%"));
         }
 
         if (firstname != null) {
-            extraCriteria += " and c.firstname like " + ApiParameterHelper.sqlEncodeString(firstname);
+            sqlBuilder.append(" and c.firstname like ").append(ApiParameterHelper.sqlEncodeString(firstname));
         }
 
         if (lastname != null) {
-            extraCriteria += " and c.lastname like " + ApiParameterHelper.sqlEncodeString(lastname);
+            sqlBuilder.append(" and c.lastname like ").append(ApiParameterHelper.sqlEncodeString(lastname));
         }
 
         if (searchParameters.isScopedByOfficeHierarchy()) {
-            extraCriteria += " and o.hierarchy like " + ApiParameterHelper.sqlEncodeString(searchParameters.getHierarchy() + "%");
-        }
-        
-		if (searchParameters.isOrphansOnly()) {
-			if (configurationDomainService.allowClientsInMultipleGroups()) {
-				extraCriteria += " and c.id NOT IN (select client_id from m_group_client gc where gc.group_id =?)";
-			} else {
-				extraCriteria += " and c.id NOT IN (select client_id from m_group_client) ";
-			}
+            sqlBuilder.append(" and o.hierarchy like ").append(ApiParameterHelper.sqlEncodeString(searchParameters.getHierarchy() + "%"));
         }
 
+        if (searchParameters.isOrphansOnly()) {
+            if (this.configurationDomainService.allowClientsInMultipleGroups()) {
+                sqlBuilder.append(" and c.id NOT IN (select client_id from m_group_client gc where gc.group_id =?)");
+            } else {
+                sqlBuilder.append(" and c.id NOT IN (select client_id from m_group_client) ");
+            }
+        }
+        String extraCriteria = sqlBuilder.toString();
         if (StringUtils.isNotBlank(extraCriteria)) {
             extraCriteria = extraCriteria.substring(4);
         }
-
         return extraCriteria;
     }
 
@@ -825,67 +826,57 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     }
     @Override
     public Collection<ClientData> retrieveAllForTaskLookupBySearchParameters(final SearchParameters searchParameters) {
-		final AppUser currentUser = this.context.authenticatedUser();
-		String hierarchy = currentUser.getOffice().getHierarchy() + "%";
-        final StringBuilder builder = new StringBuilder(400);
-		final ClientTaskLookupMapper mapper= new ClientTaskLookupMapper();
-		Boolean whereused =false;
-        List<Object> params = new ArrayList<>();
-        String sqlSearch = searchParameters.getSqlSearch();
-        builder.append("select ");
-        builder.append("c.id as id, c.account_no as accountNo,c.status_enum as statusEnum,c.office_id as officeId, o.name as officeName,");
-        builder.append("c.fullname as fullname, c.display_name as displayName, ");
-        builder.append("c.staff_id as staffId, s.display_name as staffName ");
-        builder.append("from m_client c ");
-        builder.append("join m_office o on o.id = c.office_id and o.hierarchy like ?");
-        builder.append("left join m_staff s on s.id = c.staff_id ");
-        if((searchParameters.getGroupId() != null) || (searchParameters.getCenterId() != null)){
-            builder.append("JOIN m_group_client gc ON c.id = gc.client_id ");
-            builder.append("join m_group g on g.id = gc.group_id ");
-        } 
-		params.add(hierarchy);
-		if (searchParameters.getOfficeId() != null) {
-			builder.append("where o.id = ?");
-			params.add(searchParameters.getOfficeId());
-			whereused = true;
-		}
-		if (searchParameters.getStaffId() != null) {
-			if (whereused) {
-				builder.append(" and s.id = ?");
-			} else {
-				builder.append(" where s.id = ?");
-				whereused = true;
-			}
-			params.add(searchParameters.getStaffId());
-		}
-        if(searchParameters.getGroupId() != null){
-        	if (whereused) {
-        		builder.append(" and g.id = ?");
-			} else {
-				builder.append(" where g.id = ?");
-				whereused = true;
-			}
+        final AppUser currentUser = this.context.authenticatedUser();
+        String hierarchy = currentUser.getOffice().getHierarchy() + "%";
+        final StringBuilder builderSelectQuery = new StringBuilder(400);
+        /**
+         * This is used for to build the multiple where conditions.
+         */
+        final StringBuilder builderWhereConditions = new StringBuilder(100);
+
+        final ClientTaskLookupMapper mapper = new ClientTaskLookupMapper();
+        final List<Object> params = new ArrayList<>();
+        builderSelectQuery.append("select ");
+        builderSelectQuery
+                .append("c.id as id, c.account_no as accountNo,c.status_enum as statusEnum,c.office_id as officeId, o.name as officeName,");
+        builderSelectQuery.append("c.fullname as fullname, c.display_name as displayName, ");
+        builderSelectQuery.append("c.staff_id as staffId, s.display_name as staffName ");
+        builderSelectQuery.append("from m_client c ");
+        builderSelectQuery.append("join m_office o on o.id = c.office_id and o.hierarchy like ?");
+        builderSelectQuery.append("left join m_staff s on s.id = c.staff_id ");
+        if ((searchParameters.getGroupId() != null) || (searchParameters.getCenterId() != null)) {
+            builderSelectQuery.append("JOIN m_group_client gc ON c.id = gc.client_id ");
+            builderSelectQuery.append("join m_group g on g.id = gc.group_id ");
+        }
+        params.add(hierarchy);
+        if (searchParameters.getOfficeId() != null) {
+            builderWhereConditions.append(" and o.id = ?");
+            params.add(searchParameters.getOfficeId());
+        }
+        if (searchParameters.getStaffId() != null) {
+            builderWhereConditions.append(" and s.id = ?");
+            params.add(searchParameters.getStaffId());
+        }
+        if (searchParameters.getGroupId() != null) {
+            builderWhereConditions.append(" and g.id = ?");
             params.add(searchParameters.getGroupId());
         }
-        if(searchParameters.getCenterId() != null){
-        	if (whereused) {
-            builder.append(" and g.parent_id = ?" );
-        	}else{
-        		builder.append(" where g.parent_id = ?");
-				whereused = true;
-        	}
+        if (searchParameters.getCenterId() != null) {
+            builderWhereConditions.append(" and g.parent_id = ?");
             params.add(searchParameters.getCenterId());
         }
-        if (sqlSearch != null) {
-        	if (whereused) {
-            builder.append(" and (" + sqlSearch + ")");
-        	}else{
-                builder.append(" where (" + sqlSearch + ")");
-				whereused = true;
-        	}
-        }
-        
-        return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
+        final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.CLIENT_STATUS:
+                    builderWhereConditions.append(" and ( c.status_enum = ").append(value).append(" ) ");
+                break;
+                default:
+                break;
+            }
+        });
+        builderSelectQuery.append(builderWhereConditions.toString().replaceFirst("(?i)and", " where "));
+        return this.jdbcTemplate.query(builderSelectQuery.toString(), mapper, params.toArray());
     }
 
 

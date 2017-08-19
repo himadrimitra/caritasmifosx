@@ -6,6 +6,7 @@
 package com.finflux.ReportAudits.api;
 
 import java.util.Date;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -59,10 +60,10 @@ public class ReportAuditApiResource {
     public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("paged") final Boolean paged,
             @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
             @QueryParam("fromDate") final DateParam fromDateParam, @QueryParam("toDate") final DateParam toDateParam,
-            @QueryParam("userId") final Long userId, @QueryParam("reportId") final Integer reportId,@QueryParam("orderBy") final String orderBy,
-            @QueryParam("sortOrder") final String sortOrder,@QueryParam("sqlSearch") final String sqlSearch,
-            @QueryParam("locale") final String locale, @QueryParam("dateFormat") final String dateFormat){
-        
+            @QueryParam("userId") final Long userId, @QueryParam("reportId") final Integer reportId,
+            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
+            @QueryParam("locale") final String locale, @QueryParam("dateFormat") final String dateFormat) {
+        final Map<String, String> searchConditionsMap = null;
         this.context.authenticatedUser().validateHasReadPermission(ReportAuditConstants.REPORT_AUDIT_RESOURCE_NAME);
         Date fromDate = null;
         if (fromDateParam != null) {
@@ -73,14 +74,13 @@ public class ReportAuditApiResource {
             toDate = toDateParam.getDate("toDate", dateFormat, locale);
         }
         final PaginationParameters parameters = PaginationParameters.instance(paged, offset, limit, orderBy, sortOrder);
-        final SearchParameters searchParameters = SearchParameters.fromReportAudit(userId, reportId, fromDate, toDate, offset, limit, orderBy, sortOrder, sqlSearch);
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());  
-        
-        Page<ReportAuditData> reportAuditData = this.reportAuditReadPlatformService.retrieveAllReportAudits(searchParameters, parameters);
-          
-        return this.toApiJsonSerializer.serialize(settings, reportAuditData, ReportAuditConstants.REPORT_AUDIT_RESPONSE_DATA_PARAMETERS);
+        final SearchParameters searchParameters = SearchParameters.fromReportAudit(userId, reportId, fromDate, toDate, offset, limit,
+                orderBy, sortOrder, searchConditionsMap);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
-        
+        Page<ReportAuditData> reportAuditData = this.reportAuditReadPlatformService.retrieveAllReportAudits(searchParameters, parameters);
+
+        return this.toApiJsonSerializer.serialize(settings, reportAuditData, ReportAuditConstants.REPORT_AUDIT_RESPONSE_DATA_PARAMETERS);
     }
     
     @GET

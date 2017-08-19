@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.portfolio.self.client.api;
 
+import java.util.Map;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -87,13 +89,13 @@ public class SelfClientsApiResource {
 			@QueryParam("orderBy") final String orderBy,
 			@QueryParam("sortOrder") final String sortOrder) {
 
-		final String sqlSearch = null;
+	        final Map<String, String> searchConditions = null;
 		final Long officeId = null;
 		final String externalId = null;
 		final String hierarchy = null;
 		final Boolean orphansOnly = null;
 		final Long groupId = null;
-		return this.clientApiResource.retrieveAll(uriInfo, sqlSearch, officeId,
+		return this.clientApiResource.retrieveAll(uriInfo, searchConditions, officeId,
 				externalId, displayName, firstname, lastname, hierarchy,
 				offset, limit, orderBy, sortOrder, orphansOnly, true, groupId);
 	}

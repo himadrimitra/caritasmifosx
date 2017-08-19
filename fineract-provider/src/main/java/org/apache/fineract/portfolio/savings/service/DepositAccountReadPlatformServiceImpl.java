@@ -98,6 +98,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.constant.CommonConstants;
+
 @Service
 public class DepositAccountReadPlatformServiceImpl implements DepositAccountReadPlatformService {
 
@@ -1510,11 +1512,10 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
 	@Override
 	public Collection<DepositAccountData> getRDAccountsForTaskLookup(final SearchParameters searchParameters) {
 		final AppUser currentUser = this.context.authenticatedUser();
-		String hierarchy = currentUser.getOffice().getHierarchy() + "%";
+		final String hierarchy = currentUser.getOffice().getHierarchy() + "%";
 		final StringBuilder builder = new StringBuilder(400);
-		RDLookUpMapper mapper = new RDLookUpMapper();
-		List<Object> params = new ArrayList<>();
-        String sqlSearch = searchParameters.getSqlSearch();
+		final RDLookUpMapper mapper = new RDLookUpMapper();
+		final List<Object> params = new ArrayList<>();
 		builder.append("select ");
 		builder.append("msa.id as savings_id, ");
 		builder.append("msa.account_no as accountno, ");
@@ -1541,20 +1542,27 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
 			params.add(searchParameters.getOfficeId());
 		}
 		if(searchParameters.getStaffId() != null){
-            builder.append(" and ms.id = ?");
-            params.add(searchParameters.getStaffId());
-        }
-		if(searchParameters.getGroupId() != null){
-            builder.append(" and mg.id = ?");
-            params.add(searchParameters.getGroupId());
-        }
-        if(searchParameters.getCenterId() != null){
-            builder.append(" and mg.parent_id = ?" );
-            params.add(searchParameters.getCenterId());
-        }
-        if (sqlSearch != null) {
-            builder.append(" and (" + sqlSearch + ")");
-        }
-		return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
+                    builder.append(" and ms.id = ?");
+                    params.add(searchParameters.getStaffId());
+                }
+        	if(searchParameters.getGroupId() != null){
+                    builder.append(" and mg.id = ?");
+                    params.add(searchParameters.getGroupId());
+                }
+                if(searchParameters.getCenterId() != null){
+                    builder.append(" and mg.parent_id = ?" );
+                    params.add(searchParameters.getCenterId());
+                }
+                final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+                searchConditions.forEach((key, value) -> {
+                    switch (key) {
+                        case CommonConstants.SAVINGS_ACCOUNT_STATUS:
+                            builder.append(" and ( msa.status_enum = ").append(value).append(" ) ");
+                        break;
+                        default:
+                        break;
+                    }
+                });
+        	return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
 	}
 }

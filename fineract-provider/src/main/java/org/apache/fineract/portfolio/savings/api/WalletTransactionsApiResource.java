@@ -75,45 +75,38 @@ public class WalletTransactionsApiResource {
 
 	}
 
-	@GET
-	@Path("/transactions")
-	@Consumes({ MediaType.APPLICATION_JSON })
-	@Produces({ MediaType.APPLICATION_JSON })
-	public String retrieveAll(@PathParam("mobilenumber") final String mobileno,
-			@QueryParam("sqlSearch") final String sqlSearch,
-			@QueryParam("transactionsCount") final Integer transactionsCount,
-			@QueryParam("fromDate") final Date fromDate, @QueryParam("toDate") final Date toDate,
-			@QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
-			@QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
-			@Context final UriInfo uriInfo) {
+        @GET
+        @Path("/transactions")
+        @Consumes({ MediaType.APPLICATION_JSON })
+        @Produces({ MediaType.APPLICATION_JSON })
+        public String retrieveAll(@PathParam("mobilenumber") final String mobileno,
+                @QueryParam("searchConditions") final String searchConditions,
+                @QueryParam("transactionsCount") final Integer transactionsCount, @QueryParam("fromDate") final Date fromDate,
+                @QueryParam("toDate") final Date toDate, @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+                @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder, @Context final UriInfo uriInfo) {
+            Long savingsId = this.clientReadPlatformService.retrieveSavingsAccountIdByMobileNo(mobileno);
+            if (savingsId == null) {
+                throw new SavingsIdNotFoundException(savingsId); 
+            }
+            return this.savingsAccountTransactionsApiResource.retrieveAll(savingsId, searchConditions, transactionsCount, fromDate, toDate,
+                    offset, limit, orderBy, sortOrder, uriInfo);
+        }
 
-		Long savingsId = this.clientReadPlatformService.retrieveSavingsAccountIdByMobileNo(mobileno);
-		if (savingsId == null) {
-
-			throw new SavingsIdNotFoundException(savingsId);
-		}
-		return this.savingsAccountTransactionsApiResource.retrieveAll(savingsId, sqlSearch, transactionsCount, fromDate,
-				toDate, offset, limit, orderBy, sortOrder, uriInfo);
-	}
-
-	@GET
-	@Consumes({ MediaType.APPLICATION_JSON })
-	@Produces({ MediaType.APPLICATION_JSON })
-	public String retrieveOne(@PathParam("mobilenumber") final String mobileno,
-			@DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
-			@DefaultValue("all") @QueryParam("chargeStatus") final String chargeStatus, @Context final UriInfo uriInfo,
-			@QueryParam("transactionsCount") final Integer transactionsCount,
-			@QueryParam("fromDate") final Date fromDate, @QueryParam("toDate") final Date toDate,
-			@QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
-			@QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
-			@QueryParam("sqlSearch") final String sqlSearch) {
-		
-		Long savingsId = this.clientReadPlatformService.retrieveSavingsAccountIdByMobileNo(mobileno);
-		if (savingsId == null) {
-
-			throw new SavingsIdNotFoundException(savingsId);
-		}
-		return this.savingsAccountsApiResource.retrieveOne(savingsId, staffInSelectedOfficeOnly, chargeStatus, uriInfo,
-				transactionsCount, fromDate, toDate, offset, limit, orderBy, sortOrder, sqlSearch);
-	}
+        @GET
+        @Consumes({ MediaType.APPLICATION_JSON })
+        @Produces({ MediaType.APPLICATION_JSON })
+        public String retrieveOne(@PathParam("mobilenumber") final String mobileno,
+                @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
+                @DefaultValue("all") @QueryParam("chargeStatus") final String chargeStatus, @Context final UriInfo uriInfo,
+                @QueryParam("transactionsCount") final Integer transactionsCount, @QueryParam("fromDate") final Date fromDate,
+                @QueryParam("toDate") final Date toDate, @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+                @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
+                @QueryParam("searchConditions") final String searchConditions) {
+            Long savingsId = this.clientReadPlatformService.retrieveSavingsAccountIdByMobileNo(mobileno);
+            if (savingsId == null) {
+                throw new SavingsIdNotFoundException(savingsId); 
+            }
+            return this.savingsAccountsApiResource.retrieveOne(savingsId, staffInSelectedOfficeOnly, chargeStatus, uriInfo, transactionsCount,
+                    fromDate, toDate, offset, limit, orderBy, sortOrder, searchConditions);
+        }
 }

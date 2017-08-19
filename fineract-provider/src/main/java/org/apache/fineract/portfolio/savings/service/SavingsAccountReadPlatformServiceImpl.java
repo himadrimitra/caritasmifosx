@@ -53,7 +53,6 @@ import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionNotFoundException;
 import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
@@ -92,6 +91,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import com.finflux.common.constant.CommonConstants;
 
 @Service
 public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountReadPlatformService {
@@ -185,11 +186,16 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         objectArray[0] = hierarchySearchString;
         int arrayPos = 1;
 
-        String sqlQueryCriteria = searchParameters.getSqlSearch();
-        if (StringUtils.isNotBlank(sqlQueryCriteria)) {
-            sqlQueryCriteria = sqlQueryCriteria.replaceAll("accountNo", "sa.account_no");
-            sqlBuilder.append(" and (").append(sqlQueryCriteria).append(")");
-        }
+        final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.SAVINGS_ACCOUNT_NO:
+                    sqlBuilder.append(" and ( sa.account_no = '").append(value).append("' ) ");
+                break;
+                default:
+                break;
+            }
+        });
 
         if (StringUtils.isNotBlank(searchParameters.getExternalId())) {
             sqlBuilder.append(" and sa.external_id = ?");
@@ -744,21 +750,24 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
     @Override
     public Collection<SavingsAccountTransactionData> retrieveAllTransactions(final Long savingsId,
             final DepositAccountType depositAccountType, final SearchParameters searchParameters) {
-
         final StringBuilder builder = new StringBuilder(400);
         final SavingsAccountTransactionsMapper mapper = new SavingsAccountTransactionsMapper();
-        List<Object> params = new ArrayList<>();
-
-        String sqlSearch = searchParameters.getSqlSearch();
+        final List<Object> params = new ArrayList<>();
         builder.append("select ");
         builder.append(mapper.schema());
         builder.append(" where sa.id = ?");
         params.add(savingsId);
-
-        if (StringUtils.isNotBlank(sqlSearch)) {
-            sqlSearch = sqlSearch.replaceAll("accountNo", "sa.account_no");
-            builder.append(" and (").append(sqlSearch).append(")");
-        }
+        
+        final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.SAVINGS_ACCOUNT_NO:
+                    builder.append(" and ( sa.account_no = '").append(value).append("' ) ");
+                break;
+                default:
+                break;
+            }
+        });
 
         if (searchParameters.getStartDate() != null) {
             LocalDate startDate = new LocalDate(searchParameters.getStartDate());

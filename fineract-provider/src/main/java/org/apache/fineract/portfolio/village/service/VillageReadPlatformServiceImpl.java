@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
@@ -58,6 +59,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.common.constant.CommonConstants;
 import com.finflux.task.data.TaskConfigEntityType;
 import com.finflux.task.data.TaskEntityType;
 import com.finflux.task.domain.TaskConfigEntityTypeMapping;
@@ -364,42 +366,43 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
         
     }
     
-    private String getVillageExtraCriteria(SearchParameters searchParameters) {
-
-        String extraCriteria = "";
-        
-        String sqlSearch = searchParameters.getSqlSearch();
+    private String getVillageExtraCriteria(final SearchParameters searchParameters) {
+        final StringBuffer extraCriteria = new StringBuffer(200);
         final Long officeId = searchParameters.getOfficeId();
         final String externalId = searchParameters.getExternalId();
         final String name = searchParameters.getName();
-        
-        if (sqlSearch != null) {
-            sqlSearch = sqlSearch.replaceAll(" village_name ", " v.village_name ");
-            sqlSearch = sqlSearch.replaceAll("village_name ", "v.village_name ");
-            extraCriteria = " and (" + sqlSearch + ")";
-        }
-        
+        final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.CHAI_VILLAGE_NAME:
+                    extraCriteria.append(" and ( v.village_name = '").append(value).append("' ) ");
+                break;
+                default:
+                break;
+            }
+        });
+
         if (officeId != null) {
-            extraCriteria += " and v.office_id = " + officeId;
-        }
-        
-        if (externalId != null) {
-            extraCriteria += " and v.external_id like " + ApiParameterHelper.sqlEncodeString(externalId);
-        }
-        
-        if (externalId != null) {
-            extraCriteria += " and v.village_name like " + ApiParameterHelper.sqlEncodeString(name);
-        }
-        
-        if (searchParameters.isScopedByOfficeHierarchy()) {
-            extraCriteria += " and o.hierarchy like " + ApiParameterHelper.sqlEncodeString(searchParameters.getHierarchy() + "%");
+            extraCriteria.append(" and v.office_id = ").append(officeId);
         }
 
-        if (StringUtils.isNotBlank(extraCriteria)) {
-            extraCriteria = extraCriteria.substring(4);
+        if (externalId != null) {
+            extraCriteria.append(" and v.external_id like ").append(ApiParameterHelper.sqlEncodeString(externalId));
         }
-        
-        return extraCriteria;
+
+        if (externalId != null) {
+            extraCriteria.append(" and v.village_name like ").append(ApiParameterHelper.sqlEncodeString(name));
+        }
+
+        if (searchParameters.isScopedByOfficeHierarchy()) {
+            extraCriteria.append(" and o.hierarchy like ")
+                    .append(ApiParameterHelper.sqlEncodeString(searchParameters.getHierarchy() + "%"));
+        }
+        String extraCriteriaStr = extraCriteria.toString();
+        if (StringUtils.isNotBlank(extraCriteriaStr)) {
+            extraCriteriaStr = extraCriteriaStr.substring(4);
+        }
+        return extraCriteriaStr;
     }
 
     private static final class VillageDataMapper implements RowMapper<VillageData> {
