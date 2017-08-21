@@ -55,7 +55,7 @@ public class CibilIssueServiceImpl implements CibilIssueService {
             final LoanEnquiryReferenceData loanEnquiryReferenceData, final CibilCredentialsData cibilCredentials) {
         CreditBureauResponse creditBureauResponse = null;
         try {
-            CibilResponse cibilResponse = new CibilResponse(responseString.getBytes());
+            final CibilResponse cibilResponse = new CibilResponse(responseString.getBytes());
             if (cibilResponse.isError()) {
                 creditBureauResponse = createErrorResponse(requestString, responseString);
             } else {
@@ -118,8 +118,10 @@ public class CibilIssueServiceImpl implements CibilIssueService {
                         scores.add(data.toCreditScore());
                     }
                 }
+                final String errorsJson = null;
                 EnquiryResponse enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString,
-                        responseString, null, null, CreditBureauEnquiryStatus.SUCCESS, loanEnquiryReferenceData.getCbReportId());
+                        responseString, null, null, CreditBureauEnquiryStatus.SUCCESS, loanEnquiryReferenceData.getCbReportId(),
+                        errorsJson);
                 final String reportRequest = getReportRequest(requestString);
                 byte[] reportData = CibilConnector.getConsumerCreditReport(reportRequest, cibilCredentials);
                 CreditBureauReportFile reportFile = new CreditBureauReportFile("ReportFile", reportData, ReportFileType.XML);
@@ -134,6 +136,14 @@ public class CibilIssueServiceImpl implements CibilIssueService {
     }
 
     private CreditBureauResponse createErrorResponse(final String requestString, final String responseString) {
+        CibilResponse response = null;
+        if (responseString != null) {
+            response = new CibilResponse(responseString.getBytes());
+        }
+        return createErrorResponse(requestString, response);
+    }
+
+    private CreditBureauResponse createErrorResponse(final String requestString, final CibilResponse response) {
         List<CreditBureauExistingLoan> loanList = null;
         CreditBureauReportFile reportFile = null;
         String acknowledgementNumber = null;
@@ -141,8 +151,14 @@ public class CibilIssueServiceImpl implements CibilIssueService {
         String fileName = null;
         String reportId = null;
         List<CreditScore> creditScore = null;
+        String errorsJson = null;
+        String responseString = null;
+        if (response != null) {
+            errorsJson = response.getErrorSegment().getErrorsAsJson();
+            responseString = response.getResponseAsString();
+        }
         EnquiryResponse enquiryResponse = new EnquiryResponse(acknowledgementNumber, requestString, responseString, reportGeneratedTime,
-                fileName, CreditBureauEnquiryStatus.ERROR, reportId);
+                fileName, CreditBureauEnquiryStatus.ERROR, reportId, errorsJson);
         return new CreditBureauResponse(enquiryResponse, creditScore, loanList, reportFile);
     }
 

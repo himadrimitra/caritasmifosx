@@ -45,6 +45,9 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "creditBureauEnquiry", orphanRemoval = true)
     List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries = new ArrayList<>();
 
+    @Column(name = "errors_json", nullable = true) 
+    private String errorsJson ;
+    
     protected CreditBureauEnquiry() {}
 
     public CreditBureauEnquiry(final CreditBureauProduct creditBureauProduct, final String type, final Integer status) {
@@ -108,5 +111,9 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
 
     public void setResponse(final String response) {
         this.response = response;
+    }
+    
+    public void setErrorsJosnString(final String errorsJson) {
+        this.errorsJson = errorsJson ;
     }
 }

@@ -72,6 +72,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
         enquiryReferenceData.setAcknowledgementNumber(response.getAcknowledgementNumber());
         creditBureauEnquiry.setStatus(response.getStatus().getValue());
         creditBureauEnquiry.setRequest(response.getRequest());
+        creditBureauEnquiry.setErrorsJosnString(response.getErrorsJson()); 
         creditBureauEnquiry.setResponse(response.getResponse());
         final List<LoanCreditBureauEnquiry> creditBureauLoanEnquiries = creditBureauEnquiry.getLoanCreditBureauEnquiryMapping();
         if (creditBureauLoanEnquiries != null && !creditBureauLoanEnquiries.isEmpty()) {
@@ -96,6 +97,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             EnquiryResponse response = responseData.getEnquiryResponse();
             CreditBureauEnquiry creditBureauEnquiry = this.creditBureauEnquiryRepository.findOne(loanEnquiryReferenceData.getEnquiryId());
             creditBureauEnquiry.setStatus(response.getStatus().getValue());
+            if(response.getErrorsJson() != null) creditBureauEnquiry.setErrorsJosnString(response.getErrorsJson()); 
             this.creditBureauEnquiryRepository.save(creditBureauEnquiry);
             List<LoanCreditBureauEnquiry> creditBureauLoanEnquiries = creditBureauEnquiry.getLoanCreditBureauEnquiryMapping();
             if (creditBureauLoanEnquiries != null && !creditBureauLoanEnquiries.isEmpty()) {

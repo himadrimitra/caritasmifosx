@@ -4,6 +4,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import com.finflux.risk.creditbureau.provider.data.LoanEnquiryData;
 import com.finflux.risk.creditbureau.provider.data.LoanEnquiryReferenceData;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
 import com.finflux.risk.creditbureau.provider.highmark.data.HighmarkConstants;
+import com.finflux.risk.creditbureau.provider.highmark.xsd.ack.ERROR;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.ack.INQUIRY;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.ack.REPORTFILE;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.request.ADDRESSSEGMENT;
@@ -35,6 +37,7 @@ import com.finflux.risk.creditbureau.provider.highmark.xsd.request.APPLICATIONSE
 import com.finflux.risk.creditbureau.provider.highmark.xsd.request.HEADERSEGMENT;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.request.ObjectFactory;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.request.REQUESTREQUESTFILE;
+import com.google.gson.Gson;
 
 @Service
 public class HighmarkRequestServiceImpl implements HighmarkRequestService {
@@ -105,26 +108,45 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
             return parseAT01Response(reportfile, requestString, responseString, requestData);
         } catch (Exception e) {
             e.printStackTrace();
+            final String errorsJson = null ;
             EnquiryResponse enquiryResponse = new EnquiryResponse(null, requestString, responseString, null, null,
-                    CreditBureauEnquiryStatus.ERROR, null);
+                    CreditBureauEnquiryStatus.ERROR, null, errorsJson);
             return new CreditBureauResponse(enquiryResponse, null, null, null);
         }
     }
 
     private CreditBureauResponse parseAT01Response(REPORTFILE reportFile, String requestString, String responseString, final EnquiryReferenceData enquiryReferenceData) {
         EnquiryResponse enquiryResponse = null;
+        String errorsJson = null ;
         if (reportFile != null && reportFile.getINQUIRYSTATUS() != null) {
             REPORTFILE.INQUIRYSTATUS inquiryStatus = reportFile.getINQUIRYSTATUS();
             INQUIRY inquiry = inquiryStatus.getINQUIRY().get(0);
+            errorsJson = getErrorsJson(inquiry) ;
             enquiryResponse = new EnquiryResponse(inquiry.getREPORTID(), requestString, responseString, null, null,
-                    convertStatus(inquiry.getREPONSETYPE()), inquiry.getREPORTID());
+                    convertStatus(inquiry.getREPONSETYPE()), inquiry.getREPORTID(), errorsJson);
         } else {
-            enquiryResponse = new EnquiryResponse(null, null, null, null, null, CreditBureauEnquiryStatus.ERROR, null);
+            enquiryResponse = new EnquiryResponse(null, null, null, null, null, CreditBureauEnquiryStatus.ERROR, null, errorsJson);
 
         }
         return new CreditBureauResponse(enquiryResponse, null, null, null);
     }
 
+    private final String getErrorsJson(final INQUIRY inquiry) {
+        String errorsJson = null ;
+        if(inquiry.getERRORS() != null) {
+            List<ERROR> errors = inquiry.getERRORS().getERROR() ;
+            List<Map<String, String>> list = new ArrayList<>() ;
+            for(ERROR error: errors) {
+                Map<String, String> errorsMap = new HashMap<>() ;
+                errorsMap.put("code", error.getCODE()) ;
+                errorsMap.put("description", error.getDESCRIPTION()) ;
+                list.add(errorsMap) ;
+            }
+            errorsJson = new Gson().toJson(list) ;
+        }
+        return errorsJson ;
+    }
+    
     private HEADERSEGMENT getHeaderSegment(String requestType, HighmarkCredentialsData highmarkCredentialsData) {
         HEADERSEGMENT headerSegment = requestFactory.createHEADERSEGMENT();
         headerSegment.setPRODUCTTYP(highmarkCredentialsData.getPRODUCTTYP());

@@ -56,7 +56,7 @@ public class CibilResponse {
         }
     }
 
-    public void parseResponseSections() {       
+    private void parseResponseSections() {       
         this.headerSegment = new HeaderSegment();
         Integer headerLength = this.headerSegment.parseSection(this.responseData, 0);
         this.nameSegment = new ResponseSegment<>();
@@ -141,12 +141,11 @@ public class CibilResponse {
         return length;
     }
 
-    public ErrorSegment parseErrorSegment() {
+    private void parseErrorSegment() {
         if (isError) {
             this.errorSegment = new ErrorSegment();
             this.errorSegment.parseSection(this.responseData, 0);
         }
-        return this.errorSegment;
     }
 
     private void parseEndOfSegment(final byte[] errorResponse) {
@@ -182,5 +181,9 @@ public class CibilResponse {
 
     public List<ScoreData> getCreditScore() {
         return this.scoreSegment.getSegmentData();
+    }
+    
+    public ErrorSegment getErrorSegment() {
+        return this.errorSegment ;
     }
 }

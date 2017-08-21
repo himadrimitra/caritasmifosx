@@ -136,8 +136,9 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
             return parseAT02Response(reportfile, requestString, responseString, loanEnquiryReferenceData);
         } catch (Exception e) {
             e.printStackTrace();
+            final String errorsJson = null ;
             EnquiryResponse enquiryResponse = new EnquiryResponse(null, requestString, responseString, null, null,
-                    CreditBureauEnquiryStatus.ERROR, null);
+                    CreditBureauEnquiryStatus.ERROR, null, errorsJson);
             return new CreditBureauResponse(enquiryResponse, null, null, null);
         }
     }
@@ -146,6 +147,7 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
             LoanEnquiryReferenceData loanEnquiryReferenceData) {
         List<CreditBureauExistingLoan> loanList = null;
         CreditBureauReportFile reportFile = null;
+        final String errorsJson = null ;
         try {
             Long activeLoanCount = 0l;
             Long closedLoanCount = 0l;
@@ -229,8 +231,9 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
                 final String inquiryStatus = inquiry.getRESPONSETYPE();
                 creditBureauEnquiryStatus = convertStatus(inquiryStatus);
             }
+            
             enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString, responseString, null,
-                    null, creditBureauEnquiryStatus, loanEnquiryReferenceData.getCbReportId());
+                    null, creditBureauEnquiryStatus, loanEnquiryReferenceData.getCbReportId(),errorsJson);
             CreditBureauResponse creditBureauResponse = new CreditBureauResponse(enquiryResponse, null, loanList, reportFile);
             return creditBureauResponse;
         } catch (Exception e) {
@@ -242,7 +245,7 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
             String reportId=null;
             List<CreditScore> creditScore = null;
             EnquiryResponse enquiryResponse = new EnquiryResponse(acknowledgementNumber, requestString, responseString, reportGeneratedTime, fileName,
-                    CreditBureauEnquiryStatus.ERROR, reportId);
+                    CreditBureauEnquiryStatus.ERROR, reportId, errorsJson);
             
             return new CreditBureauResponse(enquiryResponse, creditScore, loanList, reportFile);
         }
