@@ -5735,7 +5735,7 @@ public class Loan extends AbstractPersistable<Long> {
     
     private void validateActivityNotBeforeLastTransactionDateWithTime(final LoanEvent event, final LocalDate activityDate,
             final LocalDateTime activityCreatedDateTime) {
-        final LoanTransaction loanTransaction = getLastUserTransaction();
+        final LoanTransaction loanTransaction = getLastUserTransactionExcludeWaiveCharges();
         if (loanTransaction != null) {
             final LocalDate lastTansactionDate = loanTransaction.getTransactionDate();
             final LocalDateTime lastTransactionCreatedDateTime = loanTransaction.getCreatedDate()
@@ -5747,12 +5747,13 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
-    private LoanTransaction getLastUserTransaction() {
+    private LoanTransaction getLastUserTransactionExcludeWaiveCharges() {
         Collection<Integer> transactionType = new ArrayList<>();
         transactionType.add(LoanTransactionType.ACCRUAL.getValue());
         transactionType.add(LoanTransactionType.ACCRUAL_SUSPENSE.getValue());
         transactionType.add(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue());
         transactionType.add(LoanTransactionType.INCOME_POSTING.getValue());
+        transactionType.add(LoanTransactionType.WAIVE_CHARGES.getValue());
         final boolean excludeTypes = true;
         final int size = this.getLoanTransactions().size();
         final List<LoanTransaction> transactions = this.getOrderedLoanTransactions();
