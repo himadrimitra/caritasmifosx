@@ -78,7 +78,7 @@ public class SelfSavingsApiResource {
 	public String retrieveSavings(
 			@PathParam("accountId") final Long accountId,
 			@DefaultValue("all") @QueryParam("chargeStatus") final String chargeStatus,
-			@Context final UriInfo uriInfo,@QueryParam("sqlSearch") final String sqlSearch,
+			@Context final UriInfo uriInfo,@QueryParam("searchConditions") String searchConditions,
 			@QueryParam("transactionsCount") final Integer transactionsCount,
 			@QueryParam("fromDate") final Date fromDate, @QueryParam("toDate") final Date toDate,
 			@QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
@@ -90,7 +90,7 @@ public class SelfSavingsApiResource {
 
 		final boolean staffInSelectedOfficeOnly = false;
 		return this.savingsAccountsApiResource.retrieveOne(accountId, staffInSelectedOfficeOnly, chargeStatus, uriInfo, transactionsCount, 
-				fromDate, toDate, offset, limit, orderBy, sortOrder, sqlSearch);
+				fromDate, toDate, offset, limit, orderBy, sortOrder, searchConditions);
 	}
 
 	@GET

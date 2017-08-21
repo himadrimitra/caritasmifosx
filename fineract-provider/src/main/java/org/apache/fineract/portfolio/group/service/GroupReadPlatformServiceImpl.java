@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
@@ -57,6 +58,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import com.finflux.common.constant.CommonConstants;
 
 @Service
 public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
@@ -209,14 +212,18 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
     // caused by the same name of columns in m_office and m_group tables
     private String getGroupExtraCriteria(final SearchParameters searchCriteria) {
 
-        StringBuffer extraCriteria = new StringBuffer(200);
+        final StringBuffer extraCriteria = new StringBuffer(200);
         extraCriteria.append(" and g.level_Id = ").append(GroupTypes.GROUP.getId());
-        String sqlSearch = searchCriteria.getSqlSearch();
-        if (sqlSearch != null) {
-            sqlSearch = sqlSearch.replaceAll(" display_name ", " g.display_name ");
-            sqlSearch = sqlSearch.replaceAll("display_name ", "g.display_name ");
-            extraCriteria.append(" and ( ").append(sqlSearch).append(") ");
-        }
+        final Map<String, String> searchConditions = searchCriteria.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.GROUP_DISPLAY_NAME:
+                    extraCriteria.append(" and ( g.display_name = '").append(value).append("' ) ");
+                break;
+                default:
+                break;
+            }
+        });
 
         final Long officeId = searchCriteria.getOfficeId();
         if (officeId != null) {

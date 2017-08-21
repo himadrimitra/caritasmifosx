@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -83,6 +84,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.util.FinfluxStringUtils;
 import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckData;
 import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckTemplateData;
 import com.finflux.portfolio.loan.utilization.service.LoanUtilizationCheckReadPlatformService;
@@ -177,21 +179,21 @@ public class CentersApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
-            @QueryParam("officeId") final Long officeId, @QueryParam("staffId") final Long staffId,
-            @QueryParam("externalId") final String externalId, @QueryParam("name") final String name,
-            @QueryParam("underHierarchy") final String hierarchy, @QueryParam("paged") final Boolean paged,
-            @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+    public String retrieveAll(@Context final UriInfo uriInfo,
+            @QueryParam("searchConditions") final String searchConditions, @QueryParam("officeId") final Long officeId,
+            @QueryParam("staffId") final Long staffId, @QueryParam("externalId") final String externalId,
+            @QueryParam("name") final String name, @QueryParam("underHierarchy") final String hierarchy,
+            @QueryParam("paged") final Boolean paged, @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
             @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
             @QueryParam("meetingDate") final DateParam meetingDateParam, @QueryParam("dateFormat") final String dateFormat,
             @QueryParam("locale") final String locale) {
-
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
         this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.CENTER_RESOURCE_NAME);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         if (meetingDateParam != null && officeId != null) {
             Date meetingDate = meetingDateParam.getDate("meetingDate", dateFormat, locale);
-            LocalDate date=new LocalDate(meetingDate);
-            CenterReadPlatformServiceImpl.datePassed=date;
+            LocalDate date = new LocalDate(meetingDate);
+            CenterReadPlatformServiceImpl.datePassed = date;
             Collection<StaffCenterData> staffCenterDataArray = this.centerReadPlatformService.retriveAllCentersByMeetingDate(officeId,
                     meetingDate, staffId);
             return this.toApiJsonSerializer.serialize(settings, staffCenterDataArray,
@@ -199,8 +201,8 @@ public class CentersApiResource {
         }
         final PaginationParameters parameters = PaginationParameters.instance(paged, offset, limit, orderBy, sortOrder);
         final Boolean isOrphansOnly = false;
-        final SearchParameters searchParameters = SearchParameters.forGroups(sqlSearch, officeId, staffId, externalId, name, hierarchy,
-                offset, limit, orderBy, sortOrder, isOrphansOnly);
+        final SearchParameters searchParameters = SearchParameters.forGroups(searchConditionsMap, officeId, staffId, externalId, name,
+                hierarchy, offset, limit, orderBy, sortOrder, isOrphansOnly);
         if (parameters.isPaged()) {
             final Page<CenterData> centers = this.centerReadPlatformService.retrievePagedAll(searchParameters, parameters);
             return this.toApiJsonSerializer.serialize(settings, centers, GroupingTypesApiConstants.CENTER_RESPONSE_DATA_PARAMETERS);

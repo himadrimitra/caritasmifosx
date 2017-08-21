@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.village.api;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -56,6 +57,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.common.util.FinfluxStringUtils;
 import com.finflux.kyc.address.data.AddressData;
 import com.finflux.kyc.address.service.AddressReadPlatformService;
 
@@ -119,22 +121,21 @@ public class VillageApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch, @QueryParam("officeId") final Long officeId,
-                    @QueryParam("externalId") final String externalId, @QueryParam("name") final String name, @QueryParam("paged") final Boolean paged, 
-                    @QueryParam("offset") Integer offset, @QueryParam("limit") final Integer limit, @QueryParam("orderBy") final String orderBy, 
-                    @QueryParam("sortOrder") final String sortOrder)  {
-       
+    public String retrieveAll(@Context final UriInfo uriInfo,
+            @QueryParam("searchConditions") final String searchConditions, @QueryParam("officeId") final Long officeId,
+            @QueryParam("externalId") final String externalId, @QueryParam("name") final String name,
+            @QueryParam("paged") final Boolean paged, @QueryParam("offset") Integer offset, @QueryParam("limit") final Integer limit,
+            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
         this.context.authenticatedUser().validateHasReadPermission(VillageTypeApiConstants.VILLAGE_RESOURCE_NAME);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         final PaginationParameters parameters = PaginationParameters.instance(paged, offset, limit, orderBy, sortOrder);
-        final SearchParameters searchParameters = SearchParameters.forVillages(sqlSearch, officeId, externalId, name, offset, limit, orderBy, sortOrder);
-        
+        final SearchParameters searchParameters = SearchParameters.forVillages(searchConditionsMap, officeId, externalId, name, offset,
+                limit, orderBy, sortOrder);
         if (parameters.isPaged()) {
             final Page<VillageData> villages = this.villageReadPlatformService.retrievePagedAll(searchParameters, parameters);
-            
-           return this.toApiJsonSerializer.serialize(settings, villages, VillageTypeApiConstants.VILLAGE_RESPONSE_DATA_PARAMETERS);         
+            return this.toApiJsonSerializer.serialize(settings, villages, VillageTypeApiConstants.VILLAGE_RESPONSE_DATA_PARAMETERS);
         }
-        
         final Collection<VillageData> villages = this.villageReadPlatformService.retrieveAll(searchParameters, parameters);
         return this.toApiJsonSerializer.serialize(settings, villages, VillageTypeApiConstants.VILLAGE_RESPONSE_DATA_PARAMETERS);
     }

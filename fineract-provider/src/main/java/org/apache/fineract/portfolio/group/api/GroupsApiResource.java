@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -65,7 +66,6 @@ import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collectionsheet.data.JLGCollectionSheetData;
 import org.apache.fineract.portfolio.collectionsheet.service.CollectionSheetReadPlatformService;
-import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.data.GroupRoleData;
 import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
@@ -81,6 +81,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.util.FinfluxStringUtils;
 import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckData;
 import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckTemplateData;
 import com.finflux.portfolio.loan.utilization.service.LoanUtilizationCheckReadPlatformService;
@@ -91,7 +92,7 @@ import com.google.gson.JsonElement;
 @Scope("singleton")
 public class GroupsApiResource {
 
-	private final PlatformSecurityContext context;
+    private final PlatformSecurityContext context;
     private final GroupReadPlatformService groupReadPlatformService;
     private final CenterReadPlatformService centerReadPlatformService;
     private final ClientReadPlatformService clientReadPlatformService;
@@ -182,20 +183,19 @@ public class GroupsApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
+    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("searchConditions") final String searchConditions,
             @QueryParam("officeId") final Long officeId, @QueryParam("staffId") final Long staffId,
             @QueryParam("externalId") final String externalId, @QueryParam("name") final String name,
             @QueryParam("underHierarchy") final String hierarchy, @QueryParam("paged") final Boolean paged,
             @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
-            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder, 
+            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
             @QueryParam("orphansOnly") final Boolean orphansOnly) {
-
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
         this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.GROUP_RESOURCE_NAME);
         final PaginationParameters parameters = PaginationParameters.instance(paged, offset, limit, orderBy, sortOrder);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-
-        final SearchParameters searchParameters = SearchParameters.forGroups(sqlSearch, officeId, staffId, externalId, name, hierarchy,
-                offset, limit, orderBy, sortOrder, orphansOnly);
+        final SearchParameters searchParameters = SearchParameters.forGroups(searchConditionsMap, officeId, staffId, externalId, name,
+                hierarchy, offset, limit, orderBy, sortOrder, orphansOnly);
         if (parameters.isPaged()) {
             final Page<GroupGeneralData> groups = this.groupReadPlatformService.retrievePagedAll(searchParameters, parameters);
             return this.toApiJsonSerializer.serialize(settings, groups, GroupingTypesApiConstants.GROUP_RESPONSE_DATA_PARAMETERS);

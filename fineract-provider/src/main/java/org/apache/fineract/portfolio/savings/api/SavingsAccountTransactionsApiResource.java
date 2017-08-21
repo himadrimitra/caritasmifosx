@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.savings.api;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -55,6 +56,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
+
+import com.finflux.common.util.FinfluxStringUtils;
 
 @Path("/savingsaccounts/{savingsId}/transactions")
 @Component
@@ -112,18 +115,22 @@ public class SavingsAccountTransactionsApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@PathParam("savingsId") final Long savingsId,@QueryParam("sqlSearch") final String sqlSearch,@QueryParam("transactionsCount") final Integer transactionsCount, 
-    		@QueryParam("fromDate") final Date fromDate, @QueryParam("toDate") final Date toDate, @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+    public String retrieveAll(@PathParam("savingsId") final Long savingsId,
+            @QueryParam("searchConditions") final String searchConditions,
+            @QueryParam("transactionsCount") final Integer transactionsCount, @QueryParam("fromDate") final Date fromDate,
+            @QueryParam("toDate") final Date toDate, @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
             @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder, @Context final UriInfo uriInfo) {
-    	
-    	  this.context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
-    	  
-    	  final SearchParameters searchParameters = SearchParameters.forTransactions(sqlSearch, transactionsCount, fromDate, toDate,offset, limit, orderBy, sortOrder);
-    	  final Collection<SavingsAccountTransactionData> transactionData = this.savingsAccountReadPlatformService.retrieveAllTransactions(savingsId, DepositAccountType.SAVINGS_DEPOSIT, searchParameters);
-          final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
+        this.context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
+        final SearchParameters searchParameters = SearchParameters.forTransactions(searchConditionsMap, transactionsCount, fromDate,
+                toDate, offset, limit, orderBy, sortOrder);
+        final Collection<SavingsAccountTransactionData> transactionData = this.savingsAccountReadPlatformService.retrieveAllTransactions(
+                savingsId, DepositAccountType.SAVINGS_DEPOSIT, searchParameters);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
-          return this.toApiJsonSerializer.serialize(settings, transactionData,SavingsApiConstants.SAVINGS_TRANSACTION_RESPONSE_DATA_PARAMETERS);		
-	}
+        return this.toApiJsonSerializer.serialize(settings, transactionData,
+                SavingsApiConstants.SAVINGS_TRANSACTION_RESPONSE_DATA_PARAMETERS);
+    }
     
     @GET
     @Path("{transactionId}")

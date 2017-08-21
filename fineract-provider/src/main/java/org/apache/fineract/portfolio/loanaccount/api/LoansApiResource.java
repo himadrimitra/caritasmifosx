@@ -130,6 +130,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.util.FinfluxStringUtils;
 import com.finflux.portfolio.loan.purpose.data.LoanPurposeData;
 import com.finflux.portfolio.loan.purpose.service.LoanPurposeGroupReadPlatformService;
 import com.google.gson.JsonElement;
@@ -393,21 +394,20 @@ public class LoansApiResource {
     @Path("tasklookup")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
-            @QueryParam("officeId") final Long officeId, @QueryParam("staffId") final Long staffId,
-            @QueryParam("groupId") final Long groupId, @QueryParam("centerId") final Long centerId,
-            @QueryParam("paymentTypeId") final Long paymentTypeId){
-        
+    public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo,
+            @QueryParam("searchConditions") final String searchConditions, @QueryParam("officeId") final Long officeId,
+            @QueryParam("staffId") final Long staffId, @QueryParam("groupId") final Long groupId,
+            @QueryParam("centerId") final Long centerId, @QueryParam("paymentTypeId") final Long paymentTypeId) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
         final Integer offset = null;
         final Integer limit = null;
         final String orderBy = null;
         final String sortOrder = null;
-        
-        SearchParameters searchParameters = SearchParameters.forTask(sqlSearch, officeId, staffId, centerId, groupId, offset, limit, orderBy, sortOrder, paymentTypeId);
-                
-        final Collection<LoanAccountData> loanAccountData = this.loanReadPlatformService.retrieveAllForTaskLookupBySearchParameters(searchParameters);
-
+        final SearchParameters searchParameters = SearchParameters.forTask(searchConditionsMap, officeId, staffId, centerId, groupId,
+                offset, limit, orderBy, sortOrder, paymentTypeId);
+        final Collection<LoanAccountData> loanAccountData = this.loanReadPlatformService
+                .retrieveAllForTaskLookupBySearchParameters(searchParameters);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, loanAccountData);
     }
@@ -739,24 +739,19 @@ public class LoansApiResource {
         return this.toApiJsonSerializer.serialize(settings, loanAccount, this.LOAN_DATA_PARAMETERS);
     }
 
-	@GET
+    @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo,
-            @QueryParam("sqlSearch") final String sqlSearch, @DefaultValue("false") @QueryParam("lookup") final Boolean lookup,
-            @QueryParam("externalId") final String externalId, @QueryParam("officeId") final Long officeId,
-            // @QueryParam("underHierarchy") final String hierarchy,
-            @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
-            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
-            @QueryParam("accountNo") final String accountNo) {
-
+    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("searchConditions") final String searchConditions,
+            @DefaultValue("false") @QueryParam("lookup") final Boolean lookup, @QueryParam("externalId") final String externalId,
+            @QueryParam("officeId") final Long officeId, @QueryParam("offset") final Integer offset,
+            @QueryParam("limit") final Integer limit, @QueryParam("orderBy") final String orderBy,
+            @QueryParam("sortOrder") final String sortOrder, @QueryParam("accountNo") final String accountNo) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final SearchParameters searchParameters = SearchParameters.forLoans(sqlSearch, externalId, offset, limit, orderBy, sortOrder,
-                accountNo, officeId);
-
+        final SearchParameters searchParameters = SearchParameters.forLoans(searchConditionsMap, externalId, offset, limit, orderBy,
+                sortOrder, accountNo, officeId);
         final Page<LoanAccountData> loanBasicDetails = this.loanReadPlatformService.retrieveAll(searchParameters, lookup);
-
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, loanBasicDetails, this.LOAN_DATA_PARAMETERS);
     }

@@ -21,18 +21,21 @@ package org.apache.fineract.infrastructure.codes.service;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.exception.CodeValueNotFoundException;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+
+import com.finflux.common.constant.CommonConstants;
 
 @Service
 public class CodeValueReadPlatformServiceImpl implements CodeValueReadPlatformService {
@@ -108,21 +111,26 @@ public class CodeValueReadPlatformServiceImpl implements CodeValueReadPlatformSe
 
     }
 
-	@Override
-	public Collection<CodeValueData> retrieveCodeValuesByCode(String code,
-			String sqlSearch) {
-		
-		this.context.authenticatedUser();
-
+    @Override
+    public Collection<CodeValueData> retrieveCodeValuesByCode(final String code, final SearchParameters searchParameters) {
+        this.context.authenticatedUser();
         final CodeValueDataMapper rm = new CodeValueDataMapper();
-        String sql = "select " + rm.schema() + "where c.code_name like ?";
-        if(sqlSearch != null){
-        	sql = sql + " and "+sqlSearch;
-        }
-        sql =sql + " order by position";
-
-        return this.jdbcTemplate.query(sql, rm, new Object[] { code });
-	}
+        final StringBuilder sqlBuilder = new StringBuilder(400);
+        final String sql = "select " + rm.schema() + " where c.code_name like ? ";
+        sqlBuilder.append(sql);
+        final Map<String, String> searchConditions = searchParameters.getSearchConditions();
+        searchConditions.forEach((key, value) -> {
+            switch (key) {
+                case CommonConstants.CODE_VALUE_IS_ACTIVE:
+                    sqlBuilder.append(" and cv.is_active = ").append(value).append(" ");
+                break;
+                default:
+                break;
+            }
+        });
+        sqlBuilder.append(" order by position ");
+        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { code });
+    }
 	
     @Override
     public CodeValueData retriveCodeValueByCodeValueName(final String codeValueName) {

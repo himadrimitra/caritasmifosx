@@ -6522,11 +6522,16 @@ GET https://DomainName/api/v1/clients/{clientId}
 						</dd>
 						<dd>Use externalId of clients to restrict results.</dd>
 
-						<dt>sqlSearch</dt>
+						<dt>searchConditions</dt>
 						<dd>
 							String <span>optional</span>
 						</dd>
-						<dd>Use an sql fragment valid for the underlying client schema to filter results. e.g. display_name like %K%</dd>
+						<dd>
+							Use an search conditions fragments valid for the underlying client schema to filter results. 
+							e.g. "searchConditions": {
+									"clientDisplayName" : "client"
+								}
+						</dd>
 						<dt>orphansOnly</dt>
 						<dd>
 							Boolean <span>optional</span>, defaults to false
@@ -8138,11 +8143,16 @@ GET https://DomainName/fineract-provider/api/v1/centers/9
 						</dd>
 						<dd>Use externalId of center to restrict results.</dd>
 
-						<dt>sqlSearch</dt>
+						<dt>searchConditions</dt>
 						<dd>
 							String <span>optional</span>
 						</dd>
-						<dd>Use an sql fragment valid for the underlying center schema to filter results. e.g. display_name like %K%</dd>
+						<dd>
+							Use an search conditions fragments valid for the underlying center schema to filter results.
+							e.g. "searchConditions": {
+									"groupDisplayName" : "group"
+								}
+						</dd>
 					</dl>
 					<p>Example Requests:</p>
 					<div class=apiClick>centers</div>
@@ -9491,11 +9501,16 @@ DELETE groups/2
 						</dd>
 						<dd>Use externalId of groups to restrict results.</dd>
 
-						<dt>sqlSearch</dt>
+						<dt>searchConditions</dt>
 						<dd>
 							String <span>optional</span>
 						</dd>
-						<dd>Use an sql fragment valid for the underlying group schema to filter results. e.g. display_name like %K%</dd>
+						<dd>
+							Use an search conditions fragments valid for the underlying group schema to filter results. 
+							e.g. "searchConditions": {
+									"groupDisplayName" : "group"
+								}
+						</dd>
 						<dt>orphansOnly</dt>
 						<dd>
 							Boolean <span>optional</span>, defaults to false
@@ -11553,11 +11568,16 @@ GET https://DomainName/api/v1/loans/{loanId}
 						</dd>
 						<dd>Use externalId of loan to restrict results.</dd>
 
-						<dt>sqlSearch</dt>
+						<dt>searchConditions</dt>
 						<dd>
 							String <span>optional</span>
 						</dd>
-						<dd>Use an sql fragment valid for the underlying loan schema to filter results. e.g. display_name like %K%</dd>
+						<dd>
+							Use an search conditions fragments valid for the underlying loan schema to filter results. 
+							e.g. "searchConditions": {
+									"loanStatus" : 200
+								}
+						</dd>
 					</dl>
 					<p>Example Requests:</p>
 					<div class=apiClick>loans</div>
@@ -37434,11 +37454,14 @@ No Request Body:
                 <dd>Filters for transactions whose entry Date is lesser than or equal to the passed in Date
                 </dd>
 
-                <dt>sqlSearch</dt>
+                <dt>searchConditions</dt>
                 <dd>
                     String <span>optional</span>
                 </dd>
-                <dd>Use an sql fragment valid for the underlying standing instruction schema to filter results. e.g. name like %K%</dd>
+                <dd>
+					Use an search conditions fragments valid for the underlying instruction schema to filter results. 
+					e.g. name like %K%
+				</dd>
             </dl>
 	        <p>Example Requests : </p>
 	        <div class=apiClick>standinginstructionrunhistory</div>

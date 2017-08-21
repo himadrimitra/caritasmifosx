@@ -21,6 +21,7 @@ package org.apache.fineract.infrastructure.codes.api;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -47,10 +48,13 @@ import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import com.finflux.common.util.FinfluxStringUtils;
 
 @Path("/codes")
 @Component
@@ -153,12 +157,17 @@ public class CodesApiResource {
     @Path("/codeValues")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveCodeValuesForCode(@QueryParam ("codeName") final String codeName, @QueryParam ("sqlSearch") final String sqlSearch, @Context final UriInfo uriInfo) {
-    	
-    	this.context.authenticatedUser().validateHasReadPermission("CODEVALUE");
-    	
-    	final Collection<CodeValueData> codeValues = this.codeValuesReadPlatformService.retrieveCodeValuesByCode(codeName, sqlSearch);
-
+    public String retrieveCodeValuesForCode(@QueryParam("codeName") final String codeName,
+            @QueryParam("searchConditions") final String searchConditions) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
+        final Long officeId = null;
+        final String externalId = null;
+        final String name = null;
+        final String hierarchy = null;
+        final SearchParameters searchParameters = SearchParameters.from(searchConditionsMap, officeId, externalId, name, hierarchy);
+        this.context.authenticatedUser().validateHasReadPermission("CODEVALUE");
+        final Collection<CodeValueData> codeValues = this.codeValuesReadPlatformService
+                .retrieveCodeValuesByCode(codeName, searchParameters);
         return this.toCodeValuesApiJsonSerializer.serialize(codeValues);
     }
 }

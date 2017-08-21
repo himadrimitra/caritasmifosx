@@ -1,5 +1,4 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership. The ASF licenses this file
@@ -22,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -64,6 +64,8 @@ import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformS
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import com.finflux.common.util.FinfluxStringUtils;
 
 @Path("/clients")
 @Component
@@ -135,33 +137,26 @@ public class ClientsApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
+    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("searchConditions") final String searchConditions,
             @QueryParam("officeId") final Long officeId, @QueryParam("externalId") final String externalId,
             @QueryParam("displayName") final String displayName, @QueryParam("firstName") final String firstname,
             @QueryParam("lastName") final String lastname, @QueryParam("underHierarchy") final String hierarchy,
             @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
             @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
-            @QueryParam("orphansOnly") final Boolean orphansOnly,@QueryParam("groupId") final Long groupId) {
-
-        return this.retrieveAll(uriInfo, sqlSearch, officeId, externalId, displayName, firstname, 
-        		lastname, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, false, groupId);
+            @QueryParam("orphansOnly") final Boolean orphansOnly, @QueryParam("groupId") final Long groupId) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
+        return this.retrieveAll(uriInfo, searchConditionsMap, officeId, externalId, displayName, firstname, lastname, hierarchy, offset,
+                limit, orderBy, sortOrder, orphansOnly, false, groupId);
     }
     
-    public String retrieveAll(final UriInfo uriInfo, final String sqlSearch,
-            final Long officeId, final String externalId,
-            final String displayName, final String firstname,
-            final String lastname, final String hierarchy,
-            final Integer offset, final Integer limit,
-            final String orderBy, final String sortOrder,
-            final Boolean orphansOnly, final boolean isSelfUser, final Long groupId) {
-
+    public String retrieveAll(final UriInfo uriInfo, final Map<String, String> searchConditions, final Long officeId,
+            final String externalId, final String displayName, final String firstname, final String lastname, final String hierarchy,
+            final Integer offset, final Integer limit, final String orderBy, final String sortOrder, final Boolean orphansOnly,
+            final boolean isSelfUser, final Long groupId) {
         this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
-
-        final SearchParameters searchParameters = SearchParameters.forClients(sqlSearch, officeId, externalId, displayName, firstname,
-                lastname, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, isSelfUser, groupId);
-
+        final SearchParameters searchParameters = SearchParameters.forClients(searchConditions, officeId, externalId, displayName,
+                firstname, lastname, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, isSelfUser, groupId);
         final Page<ClientData> clientData = this.clientReadPlatformService.retrieveAll(searchParameters);
-
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, clientData, ClientApiConstants.CLIENT_RESPONSE_DATA_PARAMETERS);
     }
@@ -170,21 +165,21 @@ public class ClientsApiResource {
     @Path("lookup")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
-            @QueryParam("officeId") final Long officeId, @QueryParam("staffId") final Long staffId,
-            @QueryParam("groupId") final Long groupId, @QueryParam("centerId") final Long centerId){
-        
+    public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo,
+            @QueryParam("searchConditions") String searchConditions, @QueryParam("officeId") final Long officeId,
+            @QueryParam("staffId") final Long staffId, @QueryParam("groupId") final Long groupId,
+            @QueryParam("centerId") final Long centerId) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
         this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
-        
         final Integer offset = null;
         final Integer limit = null;
         final String orderBy = null;
         final String sortOrder = null;
         final Long paymentTypeId = null;
-        SearchParameters searchParameters = SearchParameters.forTask(sqlSearch, officeId, staffId, centerId, groupId, offset, limit, orderBy, sortOrder, paymentTypeId);
-                
-        final Collection<ClientData> clientData = this.clientReadPlatformService.retrieveAllForTaskLookupBySearchParameters(searchParameters);
-
+        final SearchParameters searchParameters = SearchParameters.forTask(searchConditionsMap, officeId, staffId, centerId, groupId,
+                offset, limit, orderBy, sortOrder, paymentTypeId);
+        final Collection<ClientData> clientData = this.clientReadPlatformService
+                .retrieveAllForTaskLookupBySearchParameters(searchParameters);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, clientData, ClientApiConstants.CLIENT_RESPONSE_DATA_PARAMETERS);
     }
