@@ -60,7 +60,9 @@ public class AadhaarApiConstants {
 	public static final String PID_VALUE = "value";
 	public static final String AADHAAR_ID = "aadhaar-id";
 	public static final String CHANNEL = "channel";
-	public static final String TRANSACTIONID = "transactionId";
+	public static final String OTP_PIN_NUMBER = "OtpPinNumber";
+	public static final String OTP_RESPONSE = "otpResponse";
+	public static final String TRANSACTION_ID = "txn-id";
 	
 
 	
