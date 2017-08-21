@@ -7,7 +7,9 @@ import java.io.StringReader;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -37,10 +39,13 @@ import com.finflux.risk.creditbureau.provider.equifax.EquifaxConstants;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.AccountDetailsType;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.AccountType;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.CreditReportSummaryType;
+import com.finflux.risk.creditbureau.provider.equifax.xsd.ErrorType;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.InquiryResponseType;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.ReportType;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.ScoreType;
+import com.finflux.risk.creditbureau.provider.highmark.xsd.ack.ERROR;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.issue.ObjectFactory;
+import com.google.gson.Gson;
 
 @Service
 public class EquifaxIssueServiceImpl implements EquifaxIssueService {
@@ -66,8 +71,9 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 			return parseResponse(enquiry.getRequest(), enquiry.getResponse(), loanEnquiryReferenceData);
 		} catch (JAXBException e) {
 			logger.error(e.getMessage());
+			final String errorsJson = null ;
 			EnquiryResponse enquiryResponse = new EnquiryResponse(null, enquiry.getRequest(), enquiry.getResponse(),
-					null, null, CreditBureauEnquiryStatus.ERROR, null);
+					null, null, CreditBureauEnquiryStatus.ERROR, null, errorsJson);
 			return new CreditBureauResponse(enquiryResponse, null, null, null);
 		} finally {
 			System.getProperties().remove("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize");
@@ -88,13 +94,14 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 		BigDecimal totalBalanceAmount = java.math.BigDecimal.ZERO;
 		BigDecimal totalWrittenOfAmount = java.math.BigDecimal.ZERO;
 		String scoreValue = "";
-
+		String errorsJson = null ;
 		InquiryResponseType creditReport = (InquiryResponseType) unmarshaller.unmarshal(responseReader);
 		ReportType reportData = creditReport.getReportData();
 		List<CreditBureauExistingLoan> loanList = new ArrayList<>();
 		CreditBureauEnquiryStatus status = CreditBureauEnquiryStatus.SUCCESS;
 		if (reportData.getError().size() > 0) {
 			status = CreditBureauEnquiryStatus.ERROR;
+			errorsJson = constructErrorJson(reportData.getError()) ;
 		} else {
 			CreditReportSummaryType reportSummary = reportData.getAccountSummary();
 			if (reportSummary.getNoOfActiveAccounts() != null) {
@@ -160,7 +167,7 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 			reportBytes = generateReportFile(responseXml);	
 		}
 		enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requstXml,
-				responseXml, null, null, status, loanEnquiryReferenceData.getCbReportId());
+				responseXml, null, null, status, loanEnquiryReferenceData.getCbReportId(), errorsJson);
 		CreditBureauReportFile reportFile = new CreditBureauReportFile("ReportFile", reportBytes, ReportFileType.HTML);
 		CreditBureauResponse creditBureauResponse = new CreditBureauResponse(enquiryResponse, null, loanList,
 				reportFile);
@@ -168,6 +175,18 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 
 	}
 
+    private String constructErrorJson(final List<ErrorType> errors) {
+        String errorsJson = null ;
+        List<Map<String, String>> list = new ArrayList<>() ;
+        for(ErrorType error: errors) {
+            Map<String, String> errorsMap = new HashMap<>() ;
+            errorsMap.put("code", error.getErrorCode()) ;
+            errorsMap.put("description", error.getErrorMsg()) ;
+            list.add(errorsMap) ;
+        }
+        errorsJson = new Gson().toJson(list) ;
+        return errorsJson ;
+    }
 	private byte[] generateReportFile(final String responseXml) {
 		JAXBContext jc;
 		String fileName = null ;

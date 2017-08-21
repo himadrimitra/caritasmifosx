@@ -99,8 +99,24 @@ public class TelephoneSegment extends RequestSegment {
         return builder.toString();
     }
 
+    public static String getFieldName(final String errorRecord) {
+        final String fieldTag = errorRecord.substring(ERRORTAG_STARTINDEX, ERRORTAG_ENDINDEX);
+        String fieldName = "";
+        switch (fieldTag) {
+            case TELEPHONE_TAGNAME:
+                fieldName = "Telephone Number";
+            break;
+            case TELEPHONE_EXTENSION_TAGNAME:
+                fieldName = "Telephone Extension";
+            break;
+            case TELEPHONE_TYPE_NAME:
+                fieldName = "Telephone Type";
+            break;
+        }
+        return fieldName;
+    }
+    
     class Telephone {
-
         private final String telephoneNumber;
         private final String telephoneExtension ;
         private final String telephoneType;
@@ -122,6 +138,5 @@ public class TelephoneSegment extends RequestSegment {
         public String getTelephoneExtension() {
             return this.telephoneExtension;
         }
-
     }
 }

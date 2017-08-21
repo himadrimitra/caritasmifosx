@@ -86,9 +86,10 @@ public class EquifaxRequestServiceImpl implements EquifaxRequestService {
         try {
             response = parseResponse(input, responseType, enquiryReferenceData.getLoansReferenceData().get(0));
         } catch (JAXBException e) {
+            final String errorsJson = null ;
             logger.error(e.getMessage());
             EnquiryResponse enquiryResponse = new EnquiryResponse(null, generateRequestString(input), null, null, null,
-                    CreditBureauEnquiryStatus.ERROR, null);
+                    CreditBureauEnquiryStatus.ERROR, null, errorsJson);
             return new CreditBureauResponse(enquiryResponse, null, null, null);
         } finally {
             System.getProperties().remove("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize");
@@ -308,9 +309,9 @@ public class EquifaxRequestServiceImpl implements EquifaxRequestService {
         StringWriter writer = new StringWriter();
         marshaller.marshal(responseType, writer);
         String responseString = writer.toString();
-
+        final String errorsJson = null ;
         enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString, responseString, null,
-                null, CreditBureauEnquiryStatus.SUCCESS, loanEnquiryReferenceData.getCbReportId());
+                null, CreditBureauEnquiryStatus.SUCCESS, loanEnquiryReferenceData.getCbReportId(), errorsJson);
         CreditBureauResponse creditBureauResponse = new CreditBureauResponse(enquiryResponse, null, null, null);
         return creditBureauResponse;
 

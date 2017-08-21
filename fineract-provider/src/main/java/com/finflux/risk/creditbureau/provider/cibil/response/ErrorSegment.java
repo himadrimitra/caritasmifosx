@@ -1,6 +1,11 @@
 package com.finflux.risk.creditbureau.provider.cibil.response;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.finflux.risk.creditbureau.provider.cibil.response.data.error.UserReferenceErrorData;
+import com.google.gson.Gson;
 
 public class ErrorSegment {
 
@@ -22,7 +27,8 @@ public class ErrorSegment {
 
     private void parseUserReferenceErrorSegment(final byte[] errorResponse) {
         userReferenceErrorSegment = new ResponseSegment<>();
-        userReferenceErrorSegment.parseSection(errorResponse, 0, UserReferenceErrorData.class);
+        int start = TAG_LENGTH + DATE_LENGTH + TIME_LENGTH ;
+        userReferenceErrorSegment.parseSection(errorResponse, start, UserReferenceErrorData.class);
     }
 
     // This is fixed length packet.
@@ -52,5 +58,17 @@ public class ErrorSegment {
 
     public Integer getSectionLength() {
         return this.sectionLength;
+    }
+
+    public String getErrorsAsJson() {
+        String errorsJson = null;
+        List<Map<String, String>> errors = new ArrayList<>();
+        List<UserReferenceErrorData> errorsList = this.userReferenceErrorSegment.getSegmentData();
+        if (errorsList != null && !errorsList.isEmpty()) {
+            UserReferenceErrorData errorsData = errorsList.get(0);
+            errors.addAll(errorsData.getErrors());
+            errorsJson = new Gson().toJson(errors, List.class);
+        }
+        return errorsJson;
     }
 }

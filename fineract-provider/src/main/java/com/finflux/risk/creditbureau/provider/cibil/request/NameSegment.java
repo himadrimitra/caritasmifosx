@@ -9,6 +9,13 @@ import org.apache.commons.lang3.StringUtils;
 //Variable Length segment. At max 174 bytes
 public class NameSegment extends RequestSegment {
 
+    public final static String DISPLAY_NAME1 = "01";
+    public final static String DISPLAY_NAME2 = "02";
+    public final static String DISPLAY_NAME3 = "03";
+    public final static String DISPLAY_NAME4 = "04";
+    public final static String DISPLAY_NAME5 = "05";
+    public final static String DOB = "07";
+    public final static String GENDER = "08";
     private final String SEGMENT_TAG = "PN";
     private final String SEGMENT_TAG_LENGTH = "03";
     private final String segmentTag = "N01"; // Always N01, 3 bytes
@@ -92,5 +99,34 @@ public class NameSegment extends RequestSegment {
             }
             this.displayNames.add(workingName);
         }
+    }
+
+    public static String getFieldName(final String errorRecord) {
+        final String fieldTag = errorRecord.substring(ERRORTAG_STARTINDEX, ERRORTAG_ENDINDEX);
+        String fieldName = "";
+        switch (fieldTag) {
+            case DISPLAY_NAME1:
+                fieldName = "Display Name1";
+            break;
+            case DISPLAY_NAME2:
+                fieldName = "Display Name2";
+            break;
+            case DISPLAY_NAME3:
+                fieldName = "Display Name3";
+            break;
+            case DISPLAY_NAME4:
+                fieldName = "Display Name4";
+            break;
+            case DISPLAY_NAME5:
+                fieldName = "Display Name5";
+            break;
+            case DOB:
+                fieldName = "Date of Birth";
+            break;
+            case GENDER:
+                fieldName = "Gender";
+            break;
+        }
+        return fieldName;
     }
 }

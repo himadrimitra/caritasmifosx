@@ -17,7 +17,9 @@ public abstract class RequestSegment {
     protected final static String TAGTYPE_SEVEN = "07";
     protected final static String TAGTYPE_EIGHT = "08";
     protected final static String TAGTYPE_NINE = "09";
-
+    public final static Integer ERRORTAG_STARTINDEX = 3 ;
+    public final static Integer ERRORTAG_ENDINDEX = 5 ;
+    
     public abstract String prepareTuefPacket();
 
     protected String getFormattedLength(final String value) {

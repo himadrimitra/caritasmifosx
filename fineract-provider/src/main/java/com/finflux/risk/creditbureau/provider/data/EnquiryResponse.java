@@ -13,9 +13,10 @@ public class EnquiryResponse {
     final String fileName;
     final String reportId;
     final CreditBureauEnquiryStatus status;
-
+    final String errorsJson ;
+    
     public EnquiryResponse(final String acknowledgementNumber, final String request, final String response, final Date reportGeneratedTime,
-            final String fileName, CreditBureauEnquiryStatus status, final String reportId) {
+            final String fileName, CreditBureauEnquiryStatus status, final String reportId, final String errorsJson) {
         this.acknowledgementNumber = acknowledgementNumber;
         this.request = request;
         this.response = response;
@@ -23,6 +24,7 @@ public class EnquiryResponse {
         this.fileName = fileName;
         this.status = status;
         this.reportId = reportId;
+        this.errorsJson = errorsJson ;
     }
 
     public String getAcknowledgementNumber() {
@@ -57,5 +59,9 @@ public class EnquiryResponse {
 
     public String getReportId() {
         return reportId;
+    }
+    
+    public String getErrorsJson() {
+        return this.errorsJson ;
     }
 }

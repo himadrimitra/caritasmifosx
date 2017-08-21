@@ -11,6 +11,16 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class AddressSegment extends RequestSegment {
 
+    private final static String ADDRESS_LINE1 = TAGTYPE_ONE;
+    private final static String ADDRESS_LINE2 = TAGTYPE_TWO;
+    private final static String ADDRESS_LINE3 = TAGTYPE_THREE;
+    private final static String ADDRESS_LINE4 = TAGTYPE_FOUR;
+    private final static String ADDRESS_LINE5 = TAGTYPE_FIVE;
+    private final static String STATE_CODE = TAGTYPE_SIX;
+    private final static String PIN_CODE = TAGTYPE_SEVEN;
+    private final static String ADDRESS_CATEGORY = TAGTYPE_EIGHT;
+    private final static String RESIDENCE_CODE = TAGTYPE_NINE;
+
     private final static Integer ADDRESSLINE_LENGTH = 40;
     private final static Integer TOTAL_ADDRESS_LINES = 5;
     private final static String ADDRESS_TAG = "PA";
@@ -27,7 +37,8 @@ public class AddressSegment extends RequestSegment {
             builder.append(ADDRESS_SEGMENT_TAGS[i]);
             appendData(builder, address);
         }
-        //CIBIL expects two addresses. If second is not there, we need to add same address again
+        // CIBIL expects two addresses. If second is not there, we need to add
+        // same address again
         if (this.addresses.size() == 1) {
             Address address = this.addresses.get(0);
             builder.append(ADDRESS_TAG);
@@ -41,7 +52,7 @@ public class AddressSegment extends RequestSegment {
 
     private void appendData(final StringBuilder builder, final Address address) {
         final List<String> addressLines = generateFormattedAddressLines(address);
-        final String[] tagTypes = { TAGTYPE_ONE, TAGTYPE_TWO, TAGTYPE_THREE, TAGTYPE_FOUR, TAGTYPE_FIVE };
+        final String[] tagTypes = { ADDRESS_LINE1, ADDRESS_LINE2, ADDRESS_LINE3, ADDRESS_LINE4, ADDRESS_LINE5 };
         final Integer addressListSize = addressLines.size();
         for (int i = 0; i < TOTAL_ADDRESS_LINES; i++) {
             builder.append(tagTypes[i]);
@@ -52,16 +63,16 @@ public class AddressSegment extends RequestSegment {
                 builder.append(SIZE_ZERO);
             }
         }
-        builder.append(TAGTYPE_SIX);
+        builder.append(STATE_CODE);
         builder.append(SIZE_TWO);
         builder.append(address.getStateCode());
-        builder.append(TAGTYPE_SEVEN);
+        builder.append(PIN_CODE);
         builder.append(getFormattedLength(address.getPinCode()));
         builder.append(address.getPinCode());
-        builder.append(TAGTYPE_EIGHT);
+        builder.append(ADDRESS_CATEGORY);
         builder.append(SIZE_TWO);
         builder.append(address.getAddressCategory());
-        builder.append(TAGTYPE_NINE);
+        builder.append(RESIDENCE_CODE);
         builder.append(SIZE_TWO);
         builder.append(address.getResideneCode());
     }
@@ -86,5 +97,40 @@ public class AddressSegment extends RequestSegment {
             }
         }
         return addresses;
+    }
+
+    public static String getFieldName(final String errorRecord) {
+        final String fieldTag = errorRecord.substring(ERRORTAG_STARTINDEX, ERRORTAG_ENDINDEX);
+        String fieldName = "";
+        switch (fieldTag) {
+            case ADDRESS_LINE1:
+                fieldName = "Address Line1";
+            break;
+            case ADDRESS_LINE2:
+                fieldName = "Address Line2";
+            break;
+            case ADDRESS_LINE3:
+                fieldName = "Address Line3";
+            break;
+            case ADDRESS_LINE4:
+                fieldName = "Address Line4";
+            break;
+            case ADDRESS_LINE5:
+                fieldName = "Address Line5";
+            break;
+            case STATE_CODE:
+                fieldName = "State Code";
+            break;
+            case PIN_CODE:
+                fieldName = "Pin Code";
+            break;
+            case ADDRESS_CATEGORY:
+                fieldName = "Address Category";
+            break;
+            case RESIDENCE_CODE:
+                fieldName = "Residence Code";
+            break;
+        }
+        return fieldName;
     }
 }

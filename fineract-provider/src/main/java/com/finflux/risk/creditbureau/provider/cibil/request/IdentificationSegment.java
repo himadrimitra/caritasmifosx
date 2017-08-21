@@ -40,4 +40,18 @@ public class IdentificationSegment extends RequestSegment {
     public void addIdentifier(final String identityType, final String identity) {
         this.addIdentifier(new CustomerIdenfier(identityType, identity));
     }
+
+    public static String getFieldName(final String errorRecord) {
+        final String fieldTag = errorRecord.substring(ERRORTAG_STARTINDEX, ERRORTAG_ENDINDEX);
+        String fieldName = "";
+        switch (fieldTag) {
+            case IDENTITY_TYPE_TAG_ID:
+                fieldName = "Identifier Type";
+            break;
+            case IDENTITY_TAG_ID:
+                fieldName = "Identifier";
+            break;
+        }
+        return fieldName;
+    }
 }

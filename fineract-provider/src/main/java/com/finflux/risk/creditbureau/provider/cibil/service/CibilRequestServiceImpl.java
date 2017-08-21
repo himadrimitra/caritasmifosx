@@ -174,8 +174,9 @@ public class CibilRequestServiceImpl implements CibilRequestService {
 
     private CreditBureauResponse parseResponse(final String requestString, final CibilResponse response,
             final LoanEnquiryReferenceData loanEnquiryReferenceData) {
+        final String errorsJson = null ;
         EnquiryResponse enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString,
-                response.getResponseAsString(), null, null, CreditBureauEnquiryStatus.SUCCESS, loanEnquiryReferenceData.getCbReportId());
+                response.getResponseAsString(), null, null, CreditBureauEnquiryStatus.SUCCESS, loanEnquiryReferenceData.getCbReportId(), errorsJson);
         CreditBureauResponse creditBureauResponse = new CreditBureauResponse(enquiryResponse, null, null, null);
         return creditBureauResponse;
 

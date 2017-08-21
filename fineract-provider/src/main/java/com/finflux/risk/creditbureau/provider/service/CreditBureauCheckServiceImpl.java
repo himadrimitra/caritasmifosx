@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -38,6 +39,7 @@ import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiry;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
 import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiry;
 import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiryRepository;
+import com.google.gson.Gson;
 
 @Service
 public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
@@ -186,7 +188,8 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             final StringBuilder sb = new StringBuilder(200);
             sb.append("SELECT lcbe.loan_id AS loanId, lcbe.status AS lcbenquiryStatus,lcbe.response AS lcbeResponse,cbe.response AS cbeResponse,lcbe.file_type AS reportFileTypeId ");
             sb.append(",IFNULL(SUM(el.amount_borrowed),0.0) AS totalAmountBorrowed, IFNULL(SUM(el.current_outstanding) ,0.0) AS totalCurrentOutstanding ");
-            sb.append(",IFNULL(SUM(el.amt_overdue),0.0) AS totalAmtOverdue, IFNULL(SUM(el.installment_amount),0.0) AS totalInstallmentAmount ");
+            sb.append(",IFNULL(SUM(el.amt_overdue),0.0) AS totalAmtOverdue, IFNULL(SUM(el.installment_amount),0.0) AS totalInstallmentAmount, ");
+            sb.append("cbe.errors_json as errorJson ");
             sb.append(",cbe.created_date AS cbInitiatedDateTime ");
             sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
             sb.append("INNER JOIN f_creditbureau_enquiry cbe ON cbe.id = lcbe.creditbureau_enquiry_id ");
@@ -243,14 +246,19 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             final BigDecimal totalCurrentOutstanding = rs.getBigDecimal("totalCurrentOutstanding");
             final BigDecimal totalAmtOverdue = rs.getBigDecimal("totalAmtOverdue");
             final BigDecimal totalInstallmentAmount = rs.getBigDecimal("totalInstallmentAmount");
+            final String errorJson = rs.getString("errorJson") ;
             String cbInitiatedDateTime = null;
             final Date date = rs.getTimestamp("cbInitiatedDateTime");
             if (date != null) {
                 cbInitiatedDateTime = new SimpleDateFormat("dd-MMMM-yyyy HH:mm:ss").format(date);
             }
             final Long loanId = JdbcSupport.getLongActualValue(rs, "loanId");
+            List<Map<String, String>> errors = null ;
+            if(!StringUtils.isEmpty(errorJson)) {
+                errors = new Gson().fromJson(errorJson, List.class) ;
+            }
             return new OtherInstituteLoansSummaryData(loanId, cbStatus, cbResponse, cbLoanEnqResponse, totalAmountBorrowed,
-                    totalCurrentOutstanding, totalAmtOverdue, totalInstallmentAmount, reportFileType, cbInitiatedDateTime);
+                    totalCurrentOutstanding, totalAmtOverdue, totalInstallmentAmount, reportFileType, cbInitiatedDateTime, errors);
         }
     }
 
