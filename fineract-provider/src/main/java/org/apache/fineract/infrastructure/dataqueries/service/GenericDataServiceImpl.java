@@ -303,7 +303,11 @@ public class GenericDataServiceImpl implements GenericDataService {
                     if (watchColumn > 0 && codeValueId > 0) {
                         visibilityCriteriaValues = retreiveColumnValuesByCodeValueId(codeValueId);
                         String watchColumnName = retreiveWatchColumnName(watchColumn);
-                        visibilityCriteria.add(new ResultsetVisibilityCriteriaData(watchColumnName, visibilityCriteriaValues));
+                        Integer codeId = retrieveCodeIdByCodeValueId(codeValueId);
+                        List<ResultsetColumnValueData> watchColumnValues = new ArrayList<>();
+                        watchColumnValues = retreiveColumnValues(codeId);
+                        visibilityCriteria
+                                .add(new ResultsetVisibilityCriteriaData(watchColumnName, visibilityCriteriaValues, watchColumnValues));
                     }
                     mandatoryIfVisible = rsValues.getBoolean("mandatoryIfVisible");
                     if (visible != null && visible && mandatoryIfVisible != null && mandatoryIfVisible) { 
@@ -611,6 +615,13 @@ public class GenericDataServiceImpl implements GenericDataService {
 
         }
         return SectionDataList;
+
+    }
+
+    private Integer retrieveCodeIdByCodeValueId(Integer codeValueId) {
+
+        final String sql = "select v.code_id from m_code_value v where v.id = ?";
+        return this.jdbcTemplate.queryForObject(sql, Integer.class, codeValueId);
 
     }
 
