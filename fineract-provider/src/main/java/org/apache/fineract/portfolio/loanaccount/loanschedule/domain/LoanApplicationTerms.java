@@ -1037,7 +1037,7 @@ public final class LoanApplicationTerms {
                     meetingStartDate = CalendarUtils.adjustDate(meetingStartDate, calendarStartDate, this.repaymentPeriodFrequencyType);
                 }
 
-                if (!CalendarUtils.isValidRedurringDate(recurrence, meetingStartDate, startDate)) {
+                if (!CalendarUtils.isValidRecurringDate(recurrence, meetingStartDate, startDate)) {
                     expectedStartDate = CalendarUtils.getNextRepaymentMeetingDate(recurrence, meetingStartDate, startDate,
                             getRepaymentEvery(),
                             CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),
@@ -1048,7 +1048,7 @@ public final class LoanApplicationTerms {
                 }
 
                 LocalDate expectedEndDate = endDate;
-                if (!CalendarUtils.isValidRedurringDate(recurrence, meetingStartDate, endDate)) {
+                if (!CalendarUtils.isValidRecurringDate(recurrence, meetingStartDate, endDate)) {
                     expectedEndDate = CalendarUtils.getNextRepaymentMeetingDate(recurrence, meetingStartDate, endDate,
                             getRepaymentEvery(),
                             CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),

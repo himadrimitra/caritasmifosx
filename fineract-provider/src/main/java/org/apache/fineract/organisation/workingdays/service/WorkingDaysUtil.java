@@ -82,7 +82,7 @@ public class WorkingDaysUtil {
     }
     
     public static boolean isWorkingDay(final WorkingDays workingDays, final LocalDate date,final RepaymentRescheduleType repaymentRescheduleType) {
-        return CalendarUtils.isValidRedurringDate(workingDays.getRecurrence(), date, date) || repaymentRescheduleType.isSameDay();
+        return CalendarUtils.isValidRecurringDate(workingDays.getRecurrence(), date, date) || repaymentRescheduleType.isSameDay();
     }
     
     public static boolean isRepaymentRescheduleTypeIsSameDay(final WorkingDays workingDays, final LocalDate date) {

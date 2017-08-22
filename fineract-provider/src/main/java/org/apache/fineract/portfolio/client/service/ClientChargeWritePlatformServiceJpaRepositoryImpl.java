@@ -237,7 +237,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 							if (!charge.fetchChargeTimeType().isSameFrequency(CalendarUtils.getFrequency(calendar.getRecurrence()))) {
 								throw new GroupAndClientChargeNotInSynWithMeeting(groupId);
 							}
-							if (!CalendarUtils.isValidRedurringDate(calendar.getRecurrence(), new LocalDate(calendar.getStartDate()), dueDate)) {
+							if (!CalendarUtils.isValidRecurringDate(calendar.getRecurrence(), new LocalDate(calendar.getStartDate()), dueDate)) {
 								throw new DuedateIsNotMeetingDateException(dueDate);
 							}
 						}
