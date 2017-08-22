@@ -28,8 +28,8 @@ public class SecondLevelAuthenticationServiceUsingAadhaarOtpImpl implements Seco
 	}
 	
 	@Override
-	public Object authenticateUser(final String aadhaarNumber, final String otp, final Location location) {
-		return this.aadharReadPlatformService.authenticateUserByOtp(aadhaarNumber, otp, location);
+	public Object authenticateUser(final String aadhaarNumber, final String otp) {
+		return this.aadharReadPlatformService.authenticateUserByOtp(aadhaarNumber, otp);
 	}
 
 	@Override

@@ -1,7 +1,6 @@
 package com.finflux.infrastructure.common.httpaccess;
 
-import java.io.InputStream;
-import java.net.URL;
+import java.net.URI;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
@@ -12,7 +11,11 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import com.finflux.infrastructure.external.authentication.aadhar.exception.ConnectionFailedException;
@@ -20,87 +23,79 @@ import com.finflux.infrastructure.external.authentication.aadhar.exception.Conne
 @Service
 public class ExternalHttpConnectivity {
 
-	public <T> T performServerPost(final String postURL, final T body, Class<T> rerurnType){
+	public <T> T performServerPost(final String postURL, final T body, Class<T> rerurnType) {
 		T response = null;
-		try{
+		try {
 			RestTemplate restTemplate = new RestTemplate();
 			response = restTemplate.postForObject(postURL, body, rerurnType);
-		}catch(Exception ce){
+		} catch (Exception ce) {
 			throw new ConnectionFailedException(
 					"Unable to communicate with Aadhaar server. Please Conntact your Support team.");
 		}
 		return response;
 	}
 
-    public String initiateGenerateOtp(final String otpUrl) {
+	/**
+	 * prevents the SSL security certificate check
+	 **/
+	private void trustAllSSLCertificates() {
+		TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
 
-        trustAllSSLCertificates();
-        /**
-         * HttpsUrlConnection used for connecting to the external url
-         **/
-        HttpsURLConnection connection = null;
+			@Override
+			public X509Certificate[] getAcceptedIssuers() {
+				return null;
+			}
 
-        try {
-            URL url = new URL(otpUrl);
-            connection = (HttpsURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            connection.setUseCaches(false);
-            connection.setDoOutput(true);
-            InputStream is = connection.getInputStream();
-            URL header = connection.getURL();
-            return header.toString();
-        } catch (Exception ce) {
-            throw new ConnectionFailedException("Unable to communicate with Aadhaar server. Please Conntact your Support team.");
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
-        }
-    }
+			@SuppressWarnings("unused")
+			@Override
+			public void checkClientTrusted(X509Certificate[] certs, String authType) {
+			}
 
-    /**
-     * prevents the SSL security certificate check
-     **/
-    private void trustAllSSLCertificates() {
-        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+			@SuppressWarnings("unused")
+			@Override
+			public void checkServerTrusted(X509Certificate[] certs, String authType) {
+			}
+		} };
 
-            @Override
-            public X509Certificate[] getAcceptedIssuers() {
-                return null;
-            }
+		try {
+			SSLContext sslContext = SSLContext.getInstance("SSL");
+			sslContext.init(null, trustAllCerts, new SecureRandom());
+			HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
 
-            @SuppressWarnings("unused")
-            @Override
-            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+			// Create all-trusting host name verifier
+			HostnameVerifier hostnameVerifier = new HostnameVerifier() {
 
-            @SuppressWarnings("unused")
-            @Override
-            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-        } };
+				@SuppressWarnings("unused")
+				@Override
+				public boolean verify(String hostname, SSLSession session) {
+					return true;
+				}
+			};
 
-        try {
-            SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+			// Install the all-trusting host verifier
+			HttpsURLConnection.setDefaultHostnameVerifier(hostnameVerifier);
+		}
 
-            // Create all-trusting host name verifier
-            HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+		catch (Exception e) {
+			// do nothing
+		}
+	}
 
-                @SuppressWarnings("unused")
-                @Override
-                public boolean verify(String hostname, SSLSession session) {
-                    return true;
-                }
-            };
-
-            // Install the all-trusting host verifier
-            HttpsURLConnection.setDefaultHostnameVerifier(hostnameVerifier);
-        }
-
-        catch (Exception e) {
-            // do nothing
-        }
-    }
+	public URI performForLocation(final String initUrl, final MultiValueMap<String, String> mapParams) {
+		trustAllSSLCertificates();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+		HttpEntity<MultiValueMap<String, String>> requestBody = new HttpEntity<MultiValueMap<String, String>>(mapParams,
+				headers);
+		URI response = null;
+		try {
+			RestTemplate restTemplate = new RestTemplate();
+			response = restTemplate.postForLocation(initUrl, requestBody);
+		} catch (Exception ce) {
+			throw new ConnectionFailedException(
+					"Unable to communicate with Aadhaar server. Please Conntact your Support team.");
+		}
+		return response;
+	}
 
 }

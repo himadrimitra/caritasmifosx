@@ -16,21 +16,24 @@ public class SurveyTakenMapper {
         super();
     }
 
-    public static SurveyTaken map(final SurveyTakenData scorecardData, final Survey survey, final Staff surveyedBy) {
+    public static SurveyTaken map(final SurveyTakenData scorecardData, final Survey survey, final Staff surveyedBy, final Staff coSurveyedBy) {
         final SurveyTaken surveyTaken = new SurveyTaken();
         surveyTaken.setEntityType(survey.getEntityType());
         surveyTaken.setEntityId(scorecardData.getEntityId());
         surveyTaken.setSurvey(survey);
         surveyTaken.setSurveyedBy(surveyedBy);
+        surveyTaken.setCoSurveyedBy(coSurveyedBy);
         surveyTaken.setSurveyedOn(scorecardData.getSurveyedOn());
         return surveyTaken;
     }
 
-    public static SurveyTaken updateMap(final SurveyTaken surveyTaken, final SurveyTakenData scorecardData, final Survey survey, final Staff surveyedBy) {
+    public static SurveyTaken updateMap(final SurveyTaken surveyTaken, final SurveyTakenData scorecardData, final Survey survey,
+            final Staff surveyedBy, final Staff coSurveyedBy) {
         surveyTaken.setEntityType(survey.getEntityType());
         surveyTaken.setEntityId(scorecardData.getEntityId());
         surveyTaken.setSurvey(survey);
         surveyTaken.setSurveyedBy(surveyedBy);
+        surveyTaken.setCoSurveyedBy(coSurveyedBy);
         surveyTaken.setSurveyedOn(scorecardData.getSurveyedOn());
         return surveyTaken;
     }
@@ -45,8 +48,14 @@ public class SurveyTakenMapper {
                         .getText(), scorecard.getResponse().getId(), scorecard.getResponse().getText(), scorecard.getValue()));
             }
         }
+        Long coSurveyedBy = null;
+        String coSurveyedByName = null;
+        if (surveyTaken.getCoSurveyedBy() != null) {
+            coSurveyedBy = surveyTaken.getCoSurveyedBy().getId();
+            coSurveyedByName = surveyTaken.getCoSurveyedBy().getDisplayName();
+        }
         return new SurveyTakenData(surveyTaken.getId(), surveyTaken.getSurvey().getId(), surveyTaken.getSurvey().getName(), surveyTaken
-                .getSurveyedBy().getId(), surveyTaken.getSurveyedBy().getDisplayName(), surveyTaken.getSurveyedOn(),
-                surveyTaken.getTotalScore(), scorecardValues);
+                .getSurveyedBy().getId(), surveyTaken.getSurveyedBy().getDisplayName(), coSurveyedBy, coSurveyedByName,
+                surveyTaken.getSurveyedOn(), surveyTaken.getTotalScore(), scorecardValues);
     }
 }

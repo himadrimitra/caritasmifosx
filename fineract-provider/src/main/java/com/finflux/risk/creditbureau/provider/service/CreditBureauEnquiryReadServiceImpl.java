@@ -66,7 +66,7 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
         sb.append(",IFNULL(ad.village_town,''),  ' ', IFNULL(ad.address_line_one,''),  ' ' ");
         sb.append(",IFNULL(dist.district_name,'')) AS clientAddress ");
         //sb.append(",IFNULL(ad.village_town,dist.district_name) AS clientCity ");
-        sb.append(",dist.district_name AS clientCity ");
+        sb.append(",IFNULL(dist.district_name,IFNULL(ad.village_town,'')) AS clientCity ");
         sb.append(",state.state_name AS clientState ");
         sb.append(",state.iso_state_code As stateShortCode,  IFNULL(ad.postal_code,'') AS clientPin,  mc.id AS clientId ");
         sb.append(",addresstypecv.id AS clientAddressTypeId,addresstypecv.code_value AS clientAddressType ");
@@ -213,7 +213,10 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
         public EnquiryAddressData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
             final String clientAddressTypeId = rs.getString(ClientDataRequestConstants.clientAddressTypeId);
             final String clientAddressType = rs.getString(ClientDataRequestConstants.clientAddressType);
-            final String clientAddress = rs.getString(ClientDataRequestConstants.clientAddress);
+            String clientAddress = rs.getString(ClientDataRequestConstants.clientAddress);
+            if(clientAddress != null){
+                clientAddress = clientAddress.trim().replaceAll("\\s{2,}", " ");
+            }
             final String clientCity = rs.getString(ClientDataRequestConstants.clientCity);
             final String clientStateCode = rs.getString(ClientDataRequestConstants.clientStateShortCode);
             final String clientState = rs.getString("clientState") ;

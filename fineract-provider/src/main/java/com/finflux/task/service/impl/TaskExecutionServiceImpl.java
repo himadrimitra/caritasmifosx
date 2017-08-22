@@ -434,13 +434,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         }
 
         if(configValueMap!=null){
-            if(configValueMap.get(TaskConfigKey.CLIENT_ID.getValue())!=null){
-                dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID.getValue(),
-                        Long.valueOf(configValueMap.get(TaskConfigKey.CLIENT_ID.getValue())));
-            }
-            if(configValueMap.get(TaskConfigKey.LOANAPPLICATION_ID.getValue())!=null){
-                dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID.getValue(),
-                        Long.valueOf(configValueMap.get(TaskConfigKey.LOANAPPLICATION_ID.getValue())));
+            for(String key:configValueMap.keySet()){
+            	if(configValueMap.get(key)!=null){
+            		dataLayerKeyLongMap.put(key,configValueMap.get(key));
+            	}
             }
         }
 

@@ -49,6 +49,8 @@ import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.staff.data.StaffData;
+import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
 import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
 import org.apache.fineract.portfolio.village.data.VillageData;
@@ -75,12 +77,14 @@ public class VillageApiResource {
     private final PortfolioCommandSourceWritePlatformService commandSourceWritePlatformService;
     private final ToApiJsonSerializer<Object> toApiJsonSerializer;
     private final AddressReadPlatformService addressReadPlatformService;
+    private final StaffReadPlatformService staffReadPlatformService;
     
     @Autowired
     public VillageApiResource(PlatformSecurityContext context, VillageReadPlatformService villageReadPlatformService,
             ApiRequestParameterHelper apiRequestParameterHelper, ToApiJsonSerializer<VillageData> villageDataApiJsonSerializer, 
             PortfolioCommandSourceWritePlatformService commandSourceWritePlatformService, ToApiJsonSerializer<Object> toApiJsonSerializer, 
-            CenterReadPlatformService centerReadPlatformService,final AddressReadPlatformService addressReadPlatformService) {
+            CenterReadPlatformService centerReadPlatformService,final AddressReadPlatformService addressReadPlatformService,
+            final StaffReadPlatformService staffReadPlatformService) {
 
         this.context = context;
         this.villageReadPlatformService = villageReadPlatformService;
@@ -90,6 +94,7 @@ public class VillageApiResource {
         this.commandSourceWritePlatformService = commandSourceWritePlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.addressReadPlatformService = addressReadPlatformService;
+        this.staffReadPlatformService = staffReadPlatformService;
     }
     
     @GET
@@ -160,7 +165,7 @@ public class VillageApiResource {
         boolean fetchNonVerifiedData = false;
         Collection<AddressData> address = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(
                 VillageTypeApiConstants.pathParamName, villageId, settings.isTemplate(), fetchNonVerifiedData);
-        
+        Collection<StaffData> staffOptions = null;
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("setOfCenters")) {
                 centers = this.centerReadPlatformService.retrieveAssociatedCenters(villageId);
@@ -169,9 +174,12 @@ public class VillageApiResource {
             if(associationParameters.contains("hierarchy")){
                 hierarchy = this.villageReadPlatformService.retrieveHierarchy(villageId);
             }
+            if(associationParameters.contains("staffOptions")){
+                staffOptions = this.staffReadPlatformService.retrieveAllLoanOfficersInOfficeById(village.getOfficeId());
+            }
         }
         
-        village = VillageData.withAssociations(village, centers,address,hierarchy);
+        village = VillageData.withAssociations(village, centers,address,hierarchy, staffOptions);
        // village.getAssociations(centers);
         
         return this.villageDataApiJsonSerializer.serialize(settings, village, VillageTypeApiConstants.VILLAGE_RESPONSE_DATA_PARAMETERS);
@@ -214,7 +222,8 @@ public class VillageApiResource {
     public String handleCommand(@PathParam("villageId") final Long villageId, @QueryParam("command") final String commandParam,
             final String apiRequestBodyAsJson, @Context final UriInfo uriInfo) {
         if(StringUtils.isBlank(commandParam)) {
-            throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { VillageTypeApiConstants.ACTIVATE_COMMAND,  VillageTypeApiConstants.INITIATE_WORKFLOW_COMMAND});
+            throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { VillageTypeApiConstants.ACTIVATE_COMMAND,  VillageTypeApiConstants.INITIATE_WORKFLOW_COMMAND,
+                    VillageTypeApiConstants.ASSIGN_STAFF_COMMAND, VillageTypeApiConstants.UNASSIGN_STAFF_COMMAND});
         }
         final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
         CommandProcessingResult commandResult = null;
@@ -231,9 +240,23 @@ public class VillageApiResource {
                 commandResult = this.commandSourceWritePlatformService.logCommandSource(commandRequest);
                 result = this.toApiJsonSerializer.serialize(commandResult);
                 break ;
+            case VillageTypeApiConstants.ASSIGN_STAFF_COMMAND:
+                commandRequest = builder.assignStaffToVillage(villageId).build();
+                commandResult = this.commandSourceWritePlatformService.logCommandSource(commandRequest);
+                result = this.toApiJsonSerializer.serialize(commandResult);
+                break ;
+            case VillageTypeApiConstants.UNASSIGN_STAFF_COMMAND:
+                commandRequest = builder.unassignStaffFromVillage(villageId).build();
+                commandResult = this.commandSourceWritePlatformService.logCommandSource(commandRequest);
+                result = this.toApiJsonSerializer.serialize(commandResult);
+                break ;
                 default:
-                    throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { VillageTypeApiConstants.ACTIVATE_COMMAND,  VillageTypeApiConstants.INITIATE_WORKFLOW_COMMAND});
-                
+			throw new UnrecognizedQueryParamException("command", commandParam,
+					new Object[] { VillageTypeApiConstants.ACTIVATE_COMMAND,
+							VillageTypeApiConstants.INITIATE_WORKFLOW_COMMAND,
+							VillageTypeApiConstants.ASSIGN_STAFF_COMMAND,
+							VillageTypeApiConstants.UNASSIGN_STAFF_COMMAND });
+
         }
         return result ;
     }

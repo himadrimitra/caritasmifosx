@@ -18,21 +18,36 @@
  */
 package org.apache.fineract.portfolio.village.service;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandProcessingService;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
+import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
 import org.apache.fineract.organisation.office.exception.OfficeNotFoundException;
+import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.CenterNotFoundException;
@@ -40,6 +55,7 @@ import org.apache.fineract.portfolio.village.api.VillageTypeApiConstants;
 import org.apache.fineract.portfolio.village.domain.Village;
 import org.apache.fineract.portfolio.village.domain.VillageRepository;
 import org.apache.fineract.portfolio.village.domain.VillageRepositoryWrapper;
+import org.apache.fineract.portfolio.village.domain.VillageStaffAssignmentHistory;
 import org.apache.fineract.portfolio.village.exception.DuplicateVillageNameException;
 import org.apache.fineract.portfolio.village.exception.InvalidVillageStateTransitionException;
 import org.apache.fineract.portfolio.village.exception.VillageMustBePendingToBeDeletedException;
@@ -61,6 +77,8 @@ import com.finflux.task.data.WorkflowDTO;
 import com.finflux.task.domain.TaskConfigEntityTypeMapping;
 import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
 import com.finflux.task.service.CreateWorkflowTaskFactory;
+import com.google.gson.JsonElement;
+import com.google.gson.reflect.TypeToken;
 
 @Service
 public class VillageWritePlatformServiceImpl implements VillageWritePlatformService {
@@ -78,13 +96,16 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
     private final ConfigurationDomainService configurationDomainService;
     private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
+    private final FromJsonHelper fromApiJsonHelper;
+    private final StaffRepositoryWrapper staffRepositoryWrapper;
     
     @Autowired
     public VillageWritePlatformServiceImpl(PlatformSecurityContext context, VillageDataValidator fromApiJsonDeserializer,
             VillageRepositoryWrapper villageRepository, OfficeRepository officeRepository, GroupRepository centerRepository,
             CommandProcessingService commandProcessingService, VillageRepository villageRepo,
             final AddressWritePlatformService addressWritePlatformService, final ConfigurationDomainService configurationDomainService,
-            final CreateWorkflowTaskFactory createWorkflowTaskFactory, final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
+            final CreateWorkflowTaskFactory createWorkflowTaskFactory, final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
+            final FromJsonHelper fromApiJsonHelper, final StaffRepositoryWrapper staffRepositoryWrapper) {
 
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
@@ -97,6 +118,8 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
         this.configurationDomainService = configurationDomainService;
         this.createWorkflowTaskFactory = createWorkflowTaskFactory;
         this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository ;
+        this.fromApiJsonHelper = fromApiJsonHelper;
+        this.staffRepositoryWrapper = staffRepositoryWrapper;
 
     }
 
@@ -312,6 +335,64 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
             handleVillageDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
+    }
+
+    @Override
+    public CommandProcessingResult assignVillageStaffWorkflow(Long villageId, JsonCommand command) {
+        Village village = this.villageRepository.findOneWithNotFoundDetectionAndLazyInitialize(villageId);
+        this.validateForAssignStaff(command.json());
+        final Long staffId = command.longValueOfParameterNamed(ClientApiConstants.staffIdParamName);
+
+        Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetection(staffId);
+        village.assignStaff(staff);
+        final VillageStaffAssignmentHistory villageStaffAssignmentHistory = VillageStaffAssignmentHistory.createNew(village, staff,
+                DateUtils.getLocalDateOfTenant());
+        if (village.findLatestIncompleteHistoryRecord() != null) {
+            village.findLatestIncompleteHistoryRecord().updateEndDate(DateUtils.getLocalDateOfTenant());
+        }
+        village.getVillageStaffHistory().add(villageStaffAssignmentHistory);
+        this.villageRepository.save(village);
+
+        return new CommandProcessingResultBuilder() //
+                .withCommandId(command.commandId()).withResourceIdAsString(staffId.toString()).build();
+    }
+
+    public void validateForAssignStaff(final String json) {
+
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+
+        final Set<String> supportedParametersUnassignStaff = new HashSet<>(Arrays.asList(VillageTypeApiConstants.staffIdParamName));
+
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, supportedParametersUnassignStaff);
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(VillageTypeApiConstants.VILLAGE_RESOURCE_NAME);
+
+        final String staffIdParameterName = VillageTypeApiConstants.staffIdParamName;
+        final Long staffId = this.fromApiJsonHelper.extractLongNamed(staffIdParameterName, element);
+        baseDataValidator.reset().parameter(staffIdParameterName).value(staffId).notNull().longGreaterThanZero();
+
+        if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+
+    }
+
+    @Override
+    public CommandProcessingResult unassignVillageStaffWorkflow(Long villageId, JsonCommand command) {
+        Village village = this.villageRepository.findOneWithNotFoundDetectionAndLazyInitialize(villageId);
+        village.unassignStaff();
+        if (village.getVillageStaffHistory() != null && !village.getVillageStaffHistory().isEmpty()) {
+            if (village.findLatestIncompleteHistoryRecord() != null) {
+                village.findLatestIncompleteHistoryRecord().updateEndDate(DateUtils.getLocalDateOfTenant());
+            }
+        }
+        this.villageRepository.save(village);
+        return new CommandProcessingResultBuilder() //
+                .withCommandId(command.commandId()).withResourceIdAsString(villageId.toString()).build();
     }
 
 }

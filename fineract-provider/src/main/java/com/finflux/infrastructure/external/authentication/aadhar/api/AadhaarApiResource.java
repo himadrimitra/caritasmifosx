@@ -12,10 +12,8 @@ import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
-import com.aadhaarconnect.bridge.gateway.model.OtpResponse;
 import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarDataValidator;
 import com.finflux.infrastructure.external.authentication.aadhar.service.AadhaarBridgeProvidedService;
 
@@ -42,40 +40,29 @@ public class AadhaarApiResource {
 	@Path("/otp")
 	@Consumes({ MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_JSON })
-	public String generateOtp(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
-		context.authenticatedUser().validateHasPermissionTo("GENERATE_OTP");
+	public String initiateOtpRequest(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
+		context.authenticatedUser().validateHasPermissionTo(AadhaarApiConstants.GENERATE_OTP);
 		this.validator.validateJsonForGenerateOtp(apiRequestBodyAsJson);
-		final OtpResponse otpResponse = this.readPlatformService.processOtpRequest(apiRequestBodyAsJson);
-		return this.toApiJsonSerializer.serialize(otpResponse);
+		String response = this.readPlatformService.processOtpRequest(apiRequestBodyAsJson);
+		return this.toApiJsonSerializer.serialize(response);
 	}
 
 	@POST
 	@Path("/kyc")
 	@Consumes({ MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_JSON })
-	public String getEKyc(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
-		context.authenticatedUser().validateHasPermissionTo("READ_KYC_DETAILS");
+	public String initiateKycRequest(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
+		context.authenticatedUser().validateHasPermissionTo(AadhaarApiConstants.READ_KYC_DETAILS);
 		return this.readPlatformService.processKycRequest(apiRequestBodyAsJson);
 	}
-	
 
-    @POST
-    @Path("/gatewayotp")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String initiateOtpRequest(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
-        context.authenticatedUser().validateHasPermissionTo(AadhaarApiConstants.GENERATE_OTP);
-        this.validator.validateJsonForGenerateOtp(apiRequestBodyAsJson);
-        String response = this.readPlatformService.initiateOtpRequest(apiRequestBodyAsJson);
-        return this.toApiJsonSerializer.serialize(response);
-    }
-
-    @POST
-    @Path("/gatewaykyc")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String initiateKycRequest(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
-        context.authenticatedUser().validateHasPermissionTo(AadhaarApiConstants.READ_KYC_DETAILS);
-        return this.readPlatformService.initiateKycRequest(apiRequestBodyAsJson);
-    }
+	@POST
+	@Path("/biometric")
+	@Consumes({ MediaType.APPLICATION_JSON })
+	@Produces({ MediaType.APPLICATION_JSON })
+	public String initiateBiometricRequest(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
+		context.authenticatedUser().validateHasPermissionTo(AadhaarApiConstants.READ_KYC_DETAILS);
+		String response = this.readPlatformService.processBiometricRequest(apiRequestBodyAsJson);
+		return this.toApiJsonSerializer.serialize(response);
+	}
 }

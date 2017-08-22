@@ -341,6 +341,8 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
                     address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D07_MILITARY);
                 } else if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D08_OTHER())) {
                     address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D08_OTHER);
+                } else if (addressData.getClientAddressTypeId() != null) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D08_OTHER);
                 } else {
                     address.setTYPE("");
                 }

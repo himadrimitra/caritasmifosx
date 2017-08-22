@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -44,6 +45,7 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.office.domain.Office;
+import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.village.api.VillageTypeApiConstants;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -51,6 +53,7 @@ import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
+
 
 @Entity
 @Table(name = "chai_villages")
@@ -97,6 +100,12 @@ public class Village extends AbstractPersistable<Long> {
     @JoinTable(name="chai_village_center", joinColumns= @JoinColumn(name="village_id"), inverseJoinColumns = @JoinColumn(name="center_id"))
     private Set<Group> centerMembers; 
     
+    @ManyToOne
+    @JoinColumn(name = "staff_id", nullable=true)
+    private Staff staff;
+    
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "village", fetch=FetchType.LAZY)
+    private Set<VillageStaffAssignmentHistory> villageStaffHistory = new HashSet<>();
     
     public Village() {
     }
@@ -132,6 +141,7 @@ public class Village extends AbstractPersistable<Long> {
         this.villageCode = villageCode;
         this.villageName = villageName;
         this.count = count;
+        this.villageStaffHistory = new HashSet<>();
         this.activedBy = currentUser;
         this.submittedOnDate = submittedOnDate.toDate();
         this.submitedBy = currentUser;
@@ -345,5 +355,37 @@ public class Village extends AbstractPersistable<Long> {
     public String getOfficeName() {
         return this.getOffice().getName() ;
     }
+    
+    public void assignStaff(final Staff staff) {
+        this.staff = staff;
+    }
+    
+    public void unassignStaff() {
+        this.staff = null;
+    }
+    
+    public VillageStaffAssignmentHistory findLatestIncompleteHistoryRecord() {
+
+        VillageStaffAssignmentHistory latestRecordWithNoEndDate = null;
+        for (final VillageStaffAssignmentHistory historyRecord : this.villageStaffHistory) {
+            if (historyRecord.isCurrentRecord()) {
+                latestRecordWithNoEndDate = historyRecord;
+                break;
+            }
+        }
+        return latestRecordWithNoEndDate;
+    }
+
+    
+    public Set<VillageStaffAssignmentHistory> getVillageStaffHistory() {
+        return this.villageStaffHistory;
+    }
+
+    
+    public void setVillageStaffHistory(Set<VillageStaffAssignmentHistory> villageStaffHistory) {
+        this.villageStaffHistory = villageStaffHistory;
+    }
+    
+    
     
 }

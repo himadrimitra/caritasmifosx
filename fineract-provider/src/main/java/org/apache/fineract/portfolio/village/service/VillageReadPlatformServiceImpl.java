@@ -41,6 +41,8 @@ import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
+import org.apache.fineract.organisation.staff.data.StaffData;
+import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
 import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.client.data.ClientData;
@@ -81,11 +83,13 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
     private final RetrieveHierarchyMapper hierarchyMapper = new RetrieveHierarchyMapper();
     private final ConfigurationDomainService configurationDomainService;
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
+    private final StaffReadPlatformService staffReadPlatformService;
     
     @Autowired
     public VillageReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource, final OfficeReadPlatformService
             officeReadPlatformService, final PaginationParametersDataValidator paginationParametersDataValidator,
-            final ConfigurationDomainService configurationDomainService, final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
+            final ConfigurationDomainService configurationDomainService, final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
+            final StaffReadPlatformService staffReadPlatformService) {
 
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
@@ -93,6 +97,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
         this.paginationParametersDataValidator = paginationParametersDataValidator;
         this.configurationDomainService = configurationDomainService ;
         this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository ;
+        this.staffReadPlatformService = staffReadPlatformService;
     }
     
     @Override
@@ -100,8 +105,8 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
 
         final Long defaultOfficeId = defaultToUsersOfficeIfNull(officeId);
         final Collection<OfficeData> officeOptions = this.officeReadPlatformService.retrieveAllOfficesForDropdown();
-        
-        return VillageData.template(defaultOfficeId, officeOptions);
+        Collection<StaffData> staffOptions = this.staffReadPlatformService.retrieveAllLoanOfficersInOfficeById(defaultOfficeId);
+        return VillageData.template(defaultOfficeId, officeOptions, staffOptions);
     }
     
     @Override
@@ -323,10 +328,12 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             builder.append("v.submitedon_date as submittedOnDate, ");
             builder.append("sbu.username as submittedByUsername, ");
             builder.append("sbu.firstname as submittedByFirstname, ");
-            builder.append("sbu.lastname as submittedByLastname ");
+            builder.append("sbu.lastname as submittedByLastname, ");
+            builder.append("v.staff_id as staffId, staff.display_name as displayName ");
             
             builder.append("from chai_villages v ");
             builder.append("join m_office o on o.id = v.office_id ");
+            builder.append(" left join m_staff staff on staff.id = v.staff_id ");
             builder.append("left join m_appuser sbu on sbu.id = v.submitedon_userid ");
             builder.append("left join m_appuser acu on acu.id = v.activatedon_userid ");
             
@@ -357,11 +364,16 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final String submittedByUsername = rs.getString("submittedByUsername");
             final String submittedByFirstName = rs.getString("submittedByFirstName");
             final String submittedByLastName = rs.getString("submittedByLastName");
-            
+            final Long staffId = rs.getLong("staffId");
+            final String displayName = rs.getString("displayName");
+            StaffData staff = null;
+            if(staffId > 0){
+                staff = StaffData.lookup(staffId, displayName);
+            }
             final VillageTimelineData timeline = new VillageTimelineData(activatedOnDate, activatedByUsername, activatedByFirstName, 
                     activatedByLastName, submittedOnDate, submittedByUsername, submittedByFirstName, submittedByLastName);
 
-            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline, null, false);
+            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline, null, false, staff);
         }
         
     }
@@ -419,9 +431,11 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             builder.append(" v.activatedon_date as activatedOnDate, v.submitedon_date as submittedOnDate, ");
             builder.append(" acu.username as activatedByUsername, acu.firstname as activatedByFirstName, acu.lastname as activatedByLastName, ");
             builder.append(" sbu.username as submittedByUsername, sbu.firstname as submittedByFirstName, sbu.lastname as submittedByLastName, ");
-            builder.append(" task.id as workflowId ") ;
+            builder.append(" task.id as workflowId, ") ;
+            builder.append(" v.staff_id as staffId, staff.display_name as displayName ");
             builder.append(" from chai_villages v  ");
             builder.append(" join m_office o on o.id = v.office_id ");
+            builder.append(" left join m_staff staff on staff.id = v.staff_id ");
             builder.append(" left join m_appuser acu on acu.id = v.activatedon_userid ");
             builder.append(" left join m_appuser sbu on sbu.id = v.submitedon_userid ");
             builder.append(" LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = v.id  ");
@@ -456,8 +470,13 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final Long workflowId = rs.getLong("workflowId") ;
             final VillageTimelineData timeline = new VillageTimelineData(activatedOnDate, activatedByUsername, activatedByFirstName, 
                     activatedByLastName, submittedOnDate, submittedByUsername, submittedByFirstName, submittedByLastName);
-
-            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline, workflowId, this.isWorkflowEnabled);
+            final Long staffId = rs.getLong("staffId");
+            StaffData staff =null;
+            final String displayName = rs.getString("displayName");
+            if(staffId.compareTo(0L)>0){
+                staff = StaffData.lookup(staffId, displayName);
+            }
+            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline, workflowId, this.isWorkflowEnabled, staff);
         }
     }
 

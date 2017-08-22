@@ -2,9 +2,7 @@ package org.apache.fineract.spm.domain;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -22,8 +20,6 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
-
-import com.finflux.kyc.address.domain.AddressEntity;
 
 @Entity
 @Table(name = "f_survey_taken")
@@ -46,6 +42,10 @@ public class SurveyTaken extends AbstractAuditableCustom<AppUser, Long> {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "surveyed_by")
     private Staff surveyedBy;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "co_surveyed_by")
+    private Staff coSurveyedBy;
 
     @Column(name = "surveyed_on")
     @Temporal(TemporalType.DATE)
@@ -115,5 +115,13 @@ public class SurveyTaken extends AbstractAuditableCustom<AppUser, Long> {
         }
 
         return totalScore;
+    }
+
+    public Staff getCoSurveyedBy() {
+        return this.coSurveyedBy;
+    }
+
+    public void setCoSurveyedBy(final Staff coSurveyedBy) {
+        this.coSurveyedBy = coSurveyedBy;
     }
 }

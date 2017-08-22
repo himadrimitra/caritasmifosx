@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.infrastructure.external.authentication.aadhar.exception.AadhaarNumberNotFoundException;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.RequestIdNotFoundException;
-import com.finflux.smartcard.exception.SmartCardNotFoundException;
 
 /* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.

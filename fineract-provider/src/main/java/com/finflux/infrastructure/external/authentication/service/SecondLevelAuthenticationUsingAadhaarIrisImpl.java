@@ -3,19 +3,18 @@ package com.finflux.infrastructure.external.authentication.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.aadhaarconnect.bridge.capture.model.common.Location;
 import com.aadhaarconnect.bridge.gateway.model.AuthResponse;
 import com.finflux.infrastructure.external.authentication.aadhar.service.AadhaarBridgeProvidedService;
 import com.finflux.organisation.transaction.authentication.exception.SecondaryAuthenticationFailedException;
 
 @Service
-public class SecondLevelAuthenticationUsingFingerprintImpl implements SecondLevelAuthenticationService{
+public class SecondLevelAuthenticationUsingAadhaarIrisImpl implements SecondLevelAuthenticationService {
 
 	private final AadhaarBridgeProvidedService aadharReadPlatformService;
-	private final String KEY = "SecondLevelAuthenticationServiceUsingAadhaarFingerprint";
+	private final String KEY = "SecondLevelAuthenticationServiceUsingAadhaarIris";
 	
 	@Autowired
-	public SecondLevelAuthenticationUsingFingerprintImpl(final AadhaarBridgeProvidedService aadhaarBridgeProvidedService) {
+	public SecondLevelAuthenticationUsingAadhaarIrisImpl(final AadhaarBridgeProvidedService aadhaarBridgeProvidedService) {
 		this.aadharReadPlatformService = aadhaarBridgeProvidedService;
 	}
 	

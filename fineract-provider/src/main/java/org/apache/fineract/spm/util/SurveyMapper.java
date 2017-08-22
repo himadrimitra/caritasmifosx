@@ -46,7 +46,7 @@ public class SurveyMapper {
         }
         return new SurveyData(survey.getId(), SurveyMapper.mapComponents(survey.getComponents()), SurveyMapper.mapQuestions(survey
                 .getQuestions()), entityType, survey.getKey(), survey.getName(), survey.getDescription(), survey.getCountryCode(),
-                survey.getValidFrom(), survey.getValidTo(), survey.isActive());
+                survey.getValidFrom(), survey.getValidTo(), survey.isActive(), survey.isCoOfficerRequired());
     }
 
     public static Survey map(final SurveyData surveyData) {
@@ -58,6 +58,9 @@ public class SurveyMapper {
         survey.setName(surveyData.getName());
         survey.setDescription(surveyData.getDescription());
         survey.setCountryCode(surveyData.getCountryCode());
+        if (surveyData.isCoOfficerRequired() != null) {
+            survey.setCoOfficerRequired(surveyData.isCoOfficerRequired());
+        }
         return survey;
     }
 
@@ -69,6 +72,9 @@ public class SurveyMapper {
         survey.setName(surveyData.getName());
         survey.setDescription(surveyData.getDescription());
         survey.setCountryCode(surveyData.getCountryCode());
+        if (surveyData.isCoOfficerRequired() != null) {
+            survey.setCoOfficerRequired(surveyData.isCoOfficerRequired());
+        }
         return survey;
     }
 
