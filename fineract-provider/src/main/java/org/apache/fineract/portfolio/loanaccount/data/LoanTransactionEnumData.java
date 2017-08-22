@@ -103,7 +103,8 @@ public class LoanTransactionEnumData {
      * @return
      */
     public boolean isPaymentOrReceipt() {
-        if (isDisbursement() || isRepayment() || isRepaymentAtDisbursement() || isRecoveryRepayment() || isRefund()) { return true; }
+        if (isDisbursement() || isRepayment() || isRepaymentAtDisbursement() || isRecoveryRepayment() || isRefund()
+                || isRefundForActiveLoans()) { return true; }
         return false;
     }
 

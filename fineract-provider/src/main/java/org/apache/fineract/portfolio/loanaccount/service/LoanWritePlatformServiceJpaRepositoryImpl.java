@@ -3355,7 +3355,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             changes.put("note", noteText);
         }
 
-        final PaymentDetail paymentDetail = null;
+        final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createAndPersistPaymentDetail(command, changes);
 
         final CommandProcessingResultBuilder commandProcessingResultBuilder = new CommandProcessingResultBuilder();
 
