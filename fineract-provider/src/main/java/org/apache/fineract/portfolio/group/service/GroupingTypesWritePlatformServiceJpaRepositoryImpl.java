@@ -316,10 +316,11 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                 AppUser assignedTo = null;
                 Date dueDate = null;
                 Date dueTime = null;
-                String description = "On-boarding for group" + group.getName() + " (#" + group.getId() + ") ";
+                final String description, shortDescription;
+                description = shortDescription = "On-boarding for group" + group.getName() + " (#" + group.getId() + ") ";
                 this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                         TaskEntityType.GROUP_ONBOARDING, group.getId(), client, assignedTo, dueDate, group.getOffice(), map, description,
-                        dueTime);
+                        shortDescription, dueTime);
                 return true;
             }
         }

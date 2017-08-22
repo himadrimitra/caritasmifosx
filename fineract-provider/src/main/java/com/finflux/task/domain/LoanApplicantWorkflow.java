@@ -51,9 +51,13 @@ public class LoanApplicantWorkflow implements WorkflowCreator
             String description = loanProduct.getProductName() + " Main Applicant: "+WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") for loan application #" +
                     loanApplicationReference.getLoanApplicationReferenceNo() +" in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
                     loanApplicationReference.getLoanAmountRequested();
+            final StringBuilder shortDescription = new StringBuilder();
+            shortDescription.append("On-boarding for: ");
+            shortDescription.append(WordUtils.capitalizeFully(client.getDisplayName()));
+            shortDescription.append("| Amount: ").append(loanApplicationReference.getLoanAmountRequested());
             this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                     TaskEntityType.LOAN_APPLICATION_APPLICANT, loanApplicationId, loanApplicationReference.getClient(), assignedTo, dueDate,
-                    loanApplicationReference.getClient().getOffice(), map, description, dueTime);
+                    loanApplicationReference.getClient().getOffice(), map, description, shortDescription.toString(), dueTime);
             return true;
         }
         return false;

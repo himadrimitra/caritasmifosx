@@ -54,9 +54,12 @@ public class LoanCoApplicantWorkflow implements WorkflowCreator
             String description = loanProduct.getProductName() + " Coapplicant: " + WordUtils.capitalizeFully(client.getDisplayName()) + "("
                     + client.getId() + ") for loan application #" + loanApplicationReference.getLoanApplicationReferenceNo() + " in  "
                     + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: " + loanApplicationReference.getLoanAmountRequested();
+            final StringBuilder shortDescription = new StringBuilder();
+            shortDescription.append("On-boarding CoApplicant for Applicant ");
+            shortDescription.append(WordUtils.capitalizeFully(client.getFirstname() + " " + client.getLastname()));
             this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                     TaskEntityType.LOAN_APPLICATION_COAPPLICANT, coApplicant.getId(), client, assignedTo, dueDate, client.getOffice(), map,
-                    description, dueTime);
+                    description, shortDescription.toString(), dueTime);
             return true;
         }
         return false;

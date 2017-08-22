@@ -58,6 +58,4 @@ public class CreateTemplateTaskForm
     public void setDuetime(String duetime) {
         this.duetime = duetime;
     }
-    
-    
 }

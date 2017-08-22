@@ -13,7 +13,6 @@ import javax.persistence.TemporalType;
 
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.office.domain.Office;
-import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.domain.AppUser;
 
@@ -99,9 +98,12 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "criteria_action", length = 3)
     private Integer criteriaAction;
-    
+
     @Column(name = "description")
     private String description;
+
+    @Column(name = "short_description")
+    private String shortDescription;
 
     @Column(name = "complete_on_action")
     private Integer completeOnAction;
@@ -117,7 +119,7 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
             final Integer currentAction, final AppUser assignedTo, final Integer taskOrder, final RuleModel criteria,
             final String approvalLogic, final String rejectionLogic, final String configValues, final Client client, final Office office,
             final Long actionGroupId, final String criteriaResult, final Integer criteriaAction, final TaskActivity taskActivity,
-            final String description, final Integer completeOnAction, final Date dueTime) {
+            final String description, final String shortDescription, final Integer completeOnAction, final Date dueTime) {
 
         this.parent = parent;
         this.name = name;
@@ -144,6 +146,7 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
         this.criteriaAction = criteriaAction;
         this.taskActivity = taskActivity;
         this.description = description;
+        this.shortDescription = shortDescription;
         this.completeOnAction = completeOnAction;
         this.dueTime = dueTime;
     }
@@ -153,10 +156,10 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
             final Integer currentAction, final AppUser assignedTo, final Integer taskOrder, final RuleModel criteria,
             final String approvalLogic, final String rejectionLogic, final String configValues, final Client client, final Office office,
             final Long actionGroupId, final String criteriaResult, final Integer criteriaAction, final TaskActivity taskActivity,
-            String description, Integer completeOnAction, Date dueTime) {
+            final String description, final String shortDescription, final Integer completeOnAction, final Date dueTime) {
         return new Task(parent, name, shortName, entityType, entityId, taskType, taskConfig, status, priority, dueDate, currentAction,
                 assignedTo, taskOrder, criteria, approvalLogic, rejectionLogic, configValues, client, office, actionGroupId,
-                criteriaResult, criteriaAction, taskActivity, description, completeOnAction, dueTime);
+                criteriaResult, criteriaAction, taskActivity, description, shortDescription, completeOnAction, dueTime);
     }
 
     public Task getParent() {

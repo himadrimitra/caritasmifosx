@@ -76,12 +76,14 @@ public class CreateTemplateTaskWriteServiceImpl implements CreateTemplateTaskWri
         TaskConfigTemplateEntityType taskConfigTemplateEntityType = TaskConfigTemplateEntityType.fromInt(taskConfigTemplate.getEntity());
         TaskEntityType taskEntity=taskConfigTemplateEntityType.getCorrespondingTaskEntity();
         String description=form.getDescription();
+        // Use the description entered by the user as shortDescription(For mobile)
+        final String shortDescription = form.getDescription();
         Map<TaskConfigKey, String> configValues = new HashMap<>();
         Office office=this.context.authenticatedUser().getOffice();
         configValues.put(taskConfigTemplateEntityType.getCorrespondingTaskConfigKey(), String.valueOf(form.getEntity_id()));
         configValues.put(TaskConfigKey.TASKTEMPLATEENTITY_ID,String.valueOf(form.getEntity_id()));
         Client client=null;
-        Long taskId=this.taskPlatformWriteService.createTaskFromConfig(taskConfig.getId(),taskEntity,form.getEntity_id(),client,this.appUserRepository.findOne(form.getUserId()),dueDate,office,configValues,description, dueTime);
+        Long taskId=this.taskPlatformWriteService.createTaskFromConfig(taskConfig.getId(),taskEntity,form.getEntity_id(),client,this.appUserRepository.findOne(form.getUserId()),dueDate,office,configValues,description, shortDescription, dueTime);
         return new CommandProcessingResultBuilder().withResourceIdAsString(taskId.toString()).build();
     }
 

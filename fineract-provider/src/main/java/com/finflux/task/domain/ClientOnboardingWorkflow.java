@@ -42,9 +42,12 @@ public class ClientOnboardingWorkflow implements WorkflowCreator
             Date dueDate=null;
             Date dueTime=null;
             String description = newClient.getId()+"- New Client "+ WordUtils.capitalizeFully(newClient.getFirstname()+" "+newClient.getLastname())+" for office - "+ WordUtils.capitalizeFully(newClient.getOfficeName());
+            final StringBuilder shortDescription = new StringBuilder();
+            shortDescription.append("New Client is created with name ");
+            shortDescription.append(WordUtils.capitalizeFully(newClient.getFirstname() + " " + newClient.getLastname()));
             this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                     TaskEntityType.CLIENT_ONBOARDING, newClient.getId(),newClient,assignedTo,dueDate,
-                    newClient.getOffice(), map, description, dueTime);
+                    newClient.getOffice(), map, description, shortDescription.toString(), dueTime);
             return true;
 		}
 		return false;// TODO Auto-generated method stub

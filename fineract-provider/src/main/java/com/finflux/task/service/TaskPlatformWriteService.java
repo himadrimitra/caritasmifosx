@@ -16,7 +16,7 @@ public interface TaskPlatformWriteService
 {
 
     Long createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId, final Client client,final AppUser assignedTo,final Date dueDate,
-							  final Office office, final Map<TaskConfigKey, String> configValues, String description, final Date dueTime);
+							  final Office office, final Map<TaskConfigKey, String> configValues, String description, String shortDescription, final Date dueTime);
 
     Long createSingleTask(TaskActivity taskActivity, String title, Office office, Map<TaskConfigKey, String> map,
 						  Long actionGroupId);
