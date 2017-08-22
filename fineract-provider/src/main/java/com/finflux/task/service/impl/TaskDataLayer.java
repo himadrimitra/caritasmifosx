@@ -40,14 +40,17 @@ public class TaskDataLayer implements DataLayer {
     public void build(Map<String, Object> dataLayerEntities) {
         keyValueMap.clear();
         if(dataLayerEntities.get(DataLayerKey.CLIENT_ID.getValue())!=null){
-            Map clientDataMap = dataLayerReadPlatformService.getAllClientMatrix(((Long) dataLayerEntities.get(DataLayerKey.CLIENT_ID.getValue())).longValue());
+			final Long clientId = Long.parseLong(dataLayerEntities.get(DataLayerKey.CLIENT_ID.getValue()).toString());
+            Map clientDataMap = dataLayerReadPlatformService.getAllClientMatrix(clientId);
             keyValueMap.putAll(clientDataMap);
-            keyValueMap.put(DataLayerKey.CLIENT_ID.getValue(),((Long) dataLayerEntities.get(DataLayerKey.CLIENT_ID.getValue())).longValue() );
+            keyValueMap.put(DataLayerKey.CLIENT_ID.getValue(),clientId);
         }
         if(dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID.getValue())!=null){
-            Map loanApplicationDataMap = dataLayerReadPlatformService.getAllLoanApplicationMatrix(((Long) dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID.getValue())).longValue());
+			final Long loanApplicationId = Long
+					.parseLong(dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID.getValue()).toString());
+            Map loanApplicationDataMap = dataLayerReadPlatformService.getAllLoanApplicationMatrix(loanApplicationId);
             keyValueMap.putAll(loanApplicationDataMap);
-            keyValueMap.put(DataLayerKey.LOANAPPLICATION_ID.getValue(),(Long) dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID.getValue()) );
+            keyValueMap.put(DataLayerKey.LOANAPPLICATION_ID.getValue(),loanApplicationId);
         }
         this.keyValueMap.putAll(dataLayerEntities);
     }
