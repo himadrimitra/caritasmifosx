@@ -34,6 +34,10 @@ import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.portfolio.calendar.data.CalendarData;
+import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
+import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
@@ -51,10 +55,13 @@ import com.google.gson.reflect.TypeToken;
 public class LoanRescheduleRequestDataValidator {
 
     private final FromJsonHelper fromJsonHelper;
+    private final CalendarReadPlatformService calendarReadPlatformService;
 
     @Autowired
-    public LoanRescheduleRequestDataValidator(FromJsonHelper fromJsonHelper) {
+    public LoanRescheduleRequestDataValidator(FromJsonHelper fromJsonHelper,
+            final CalendarReadPlatformService calendarReadPlatformService) {
         this.fromJsonHelper = fromJsonHelper;
+        this.calendarReadPlatformService = calendarReadPlatformService;
     }
 
     /**
@@ -155,9 +162,20 @@ public class LoanRescheduleRequestDataValidator {
 
         final LocalDate adjustedDueDate = this.fromJsonHelper.extractLocalDateNamed(RescheduleLoansApiConstants.adjustedDueDateParamName,
                 jsonElement);
-
+        
+        if (adjustedDueDate != null) {
+            if (isBulkCreateAndApprove) {
+                String[] loans = jsonCommand.arrayValueOfParameterNamed(RescheduleLoansApiConstants.loansParamName);
+                for (String loanId : loans) {
+                    validateForCalendarMeetingDate(dataValidatorBuilder, Long.parseLong(loanId), adjustedDueDate);
+                }
+            } else {
+                validateForCalendarMeetingDate(dataValidatorBuilder, loan.getId(), adjustedDueDate);
+            }
+        }
+        
         LoanRepaymentScheduleInstallment installment = null;
-        if (rescheduleFromDate != null) {
+        if (rescheduleFromDate != null && !isBulkCreateAndApprove) {
             installment = loan.getRepaymentScheduleInstallment(rescheduleFromDate);
             if (installment == null) {
                 dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleFromDateParamName)
@@ -197,6 +215,28 @@ public class LoanRescheduleRequestDataValidator {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
     
+    @SuppressWarnings("null")
+    private void validateForCalendarMeetingDate(DataValidatorBuilder dataValidatorBuilder, final Long loanId,
+            final LocalDate adjustedDueDate) {
+        CalendarData calendar = this.calendarReadPlatformService.retrieveCollctionCalendarByEntity(loanId,
+                CalendarEntityType.LOANS.getValue());
+        if (calendar != null) {
+            String recurringRule = calendar.getRecurrence();
+            LocalDate seedDate = calendar.getStartDate();
+            if (seedDate.isAfter(adjustedDueDate)) {
+                CalendarData calendarHistoryData = this.calendarReadPlatformService
+                        .retrieveCalendarHistoryByCalendarInstanceAndDueDate(adjustedDueDate.toDate(), calendar.getCalendarInstanceId());
+                if (calendarHistoryData != null) {
+                    recurringRule = calendarHistoryData.getRecurrence();
+                    seedDate = calendarHistoryData.getStartDate();
+                }
+            }
+            if (!CalendarUtils.isValidRecurringDate(recurringRule, seedDate, adjustedDueDate)) {
+                dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.adjustedDueDateParamName).failWithCode(
+                        "adjustedDueDate.should.be.calendar.meeting.date", "Adjusted due date should be a calander meeting date");
+            }
+        }
+    }
     
     private void validateForOverdueCharges(DataValidatorBuilder dataValidatorBuilder, final Loan loan,
             final LoanRepaymentScheduleInstallment installment) {

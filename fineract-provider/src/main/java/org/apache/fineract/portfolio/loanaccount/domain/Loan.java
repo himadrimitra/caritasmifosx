@@ -4331,7 +4331,7 @@ public class Loan extends AbstractPersistable<Long> {
             }
             if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) {
                 Calendar calendar = scheduleGeneratorDTO.getCompoundingCalendarInstance().getCalendar();
-                if (!CalendarUtils.isValidRedurringDate(calendar.getRecurrence(), calendar.getStartDateLocalDate(),transactionForAdjustment.getTransactionDate())) {
+                if (!CalendarUtils.isValidRecurringDate(calendar.getRecurrence(), calendar.getStartDateLocalDate(),transactionForAdjustment.getTransactionDate())) {
                     transactionTypeForReversal.add(LoanTransactionType.INCOME_POSTING.getValue());
                     transactionTypeForReversal.add(LoanTransactionType.ACCRUAL.getValue());
                 }
