@@ -843,14 +843,28 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                         this.jdbcTemplate.execute(sqlQuery);
                     } else {
                         String updateQuery = "UPDATE x_registered_table_display_rules  xrtdr SET  watch_column = " + watchColumnId + " "
-                                + "WHERE registered_table_metadata_id = "+xRegisterTableMetadataId+" ";
-                        this.jdbcTemplate.execute(updateQuery);
+                                + "WHERE registered_table_metadata_id = " + xRegisterTableMetadataId + " ";
+                        String[] queries = new String[] { updateQuery };
+                        int[] count = this.jdbcTemplate.batchUpdate(queries);
+                        if (count[0] < 1) {
+                            String insertQuery = "INSERT INTO x_registered_table_display_rules (registered_table_metadata_id, watch_column) VALUES"
+                                    + "(" + xRegisterTableMetadataId + "," + watchColumnId + ")";
+                            String[] insertQueries = new String[] { insertQuery };
+                            this.jdbcTemplate.batchUpdate(insertQueries);
+                        }
                         String query = "SELECT dtrv.id FROM x_registered_table_display_rules dtrv WHERE dtrv.registered_table_metadata_id = "
                                 + xRegisterTableMetadataId + "";
                         Integer rulesValueId = this.jdbcTemplate.queryForInt(query);
-                        String updateSql = "UPDATE x_registered_table_display_rules_value xrtdr SET code_value_id = "+codeValueData.getId()+ ""
-                                + " WHERE registered_table_display_rules_id = "+rulesValueId+"";
-                        this.jdbcTemplate.execute(updateSql);
+                        String updateSql = "UPDATE x_registered_table_display_rules_value xrtdr SET code_value_id = "
+                                + codeValueData.getId() + "" + " WHERE registered_table_display_rules_id = " + rulesValueId + "";
+                        String[] updateDisplayRules = new String[] { updateSql };
+                        int[] displayCount = this.jdbcTemplate.batchUpdate(updateDisplayRules);
+                        if (displayCount[0] < 1) {
+                            String insertQuery = "INSERT INTO x_registered_table_display_rules_value(code_value_id, registered_table_display_rules_id)"
+                                    + "VALUES(" + codeValueData.getId() + "," + rulesValueId + ")";
+                            String[] insertQueries = new String[] { insertQuery };
+                            this.jdbcTemplate.batchUpdate(insertQueries);
+                        }
                     }
                 }
             }
@@ -858,13 +872,14 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
     }
 
-    @Transactional
     private void registerDatatableMetadata(String datatableName, JsonArray columns, Long sectionId) {
         String sql = null;
         String query = null;
         sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + datatableName + "'";
         int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
 
+        String[] sqlInsertQueries = new String[columns.size()];
+        int index=0;
         for (final JsonElement column : columns) {
             final String name = this.fromJsonHelper.extractStringNamed("name", column);
             final String displayName = this.fromJsonHelper.extractStringNamed("displayName", column);
@@ -876,9 +891,10 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             query = "insert into x_registered_table_metadata(registered_table_id, column_name, associate_with, display_name, order_position, visible, mandatory_if_visible, section_id) "
                     + "values(" + xResgisteredTableId + ", '" + name + "', " + associatedColumnId + ", '" + displayName + "', "
                     + displayPosition + ", " + visible + ", " + mandatoryIfVisible + ", " + sectionId + ")";
-            this.jdbcTemplate.execute(query);
-
+            sqlInsertQueries[index] = query;
+            index++;
         }
+        this.jdbcTemplate.batchUpdate(sqlInsertQueries);
     }
 
     private void parseDatatableColumnForUpdate(final JsonObject column,
