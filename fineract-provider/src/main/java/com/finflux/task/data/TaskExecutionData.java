@@ -46,16 +46,18 @@ public class TaskExecutionData implements Serializable{
     private EnumOptionData taskType;
     private LocalDate createdOn;
     private String description;
+    private String shortDescription;
     private TaskExecutionData activeTaskData;
     private LocalTime dueTime;
 
     private TaskExecutionData(final Long id, final Long parentId, final String name, final String shortName,
             final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
-            final LocalDate dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
-            final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
-            final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
-            final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
-            final EnumOptionData taskType, final LocalDate createdOn, final String description, final LocalTime dueTime) {
+            final LocalDate dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo,
+            final Integer order, final Long criteriaId, final String approvalLogic, final String rejectionLogic,
+            final Map<String, String> configValues, final Long clientId, final String clientName, final Long officeId,
+            final String officeName, final Long actionGroupId, final EligibilityResult criteriaResult, final Integer criteriaActionId,
+            final List<EnumOptionData> possibleActions, final EnumOptionData taskType, final LocalDate createdOn, final String description,
+            final String shortDescription, final LocalTime dueTime) {
         this.id = id;
         this.parentId = parentId;
         this.name = name;
@@ -84,19 +86,22 @@ public class TaskExecutionData implements Serializable{
         this.taskType = taskType;
         this.createdOn = createdOn;
         this.description = description;
+        this.shortDescription = shortDescription;
         this.dueTime = dueTime;
     }
 
     public static TaskExecutionData instance(final Long id, final Long parentId, final String name, final String shortName,
             final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
-            final LocalDate dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
-            final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
-            final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
-            final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
-            EnumOptionData taskType, final LocalDate createdOn, String description, final LocalTime dueTime) {
+            final LocalDate dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo,
+            final Integer order, final Long criteriaId, final String approvalLogic, final String rejectionLogic,
+            final Map<String, String> configValues, final Long clientId, final String clientName, final Long officeId,
+            final String officeName, final Long actionGroupId, final EligibilityResult criteriaResult, final Integer criteriaActionId,
+            final List<EnumOptionData> possibleActions, EnumOptionData taskType, final LocalDate createdOn, String description,
+            final String shortDescription, final LocalTime dueTime) {
         return new TaskExecutionData(id, parentId, name, shortName, entityType, entityId, status, priority, dueDate, currentAction,
                 assignedToId, assignedTo, order, criteriaId, approvalLogic, rejectionLogic, configValues, clientId, clientName, officeId,
-                officeName, actionGroupId, criteriaResult, criteriaActionId, possibleActions, taskType, createdOn, description, dueTime);
+                officeName, actionGroupId, criteriaResult, criteriaActionId, possibleActions, taskType, createdOn, description,
+                shortDescription, dueTime);
     }
 
     public Long getId() {

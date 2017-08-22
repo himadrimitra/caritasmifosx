@@ -47,9 +47,13 @@ public class LoanApplicationWorkflow implements WorkflowCreator
 			String description = workflowDTO.getLoanProduct().getProductName() + " application #" + workflowDTO.getLoanApplicationReference().getLoanApplicationReferenceNo() + " for "
 	                + WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
 	                workflowDTO.getLoanApplicationReference().getLoanAmountRequested();
+			final StringBuilder shortDescription = new StringBuilder();
+                        shortDescription.append("Application for: ");
+                        shortDescription.append(WordUtils.capitalizeFully(client.getDisplayName()));
+                        shortDescription.append("| Amount: ").append(workflowDTO.getLoanApplicationReference().getLoanAmountRequested());
 			this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
 					TaskEntityType.LOAN_APPLICATION, loanApplicationId, workflowDTO.getLoanApplicationReference().getClient(),assignedTo,dueDate,
-					workflowDTO.getLoanApplicationReference().getClient().getOffice(), map, description, dueTime);
+					workflowDTO.getLoanApplicationReference().getClient().getOffice(), map, description, shortDescription.toString(), dueTime);
             return true;
 		}
         return false;

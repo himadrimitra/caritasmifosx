@@ -220,6 +220,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sb.append(",t.parent_id AS parentTaskId ");
             sb.append(",t.action_group_id AS taskActionGroupId ");
             sb.append(",t.description AS description ");
+            sb.append(",t.short_description AS shortDescription ");
             sb.append(",ta.id AS taskActivityId ");
             sb.append(",ta.name AS taskActivityName ");
             sb.append(",ta.identifier AS taskActivityIdentifier ");
@@ -281,6 +282,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final String taskRejectionLogic = rs.getString("taskRejectionLogic");
             final String taskConfigValuesStr = rs.getString("taskConfigValues");
             final String description = rs.getString("description");
+            final String shortDescription = rs.getString("shortDescription");
             Map<String, String> taskConfigValues = null;
             if (taskConfigValuesStr != null) {
                 taskConfigValues = new Gson().fromJson(taskConfigValuesStr, new TypeToken<HashMap<String, String>>() {}.getType());
@@ -301,7 +303,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                     taskEntityId, taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder,
                     taskCriteriaId, taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId,
                     taskOfficeName, taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions, taskType,
-                    taskCreatedOn, description, taskDueTime);
+                    taskCreatedOn, description, shortDescription, taskDueTime);
 
             final Long taskActivityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskActivityId");
             if (taskActivityId != null) {

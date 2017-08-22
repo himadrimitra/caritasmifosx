@@ -131,9 +131,12 @@ public class BankTransactionServiceImpl implements BankTransactionService {
                 final AppUser assignedTo = null;
                 final Date dueDate = null;
                 final Date dueTime = null;
+                final StringBuilder shortDescription = new StringBuilder(); 
+                shortDescription.append("Bank txn #").append(txnId).append(" for amount ").append(transactionRequest.getAmount());
+                shortDescription.append(" | Client: ").append(client.getDisplayName());
                 this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                         TaskEntityType.BANK_TRANSACTION, txnId, client, assignedTo, dueDate, client.getOffice(), map,
-                        description.toString(), dueTime);
+                        description.toString(), shortDescription.toString(), dueTime);
             }
         }
 
