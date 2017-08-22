@@ -54,6 +54,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     private final FingerPrintReadPlatformServices fingerPrintReadPlatformServices;
     private final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private final LoanApplicationReferenceDataForLookUpMapper dataLookUpMapper;
 
     @Autowired
     public LoanApplicationReferenceReadPlatformServiceImpl(final RoutingDataSource dataSource,
@@ -73,6 +74,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
         this.fingerPrintReadPlatformServices = fingerPrintReadPlatformServices;
         this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
+        this.dataLookUpMapper = new LoanApplicationReferenceDataForLookUpMapper();
     }
 
     @Override
@@ -121,14 +123,15 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     public Collection<LoanApplicationReferenceData> retrieveAll(final Long clientId) {
         try {
             String sql = null;
+
             if (clientId != null) {
-                sql = "SELECT IF(ISNULL(coapp.client_id), false, true) as isCoApplicant, " + this.dataMapper.schema();
-                sql += " LEFT JOIN f_loan_coapplicants_mapping coapp ON coapp.loan_application_reference_id = lar.id and lar.client_id != " + clientId;
-                sql += " WHERE lar.client_id = "+ clientId+" OR coapp.client_id = " + clientId;
-            }else{
-                sql = "SELECT false as isCoApplicant, " + this.dataMapper.schema();
+                sql = "SELECT IF(ISNULL(coapp.client_id), false, true) as isCoApplicant, " + this.dataLookUpMapper.schema();
+                sql += " WHERE lar.client_id = " + clientId + " OR coapp.client_id = " + clientId;
+
+            } else {
+                sql = "SELECT false as isCoApplicant, " + this.dataLookUpMapper.schema();
             }
-            return this.jdbcTemplate.query(sql, this.dataMapper);
+            return this.jdbcTemplate.query(sql, this.dataLookUpMapper);
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
@@ -153,6 +156,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             return null;
         }
     }
+    
 
     private static final class LoanApplicationReferenceDataMapper implements RowMapper<LoanApplicationReferenceData> {
 
@@ -300,6 +304,56 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
                     repayEvery, termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, 
                     expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName);
         }
+    }
+    
+    private static final class LoanApplicationReferenceDataForLookUpMapper implements RowMapper<LoanApplicationReferenceData> {
+
+
+        private final String schemaSql;
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        public LoanApplicationReferenceDataForLookUpMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder();
+            sqlBuilder.append("lar.id AS loanApplicationReferenceId, ");
+            sqlBuilder.append("lar.external_id_one AS externalIdOne, ");
+            sqlBuilder.append("lar.loan_id AS loanId, ");
+            sqlBuilder.append("lar.loan_application_reference_no AS loanApplicationReferenceNo, ");
+            sqlBuilder.append("lar.status_enum AS statusEnum, ");
+            sqlBuilder.append("lar.account_type_enum AS accountTypeEnum, ");
+            sqlBuilder.append("lar.loan_product_id AS loanProductId, ");
+            sqlBuilder.append("lp.name AS loanProductName, ");
+            sqlBuilder.append("lar.loan_amount_requested AS loanAmountRequested ");
+            sqlBuilder.append("FROM f_loan_application_reference lar ");
+            sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
+            sqlBuilder.append("LEFT JOIN f_loan_coapplicants_mapping coapp ON coapp.loan_application_reference_id = lar.id ");
+          
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        @Override
+        public LoanApplicationReferenceData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long loanApplicationReferenceId = JdbcSupport.getLongActualValue(rs, "loanApplicationReferenceId");
+            final String loanApplicationReferenceNo = rs.getString("loanApplicationReferenceNo");
+            final String externalIdOne = rs.getString("externalIdOne");
+            final Long loanId = JdbcSupport.getLongActualValue(rs, "loanId");
+            
+            final Integer statusEnum = JdbcSupport.getIntegeActualValue(rs, "statusEnum");
+            final Integer accountTypeEnum = JdbcSupport.getIntegeActualValue(rs, "accountTypeEnum");
+            final EnumOptionData status = LoanApplicationReferenceStatus.loanApplicationReferenceStatus(statusEnum);
+            final EnumOptionData accountType = AccountEnumerations.loanType(accountTypeEnum);
+            final Long loanProductId = JdbcSupport.getLongActualValue(rs, "loanProductId");
+            final String loanProductName = rs.getString("loanProductName");
+            final BigDecimal loanAmountRequested = rs.getBigDecimal("loanAmountRequested");
+            final Boolean isCoApplicant = rs.getBoolean("isCoApplicant");
+            
+            return LoanApplicationReferenceData.forLookUp(loanApplicationReferenceId, loanApplicationReferenceNo, 
+                    externalIdOne, loanId, accountType, status, loanProductId, loanProductName, loanAmountRequested, isCoApplicant);
+        }
+    
     }
 
     private static final class LoanApplicationChargeDataMapper implements RowMapper<LoanApplicationChargeData> {
