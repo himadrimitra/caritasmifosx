@@ -661,6 +661,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     }
 
     @Override
+    @Transactional
     public void applyClientRecurringCharge(final LocalDate fromDate, final ClientRecurringChargeData clientRecurringChargeData,
             final StringBuilder sb) {
         final String errorMessage = "Apply client recurring charge :";
@@ -688,14 +689,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                     try {
                         countOfExistingFutureInstallments++;                        
                         if (adjustedDateDetailsDTO != null) {
-                            if (calendarData == null) {
-                                chargeLocalStartDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
-                                        adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
-                                        clientRecurringChargeData.getFeeInterval());
-                            } else {
-                                chargeLocalStartDate = CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(),
-                                        calendarData.getStartDate(), adjustedDateDetailsDTO.getChangedActualRepaymentDate());
-                            }
+                            chargeLocalStartDate = getNextRecurringChargeDueDate(calendarData,adjustedDateDetailsDTO,periodFrequencyType,clientRecurringChargeData);
                         }
                         adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(chargeLocalStartDate, chargeLocalStartDate,
                                 chargeLocalStartDate);
@@ -706,28 +700,23 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                         insertSql
                                 .append("INSERT INTO m_client_charge(client_id,charge_id,is_penalty,charge_time_enum,charge_actual_due_date,charge_due_date,charge_calculation_enum,amount,amount_outstanding_derived,is_paid_derived,waived,is_active,inactivated_on_date,client_recurring_charge_id)");
                         insertSql.append("SELECT crc.client_id,crc.charge_id,crc.is_penalty,crc.charge_time_enum ");
-                        insertSql.append(",'");
-                        insertSql.append(adjustedDateDetailsDTO.getChangedActualRepaymentDate());
-                        insertSql.append("','");
-                        insertSql.append(adjustedDateDetailsDTO.getChangedScheduleDate());
-                        insertSql.append("'");
+                        insertSql.append(",'").append(adjustedDateDetailsDTO.getChangedActualRepaymentDate()).append("' ");
+                        insertSql.append(",'").append(adjustedDateDetailsDTO.getChangedScheduleDate()).append("' ");
                         insertSql.append(",crc.charge_calculation_enum ");
                         insertSql.append(",crc.amount,crc.amount,0,0,crc.is_active,crc.inactivated_on_date,crc.id ");
                         insertSql.append("from m_client_recurring_charge crc  where crc.id = ");
                         insertSql.append(clientRecurringChargeId);
-                        insertSql.append(" and crc.charge_due_date <= '");
-                        insertSql.append(fromDate).append("' ");
+                        insertSql.append(" and crc.charge_due_date <= '").append(fromDate).append("' ");
                         int result = this.jdbcTemplate.update(insertSql.toString());
                         logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by update: " + result);
                         if (countOfExistingFutureInstallments == minimumNoOfFutureInstallments) {
-                            if (isSynchMeeting && calendarData != null) {
-                                chargeLocalStartDate = CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(),
-                                        calendarData.getStartDate(), adjustedDateDetailsDTO.getChangedActualRepaymentDate());
-                            } else {
-                                chargeLocalStartDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
-                                        adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
-                                        clientRecurringChargeData.getFeeInterval());
-                            }
+                            chargeLocalStartDate = getNextRecurringChargeDueDate(calendarData, adjustedDateDetailsDTO, periodFrequencyType,
+                                    clientRecurringChargeData);
+                            adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(chargeLocalStartDate, chargeLocalStartDate,
+                                    chargeLocalStartDate);
+                            WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO,
+                                    holidayDetailDTO, periodFrequencyType, clientRecurringChargeData.getFeeInterval(), calendarData);
+                            chargeLocalStartDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
                             final StringBuilder updateSqlBuilder = new StringBuilder(100);
                             updateSqlBuilder.append("UPDATE m_client_recurring_charge crc ");
                             updateSqlBuilder.append("SET crc.charge_due_date = ");
@@ -751,11 +740,12 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     }
 
     @Override
+    @Transactional
     public void applyHolidaysToClientRecurringCharge(final ClientRecurringChargeData clientRecurringChargeData,
             final HolidayDetailDTO holidayDetailDTO, final StringBuilder sb) {
         final String errorMessage = "Apply client recurring charge : ";
         try {
-            if (!clientRecurringChargeData.getClientChargeDatas().isEmpty()) {
+            if (clientRecurringChargeData.getClientChargeDatas() != null && !clientRecurringChargeData.getClientChargeDatas().isEmpty()) {
                 final Boolean isSynchMeeting = clientRecurringChargeData.getSynchMeeting();
                 final Long clientRecurringChargeId = clientRecurringChargeData.getRecurringChargeId();
                 final PeriodFrequencyType periodFrequencyType = ChargeTimeType
@@ -773,14 +763,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                             recurringChargeDueDate = clientChargeData.getActualDueDate();
                         }else{
                             if (adjustedDateDetailsDTO != null) {
-                                if (calendarData == null) {
-                                    recurringChargeDueDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
-                                            adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
-                                            clientRecurringChargeData.getFeeInterval());
-                                } else {
-                                    recurringChargeDueDate = CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(),
-                                            calendarData.getStartDate(), adjustedDateDetailsDTO.getChangedActualRepaymentDate());
-                                }
+                                recurringChargeDueDate = getNextRecurringChargeDueDate(calendarData,adjustedDateDetailsDTO,periodFrequencyType,clientRecurringChargeData);
                             }
                         }
                         adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(recurringChargeDueDate, recurringChargeDueDate,
@@ -805,14 +788,13 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                     }
                 }
                 if (adjustedDateDetailsDTO != null) {
-                    if (isSynchMeeting && calendarData != null) {
-                        recurringChargeDueDate = CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(),
-                                calendarData.getStartDate(), adjustedDateDetailsDTO.getChangedActualRepaymentDate());
-                    } else {
-                        recurringChargeDueDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(
-                                adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType,
-                                clientRecurringChargeData.getFeeInterval());
-                    }
+                    recurringChargeDueDate = getNextRecurringChargeDueDate(calendarData, adjustedDateDetailsDTO, periodFrequencyType,
+                            clientRecurringChargeData);
+                    adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(recurringChargeDueDate, recurringChargeDueDate,
+                            recurringChargeDueDate);
+                    WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO, holidayDetailDTO,
+                            periodFrequencyType, clientRecurringChargeData.getFeeInterval(), calendarData);
+                    recurringChargeDueDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
                     final StringBuilder updateSqlBuilder = new StringBuilder(100);
                     updateSqlBuilder.append("UPDATE m_client_recurring_charge crc ");
                     updateSqlBuilder.append("SET crc.charge_due_date = ");
@@ -828,6 +810,14 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
             logger.error("Apply client recurring charge failed  with message " + rootCause);
             sb.append("Apply client recurring charge failed with message ").append(rootCause);
         }
+    }
+
+    private LocalDate getNextRecurringChargeDueDate(final CalendarData calendarData, final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final PeriodFrequencyType periodFrequencyType, final ClientRecurringChargeData clientRecurringChargeData) {
+        if (calendarData == null) { return ScheduleDateGeneratorUtil.generateNextScheduleDate(
+                adjustedDateDetailsDTO.getChangedActualRepaymentDate(), periodFrequencyType, clientRecurringChargeData.getFeeInterval()); }
+        return CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(), calendarData.getStartDate(),
+                adjustedDateDetailsDTO.getChangedActualRepaymentDate());
     }
         
 }
