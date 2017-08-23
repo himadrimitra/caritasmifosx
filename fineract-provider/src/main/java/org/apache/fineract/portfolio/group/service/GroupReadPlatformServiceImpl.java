@@ -151,7 +151,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
 		if (parameters.isOrderByRequested()) {
 			sqlBuilder.append("select SQL_CALC_FOUND_ROWS * from (select ");
 		} else {
-			sqlBuilder.append("select SQL_CALC_FOUND_ROWS");
+			sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
 		}
         
         sqlBuilder.append(this.allGroupTypesDataMapper.schema());

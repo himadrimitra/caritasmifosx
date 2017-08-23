@@ -1343,7 +1343,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             boolean isLoanToLoanTransfer = false;
             changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(loan, transactionId, transactionDate,
                     transactionAmount, txnExternalId, locale, fmt, noteText, paymentDetail, isAccountTransfer, isLoanToLoanTransfer);
-            this.accountTransfersWritePlatformService.reverseTransfersWithFromAccountType(loanId, PortfolioAccountType.LOAN);
         }
         LoanTransaction newLoanTransaction = changedLoanTransactionDetails.getNewTransactionDetail();
         if (loan.isGLIMLoan() && MathUtility.isGreaterThanZero(newLoanTransaction.getAmount(loan.getCurrency()))) {
