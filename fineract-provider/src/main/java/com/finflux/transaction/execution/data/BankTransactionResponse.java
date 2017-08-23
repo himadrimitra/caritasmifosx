@@ -1,6 +1,9 @@
 package com.finflux.transaction.execution.data;
 
 
+import java.util.List;
+
+import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.joda.time.DateTime;
 
 /**
@@ -14,6 +17,7 @@ public class BankTransactionResponse extends BasicHttpResponse {
         private String poNumber;
         private TransactionStatus transactionStatus;
         private DateTime transactionTime;
+        private List<ApiParameterError> validationErrors = null;
 
         public BankTransactionResponse(BasicHttpResponse httpResponse, String transactionId,
 									   String referenceNumber, TransactionStatus transactionStatus, String utrNumber,
@@ -25,6 +29,13 @@ public class BankTransactionResponse extends BasicHttpResponse {
                 this.utrNumber = utrNumber;
                 this.poNumber = poNumber;
                 this.transactionTime = transactionTime;
+        }
+        
+        public BankTransactionResponse(BasicHttpResponse httpResponse, String transactionId, TransactionStatus transactionStatus, List<ApiParameterError> validationErrors) {
+            super(httpResponse);
+            this.transactionId = transactionId;
+            this.transactionStatus = transactionStatus;
+            this.validationErrors = validationErrors;
         }
 
         public String getTransactionId() {
@@ -69,5 +80,9 @@ public class BankTransactionResponse extends BasicHttpResponse {
 
         public DateTime getTransactionTime() {
                 return transactionTime;
+        }
+
+        public List<ApiParameterError> getValidationErrors() {
+            return this.validationErrors;
         }
 }
