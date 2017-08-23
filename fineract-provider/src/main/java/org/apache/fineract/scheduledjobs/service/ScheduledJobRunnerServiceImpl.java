@@ -782,16 +782,17 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                 final LocalDate recalculateFrom = DateUtils.getLocalDateOfTenant();
                 final List<Holiday> holidays = entry.getValue();
                 final List<Holiday> applicableHolidays = new ArrayList<>();
+                final List<LocalDate> holidaysFromDate = new ArrayList<>();
                 for (final Holiday holiday : holidays) {
                     if (!holiday.getFromDateLocalDate().isBefore(recalculateFrom)) {
                         applicableHolidays.add(holiday);
+                        holidaysFromDate.add(holiday.getFromDateLocalDate());
                     }
                 }
                 if (!applicableHolidays.isEmpty()) {
                     holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, applicableHolidays);
                     final Collection<Map<String, Object>> clientRecurringChargeForProcess = this.clientRecurringChargeReadPlatformService
-                            .retrieveClientRecurringChargeIdByOfficesAndHoliday(entry.getKey(), applicableHolidays, chargeTimeTypes,
-                                    recalculateFrom);
+                            .retrieveClientRecurringChargeIdByOffice(entry.getKey(), chargeTimeTypes, recalculateFrom);
                     final Collection<ClientRecurringChargeData> clientRecurringChargeDatas = new ArrayList<>();
                     ClientRecurringChargeData clientRecurringChargeData = null;
                     Long previousClientRecurringChargeId = 0l;
@@ -800,6 +801,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                             final Long clientChargeId = (Long) clientRecurringCharge.get("clientChargeId");
                             final Long clientRecurringChargeId = (Long) clientRecurringCharge.get("clientRecurringChargeId");
                             final LocalDate actualDueDate = new LocalDate(clientRecurringCharge.get("actualDueDate"));
+                            final LocalDate dueDate = new LocalDate(clientRecurringCharge.get("dueDate"));
                             final Integer chargeTimeTypeId = (Integer) clientRecurringCharge.get("chargeTimeTypeId");
                             final Boolean isSynchMeeting = (Boolean) clientRecurringCharge.get("isSynchMeeting");
                             final Integer feeInterval = (Integer) clientRecurringCharge.get("feeInterval");
@@ -814,7 +816,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                                 clientRecurringChargeDatas.add(clientRecurringChargeData);
                             }
                             if (clientRecurringChargeData != null) {
-                                final ClientChargeData clientChargeData = ClientChargeData.lookUp(clientChargeId, actualDueDate);
+                                final ClientChargeData clientChargeData = ClientChargeData.lookUp(clientChargeId, actualDueDate, dueDate);
                                 clientRecurringChargeData.addClientChargeData(clientChargeData);
                             }
                         } catch (final Exception e) {
@@ -823,13 +825,19 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                     }
                     if (!clientRecurringChargeDatas.isEmpty()) {
                         for (final ClientRecurringChargeData clientRecurringCharge : clientRecurringChargeDatas) {
-                            holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, applicableHolidays);
-                            this.clientChargeWritePlatformService.applyHolidaysToClientRecurringCharge(clientRecurringCharge,
-                                    holidayDetailDTO, sb);
+                            if (clientRecurringCharge.getClientChargeDatas() != null
+                                    && !clientRecurringCharge.getClientChargeDatas().isEmpty()) {
+                                for (final ClientChargeData clientChargeData : clientRecurringCharge.getClientChargeDatas()) {
+                                    if (holidaysFromDate.contains(clientChargeData.getDueDate())) {
+                                        this.clientChargeWritePlatformService.applyHolidaysToClientRecurringCharge(clientRecurringCharge,
+                                                holidayDetailDTO, sb);
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-
             } catch (Exception e) {
                 final String rootCause = ExceptionHelper.fetchExceptionMessage(e);
                 logger.error("Apply Holidays for recurring deposit failed  with message " + rootCause);
