@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.security.KeyStore;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,6 +15,7 @@ import com.finflux.transaction.execution.provider.rbl.response.*;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -180,8 +182,27 @@ public class RBLBankTransferService implements BankTransferService {
         RBLSinglePaymentRequest.Signature signature = new RBLSinglePaymentRequest.Signature(signatureStr);
 
         RBLSinglePaymentRequest singlePaymentRequest = new RBLSinglePaymentRequest(header, body, signature);
+        
+        BasicHttpResponse basicHttpResponse = new BasicHttpResponse();
+        
         RBLPaymentRequestValidator requestValidator = new RBLPaymentRequestValidator();
-        requestValidator.validateNEFTSinglePaymentRequest(singlePaymentRequest);
+        List<ApiParameterError> validationErrors = requestValidator.validateNEFTSinglePaymentRequest(singlePaymentRequest);
+        if (validationErrors.size() > 0) {
+            StringBuilder errorMessage = new StringBuilder("Validation error exists for following fields - ");
+            boolean isBegining = true;
+            for (ApiParameterError validationError : validationErrors) {
+                if (isBegining) {
+                    isBegining = false;
+                } else {
+                    errorMessage.append(", ");
+                }
+                errorMessage.append(validationError.getParameterName());
+            }
+            basicHttpResponse.setErrorMessage(errorMessage.toString());
+            basicHttpResponse.setSuccess(false);
+
+            return new BankTransactionResponse(basicHttpResponse, internalTransactionReference, TransactionStatus.FAILED, validationErrors);
+        }
         RBLFundTransferRequest rblFundTransferRequest = new RBLFundTransferRequest(singlePaymentRequest);
 
         // Gson gson = new Gson();
@@ -192,7 +213,6 @@ public class RBLBankTransferService implements BankTransferService {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(doSingleTxnResource).queryParam("client_id", clientId)
                 .queryParam("client_secret", clientSecret);
 
-        BasicHttpResponse basicHttpResponse = new BasicHttpResponse();
         TransactionStatus txnStatus = TransactionStatus.ERROR;
         String referenceNumber = null;
         String utrNumber = null;
