@@ -37,7 +37,7 @@ public class CreateWorkflowTaskFactory {
         if (taskConfigEntityType.getValue().equals(TaskConfigEntityType.LOANPRODUCT.getValue())) {
             workflowCreator = this.loanApplicationWorkflow;
         }
-        if (taskConfigEntityType.getValue().equals(TaskConfigEntityType.LOANPRODUCT_APPLICANT.getValue())) {
+        if (taskConfigEntityType.getValue().equals(TaskConfigEntityType.LOAN_APPLICANTION.getValue())) {
             workflowCreator = this.loanApplicantWorkflow;
         }
         if (taskConfigEntityType.getValue().equals(TaskConfigEntityType.LOANPRODUCT_COAPPLICANT.getValue())) {

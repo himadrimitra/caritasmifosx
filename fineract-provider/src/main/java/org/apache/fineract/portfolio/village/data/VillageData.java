@@ -64,10 +64,9 @@ public class VillageData {
     Collection<StaffData> staffOptions;
     private final StaffData staff;
     
-    public static VillageData template(final Long officeId, final Collection<OfficeData> officeOptions, Collection<StaffData> staffOptions) {
+    public static VillageData template(final Long officeId, final Collection<OfficeData> officeOptions, Collection<StaffData> staffOptions, Boolean isWorkflowEnabled) {
         final Collection<CenterData> centers = null;
         final Long workflowId = null ;
-        final Boolean isWorkflowEnabled = false ;
         final StaffData staff = null;
         return new VillageData(null, null, officeId, null, null, null, null, officeOptions, null, null, null,null, centers, workflowId, isWorkflowEnabled, staffOptions, staff);
     }
@@ -130,12 +129,15 @@ public class VillageData {
                 village.counter, null, village.status, village.timeline, centers,address, hierarchy, workflowId, isWorkflowEnabled, staffOptions, village.staff);
     }
 
-
     
     public Long getOfficeId() {
         return this.officeId;
     }
-    
-    
-    
+
+    public static VillageData withTemplate(final VillageData village, final VillageData template) {
+        return new VillageData(village.villageId, village.externalId, village.officeId, village.officeName, village.villageCode,
+                village.villageName, village.counter, template.officeOptions, village.status, village.timeline, village.setOfCenters,
+                village.addressData, village.centers, village.workflowId, template.isWorkflowEnabled, village.staffOptions, village.staff);
+    }
+
 }

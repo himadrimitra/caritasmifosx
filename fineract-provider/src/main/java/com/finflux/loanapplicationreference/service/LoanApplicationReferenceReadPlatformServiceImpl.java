@@ -7,9 +7,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.finflux.loanapplicationreference.data.*;
-import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
-
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -34,19 +31,29 @@ import com.finflux.fingerprint.data.FingerPrintData;
 import com.finflux.fingerprint.services.FingerPrintReadPlatformServices;
 import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServiceData;
 import com.finflux.infrastructure.external.authentication.service.ExternalAuthenticationServicesReadPlatformService;
+import com.finflux.loanapplicationreference.data.CoApplicantData;
+import com.finflux.loanapplicationreference.data.LoanApplicationChargeData;
+import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
+import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
+import com.finflux.loanapplicationreference.data.LoanApplicationReferenceTemplateData;
+import com.finflux.loanapplicationreference.data.LoanApplicationSanctionData;
+import com.finflux.loanapplicationreference.data.LoanApplicationSanctionTrancheData;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
 import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
 import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticaionTransactionTypes;
 import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticationPortfolioTypes;
 import com.finflux.organisation.transaction.authentication.service.TransactionAuthenticationReadPlatformService;
+import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
+import com.finflux.task.configuration.service.TaskConfigurationUtils;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskEntityType;
 
 @Service
 public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanApplicationReferenceReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
-    private final LoanApplicationReferenceDataMapper dataMapper;
     private final LoanApplicationChargeDataMapper chargeDataMapper;
     private final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
@@ -55,6 +62,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     private final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final LoanApplicationReferenceDataForLookUpMapper dataLookUpMapper;
+    private final TaskConfigurationUtils taskConfigurationUtils;
 
     @Autowired
     public LoanApplicationReferenceReadPlatformServiceImpl(final RoutingDataSource dataSource,
@@ -63,10 +71,10 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
             final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
             final FingerPrintReadPlatformServices fingerPrintReadPlatformServices,
-            final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService) {
+            final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
+            final TaskConfigurationUtils taskConfigurationUtils) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.loanProductReadPlatformService = loanProductReadPlatformService;
-        this.dataMapper = new LoanApplicationReferenceDataMapper();
         this.chargeDataMapper = new LoanApplicationChargeDataMapper();
         this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
@@ -75,6 +83,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
         this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.dataLookUpMapper = new LoanApplicationReferenceDataForLookUpMapper();
+        this.taskConfigurationUtils = taskConfigurationUtils;
     }
 
     @Override
@@ -83,7 +92,8 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
         final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive,
                 productApplicableForLoanType, entityType, entityId);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
-        return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions);
+        final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOAN_APPLICANTION);
+        return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions, isWorkflowEnabled);
     }
 
     @Override
@@ -115,8 +125,9 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
                 }
             }
         }
+        final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOAN_APPLICANTION);
         return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions, transactionAuthenticationOptions,
-                fingerPrintData);
+                fingerPrintData, isWorkflowEnabled);
     }
     
     @Override
@@ -140,8 +151,9 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     @Override
     public LoanApplicationReferenceData retrieveOne(final Long loanApplicationReferenceId) {
         try {
-            final String sql = "SELECT false as isCoApplicant, " + this.dataMapper.schema() + " WHERE lar.id = ? ";
-            return this.jdbcTemplate.queryForObject(sql, this.dataMapper, new Object[] { loanApplicationReferenceId });
+            final LoanApplicationReferenceDataMapper dataMapper = new LoanApplicationReferenceDataMapper(this.taskConfigurationUtils);
+            final String sql = "SELECT false as isCoApplicant, " + dataMapper.schema() + " WHERE lar.id = ? ";
+            return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { TaskEntityType.LOAN_APPLICATION.getValue(),loanApplicationReferenceId });
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
@@ -161,12 +173,14 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     private static final class LoanApplicationReferenceDataMapper implements RowMapper<LoanApplicationReferenceData> {
 
         private final String schemaSql;
+        private final Boolean isWorkflowEnabled;
 
         public String schema() {
             return this.schemaSql;
         }
 
-        public LoanApplicationReferenceDataMapper() {
+        public LoanApplicationReferenceDataMapper(final TaskConfigurationUtils taskConfigurationUtils) {
+            this.isWorkflowEnabled = taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOAN_APPLICANTION);
             final StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append("lar.id AS loanApplicationReferenceId ");
             sqlBuilder.append(",lar.loan_application_reference_no AS loanApplicationReferenceNo ");
@@ -195,6 +209,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(",lar.submittedon_date AS submittedOnDate ");
             sqlBuilder.append(",lar.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId, pt_disburse.value as disbursementPaymentTypeName ");
             sqlBuilder.append(",lar.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, pt_repayment.value as repaymenPaymentTypeName ");
+            sqlBuilder.append("task.id as workflowId, ") ;
             sqlBuilder.append(",lep.id as lepid, lep.loan_product_id as leploanProductId, ");
             sqlBuilder.append("lep.repay_every as leprepaymentEvery, lep.repayment_period_frequency_enum as leprepaymentFrequencyTypeEnum, ");
             sqlBuilder.append("lep.number_of_repayments as lepnumberOfRepayments, lep.sanction_amount as lepsanctionAmount, ");
@@ -210,6 +225,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("LEFT JOIN m_payment_type pt_disburse ON pt_disburse.id = lar.expected_disbursal_payment_type_id ");
             sqlBuilder.append(" LEFT JOIN m_payment_type pt_repayment ON pt_repayment.id = lar.expected_repayment_payment_type_id ");
             sqlBuilder.append(" LEFT JOIN f_loan_emi_packs lep ON lar.loan_emi_pack_id = lep.id ");
+            sqlBuilder.append("LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = lar.id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -298,11 +314,13 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
                         leploanProductName);
             }
 
+            final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
             return LoanApplicationReferenceData.instance(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne,
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
                     loanProductName, loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency,
                     repayEvery, termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, 
-                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName);
+                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName, workflowId,
+                    this.isWorkflowEnabled);
         }
     }
     

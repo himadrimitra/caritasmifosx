@@ -44,6 +44,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.task.configuration.service.TaskConfigurationUtils;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskEntityType;
+
 @Service
 public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService {
 
@@ -51,22 +55,31 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
     private final PlatformSecurityContext context;
     private final CurrencyReadPlatformService currencyReadPlatformService;
     private final static String nameDecoratedBaseOnHierarchy = "concat(substring('........................................', 1, ((LENGTH(o.hierarchy) - LENGTH(REPLACE(o.hierarchy, '.', '')) - 1) * 4)), o.name)";
+    private final TaskConfigurationUtils taskConfigurationUtils;
 
     @Autowired
     public OfficeReadPlatformServiceImpl(final PlatformSecurityContext context,
-            final CurrencyReadPlatformService currencyReadPlatformService, final RoutingDataSource dataSource) {
+            final CurrencyReadPlatformService currencyReadPlatformService, final RoutingDataSource dataSource,
+            final TaskConfigurationUtils taskConfigurationUtils) {
         this.context = context;
         this.currencyReadPlatformService = currencyReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.taskConfigurationUtils = taskConfigurationUtils;
     }
 
     private static final class OfficeMapper implements RowMapper<OfficeData> {
 
+        private final Boolean isWorkflowEnabled;
+        public OfficeMapper(final TaskConfigurationUtils taskConfigurationUtils) {
+            this.isWorkflowEnabled = taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.OFFICEONBOARDING);
+        }
         public String officeSchema() {
             return " o.id as id, o.name as name, "
                     + nameDecoratedBaseOnHierarchy
-                    + " as nameDecorated, o.external_id as externalId, o.opening_date as openingDate, o.hierarchy as hierarchy, parent.id as parentId, parent.name as parentName, o.office_code as officeCodeId "
-                    + "from m_office o LEFT JOIN m_office AS parent ON parent.id = o.parent_id ";
+                    + " as nameDecorated, o.external_id as externalId, o.opening_date as openingDate, o.hierarchy as hierarchy, parent.id as parentId, parent.name as parentName, o.office_code as officeCodeId, "
+                    + "task.id as workflowId "
+                    + "from m_office o LEFT JOIN m_office AS parent ON parent.id = o.parent_id "
+                    + "LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = o.id ";
         }
 
         @Override
@@ -81,8 +94,10 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
             final Long parentId = JdbcSupport.getLong(rs, "parentId");
             final String parentName = rs.getString("parentName");
             final String officeCodeId = rs.getString("officeCodeId");
+            final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
 
-            return new OfficeData(id, name, nameDecorated, externalId, openingDate, hierarchy, parentId, parentName, null,officeCodeId);
+            return new OfficeData(id, name, nameDecorated, externalId, openingDate, hierarchy, parentId, parentName, null, officeCodeId,
+                    this.isWorkflowEnabled, workflowId);
         }
     }
 
@@ -171,7 +186,7 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
         } else {
             hierarchySearchString = hierarchy + "%";
         }
-        final OfficeMapper rm = new OfficeMapper();
+        final OfficeMapper rm = new OfficeMapper(this.taskConfigurationUtils);
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select ");
         sqlBuilder.append(rm.officeSchema());
@@ -187,7 +202,7 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
             sqlBuilder.append("order by o.hierarchy");
         }
 
-        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { hierarchySearchString });
+        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { TaskEntityType.OFFICE.getValue(), hierarchySearchString });
     }
     @Override
     @Cacheable(value = "officesForDropdown", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy()+'ofd')")
@@ -210,10 +225,10 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
         try {
             this.context.authenticatedUser();
 
-            final OfficeMapper rm = new OfficeMapper();
+            final OfficeMapper rm = new OfficeMapper(this.taskConfigurationUtils);
             final String sql = "select " + rm.officeSchema() + " where o.id = ?";
 
-            final OfficeData selectedOffice = this.jdbcTemplate.queryForObject(sql, rm, new Object[] { officeId });
+            final OfficeData selectedOffice = this.jdbcTemplate.queryForObject(sql, rm, new Object[] { TaskEntityType.OFFICE.getValue(), officeId });
 
             return selectedOffice;
         } catch (final EmptyResultDataAccessException e) {

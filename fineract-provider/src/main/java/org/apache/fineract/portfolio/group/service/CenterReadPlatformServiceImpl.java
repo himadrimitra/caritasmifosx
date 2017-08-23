@@ -86,6 +86,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import com.finflux.common.constant.CommonConstants;
+import com.finflux.task.configuration.service.TaskConfigurationUtils;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskEntityType;
 
 @Service
 public class CenterReadPlatformServiceImpl implements CenterReadPlatformService {
@@ -102,7 +105,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
     public static LocalDate datePassed;
 
     // data mappers
-    private final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper();
+    private final AllGroupTypesDataMapper allGroupTypesDataMapper;
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     // data mappers
@@ -114,13 +117,15 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
     private final PaginationParametersDataValidator paginationParametersDataValidator;
     private final static Set<String> supportedOrderByValues = new HashSet<>(Arrays.asList("id", "name", "officeId", "officeName"));
 
+    private final TaskConfigurationUtils taskConfigurationUtils;
+
     @Autowired
     public CenterReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
             final ClientReadPlatformService clientReadPlatformService, final OfficeReadPlatformService officeReadPlatformService,
             final VillageReadPlatformService villageReadPlatformService,
             final StaffReadPlatformService staffReadPlatformService, final CodeValueReadPlatformService codeValueReadPlatformService,
             final PaginationParametersDataValidator paginationParametersDataValidator, final ConfigurationDomainService configurationDomainService,
-            final CalendarReadPlatformService calendarReadPlatformService) {
+            final CalendarReadPlatformService calendarReadPlatformService, final TaskConfigurationUtils taskConfigurationUtils) {
         this.context = context;
         this.clientReadPlatformService = clientReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
@@ -132,6 +137,8 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         this.configurationDomainService = configurationDomainService;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
+        this.taskConfigurationUtils = taskConfigurationUtils;
+        allGroupTypesDataMapper = new AllGroupTypesDataMapper(taskConfigurationUtils);
     }
 
     // 'g.' preffix because of ERROR 1052 (23000): Column 'column_name' in where
@@ -195,11 +202,13 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             + "sbu.firstname as submittedByFirstname, " + "sbu.lastname as submittedByLastname, " + "clu.username as closedByUsername, "
             + "clu.firstname as closedByFirstname, " + "clu.lastname as closedByLastname, " + "acu.username as activatedByUsername, "
             + "acu.firstname as activatedByFirstname, "
-            + "acu.lastname as activatedByLastname "
+            + "acu.lastname as activatedByLastname, "
+            + "task.id as workflowId "
             + "from m_group g " //
             + "join m_office o on o.id = g.office_id " + "left join m_staff s on s.id = g.staff_id "
             + "left join m_group pg on pg.id = g.parent_id " + "left join m_appuser sbu on sbu.id = g.submittedon_userid "
-            + "left join m_appuser acu on acu.id = g.activatedon_userid " + "left join m_appuser clu on clu.id = g.closedon_userid ";
+            + "left join m_appuser acu on acu.id = g.activatedon_userid " + "left join m_appuser clu on clu.id = g.closedon_userid "
+            + "LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = g.id ";
 
     private static final class CenterDataMapper implements RowMapper<CenterData> {
 
@@ -248,12 +257,15 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final BigDecimal totaldue = null;
             final BigDecimal installmentDue = null;
 
+            final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
+            final Boolean isWorkflowEnabled = workflowId == null ? Boolean.FALSE : Boolean.TRUE;
+
             final GroupTimelineData timeline = new GroupTimelineData(submittedOnDate, submittedByUsername, submittedByFirstname,
                     submittedByLastname, activationDate, activatedByUsername, activatedByFirstname, activatedByLastname, closedOnDate,
                     closedByUsername, closedByFirstname, closedByLastname);
 
             return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName,
-                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue);
+                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled);
         }
     }
 
@@ -320,13 +332,14 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final BigDecimal totalOverdue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalOverdue");
             final BigDecimal totaldue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totaldue");
             final BigDecimal installmentDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "installmentDue");
-            Collection<Integer> monthOnDay = CalendarUtils.getMonthOnDay(recurrence);
+            final Collection<Integer> monthOnDay = CalendarUtils.getMonthOnDay(recurrence);
+            final Boolean isWorkflowEnabled = null;
 
             CalendarData calendarData = CalendarData.instance(calendarId, calendarInstanceId, entityId, entityType, title, description,
                     location, startDate, endDate, null, null, false, recurrence, null, null, null, null, null, null, null, null, null,
                     null, null, null, null, null, meetingTime, monthOnDay);
             return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, null, staffId, staffName,
-                    hierarchy, null, calendarData, totalCollected, totalOverdue, totaldue, installmentDue);
+                    hierarchy, null, calendarData, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled);
         }
     }
 
@@ -376,12 +389,15 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final String activatedByFirstname = rs.getString("activatedByFirstname");
             final String activatedByLastname = rs.getString("activatedByLastname");
 
+            final Boolean isWorkflowEnabled = null;
+            final Long workflowId = null;
+
             final GroupTimelineData timeline = new GroupTimelineData(submittedOnDate, submittedByUsername, submittedByFirstname,
                     submittedByLastname, activationDate, activatedByUsername, activatedByFirstname, activatedByLastname, closedOnDate,
                     closedByUsername, closedByFirstname, closedByLastname);
 
             return GroupGeneralData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, null, null, staffId,
-                    staffName, hierarchy, groupLevel, timeline);
+                    staffName, hierarchy, groupLevel, timeline, isWorkflowEnabled, workflowId);
         }
     }
 
@@ -421,7 +437,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
 
         final String sqlCountRows = "SELECT FOUND_ROWS()";
         return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(),
-                new Object[] { hierarchySearchString }, this.centerMapper);
+                new Object[] { TaskEntityType.CENTER.getValue(), hierarchySearchString }, this.centerMapper);
     }
 
     @Override
@@ -454,7 +470,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             }
         }
 
-        return this.jdbcTemplate.query(sqlBuilder.toString(), this.centerMapper, new Object[] { hierarchySearchString });
+        return this.jdbcTemplate.query(sqlBuilder.toString(), this.centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), hierarchySearchString });
     }
 
     @Override
@@ -467,7 +483,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         final String sql = "select " + this.centerMapper.schema()
                 + " where g.office_id = ? and g.parent_id is null and g.level_Id = ? and o.hierarchy like ? order by g.hierarchy";
 
-        return this.jdbcTemplate.query(sql, this.centerMapper, new Object[] { officeId, GroupTypes.CENTER.getId(), hierarchySearchString });
+        return this.jdbcTemplate.query(sql, this.centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), officeId, GroupTypes.CENTER.getId(), hierarchySearchString });
     }
 
     @Override
@@ -515,9 +531,10 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         final BigDecimal installmentDue = null;
         // final boolean clientPendingApprovalAllowed =
         // this.configurationDomainService.isClientPendingApprovalAllowedEnabled();
+        final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.CENTERONBOARDING);
 
         return CenterData.template(officeIdDefaulted, accountNo, DateUtils.getLocalDateOfTenant(), officeOptions, villageOptions, villageCounter,
-                staffOptions, groupMembersOptions, totalCollected, totalOverdue, totaldue, installmentDue);
+                staffOptions, groupMembersOptions, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled);
     }
     
     private Collection<GroupGeneralData> retrieveAllGroupsForCenterDropdown(final Long officeId) {
@@ -553,7 +570,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final String hierarchySearchString = hierarchy + "%";
 
             final String sql = "select " + this.centerMapper.schema() + " where g.id = ? and o.hierarchy like ?";
-            return this.jdbcTemplate.queryForObject(sql, this.centerMapper, new Object[] { centerId, hierarchySearchString });
+            return this.jdbcTemplate.queryForObject(sql, this.centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), centerId, hierarchySearchString });
 
         } catch (final EmptyResultDataAccessException e) {
             throw new CenterNotFoundException(centerId);
@@ -588,15 +605,15 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         if (CollectionUtils.isEmpty(clientOptions)) {
             clientOptions = null;
         }
-
+        final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.GROUPONBARDING);
         return GroupGeneralData.template(centerOfficeId, center.getId(), center.getAccountNo(), center.getName(), staffId, staffName, centerOptions,
-                officeOptions, staffOptions, clientOptions, null);
+                officeOptions, staffOptions, clientOptions, null, isWorkflowEnabled);
     }
 
     @Override
     public Collection<GroupGeneralData> retrieveAssociatedGroups(final Long centerId) {
         final String sql = "select " + this.groupDataMapper.schema() + " where g.parent_id = ? ";
-        return this.jdbcTemplate.query(sql, this.groupDataMapper, new Object[] { centerId });
+        return this.jdbcTemplate.query(sql, this.groupDataMapper, new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), centerId });
     }
     
     @Override
@@ -685,13 +702,14 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final BigDecimal totalOverdue = null;
             final BigDecimal totaldue = null;
             final BigDecimal installmentDue = null;
+            final Boolean isWorkflowEnabled = null;
 
             final GroupTimelineData timeline = new GroupTimelineData(submittedOnDate, submittedByUsername, submittedByFirstname,
                     submittedByLastname, activationDate, activatedByUsername, activatedByFirstname, activatedByLastname, closedOnDate,
                     closedByUsername, closedByFirstname, closedByLastname);
 
             return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName,
-                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue);
+                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled);
         }
         
     }
