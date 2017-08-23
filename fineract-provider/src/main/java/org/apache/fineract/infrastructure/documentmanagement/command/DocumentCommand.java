@@ -53,6 +53,21 @@ public class DocumentCommand {
         this.location = location;
     }
 
+	public DocumentCommand(final String parentEntityType, final Long parentEntityId, final String fileName, 
+			final Long size) {
+		this.id = null ;
+		this.modifiedParameters = null ;
+		this.parentEntityType = parentEntityType ;
+		this.parentEntityId  = parentEntityId ;
+		this.fileName = fileName ;
+		this.type = null ;
+		this.storageType = null ;
+		this.location = null ;
+		this.size = size ;
+		this.description = null ;
+		this.name = null ;
+	}
+	
     public Long getId() {
         return this.id;
     }

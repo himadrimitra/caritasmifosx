@@ -52,7 +52,20 @@ public class DocumentData {
         this.location = location;
         this.storageType = storageType;
     }
-
+    
+    public DocumentData(final String location) {
+    	this.location = location ;
+    	 this.id = null ;
+         this.parentEntityType = null;
+         this.parentEntityId = null;
+         this.name = null;
+         this.fileName = null;
+         this.size = null;
+         this.type = null;
+         this.description = null;
+         this.storageType = null;
+    }
+    
     public String contentType() {
         return this.type;
     }

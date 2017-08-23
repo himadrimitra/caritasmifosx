@@ -1,13 +1,18 @@
 package com.finflux.risk.creditbureau.provider.service;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.transaction.Transactional;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepository;
+import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
+import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
+import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryFactory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
@@ -47,19 +52,22 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
     private final CodeValueRepository codeValueRepository;
     private final ClientRepositoryWrapper clientRepository;
     private final CreditBureauProductRepositoryWrapper creditBureauProductRepository;
+    private final ContentRepositoryFactory contentRepositoryFactory;
     private final Gson gson;
 
     @Autowired
     public CreditBureauEnquiryWritePlatformServiceImpl(final CreditBureauEnquiryRepository creditBureauEnquiryRepository,
             final LoanCreditBureauEnquiryRepository creditBureauRequestDetailsRepository,
             final ExistingLoanRepositoryWrapper existingLoanRepository, final CodeValueRepository codeValueRepository,
-            final ClientRepositoryWrapper clientRepository, final CreditBureauProductRepositoryWrapper creditBureauProductRepository) {
+            final ClientRepositoryWrapper clientRepository, final CreditBureauProductRepositoryWrapper creditBureauProductRepository,
+            final ContentRepositoryFactory contentRepositoryFactory) {
         this.creditBureauEnquiryRepository = creditBureauEnquiryRepository;
         this.loanCreditBureauEnquiryRepository = creditBureauRequestDetailsRepository;
         this.existingLoanRepository = existingLoanRepository;
         this.codeValueRepository = codeValueRepository;
         this.clientRepository = clientRepository;
         this.creditBureauProductRepository = creditBureauProductRepository;
+        this.contentRepositoryFactory = contentRepositoryFactory ;
         this.gson = new Gson();
     }
 
@@ -71,9 +79,13 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
         creditBureauEnquiry.setAcknowledgementNumber(response.getAcknowledgementNumber());
         enquiryReferenceData.setAcknowledgementNumber(response.getAcknowledgementNumber());
         creditBureauEnquiry.setStatus(response.getStatus().getValue());
-        creditBureauEnquiry.setRequest(response.getRequest());
         creditBureauEnquiry.setErrorsJosnString(response.getErrorsJson()); 
-        creditBureauEnquiry.setResponse(response.getResponse());
+        if(response.getRequest() != null) {
+        	creditBureauEnquiry.setRequestLocation(saveContent(response.getRequest().getBytes(), creditBureauEnquiry.getId()));	
+        }
+        if(response.getResponse() != null) {
+        	creditBureauEnquiry.setResponseLocation(saveContent(response.getResponse().getBytes(), creditBureauEnquiry.getId()));
+        }
         final List<LoanCreditBureauEnquiry> creditBureauLoanEnquiries = creditBureauEnquiry.getLoanCreditBureauEnquiryMapping();
         if (creditBureauLoanEnquiries != null && !creditBureauLoanEnquiries.isEmpty()) {
             final LoanCreditBureauEnquiry loanEnquiry = creditBureauLoanEnquiries.get(0);
@@ -90,6 +102,15 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
         this.creditBureauEnquiryRepository.save(creditBureauEnquiry);
     }
 
+	private String saveContent(final byte[] data, final Long parentId) {
+		final String entityType = "CREDIT_BUREAU" ;
+		final ByteArrayInputStream contentInputStream = new ByteArrayInputStream(data);
+		final String fileName = RandomStringUtils.randomAlphanumeric(15) ;
+		final DocumentCommand documentCommand = new DocumentCommand(entityType, parentId, fileName, new Long(data.length)) ;
+		final String fileLocation = this.contentRepositoryFactory.getRepository().saveFile(contentInputStream, documentCommand) ;
+		return fileLocation ;
+	}
+	
     @Transactional
     @Override
     public void saveReportResponseDetails(LoanEnquiryReferenceData loanEnquiryReferenceData, CreditBureauResponse responseData) {
@@ -102,15 +123,19 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             List<LoanCreditBureauEnquiry> creditBureauLoanEnquiries = creditBureauEnquiry.getLoanCreditBureauEnquiryMapping();
             if (creditBureauLoanEnquiries != null && !creditBureauLoanEnquiries.isEmpty()) {
                 LoanCreditBureauEnquiry loanEnquiry = creditBureauLoanEnquiries.get(0);
-                loanEnquiry.setRequest(response.getRequest());
-                loanEnquiry.setResponse(response.getResponse());
                 loanEnquiry.setStatus(response.getStatus().getValue());
                 
+                if(response.getRequest() != null) {
+                	loanEnquiry.setRequestLocation(saveContent(response.getRequest().getBytes(), loanEnquiry.getId())); 
+                }
+                if(response.getResponse() != null) {
+                	loanEnquiry.setResponseLocation(saveContent(response.getResponse().getBytes(), loanEnquiry.getId()));
+                }
                 if (responseData.getCreditBureauReportFile() != null) {
                     CreditBureauReportFile reportFile = responseData.getCreditBureauReportFile();
                     loanEnquiry.setFileName(reportFile.getFileName());
                     loanEnquiry.setFileType(reportFile.getFileType().getValue());
-                    loanEnquiry.setFileContent(reportFile.getFileContent());
+                    loanEnquiry.setReportLocation(saveContent(reportFile.getFileContent(), loanEnquiry.getId())); 
                 }
                 List<CreditScore> creditScores = responseData.getCreditScore() ;
                 if(creditScores != null && creditScores.size() > 0) {

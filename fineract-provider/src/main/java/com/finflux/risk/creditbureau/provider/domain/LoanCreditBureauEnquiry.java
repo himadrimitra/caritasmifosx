@@ -45,17 +45,8 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
     @Column(name = "status")
     Integer status;
 
-    @Column(name = "request")
-    String request;
-
-    @Column(name = "response")
-    String response;
-
     @Column(name = "report_generated_time")
     Date reportGeneratedTtime;
-
-    @Column(name = "file_content")
-    byte[] fileContent;
 
     @Column(name = "file_type")
     Integer fileType;
@@ -63,6 +54,15 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
     @Column(name = "file_name")
     String fileName;
 
+    @Column(name = "request_location")
+    String requestLocation;
+
+    @Column(name = "response_location")
+    String responseLocation;
+    
+    @Column(name = "report_location")
+    String reportLocation;
+    
     @Column(name = "is_active")
     boolean isActive = true;
 
@@ -124,13 +124,6 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
         this.status = status;
     }
 
-    public String getResponse() {
-        return response;
-    }
-
-    public void setResponse(String response) {
-        this.response = response;
-    }
 
     public Date getReportGeneratedTtime() {
         return reportGeneratedTtime;
@@ -164,14 +157,6 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
         this.cbReportId = cbReportId;
     }
 
-    public byte[] getFileContent() {
-        return fileContent;
-    }
-
-    public void setFileContent(byte[] fileContent) {
-        this.fileContent = fileContent;
-    }
-
     public String getFileName() {
         return fileName;
     }
@@ -191,14 +176,6 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
         this.isActive = true;
     }
 
-    public String getRequest() {
-        return this.request;
-    }
-
-    public void setRequest(String request) {
-        this.request = request;
-    }
-
     public Long getTrancheDisbursalId() {
         return this.trancheDisbursalId;
     }
@@ -209,5 +186,29 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
     
     public void addCreditScore(final CreditBureauScore score) {
     	this.scores.add(score) ;
+    }
+    
+    public void setRequestLocation(final String requestLocation) {
+    	this.requestLocation = requestLocation ;
+    }
+    
+    public String getRequestLocation() {
+        return this.responseLocation;
+    }
+    
+    public void setResponseLocation(final String responseLocation) {
+    	this.responseLocation = responseLocation ;
+    }
+    
+    public String getResponseLocation() {
+    	return this.responseLocation ;
+    }
+    
+    public void setReportLocation(final String reportLocation) {
+    	this.reportLocation = reportLocation ;
+    }
+    
+    public String getReportLocation() {
+    	return this.reportLocation ;
     }
 }

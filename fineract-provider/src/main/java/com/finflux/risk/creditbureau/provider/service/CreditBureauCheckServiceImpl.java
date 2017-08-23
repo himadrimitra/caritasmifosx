@@ -52,7 +52,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
     private final LoanReadPlatformServiceImpl loanReadPlatformServiceImpl;
     private final LoanApplicationReferenceRepository loanApplicationReferenceRepository;
     private final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryRepository;
-
+    private final ContentServiceUtil contentService ;
     @Autowired
     public CreditBureauCheckServiceImpl(final RoutingDataSource dataSource, CreditBureauProviderFactory creditBureauProviderFactory,
             CreditBureauEnquiryReadService creditBureauEnquiryReadService,
@@ -60,7 +60,8 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             final LoanReadPlatformServiceImpl loanReadPlatformServiceImpl,
             final LoanApplicationReferenceRepository loanApplicationReferenceRepository,
             final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryRepository,
-            final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository) {
+            final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository,
+            final ContentServiceUtil contentService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.creditBureauProviderFactory = creditBureauProviderFactory;
         this.creditBureauEnquiryReadService = creditBureauEnquiryReadService;
@@ -69,6 +70,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
         this.loanCreditBureauEnquiryRepository = loanCreditBureauEnquiryRepository;
         this.creditBureauLoanProductOfficeMappingRepository = creditBureauLoanProductOfficeMappingRepository;
+        this.contentService = contentService ;
     }
 
     @SuppressWarnings("null")
@@ -222,21 +224,6 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             if (cbStatusId != null) {
                 cbStatus = CreditBureauEnquiryStatus.creditBureauEnquiryStatus(cbStatusId);
             }
-            byte[] cbResponse = null;
-            byte[] cbLoanEnqResponse = null;
-
-            if (cbStatus != null && !cbStatus.getValue().equalsIgnoreCase("SUCCESS")) {
-                final String cbResponseStr = rs.getString("cbeResponse");
-                if (cbResponseStr != null && cbResponseStr.trim().length() > 0) {
-                    cbResponse = cbResponseStr.getBytes();
-                }
-
-                final String cbLoanEnqResponseStr = rs.getString("lcbeResponse");
-                if (cbLoanEnqResponseStr != null && cbLoanEnqResponseStr.trim().length() > 0) {
-                    cbLoanEnqResponse = cbLoanEnqResponseStr.getBytes();
-                }
-            }
-
             final Integer fileTypeId = JdbcSupport.getIntegeActualValue(rs, "reportFileTypeId");
             EnumOptionData reportFileType = null;
             if (fileTypeId != null) {
@@ -257,7 +244,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             if(!StringUtils.isEmpty(errorJson)) {
                 errors = new Gson().fromJson(errorJson, List.class) ;
             }
-            return new OtherInstituteLoansSummaryData(loanId, cbStatus, cbResponse, cbLoanEnqResponse, totalAmountBorrowed,
+            return new OtherInstituteLoansSummaryData(loanId, cbStatus, totalAmountBorrowed,
                     totalCurrentOutstanding, totalAmtOverdue, totalInstallmentAmount, reportFileType, cbInitiatedDateTime, errors);
         }
     }
@@ -351,7 +338,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
                 }
             }
             final StringBuilder sb = new StringBuilder(100);
-            sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.file_content AS fileContent ");
+            sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.report_location reportLocation ");
             sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
             sb.append("WHERE lcbe.is_active = 1 ");
             if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOANAPPLICATION.toString())) {
@@ -372,7 +359,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         return new CreditBureauFileContentData();
     }
 
-    private static final class CreditBureauFileContantDataExtractor implements RowMapper<CreditBureauFileContentData> {
+    private final class CreditBureauFileContantDataExtractor implements RowMapper<CreditBureauFileContentData> {
 
         @Override
         public CreditBureauFileContentData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
@@ -381,8 +368,8 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             if (fileTypeId != null) {
                 reportFileType = ReportFileType.reportFileType(fileTypeId);
             }
-            byte[] fileContent = rs.getBytes("fileContent");
-            return new CreditBureauFileContentData(reportFileType, fileContent);
+            final String reportLocation = rs.getString("reportLocation") ;
+            return new CreditBureauFileContentData(reportFileType, contentService.getContent(reportLocation).getBytes()); 
         }
     }
 }
