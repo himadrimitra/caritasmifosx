@@ -27,30 +27,36 @@ import com.finflux.risk.creditbureau.provider.data.ReportFileType;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiry;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryRepository;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
+import com.finflux.risk.creditbureau.provider.service.ContentServiceUtil;
 
 @Service
 public class CibilIssueServiceImpl implements CibilIssueService {
 
     private final static Logger logger = LoggerFactory.getLogger(CibilIssueServiceImpl.class);
     private final CreditBureauEnquiryRepository creditBureauEnquiryRepository;
-
+    private final ContentServiceUtil contentService ;
+    
     @Autowired
-    public CibilIssueServiceImpl(final CreditBureauEnquiryRepository creditBureauEnquiryRepository) {
+    public CibilIssueServiceImpl(final CreditBureauEnquiryRepository creditBureauEnquiryRepository,
+    		final ContentServiceUtil contentService) {
         this.creditBureauEnquiryRepository = creditBureauEnquiryRepository;
+        this.contentService = contentService ;
     }
 
     @Override
     public CreditBureauResponse sendEquifaxIssue(LoanEnquiryReferenceData loanEnquiryReferenceData,
             final CibilCredentialsData cibilCredentials) {
         final CreditBureauEnquiry enquiry = this.creditBureauEnquiryRepository.findOne(loanEnquiryReferenceData.getEnquiryId());
+        final String request = contentService.getContent(enquiry.getRequestLocation()) ;
+        final String response =  contentService.getContent(enquiry.getResponseLocation()) ;
         try {
-            return parseResponse(enquiry.getRequest(), enquiry.getResponse(), loanEnquiryReferenceData, cibilCredentials);
+            return parseResponse(request, response, loanEnquiryReferenceData, cibilCredentials);
         } catch (Exception e) {
             logger.error(e.getMessage());
-            return createErrorResponse(enquiry.getRequest(), enquiry.getResponse());
+            return createErrorResponse(request, response);
         }
     }
-
+    
     private CreditBureauResponse parseResponse(final String requestString, final String responseString,
             final LoanEnquiryReferenceData loanEnquiryReferenceData, final CibilCredentialsData cibilCredentials) {
         CreditBureauResponse creditBureauResponse = null;
