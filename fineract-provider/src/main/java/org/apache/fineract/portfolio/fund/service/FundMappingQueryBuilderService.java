@@ -66,8 +66,8 @@ public class FundMappingQueryBuilderService {
         String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(element.getAsJsonObject());
         StringBuilder selectSql = new StringBuilder();
         selectSql = selectSql.append(FundApiConstants.summarySelectQuery);
-        StringBuilder whereSql = new StringBuilder(" where l.loan_status_id in (" + LoanStatus.ACTIVE.getValue()
-                + ") and l.loan_type_enum in (" + AccountType.INDIVIDUAL.getValue() + " ," + AccountType.JLG.getValue() + ") ");
+        StringBuilder whereSql = new StringBuilder(" where l.loan_status_id in "+FundApiConstants.fundAssignmentValidLoanStatusAsString
+                + " and l.loan_type_enum in (" + AccountType.INDIVIDUAL.getValue() + " ," + AccountType.JLG.getValue() + ") ");
         boolean isFundsNotSelected = !selectedCriteriaList.contains(FundApiConstants.fundsParamName);
         if(isFundsNotSelected){
             whereSql.append(" and (cv.code_value not in ('Buyout', 'Securitization') or fund.id is null) ");

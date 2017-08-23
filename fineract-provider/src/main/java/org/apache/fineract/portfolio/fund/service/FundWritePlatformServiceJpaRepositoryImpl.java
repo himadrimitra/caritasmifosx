@@ -614,7 +614,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
         String allowedFundSql = "select GROUP_CONCAT(DISTINCT(f.id)) as ids from m_fund f "
                 + "left join  m_code_value cv ON cv.id = f.facility_type " + "where cv.code_value NOT IN ('Buyout','Securitization')";
         String fundIdAsString = this.jdbcTemplate.queryForObject(allowedFundSql, String.class);
-        criteria = " l.loan_status_id = 300 AND (l.fund_id IS NULL OR l.fund_id IN (" + fundIdAsString + ")) ";
+        criteria = " l.loan_status_id IN "+FundApiConstants.fundAssignmentValidLoanStatusAsString+" AND (l.fund_id IS NULL OR l.fund_id IN (" + fundIdAsString + ")) ";
         return criteria;
     }
 

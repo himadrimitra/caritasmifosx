@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
-import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.springframework.stereotype.Component;
 
 import com.finflux.transaction.execution.api.BankTransactionApiConstants;
@@ -18,7 +17,7 @@ import com.finflux.transaction.execution.api.BankTransactionApiConstants;
 @Component
 public class RBLPaymentRequestValidator {
 
-    public void validateNEFTSinglePaymentRequest(RBLSinglePaymentRequest singlePaymentRequest) {
+    public List<ApiParameterError> validateNEFTSinglePaymentRequest(RBLSinglePaymentRequest singlePaymentRequest) {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
@@ -195,12 +194,6 @@ public class RBLPaymentRequestValidator {
         final String signature = singlePaymentRequest.getSignature().getSignature();
         baseDataValidator.reset().parameter(BankTransactionApiConstants.INITIATE_BANK_TRANSACTION_RESOURCE).value(signature).notNull();
 
-        throwExceptionIfValidationWarningsExist(dataValidationErrors);
-
+        return dataValidationErrors;
     }
-
-    private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
-        if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
-    }
-
 }

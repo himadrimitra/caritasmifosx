@@ -616,6 +616,9 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 						}
 						transaction.setStatus(response.getTransactionStatus().getValue());
 						bankAccountTransactionRepository.save(transaction);
+						if (response.getValidationErrors() != null) { 
+                                                    throw new PlatformApiDataValidationException(response.getValidationErrors()); 
+                                                }
 					}catch (PlatformApiDataValidationException e){
                                             logger.error("Initiation failed for transaction "
                                                     + transaction.getId()
