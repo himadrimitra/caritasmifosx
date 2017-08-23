@@ -134,7 +134,13 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 				existingLoan.setLoanType(account.getAccountType());
 				existingLoan.setLenderName(account.getInstitution());
 				existingLoan.setAmountDisbursed(account.getDisbursedAmount().doubleValue());
-				existingLoan.setCurrentOutstanding(account.getCurrentBalance().doubleValue());
+				
+				if(account.getCurrentBalance() != null) {
+				    existingLoan.setCurrentOutstanding(account.getCurrentBalance().doubleValue());    
+				}else {
+				    existingLoan.setCurrentOutstanding(0.0);
+				}
+				
 				existingLoan.setAmountOverdue(0.0);
 				if (account.getWriteOffAmount() != null) {
 					existingLoan.setWrittenOffAmount(account.getWriteOffAmount().doubleValue());
