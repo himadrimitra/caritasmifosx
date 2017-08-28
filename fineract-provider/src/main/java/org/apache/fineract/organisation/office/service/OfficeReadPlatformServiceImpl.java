@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -34,6 +35,7 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.data.OfficeTransactionData;
+import org.apache.fineract.organisation.office.domain.OfficeStatus;
 import org.apache.fineract.organisation.office.exception.OfficeNotFoundException;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
@@ -77,7 +79,7 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
             return " o.id as id, o.name as name, "
                     + nameDecoratedBaseOnHierarchy
                     + " as nameDecorated, o.external_id as externalId, o.opening_date as openingDate, o.hierarchy as hierarchy, parent.id as parentId, parent.name as parentName, o.office_code as officeCodeId, "
-                    + "task.id as workflowId "
+                    + "task.id as workflowId, o.status_enum as statusEnum, o.activation_date as activationDate, o.rejectedon_date as rejectedonDate "
                     + "from m_office o LEFT JOIN m_office AS parent ON parent.id = o.parent_id "
                     + "LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = o.id ";
         }
@@ -95,9 +97,13 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
             final String parentName = rs.getString("parentName");
             final String officeCodeId = rs.getString("officeCodeId");
             final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
+            final Integer statusEnum = rs.getInt("statusEnum");
+            final EnumOptionData status = OfficeStatus.fromInt(statusEnum).getEnumOptionData();
+            final LocalDate activationDate = JdbcSupport.getLocalDate(rs, "activationDate");
+            final LocalDate rejectedonDate = JdbcSupport.getLocalDate(rs, "rejectedonDate");
 
             return new OfficeData(id, name, nameDecorated, externalId, openingDate, hierarchy, parentId, parentName, null, officeCodeId,
-                    this.isWorkflowEnabled, workflowId);
+                    this.isWorkflowEnabled, workflowId, status, activationDate, rejectedonDate);
         }
     }
 

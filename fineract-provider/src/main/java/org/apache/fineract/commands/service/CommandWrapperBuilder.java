@@ -198,6 +198,22 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder activateOffice(final Long officeId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "OFFICE";
+        this.entityId = officeId;
+        this.href = "/offices/" + officeId;
+        return this;
+    }
+
+    public CommandWrapperBuilder rejectOffice(final Long officeId) {
+        this.actionName = "REJECT";
+        this.entityName = "OFFICE";
+        this.entityId = officeId;
+        this.href = "/offices/" + officeId;
+        return this;
+    }
+
     public CommandWrapperBuilder createStaff() {
         this.actionName = "CREATE";
         this.entityName = "STAFF";
