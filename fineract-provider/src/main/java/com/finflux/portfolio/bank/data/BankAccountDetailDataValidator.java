@@ -47,17 +47,17 @@ public class BankAccountDetailDataValidator {
                 .resource(BankAccountDetailConstants.resourceName);
 
         final String name = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.nameParameterName, element);
-        baseDataValidator.reset().parameter(BankAccountDetailConstants.nameParameterName).value(name).notBlank();
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.nameParameterName).value(name).notBlank().notExceedingLengthOf(100);
 
         final String accountNumber = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.accountNumberParameterName,
                 element);
-        baseDataValidator.reset().parameter(BankAccountDetailConstants.accountNumberParameterName).value(accountNumber).notBlank();
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.accountNumberParameterName).value(accountNumber).notBlank().notExceedingLengthOf(50);
 
         final Integer accountTypeId = this.fromApiJsonHelper.extractIntegerNamed(BankAccountDetailConstants.accountTypeIdParamName, element,locale);
         baseDataValidator.reset().parameter(BankAccountDetailConstants.accountTypeIdParamName).value(accountTypeId).notBlank();
 
         final String ifscCode = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.ifscCodeParameterName, element);
-        baseDataValidator.reset().parameter(BankAccountDetailConstants.ifscCodeParameterName).value(ifscCode).notBlank();
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.ifscCodeParameterName).value(ifscCode).notBlank().notExceedingLengthOf(50);
 
         final String mobileNo = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.mobileNumberParameterName, element);
         baseDataValidator.reset().parameter(BankAccountDetailConstants.mobileNumberParameterName).value(mobileNo).ignoreIfNull()
@@ -77,6 +77,18 @@ public class BankAccountDetailDataValidator {
             baseDataValidator.reset().parameter(BankAccountDetailConstants.lastTransactionDate).value(lastTransactionDate).notNull()
                     .validateDateBefore(DateUtils.getLocalDateOfTenant());
         }
+        
+        final String bankName = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankNameParameterName, element);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.bankNameParameterName).value(bankName).ignoreIfNull()
+                .notExceedingLengthOf(20);
+
+        final String bankCity = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankCityParameterName, element);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.bankCityParameterName).value(bankCity).ignoreIfNull()
+                .notExceedingLengthOf(20);
+
+        final String branchName = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.branchNameParameterName, element);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.branchNameParameterName).value(branchName).ignoreIfNull()
+                .notExceedingLengthOf(100);
         
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -104,13 +116,13 @@ public class BankAccountDetailDataValidator {
 
         if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.nameParameterName, element)) {
             final String name = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.nameParameterName, element);
-            baseDataValidator.reset().parameter(BankAccountDetailConstants.nameParameterName).value(name).notBlank();
+            baseDataValidator.reset().parameter(BankAccountDetailConstants.nameParameterName).value(name).notBlank().notExceedingLengthOf(100);
         }
 
         if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.accountNumberParameterName, element)) {
             final String accountNumber = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.accountNumberParameterName,
                     element);
-            baseDataValidator.reset().parameter(BankAccountDetailConstants.accountNumberParameterName).value(accountNumber).notBlank();
+            baseDataValidator.reset().parameter(BankAccountDetailConstants.accountNumberParameterName).value(accountNumber).notBlank().notExceedingLengthOf(50);
         }
 
         if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.accountTypeIdParamName, element)) {
@@ -122,7 +134,7 @@ public class BankAccountDetailDataValidator {
 
         if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.ifscCodeParameterName, element)) {
             final String ifscCode = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.ifscCodeParameterName, element);
-            baseDataValidator.reset().parameter(BankAccountDetailConstants.ifscCodeParameterName).value(ifscCode).notBlank();
+            baseDataValidator.reset().parameter(BankAccountDetailConstants.ifscCodeParameterName).value(ifscCode).notBlank().notExceedingLengthOf(50);
         }
 
         final String mobileNo = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.mobileNumberParameterName, element);
@@ -137,6 +149,18 @@ public class BankAccountDetailDataValidator {
                 .extractLongNamed(BankAccountDetailConstants.documentIdParameterName, element);
         baseDataValidator.reset().parameter(BankAccountDetailConstants.documentIdParameterName).value(documentId)
                 .ignoreIfNull().longGreaterThanZero();
+        
+        final String bankName = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankNameParameterName, element);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.bankNameParameterName).value(bankName).ignoreIfNull()
+                .notExceedingLengthOf(20);
+
+        final String bankCity = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankCityParameterName, element);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.bankCityParameterName).value(bankCity).ignoreIfNull()
+                .notExceedingLengthOf(20);
+
+        final String branchName = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.branchNameParameterName, element);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.branchNameParameterName).value(branchName).ignoreIfNull()
+                .notExceedingLengthOf(100);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
