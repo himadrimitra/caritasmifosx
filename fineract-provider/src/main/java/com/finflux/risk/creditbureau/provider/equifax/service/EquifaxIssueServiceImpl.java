@@ -43,8 +43,8 @@ import com.finflux.risk.creditbureau.provider.equifax.xsd.ErrorType;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.InquiryResponseType;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.ReportType;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.ScoreType;
-import com.finflux.risk.creditbureau.provider.highmark.xsd.ack.ERROR;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.issue.ObjectFactory;
+import com.finflux.risk.creditbureau.provider.service.ContentServiceUtil;
 import com.google.gson.Gson;
 
 @Service
@@ -56,23 +56,27 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 	final ObjectFactory requestFactory = new ObjectFactory();
 	final SimpleDateFormat ddmmYYYYFormat = new SimpleDateFormat("dd-MM-yyyy");
 	private final CreditBureauEnquiryRepository creditBureauEnquiryRepository;
-
+	private final ContentServiceUtil contentService ;
 	@Autowired
-	public EquifaxIssueServiceImpl(final CreditBureauEnquiryRepository creditBureauEnquiryRepository) {
+	public EquifaxIssueServiceImpl(final CreditBureauEnquiryRepository creditBureauEnquiryRepository,
+			final ContentServiceUtil contentService) {
 		this.creditBureauEnquiryRepository = creditBureauEnquiryRepository;
+		this.contentService = contentService ;
 	}
 
 	@Override
 	public CreditBureauResponse sendEquifaxIssue(LoanEnquiryReferenceData loanEnquiryReferenceData) {
 		final CreditBureauEnquiry enquiry = this.creditBureauEnquiryRepository
 				.findOne(loanEnquiryReferenceData.getEnquiryId());
+		final String request = contentService.getContent(enquiry.getRequestLocation()) ;
+        final String response =  contentService.getContent(enquiry.getResponseLocation()) ;
 		System.setProperty("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true");
 		try {
-			return parseResponse(enquiry.getRequest(), enquiry.getResponse(), loanEnquiryReferenceData);
+			return parseResponse(request, response, loanEnquiryReferenceData);
 		} catch (JAXBException e) {
 			logger.error(e.getMessage());
 			final String errorsJson = null ;
-			EnquiryResponse enquiryResponse = new EnquiryResponse(null, enquiry.getRequest(), enquiry.getResponse(),
+			EnquiryResponse enquiryResponse = new EnquiryResponse(null, request, response,
 					null, null, CreditBureauEnquiryStatus.ERROR, null, errorsJson);
 			return new CreditBureauResponse(enquiryResponse, null, null, null);
 		} finally {
