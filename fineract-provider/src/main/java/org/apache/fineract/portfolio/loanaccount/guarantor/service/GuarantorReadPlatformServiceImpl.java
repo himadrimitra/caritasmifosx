@@ -154,6 +154,7 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
             final String housePhoneNumber = rs.getString("housePhoneNumber");
             final String comment = rs.getString("comment");
             final boolean status = rs.getBoolean("guarantorStatus");
+            final String nationalId = rs.getString("nationalId");
             final Collection<PortfolioAccountData> accountLinkingOptions = null;
             List<GuarantorFundingData> guarantorFundingDetails = null;
             GuarantorFundingData guarantorFundingData = this.guarantorFundingMapper.mapRow(rs, rowNum);
@@ -172,8 +173,6 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
 
                 }
             }
-            
-            final String nationalId = rs.getString("nationalId");
            
 
             return new GuarantorData(id, loanId, clientRelationshipType, entityId, guarantorType, firstname, lastname, dob, addressLine1,
