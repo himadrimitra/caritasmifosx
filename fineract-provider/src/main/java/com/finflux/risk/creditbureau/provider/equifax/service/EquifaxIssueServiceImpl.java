@@ -131,9 +131,17 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 						loanEnquiryReferenceData.getLoanId(), loanEnquiryReferenceData.getCbProductId(),
 						loanEnquiryReferenceData.getLoanEnquiryId());
 
-				existingLoan.setLoanType(account.getAccountType());
-				existingLoan.setLenderName(account.getInstitution());
-				existingLoan.setAmountDisbursed(account.getDisbursedAmount().doubleValue());
+				if(account.getAccountType() != null) {
+				    existingLoan.setLoanType(account.getAccountType());    
+				}
+				if(account.getInstitution() != null) {
+				    existingLoan.setLenderName(account.getInstitution());    
+				}
+				if(account.getDisbursedAmount() != null) {
+				    existingLoan.setAmountDisbursed(account.getDisbursedAmount().doubleValue());    
+				}else {
+				    existingLoan.setAmountDisbursed(0.0);
+				}
 				
 				if(account.getCurrentBalance() != null) {
 				    existingLoan.setCurrentOutstanding(account.getCurrentBalance().doubleValue());    
@@ -142,10 +150,17 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 				}
 				
 				existingLoan.setAmountOverdue(0.0);
-				if (account.getWriteOffAmount() != null) {
+				if(account.getWriteOffAmount() != null) {
 					existingLoan.setWrittenOffAmount(account.getWriteOffAmount().doubleValue());
+				}else {
+				    existingLoan.setWrittenOffAmount(0.0);
 				}
-				existingLoan.setInstallmentAmount(account.getInstallmentAmount().doubleValue());
+				if(account.getInstallmentAmount() != null) {
+				    existingLoan.setInstallmentAmount(account.getInstallmentAmount().doubleValue());
+				}else {
+				    existingLoan.setInstallmentAmount(0.0);
+				}
+				
 				if (account.getDateSanctioned() != null) {
 					existingLoan.setDisbursedDate(account.getDateSanctioned().toGregorianCalendar().getTime());
 				}
