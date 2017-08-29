@@ -513,7 +513,7 @@ public class AccountTransferTest {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
         this.accountTransferHelper = new AccountTransferHelper(this.requestSpec, this.responseSpec);
         final ResponseSpecification errorResponse = new ResponseSpecBuilder().expectStatusCode(200).build();
-        final ResponseSpecification errorResponseLoan = new ResponseSpecBuilder().expectStatusCode(403).build();
+        final ResponseSpecification errorResponseLoan = new ResponseSpecBuilder().expectStatusCode(400).build();
         final SavingsAccountHelper validationErrorHelper = new SavingsAccountHelper(this.requestSpec, errorResponse);
         final LoanTransactionHelper validationErrorLoanHelper = new LoanTransactionHelper(this.requestSpec, errorResponseLoan);
 
@@ -617,7 +617,7 @@ public class AccountTransferTest {
         @SuppressWarnings("unchecked")
         ArrayList<HashMap> accountTransferError = (ArrayList<HashMap>) validationErrorLoanHelper.undoRepaymentError(toLoanID,
                 transactionId, CommonConstants.RESPONSE_ERROR, "16 August 2016");
-        assertEquals("error.msg.account.closed.exception",
+        assertEquals("validation.msg.savingsaccount.undotransaction.account.is.not.active",
                 accountTransferError.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
     }
 
