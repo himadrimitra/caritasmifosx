@@ -1,10 +1,10 @@
 package com.finflux.task.data;
 
-import org.apache.fineract.organisation.office.data.OfficeData;
-import org.apache.fineract.portfolio.client.data.ClientData;
-
 import java.util.Date;
 import java.util.Map;
+
+import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.portfolio.client.data.ClientData;
 
 public class TaskInfoData {
 
@@ -24,11 +24,13 @@ public class TaskInfoData {
     private OfficeData officeData;
     private Map<String, String> configValues;
     private final String description;
+    private final String shortDescription;
 
     private TaskInfoData(final Long taskId, final Long parentTaskId, final String taskName, final String taskStatus,
             final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
             final String entityType, final Long entityId, final String nextActionUrl, final ClientData clientData,
-            final OfficeData officeData, final Map<String, String> configValues, final String description, final Date createdOn) {
+            final OfficeData officeData, final Map<String, String> configValues, final String description, final Date createdOn,
+            final String shortDescription) {
         this.taskId = taskId;
         this.parentTaskId = parentTaskId;
         this.taskName = taskName;
@@ -45,14 +47,16 @@ public class TaskInfoData {
         this.configValues = configValues;
         this.description = description;
         this.createdOn = createdOn;
+        this.shortDescription = shortDescription;
     }
 
     public static TaskInfoData instance(final Long taskId, final Long parentTaskId, final String taskName, final String taskStatus,
             final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
             final String entityType, final Long entityId, final String nextActionUrl, final ClientData clientData,
-            final OfficeData officeData, final Map<String, String> configValues, final String description,final Date createdOn) {
+            final OfficeData officeData, final Map<String, String> configValues, final String description,final Date createdOn,
+            final String shortDescription) {
         return new TaskInfoData(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
-                entityType, entityId, nextActionUrl, clientData, officeData, configValues, description, createdOn);
+                entityType, entityId, nextActionUrl, clientData, officeData, configValues, description, createdOn, shortDescription);
     }
 
     public Long getTaskId() {
