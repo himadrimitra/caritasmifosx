@@ -48,7 +48,7 @@ public class RecurringDepositSchedularServiceImpl implements RecurringDepositSch
                 final List<Holiday> holidays = entry.getValue();
                 final List<Holiday> applicableHolidays = new ArrayList<>();
                 for (final Holiday holiday : holidays) {
-                    if (!recalculateFrom.isBefore(holiday.getFromDateLocalDate())) {
+                    if (!holiday.getFromDateLocalDate().isBefore(recalculateFrom)) {
                         applicableHolidays.add(holiday);
                     }
                 }
