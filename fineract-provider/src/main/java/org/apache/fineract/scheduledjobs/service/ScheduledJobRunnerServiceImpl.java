@@ -775,11 +775,13 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 
     private void applyHolidaysToClientRecurringCharge(HolidayDetailDTO holidayDetailDTO, final Map<Long, List<Holiday>> officeIds,
             final Set<Long> failedForOffices, final StringBuilder sb) {
+        final LocalDate recalculateFrom = DateUtils.getLocalDateOfTenant();
+        final List<Holiday> applicableAllHolidays = this.holidayRepository.findHolidaysFromDate(recalculateFrom);
+        final Map<Long, List<Holiday>> applicableAllHolidaysWithOfficeIds = getMapWithEachOfficeHolidays(applicableAllHolidays);
         final Collection<Integer> chargeTimeTypes = new ArrayList<>(Arrays.asList(ChargeTimeType.WEEKLY_FEE.getValue(),
                 ChargeTimeType.MONTHLY_FEE.getValue(), ChargeTimeType.ANNUAL_FEE.getValue()));
         for (final Map.Entry<Long, List<Holiday>> entry : officeIds.entrySet()) {
             try {
-                final LocalDate recalculateFrom = DateUtils.getLocalDateOfTenant();
                 final List<Holiday> holidays = entry.getValue();
                 final List<Holiday> applicableHolidays = new ArrayList<>();
                 final List<LocalDate> holidaysFromDate = new ArrayList<>();
@@ -790,7 +792,12 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                     }
                 }
                 if (!applicableHolidays.isEmpty()) {
-                    holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, applicableHolidays);
+                    for (final Map.Entry<Long, List<Holiday>> officeIdWithHolidays : applicableAllHolidaysWithOfficeIds.entrySet()) {
+                        if (entry.getKey().equals(officeIdWithHolidays.getKey())) {
+                            holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, officeIdWithHolidays.getValue());
+                            break;
+                        }
+                    }
                     final Collection<Map<String, Object>> clientRecurringChargeForProcess = this.clientRecurringChargeReadPlatformService
                             .retrieveClientRecurringChargeIdByOffice(entry.getKey(), chargeTimeTypes, recalculateFrom);
                     final Collection<ClientRecurringChargeData> clientRecurringChargeDatas = new ArrayList<>();
