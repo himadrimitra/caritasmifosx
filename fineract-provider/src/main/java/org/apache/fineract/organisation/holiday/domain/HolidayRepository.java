@@ -40,6 +40,6 @@ public interface HolidayRepository extends JpaRepository<Holiday, Long>, JpaSpec
     @Query("from Holiday holiday where holiday.processed = false and holiday.status in :status")
     List<Holiday> findUnprocessed(@Param("status") Collection<Integer> status);
 
-    @Query("from Holiday holiday where holiday.fromDate >= :fromDate and holiday.status in :status")
+    @Query("from Holiday holiday where holiday.fromDate >= :fromDate and holiday.status in :status order by holiday.fromDate")
     List<Holiday> findHolidaysFromDate(@Param("fromDate") Date fromDate, @Param("status") Collection<Integer> statuses);
 }
