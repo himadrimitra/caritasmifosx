@@ -181,7 +181,10 @@ public class VillageApiResource {
         
         village = VillageData.withAssociations(village, centers,address,hierarchy, staffOptions);
        // village.getAssociations(centers);
-        
+        if (settings.isTemplate()) {
+            final VillageData template = this.villageReadPlatformService.retrieveTemplate(village.getOfficeId()); 
+            village = VillageData.withTemplate(village, template);
+        }
         return this.villageDataApiJsonSerializer.serialize(settings, village, VillageTypeApiConstants.VILLAGE_RESPONSE_DATA_PARAMETERS);
     }
     

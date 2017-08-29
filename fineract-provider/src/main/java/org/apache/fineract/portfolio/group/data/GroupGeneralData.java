@@ -78,30 +78,37 @@ public class GroupGeneralData {
     private final boolean isShowLoanDetailsInCenterPageEnabled;
     private Collection<LoanAccountSummaryData> loanAccountSummaryDatas;
 
+    // Work flow configuration
+    private final Boolean isWorkflowEnabled;
+    private final Long workflowId;
+
     public static GroupGeneralData lookup(final Long groupId, final String accountNo, final String groupName,final String groupLevel) {
         final Collection<ClientData> clientMembers = null;
         final Collection<GroupRoleData> groupRoles = null;
         final Collection<CodeValueData> closureReasons = null;
         final boolean isShowLoanDetailsInCenterPageEnabled = false;
         final VillageData villageData = null;
+        final Boolean isWorkflowEnabled = null;
+        final Long workflowId = null;
         return new GroupGeneralData(groupId, accountNo, groupName, null, null, null, null, null, null, null, null, null, null, groupLevel, clientMembers, null, null,
-                null, null, null, groupRoles, null, null, null, null, closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData);
+                null, null, null, groupRoles, null, null, null, null, closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData, isWorkflowEnabled, workflowId);
     }
 
     public static GroupGeneralData template(final Long officeId, final Long centerId, final String accountNo, final String centerName, final Long staffId,
             final String staffName, final Collection<CenterData> centerOptions, final Collection<OfficeData> officeOptions,
             final Collection<StaffData> staffOptions, final Collection<ClientData> clientOptions,
-            final Collection<CodeValueData> availableRoles) {
+            final Collection<CodeValueData> availableRoles, final Boolean isWorkflowEnabled) {
 
         final Collection<ClientData> clientMembers = null;
         final Collection<GroupRoleData> groupRoles = null;
         final Collection<CodeValueData> closureReasons = null;
         final boolean isShowLoanDetailsInCenterPageEnabled = false;
         final VillageData villageData = null;
+        final Long workflowId = null;
 
         return new GroupGeneralData(null, accountNo , null, null, null, null, officeId, null, centerId, centerName, staffId, staffName, null, null,
                 clientMembers, null, centerOptions, officeOptions, staffOptions, clientOptions, groupRoles, availableRoles, null, null, null,
-                closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData);
+                closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData, isWorkflowEnabled, workflowId);
     }
 
     public static GroupGeneralData withTemplate(final GroupGeneralData templatedGrouping, final GroupGeneralData grouping) {
@@ -110,7 +117,8 @@ public class GroupGeneralData {
                 grouping.hierarchy, grouping.groupLevel, grouping.clientMembers, grouping.activeClientMembers, templatedGrouping.centerOptions, templatedGrouping.officeOptions,
                 templatedGrouping.staffOptions, templatedGrouping.clientOptions, grouping.groupRoles, templatedGrouping.availableRoles,
                 grouping.selectedRole, grouping.calendarsData, grouping.collectionMeetingCalendar, grouping.closureReasons,
-                templatedGrouping.timeline, grouping.isShowLoanDetailsInCenterPageEnabled, grouping.villageData);
+                templatedGrouping.timeline, grouping.isShowLoanDetailsInCenterPageEnabled, grouping.villageData,
+                templatedGrouping.isWorkflowEnabled, grouping.workflowId);
     }
 
     public static GroupGeneralData withAssocations(final GroupGeneralData grouping, final Collection<ClientData> membersOfGroup,
@@ -120,12 +128,14 @@ public class GroupGeneralData {
                 grouping.officeId, grouping.officeName, grouping.centerId, grouping.centerName, grouping.staffId, grouping.staffName,
                 grouping.hierarchy, grouping.groupLevel, membersOfGroup, activeClientMembers, grouping.centerOptions, grouping.officeOptions, grouping.staffOptions,
                 grouping.clientOptions, groupRoles, grouping.availableRoles, grouping.selectedRole, calendarsData,
-                collectionMeetingCalendar, grouping.closureReasons, grouping.timeline, grouping.isShowLoanDetailsInCenterPageEnabled, grouping.villageData);
+                collectionMeetingCalendar, grouping.closureReasons, grouping.timeline, grouping.isShowLoanDetailsInCenterPageEnabled,
+                grouping.villageData, grouping.isWorkflowEnabled, grouping.workflowId);
     }
 
     public static GroupGeneralData instance(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
             final LocalDate activationDate, final Long officeId, final String officeName, final Long centerId, final String centerName,
-            final Long staffId, final String staffName, final String hierarchy, final String groupLevel, final GroupTimelineData timeline) {
+            final Long staffId, final String staffName, final String hierarchy, final String groupLevel, final GroupTimelineData timeline,
+            final Boolean isWorkflowEnabled, final Long workflowId) {
 
         final Collection<ClientData> clientMembers = null;
         final Collection<ClientData> activeClientMembers = null;
@@ -145,7 +155,7 @@ public class GroupGeneralData {
         return new GroupGeneralData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, centerId, centerName, staffId,
                 staffName, hierarchy, groupLevel, clientMembers, activeClientMembers, centerOptions, officeOptions, staffOptions,
                 clientOptions, groupRoles, availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, timeline, 
-                isShowLoanDetailsInCenterPageEnabled, villageData);
+                isShowLoanDetailsInCenterPageEnabled, villageData, isWorkflowEnabled, workflowId);
     }
     
     public static GroupGeneralData formGroupData(final Long id,  final String name){
@@ -176,11 +186,13 @@ public class GroupGeneralData {
          final GroupTimelineData timeline = null;
          final Collection<ClientData> clientMembers = new ArrayList<>();
          final VillageData villageData = null;
+         final Boolean isWorkflowEnabled = null;
+         final Long workflowId = null;
 
          return new GroupGeneralData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, centerId, centerName, staffId,
                  staffName, hierarchy, groupLevel, clientMembers, activeClientMembers, centerOptions, officeOptions, staffOptions,
                  clientOptions, groupRoles, availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, timeline, 
-                 isShowLoanDetailsInCenterPageEnabled, villageData);
+                 isShowLoanDetailsInCenterPageEnabled, villageData, isWorkflowEnabled, workflowId);
     }
 
     private GroupGeneralData(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
@@ -191,7 +203,8 @@ public class GroupGeneralData {
             final Collection<ClientData> clientOptions, final Collection<GroupRoleData> groupRoles,
             final Collection<CodeValueData> availableRoles, final GroupRoleData role,
             final Collection<CalendarData> calendarsData, final CalendarData collectionMeetingCalendar,
-            final Collection<CodeValueData> closureReasons, final GroupTimelineData timeline, final boolean isShowLoanDetailsInCenterPageEnabled,final VillageData villageData) {
+            final Collection<CodeValueData> closureReasons, final GroupTimelineData timeline,
+            final boolean isShowLoanDetailsInCenterPageEnabled, final VillageData villageData, final Boolean isWorkflowEnabled, final Long workflowId) {
         this.id = id;
         this.accountNo = accountNo;
         this.name = name;
@@ -235,6 +248,8 @@ public class GroupGeneralData {
         this.timeline = timeline;
         this.isShowLoanDetailsInCenterPageEnabled = isShowLoanDetailsInCenterPageEnabled;
         this.villageData = villageData;
+        this.isWorkflowEnabled = isWorkflowEnabled;
+        this.workflowId = workflowId;
     }
 
     public Long getId() {
@@ -271,7 +286,7 @@ public class GroupGeneralData {
                 grouping.staffName, grouping.hierarchy, grouping.groupLevel, grouping.clientMembers, grouping.activeClientMembers,
                 grouping.centerOptions, grouping.officeOptions, grouping.staffOptions, grouping.clientOptions, grouping.groupRoles,
                 grouping.availableRoles, selectedRole, grouping.calendarsData, grouping.collectionMeetingCalendar, grouping.closureReasons,
-                null, grouping.isShowLoanDetailsInCenterPageEnabled,grouping.villageData);
+                null, grouping.isShowLoanDetailsInCenterPageEnabled,grouping.villageData, grouping.isWorkflowEnabled, grouping.workflowId);
     }
 
     public static GroupGeneralData withClosureReasons(final Collection<CodeValueData> closureReasons) {
@@ -302,10 +317,12 @@ public class GroupGeneralData {
         final CalendarData collectionMeetingCalendar = null;
         final boolean isShowLoanDetailsInCenterPageEnabled = false;
         final VillageData villageData = null;
+        final Boolean isWorkflowEnabled = null;
+        final Long workflowId = null;
 
         return new GroupGeneralData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, centerId, centerName, staffId,
                 staffName, hierarchy, groupLevel, clientMembers, activeClientMembers, centerOptions, officeOptions, staffOptions, clientOptions, groupRoles,
-                availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData);
+                availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData, isWorkflowEnabled, workflowId);
     }
 
     public Collection<ClientData> clientMembers() {
@@ -330,9 +347,11 @@ public class GroupGeneralData {
         final Collection<CodeValueData> closureReasons = null;
         final boolean isShowLoanDetailsInCenterPageEnabled = false;
         final VillageData villageData = null;
+        final Boolean isWorkflowEnabled = null;
+        final Long workflowId = null;
         return new GroupGeneralData(groupId, accountNo, groupName, externalId, status, null, null, null, null, null, null, null, null, null,
                 clientMembers, null, null, null, null, null, groupRoles, null, null, null, null, closureReasons, null,
-                isShowLoanDetailsInCenterPageEnabled, villageData);
+                isShowLoanDetailsInCenterPageEnabled, villageData, isWorkflowEnabled, workflowId);
     }
 
     public static GroupGeneralData withConfig(final GroupGeneralData generalData, final boolean isShowLoanDetailsInCenterPageEnabled) {
@@ -340,9 +359,11 @@ public class GroupGeneralData {
         final Collection<GroupRoleData> groupRoles = null;
         final Collection<CodeValueData> closureReasons = null;
         final VillageData villageData = null;
+        final Boolean isWorkflowEnabled = null;
+        final Long workflowId = null;
         return new GroupGeneralData(generalData.id, generalData.accountNo, generalData.name, generalData.externalId, generalData.status, null, null, null,
                 null, null, null, null, null, null, clientMembers, null, null, null, null, null, groupRoles, null, null, null, null,
-                closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData);
+                closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData, isWorkflowEnabled, workflowId);
     }
     
     public void updateClientMembers(Collection<ClientData> clientMembers) {
@@ -369,7 +390,7 @@ public class GroupGeneralData {
 				group.hierarchy, group.groupLevel, group.clientMembers, group.activeClientMembers, group.centerOptions, group.officeOptions,
 				group.staffOptions, group.clientOptions, group.groupRoles, group.availableRoles,
                 group.selectedRole, group.calendarsData, group.collectionMeetingCalendar, group.closureReasons,
-                group.timeline, group.isShowLoanDetailsInCenterPageEnabled, villageData);
+                group.timeline, group.isShowLoanDetailsInCenterPageEnabled, villageData, group.isWorkflowEnabled, group.workflowId);
 	}
 
     public static GroupGeneralData lookupforhierarchy(final Long centerId, final String centerName, final VillageData villageData,
@@ -379,7 +400,7 @@ public class GroupGeneralData {
                 group.clientMembers, group.activeClientMembers, group.centerOptions, group.officeOptions, group.staffOptions,
                 group.clientOptions, group.groupRoles, group.availableRoles, group.selectedRole, group.calendarsData,
                 group.collectionMeetingCalendar, group.closureReasons, group.timeline, group.isShowLoanDetailsInCenterPageEnabled,
-                villageData);
+                villageData, group.isWorkflowEnabled, group.workflowId);
     }
     
     public static GroupGeneralData lookupforhierarchy(final Long id, final String name, final Long centerId, final String centerName,
@@ -406,9 +427,11 @@ public class GroupGeneralData {
         final String groupLevel = null;
         final GroupRoleData selectedRole = null;
         final GroupTimelineData timeline = null;
+        final Boolean isWorkflowEnabled = null;
+        final Long workflowId = null;
         return new GroupGeneralData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, centerId, centerName,
                 staffId, staffName, hierarchy, groupLevel, clientMembers, activeClientMembers, centerOptions, officeOptions, staffOptions,
                 clientOptions, groupRoles, availableRoles, selectedRole, calendarsData, collectionMeetingCalendar, closureReasons, timeline,
-                isShowLoanDetailsInCenterPageEnabled, villageData);
+                isShowLoanDetailsInCenterPageEnabled, villageData, isWorkflowEnabled, workflowId);
     }
 }

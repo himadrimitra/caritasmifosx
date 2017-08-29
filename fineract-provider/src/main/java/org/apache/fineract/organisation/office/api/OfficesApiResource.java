@@ -51,6 +51,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.task.configuration.service.TaskConfigurationUtils;
+import com.finflux.task.data.TaskConfigEntityType;
+
 @Path("/offices")
 @Component
 @Scope("singleton")
@@ -70,16 +73,19 @@ public class OfficesApiResource {
     private final DefaultToApiJsonSerializer<OfficeData> toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final TaskConfigurationUtils taskConfigurationUtils;
 
     @Autowired
     public OfficesApiResource(final PlatformSecurityContext context, final OfficeReadPlatformService readPlatformService,
             final DefaultToApiJsonSerializer<OfficeData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
-            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+            final TaskConfigurationUtils taskConfigurationUtils) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+        this.taskConfigurationUtils = taskConfigurationUtils;
     }
 
     @GET
@@ -110,7 +116,8 @@ public class OfficesApiResource {
         OfficeData office = this.readPlatformService.retrieveNewOfficeTemplate();
 
         final Collection<OfficeData> allowedParents = this.readPlatformService.retrieveAllOfficesForDropdown();
-        office = OfficeData.appendedTemplate(office, allowedParents);
+        final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.OFFICEONBOARDING);
+        office = OfficeData.appendedTemplate(office, allowedParents, isWorkflowEnabled);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, office, this.RESPONSE_DATA_PARAMETERS);
@@ -144,7 +151,8 @@ public class OfficesApiResource {
         OfficeData office = this.readPlatformService.retrieveOffice(officeId);
         if (settings.isTemplate()) {
             final Collection<OfficeData> allowedParents = this.readPlatformService.retrieveAllowedParents(officeId);
-            office = OfficeData.appendedTemplate(office, allowedParents);
+            final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.OFFICEONBOARDING);
+            office = OfficeData.appendedTemplate(office, allowedParents, isWorkflowEnabled);
         }
 
         return this.toApiJsonSerializer.serialize(settings, office, this.RESPONSE_DATA_PARAMETERS);

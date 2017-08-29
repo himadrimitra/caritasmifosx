@@ -67,18 +67,20 @@ public class CenterData {
     private final BigDecimal totalOverdue;
     private final BigDecimal totaldue;
     private final BigDecimal installmentDue;
+    private final Boolean isWorkflowEnabled;
 
     public static CenterData template(final Long officeId, final String accountNo, final LocalDate activationDate,
             final Collection<OfficeData> officeOptions, Collection<VillageData> villageOptions, VillageData villageCounter,
             final Collection<StaffData> staffOptions, final Collection<GroupGeneralData> groupMembersOptions,
-            final BigDecimal totalCollected, final BigDecimal totalOverdue, final BigDecimal totaldue, final BigDecimal installmentDue) {
+            final BigDecimal totalCollected, final BigDecimal totalOverdue, final BigDecimal totaldue, final BigDecimal installmentDue,
+            final Boolean isWorkflowEnabled) {
         final CalendarData collectionMeetingCalendar = null;
         final Collection<CodeValueData> closureReasons = null;
         final GroupTimelineData timeline = null;
-        final Collection<ClientData> clientMembers=null;
+        final Collection<ClientData> clientMembers = null;
         return new CenterData(null, accountNo, null, null, null, activationDate, officeId, null, null, null, null, null, officeOptions,
                 villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar, closureReasons, timeline,
-                totalCollected, totalOverdue, totaldue, installmentDue,clientMembers);
+                totalCollected, totalOverdue, totaldue, installmentDue, clientMembers, isWorkflowEnabled);
     }
 
     public static CenterData withTemplate(final CenterData templateCenter, final CenterData center) {
@@ -86,7 +88,7 @@ public class CenterData {
                 center.officeId, center.officeName, center.staffId, center.staffName, center.hierarchy, center.groupMembers,
                 templateCenter.officeOptions, center.villageOptions, center.villageCounter, templateCenter.staffOptions, templateCenter.groupMembersOptions,
                 templateCenter.collectionMeetingCalendar, templateCenter.closureReasons, center.timeline, center.totalCollected,
-                center.totalOverdue, center.totaldue, center.installmentDue,center.clientMembers);
+                center.totalOverdue, center.totaldue, center.installmentDue,center.clientMembers, templateCenter.isWorkflowEnabled);
     }
 
     public static CenterData withVillageData(final VillageData villageData, final CenterData center) {
@@ -94,13 +96,14 @@ public class CenterData {
                 center.officeId, center.officeName, center.staffId, center.staffName, center.hierarchy, center.groupMembers,
                 center.officeOptions, center.villageOptions, villageData, center.staffOptions, center.groupMembersOptions,
                 center.collectionMeetingCalendar, center.closureReasons, center.timeline, center.totalCollected,
-                center.totalOverdue, center.totaldue, center.installmentDue,center.clientMembers);
+                center.totalOverdue, center.totaldue, center.installmentDue,center.clientMembers, center.isWorkflowEnabled);
     }
     
     public static CenterData instance(final Long id, final String accountNo, final String name, final String externalId,
             final EnumOptionData status, final LocalDate activationDate, final Long officeId, final String officeName, final Long staffId,
             final String staffName, final String hierarchy, final GroupTimelineData timeline, final CalendarData collectionMeetingCalendar,
-            final BigDecimal totalCollected, final BigDecimal totalOverdue, final BigDecimal totaldue, final BigDecimal installmentDue) {
+            final BigDecimal totalCollected, final BigDecimal totalOverdue, final BigDecimal totaldue, final BigDecimal installmentDue,
+            final Boolean isWorkflowEnabled) {
         final Collection<GroupGeneralData> groupMembers = null;
         final Collection<OfficeData> officeOptions = null;
         final Collection<StaffData> staffOptions = null;
@@ -112,16 +115,17 @@ public class CenterData {
 
         return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
                 groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar,
-                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue,clientMembers);
+                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue,clientMembers, isWorkflowEnabled);
     }
 
     public static CenterData withAssociations(final CenterData centerData, final Collection<GroupGeneralData> groupMembers,
-            final CalendarData collectionMeetingCalendar,final Collection<ClientData> clientMembers) {
+            final CalendarData collectionMeetingCalendar, final Collection<ClientData> clientMembers) {
         return new CenterData(centerData.id, centerData.accountNo, centerData.name, centerData.externalId, centerData.status,
                 centerData.activationDate, centerData.officeId, centerData.officeName, centerData.staffId, centerData.staffName,
-                centerData.hierarchy, groupMembers, centerData.officeOptions, centerData.villageOptions, centerData.villageCounter, centerData.staffOptions,
-                centerData.groupMembersOptions, collectionMeetingCalendar, centerData.closureReasons, centerData.timeline,
-                centerData.totalCollected, centerData.totalOverdue, centerData.totaldue, centerData.installmentDue,clientMembers);
+                centerData.hierarchy, groupMembers, centerData.officeOptions, centerData.villageOptions, centerData.villageCounter,
+                centerData.staffOptions, centerData.groupMembersOptions, collectionMeetingCalendar, centerData.closureReasons,
+                centerData.timeline, centerData.totalCollected, centerData.totalOverdue, centerData.totaldue, centerData.installmentDue,
+                clientMembers, centerData.isWorkflowEnabled);
     }
 
     public static CenterData withClosureReasons(final Collection<CodeValueData> closureReasons) {
@@ -149,9 +153,10 @@ public class CenterData {
         final BigDecimal totaldue = null;
         final BigDecimal installmentDue = null;
         final Collection<ClientData> clientMembers=null;
+        final Boolean isWorkflowEnabled = null;
         return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
                 groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar,
-                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue,clientMembers);
+                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue,clientMembers, isWorkflowEnabled);
     }
     
     public static CenterData formCenterData(final Long id, final String name){
@@ -178,9 +183,10 @@ public class CenterData {
          final Collection<CodeValueData> closureReasons = null;
          final Collection<GroupGeneralData> groupMembers = new ArrayList<>();
          final Collection<ClientData> clientMembers=null;
-    	return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
+         final Boolean isWorkflowEnabled = null;
+        return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
                 groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar,
-                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue,clientMembers);
+                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue, clientMembers, isWorkflowEnabled);
     }
 
     private CenterData(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
@@ -189,7 +195,8 @@ public class CenterData {
             final Collection<VillageData> villageOptions, final VillageData villageCounter, final Collection<StaffData> staffOptions,
             final Collection<GroupGeneralData> groupMembersOptions, final CalendarData collectionMeetingCalendar,
             final Collection<CodeValueData> closureReasons, final GroupTimelineData timeline, final BigDecimal totalCollected,
-            final BigDecimal totalOverdue, final BigDecimal totaldue, final BigDecimal installmentDue,final Collection<ClientData> clientMembers) {
+            final BigDecimal totalOverdue, final BigDecimal totaldue, final BigDecimal installmentDue,
+            final Collection<ClientData> clientMembers, final Boolean isWorkflowEnabled) {
         this.id = id;
         this.accountNo = accountNo;
         this.name = name;
@@ -223,6 +230,7 @@ public class CenterData {
         this.totalOverdue = totalOverdue;
         this.installmentDue = installmentDue;
         this.clientMembers=clientMembers;
+        this.isWorkflowEnabled = isWorkflowEnabled;
     }
 
     public Long officeId() {

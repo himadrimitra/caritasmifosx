@@ -37,7 +37,7 @@ public class LoanApplicantWorkflow implements WorkflowCreator
 		LoanApplicationReference loanApplicationReference=workflowDTO.getLoanApplicationReference();
 		Long loanProductId = loanProduct.getId();
         final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOANPRODUCT_APPLICANT.getValue(), loanProductId);
+                .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOAN_APPLICANTION.getValue(), loanProductId);
         if (taskConfigEntityTypeMapping != null) {
             final Long loanApplicationId = loanApplicationReference.getId();
             final Long clientId = loanApplicationReference.getClient().getId();

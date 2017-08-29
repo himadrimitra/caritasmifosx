@@ -165,7 +165,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             	WorkflowDTO workflowDTO=new WorkflowDTO(loanApplicationReference, loanProduct);
                 isProductMappedToWorkFlow = this.createWorkflowTaskFactory.create(TaskConfigEntityType.LOANPRODUCT).createWorkFlow(workflowDTO);
                 //applicant workflow
-                this.createWorkflowTaskFactory.create(TaskConfigEntityType.LOANPRODUCT_APPLICANT).createWorkFlow(workflowDTO);
+                this.createWorkflowTaskFactory.create(TaskConfigEntityType.LOAN_APPLICANTION).createWorkFlow(workflowDTO);
             }
 
             final Map<String, Object> changes = new LinkedHashMap<>(5);

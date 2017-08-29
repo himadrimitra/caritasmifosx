@@ -29,14 +29,19 @@ import org.apache.fineract.portfolio.group.data.GroupTimelineData;
 import org.joda.time.LocalDate;
 import org.springframework.jdbc.core.RowMapper;
 
+import com.finflux.task.configuration.service.TaskConfigurationUtils;
+import com.finflux.task.data.TaskConfigEntityType;
+
 /**
  *
  */
 public final class AllGroupTypesDataMapper implements RowMapper<GroupGeneralData> {
 
     private final String schemaSql;
+    private final Boolean isWorkflowEnabled;
 
-    public AllGroupTypesDataMapper() {
+    public AllGroupTypesDataMapper(final TaskConfigurationUtils taskConfigurationUtils) {
+        this.isWorkflowEnabled = taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.GROUPONBARDING);
         final StringBuilder sqlBuilder = new StringBuilder(400);
         sqlBuilder.append("g.id as id, g.account_no as accountNumber, g.external_id as externalId, g.display_name as name, ");
         sqlBuilder.append("g.office_id as officeId, o.name as officeName, ");
@@ -58,6 +63,8 @@ public final class AllGroupTypesDataMapper implements RowMapper<GroupGeneralData
         sqlBuilder.append("acu.firstname as activatedByFirstname, ");
         sqlBuilder.append("acu.lastname as activatedByLastname, ");
 
+        sqlBuilder.append("task.id as workflowId, ") ;
+
         sqlBuilder.append("g.hierarchy as hierarchy, ");
         sqlBuilder.append("g.level_id as groupLevel ");
         sqlBuilder.append("from m_group g ");
@@ -67,6 +74,7 @@ public final class AllGroupTypesDataMapper implements RowMapper<GroupGeneralData
         sqlBuilder.append("left join m_appuser sbu on sbu.id = g.submittedon_userid ");
         sqlBuilder.append("left join m_appuser acu on acu.id = g.activatedon_userid ");
         sqlBuilder.append("left join m_appuser clu on clu.id = g.closedon_userid ");
+        sqlBuilder.append("LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = g.id  ");
 
         this.schemaSql = sqlBuilder.toString();
     }
@@ -114,7 +122,9 @@ public final class AllGroupTypesDataMapper implements RowMapper<GroupGeneralData
                 submittedByLastname, activationDate, activatedByUsername, activatedByFirstname, activatedByLastname, closedOnDate,
                 closedByUsername, closedByFirstname, closedByLastname);
 
+        final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
+
         return GroupGeneralData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, centerId, centerName, staffId,
-                staffName, hierarchy, groupLevel, timeline);
+                staffName, hierarchy, groupLevel, timeline, this.isWorkflowEnabled, workflowId);
     }
 }

@@ -68,6 +68,9 @@ import org.springframework.util.CollectionUtils;
 import com.finflux.common.constant.CommonConstants;
 import com.finflux.kyc.address.data.AddressData;
 import com.finflux.kyc.address.service.AddressReadPlatformService;
+import com.finflux.task.configuration.service.TaskConfigurationUtils;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskEntityType;
 
 @Service
 public class ClientReadPlatformServiceImpl implements ClientReadPlatformService {
@@ -82,18 +85,20 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 
     // data mappers
     private final PaginationHelper<ClientData> paginationHelper = new PaginationHelper<>();
-    private final ClientMapper clientMapper = new ClientMapper();
+    private final ClientMapper clientMapper;
     private final ClientLookupMapper lookupMapper = new ClientLookupMapper();
     private final ClientMembersOfGroupMapper membersOfGroupMapper = new ClientMembersOfGroupMapper();
     private final ParentGroupsMapper clientGroupsMapper = new ParentGroupsMapper();
     private final AddressReadPlatformService addressReadPlatformService;
+    private final TaskConfigurationUtils taskConfigurationUtils;
 
     @Autowired
     public ClientReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
             final OfficeReadPlatformService officeReadPlatformService, final StaffReadPlatformService staffReadPlatformService,
             final CodeValueReadPlatformService codeValueReadPlatformService,
-			final SavingsProductReadPlatformService savingsProductReadPlatformService,
-			ConfigurationDomainService configurationDomainService, final AddressReadPlatformService addressReadPlatformService) {
+            final SavingsProductReadPlatformService savingsProductReadPlatformService,
+            final ConfigurationDomainService configurationDomainService, final AddressReadPlatformService addressReadPlatformService,
+            final TaskConfigurationUtils taskConfigurationUtils) {
         this.context = context;
         this.officeReadPlatformService = officeReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
@@ -102,6 +107,8 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         this.savingsProductReadPlatformService = savingsProductReadPlatformService;
         this.configurationDomainService = configurationDomainService;
         this.addressReadPlatformService = addressReadPlatformService;
+        this.taskConfigurationUtils = taskConfigurationUtils;
+        this.clientMapper = new ClientMapper(taskConfigurationUtils);
     }
 
     @Override
@@ -145,10 +152,11 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 				this.codeValueReadPlatformService.retrieveCodeValuesByCode(ClientApiConstants.CLIENT_CLOSURE_REASON));
 
         final List<EnumOptionData> clientLegalFormOptions = ClientEnumerations.legalForm(LegalForm.values());
+        final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.CLIENTONBOARDING);
 
         return ClientData.template(defaultOfficeId, DateUtils.getLocalDateOfTenant(), offices, staffOptions, null, genderOptions, savingsProductDatas,
                 clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions,
-                clientLegalFormOptions, closureReasons);
+                clientLegalFormOptions, closureReasons, isWorkflowEnabled);
     }
 
     @Override
@@ -195,6 +203,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 
         final String sqlCountRows = "SELECT FOUND_ROWS()";
 		List<Object> params = new ArrayList<>();
+		params.add(TaskEntityType.CLIENT.getValue());
 		params.add(underHierarchySearchString);
 		params.add(underHierarchySearchString);
 		if (groupId != null && configurationDomainService.allowClientsInMultipleGroups()) {
@@ -270,8 +279,8 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 
             final String sql = "select  " + this.clientMapper.schema()
                     + " where ( o.hierarchy like ? or transferToOffice.hierarchy like ?) and c.id = ?";
-            final ClientData clientData = this.jdbcTemplate.queryForObject(sql, this.clientMapper, new Object[] { hierarchySearchString,
-                    hierarchySearchString, clientId });
+            final ClientData clientData = this.jdbcTemplate.queryForObject(sql, this.clientMapper,
+                    new Object[] { TaskEntityType.CLIENT.getValue(), hierarchySearchString, hierarchySearchString, clientId });
 
             final String clientGroupsSql = "select " + this.clientGroupsMapper.parentGroupsSchema();
 
@@ -511,7 +520,8 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final CodeValueData mainBusinessLine = CodeValueData.instance(mainBusinessLineId, mainBusinessLineValue);
             final String remarks = rs.getString("remarks");
             final String emailId = rs.getString("emailId");
-            
+            final Boolean isWorkflowEnabled = null;
+            final Long workflowId = null;
             final ClientNonPersonData clientNonPerson = new ClientNonPersonData(constitution, incorpNo, incorpValidityTill, mainBusinessLine, remarks);
 
             final ClientTimelineData timeline = new ClientTimelineData(submittedOnDate, submittedByUsername, submittedByFirstname,
@@ -521,7 +531,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             return ClientData.instance(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id,
                     firstname, middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                     imageId, staffId, staffName, timeline, savingsProductId, savingsProductName, savingsAccountId, clienttype,
-                    classification, legalForm, clientNonPerson, closurereason,emailId);
+                    classification, legalForm, clientNonPerson, closurereason,emailId, isWorkflowEnabled, workflowId);
 
         }
     }
@@ -544,8 +554,10 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     private static final class ClientMapper implements RowMapper<ClientData> {
 
         private final String schema;
+        private final Boolean isWorkflowEnabled;
 
-        public ClientMapper() {
+        public ClientMapper(final TaskConfigurationUtils taskConfigurationUtils) {
+            this.isWorkflowEnabled = taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.CLIENTONBOARDING);
             final StringBuilder builder = new StringBuilder(400);
 
             builder.append("c.id as id, c.account_no as accountNo, c.external_id as externalId, c.status_enum as statusEnum,c.sub_status as subStatus, ");
@@ -592,6 +604,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 
             builder.append("c.activation_date as activationDate, c.image_id as imageId, ");
             builder.append("c.staff_id as staffId, s.display_name as staffName, ");
+            builder.append("task.id as workflowId, ") ;
             builder.append("c.default_savings_product as savingsProductId, sp.name as savingsProductName, ");
             builder.append("c.default_savings_account as savingsAccountId ");
             builder.append("from m_client c ");
@@ -610,6 +623,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             builder.append("left join m_code_value cvSubStatus on cvSubStatus.id = c.sub_status ");
             builder.append("left join m_code_value cvConstitution on cvConstitution.id = cnp.constitution_cv_id ");
             builder.append("left join m_code_value cvMainBusinessLine on cvMainBusinessLine.id = cnp.main_business_line_cv_id ");
+            builder.append("LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = c.id  ");
 
             this.schema = builder.toString();
         }
@@ -705,7 +719,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final CodeValueData mainBusinessLine = CodeValueData.instance(mainBusinessLineId, mainBusinessLineValue);
             final String remarks = rs.getString("remarks");
             final String emailId =rs.getString("emailId");
-            
+            final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
             final ClientNonPersonData clientNonPerson = new ClientNonPersonData(constitution, incorpNo, incorpValidityTill, mainBusinessLine, remarks);
 
             final ClientTimelineData timeline = new ClientTimelineData(submittedOnDate, submittedByUsername, submittedByFirstname,
@@ -715,7 +729,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             return ClientData.instance(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id,
                     firstname, middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                     imageId, staffId, staffName, timeline, savingsProductId, savingsProductName, savingsAccountId, clienttype,
-                    classification, legalForm, clientNonPerson, closurereason, emailId);
+                    classification, legalForm, clientNonPerson, closurereason, emailId, this.isWorkflowEnabled, workflowId);
 
         }
     }
@@ -950,8 +964,10 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions = null;
         final List<EnumOptionData> clientLegalFormOptions = null;
         final List<CodeValueData> closureReasons = null;
-        return ClientData.template(null, null, null, null, narrations, null, null, clientTypeOptions, clientClassificationOptions, 
-        		clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions, closureReasons);
+        final Boolean isWorkflowEnabled = null;
+        return ClientData.template(null, null, null, null, narrations, null, null, clientTypeOptions, clientClassificationOptions,
+                clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions, closureReasons,
+                isWorkflowEnabled);
     }
 
     @Override
