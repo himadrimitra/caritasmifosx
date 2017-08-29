@@ -193,7 +193,7 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
         sql.append("where cc.is_active = 1 and cc.waived = 0 and cc.is_paid_derived = 0 and cc.charge_due_date >= :date ");
         sql.append("and cc.charge_time_enum in (:status) ");
         sql.append("and mc.office_id = :officeId ");
-        sql.append("order by cc.client_recurring_charge_id,cc.charge_due_date ");
+        sql.append("order by cc.client_recurring_charge_id, cc.charge_actual_due_date, cc.id ");
         final Map<String, Object> paramMap = new HashMap<>(4);
         paramMap.put("date", this.formatter.print(recalculateFrom));
         paramMap.put("status", chargeTimeTypes);
