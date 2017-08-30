@@ -82,4 +82,9 @@ public class HolidayRepositoryWrapper {
         final List<Holiday> holidays = findByOfficeIdAndGreaterThanDate(officeId, transactionDate.toDate());
         return HolidayUtil.isHoliday(transactionDate, holidays);
     }
+
+    public List<Holiday> findHolidaysFromDate(final LocalDate fromDate) {
+        final Collection<Integer> statuses = new ArrayList<>(Arrays.asList(HolidayStatusType.ACTIVE.getValue()));
+        return this.repository.findHolidaysFromDate(fromDate.toDate(), statuses);
+    }
 }
