@@ -548,8 +548,8 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         final String sql = "select " + this.allGroupTypesDataMapper.schema()
                 + " where g.office_id = ? and g.parent_id is null and g.level_Id = ? and o.hierarchy like ? order by g.hierarchy";
 
-        return this.jdbcTemplate.query(sql, this.allGroupTypesDataMapper, new Object[] { defaultOfficeId, GroupTypes.GROUP.getId(),
-                hierarchySearchString });
+        return this.jdbcTemplate.query(sql, this.allGroupTypesDataMapper, new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(),
+                defaultOfficeId, GroupTypes.GROUP.getId(), hierarchySearchString });
 
     }
 

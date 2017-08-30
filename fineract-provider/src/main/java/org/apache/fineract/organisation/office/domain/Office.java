@@ -38,22 +38,24 @@ import javax.persistence.UniqueConstraint;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.office.api.OfficeApiConstants;
 import org.apache.fineract.organisation.office.exception.CannotUpdateOfficeWithParentOfficeSameAsSelf;
 import org.apache.fineract.organisation.office.exception.RootOfficeParentCannotBeUpdated;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Cacheable
 @Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "Office")
 @Table(name = "m_office", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "name_org"),
         @UniqueConstraint(columnNames = { "external_id" }, name = "externalid_org") })
-public class Office extends AbstractPersistable<Long> {
+public class Office extends AbstractAuditableCustom<AppUser, Long> {
 
     @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany
@@ -80,9 +82,26 @@ public class Office extends AbstractPersistable<Long> {
     @Column(name = "office_code", length = 5)
     private String officeCodeId;
 
+    @Column(name = "status_enum", nullable = false)
+    private Integer status;
+
+    @Column(name = "activation_date", nullable = true)
+    @Temporal(TemporalType.DATE)
+    private Date activationDate;
+
+    @Column(name = "actvivatedby_userid", nullable = true)
+    private Long activatedBy;
+
+    @Column(name = "rejectedon_date", nullable = true)
+    @Temporal(TemporalType.DATE)
+    private Date rejectedonDate;
+
+    @Column(name = "rejectedby_userid", nullable = true)
+    private Long rejectedBy;
+
     public String getExternalId() {
-		return this.externalId;
-	}
+        return this.externalId;
+    }
 
     public static Office headOffice(final String name, final LocalDate openingDate, final String externalId) {
         final String officeCodeId = null;
@@ -128,6 +147,7 @@ public class Office extends AbstractPersistable<Long> {
         } else {
             this.officeCodeId = null;
         }
+        this.status = OfficeStatus.PENDING.getValue();
     }
 
     private void addChild(final Office office) {
@@ -279,6 +299,30 @@ public class Office extends AbstractPersistable<Long> {
 
     public String getOfficeCodeId() {
         return this.officeCodeId;
+    }
+
+    public boolean isPending() {
+        return OfficeStatus.fromInt(this.status).isPending();
+    }
+
+    public Map<String, Object> actvate(final AppUser currentUser) {
+        
+        final Map<String, Object> actualChanges = new LinkedHashMap<>(1);
+        this.activationDate = DateUtils.getDateOfTenant();
+        this.activatedBy = currentUser.getId();
+        this.status = OfficeStatus.ACTIVE.getValue();
+        actualChanges.put("status", OfficeStatus.ACTIVE.getEnumOptionData());
+        return actualChanges;
+    }
+
+    public Map<String, Object> reject(AppUser currentUser) {
+        
+        final Map<String, Object> actualChanges = new LinkedHashMap<>(1);
+        this.rejectedonDate = DateUtils.getDateOfTenant();
+        this.rejectedBy = currentUser.getId();
+        this.status = OfficeStatus.REJECTED.getValue();
+        actualChanges.put("status", OfficeStatus.REJECTED.getEnumOptionData());
+        return actualChanges;
     }
 
 }

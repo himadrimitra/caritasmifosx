@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -256,5 +257,50 @@ public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWriteP
 
     public PlatformSecurityContext getContext() {
         return this.context;
+    }
+
+    @Override
+    @Transactional
+    public CommandProcessingResult activateOffice(Long officeId, JsonCommand command) {
+        try {
+            final AppUser currentUser = this.context.authenticatedUser();
+            final Office office = validateUserPriviledgeOnOfficeAndRetrieve(currentUser, officeId);
+            validateIsOfficeInPendingStatus(office);
+            final Map<String, Object> changes = office.actvate(currentUser);
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .withEntityId(office.getId()) //
+                    .withOfficeId(office.getId()) //
+                    .with(changes) //
+                    .build();
+        } catch (final DataIntegrityViolationException dve) {
+            handleOfficeDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
+    }
+
+    @Override
+    @Transactional
+    public CommandProcessingResult rejectOffice(Long officeId, JsonCommand command) {
+        try {
+            final AppUser currentUser = this.context.authenticatedUser();
+            final Office office = validateUserPriviledgeOnOfficeAndRetrieve(currentUser, officeId);
+            validateIsOfficeInPendingStatus(office);
+            final Map<String, Object> changes = office.reject(currentUser);
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .withEntityId(office.getId()) //
+                    .withOfficeId(office.getId()) //
+                    .with(changes) //
+                    .build();
+        } catch (final DataIntegrityViolationException dve) {
+            handleOfficeDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
+    }
+
+    private void validateIsOfficeInPendingStatus(Office office) {
+        if (!office.isPending()) { throw new GeneralPlatformDomainRuleException("error.msg.office.is.not.in.pending.status",
+                "Office with identifier `" + office.getId() + "` is not in pending status", office.getId()); }
     }
 }

@@ -215,7 +215,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(",lar.submittedon_date AS submittedOnDate ");
             sqlBuilder.append(",lar.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId, pt_disburse.value as disbursementPaymentTypeName ");
             sqlBuilder.append(",lar.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, pt_repayment.value as repaymenPaymentTypeName ");
-            sqlBuilder.append("task.id as workflowId, ") ;
+            sqlBuilder.append(",task.id as workflowId ") ;
             sqlBuilder.append(",lep.id as lepid, lep.loan_product_id as leploanProductId, ");
             sqlBuilder.append("lep.repay_every as leprepaymentEvery, lep.repayment_period_frequency_enum as leprepaymentFrequencyTypeEnum, ");
             sqlBuilder.append("lep.number_of_repayments as lepnumberOfRepayments, lep.sanction_amount as lepsanctionAmount, ");
