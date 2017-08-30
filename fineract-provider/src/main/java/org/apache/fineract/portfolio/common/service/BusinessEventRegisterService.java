@@ -64,6 +64,7 @@ public class BusinessEventRegisterService {
             this.businessEventNotifierService.addBusinessEventTenantBasedPreListners(preListners);
             this.businessEventNotifierService.addBusinessEventTenantBasedPostListners(postListners);
         }
+        ThreadLocalContextUtil.clearTenant();
     }
     
     private void registerForNotification(BUSINESS_EVENTS businessEvent , String[] beanNames,final Map<BUSINESS_EVENTS, List<BusinessEventListner>> listners){

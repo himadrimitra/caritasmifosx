@@ -105,11 +105,9 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
     public static LocalDate datePassed;
 
     // data mappers
-    private final AllGroupTypesDataMapper allGroupTypesDataMapper;
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     // data mappers
-    private final CenterDataMapper centerMapper = new CenterDataMapper();
     private final GroupDataMapper groupDataMapper = new GroupDataMapper();
     private final CentersAssociatedMapper centers = new CentersAssociatedMapper();
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -138,7 +136,6 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.taskConfigurationUtils = taskConfigurationUtils;
-        allGroupTypesDataMapper = new AllGroupTypesDataMapper(taskConfigurationUtils);
     }
 
     // 'g.' preffix because of ERROR 1052 (23000): Column 'column_name' in where
@@ -213,9 +210,10 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
     private static final class CenterDataMapper implements RowMapper<CenterData> {
 
         private final String schemaSql;
+        private final Boolean isWorkflowEnabled;
 
-        public CenterDataMapper() {
-
+        public CenterDataMapper(final TaskConfigurationUtils taskConfigurationUtils) {
+            this.isWorkflowEnabled = taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.CENTERONBOARDING);
             this.schemaSql = sqlQuery;
         }
 
@@ -256,16 +254,14 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final BigDecimal totalOverdue = null;
             final BigDecimal totaldue = null;
             final BigDecimal installmentDue = null;
-
             final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
-            final Boolean isWorkflowEnabled = workflowId == null ? Boolean.FALSE : Boolean.TRUE;
 
             final GroupTimelineData timeline = new GroupTimelineData(submittedOnDate, submittedByUsername, submittedByFirstname,
                     submittedByLastname, activationDate, activatedByUsername, activatedByFirstname, activatedByLastname, closedOnDate,
                     closedByUsername, closedByFirstname, closedByLastname);
 
             return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName,
-                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled);
+                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue, this.isWorkflowEnabled, workflowId);
         }
     }
 
@@ -334,12 +330,13 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final BigDecimal installmentDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "installmentDue");
             final Collection<Integer> monthOnDay = CalendarUtils.getMonthOnDay(recurrence);
             final Boolean isWorkflowEnabled = null;
+            final Long workflowId = null;
 
             CalendarData calendarData = CalendarData.instance(calendarId, calendarInstanceId, entityId, entityType, title, description,
                     location, startDate, endDate, null, null, false, recurrence, null, null, null, null, null, null, null, null, null,
                     null, null, null, null, null, meetingTime, monthOnDay);
             return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, null, staffId, staffName,
-                    hierarchy, null, calendarData, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled);
+                    hierarchy, null, calendarData, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled, workflowId);
         }
     }
 
@@ -409,13 +406,14 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
+        final CenterDataMapper centerMapper = new CenterDataMapper(this.taskConfigurationUtils);
         final StringBuilder sqlBuilder = new StringBuilder(200);
 		if (parameters.isOrderByRequested()) {
 			sqlBuilder.append("select SQL_CALC_FOUND_ROWS * from (select ");
 		} else {
 			sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
 		}
-        sqlBuilder.append(this.centerMapper.schema());
+        sqlBuilder.append(centerMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
 
         final String extraCriteria = getCenterExtraCriteria(searchParameters);
@@ -437,7 +435,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
 
         final String sqlCountRows = "SELECT FOUND_ROWS()";
         return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(),
-                new Object[] { TaskEntityType.CENTER.getValue(), hierarchySearchString }, this.centerMapper);
+                new Object[] { TaskEntityType.CENTER.getValue(), hierarchySearchString }, centerMapper);
     }
 
     @Override
@@ -448,9 +446,10 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
+        final CenterDataMapper centerMapper = new CenterDataMapper(this.taskConfigurationUtils);
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select ");
-        sqlBuilder.append(this.centerMapper.schema());
+        sqlBuilder.append(centerMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
 
         final String extraCriteria = getCenterExtraCriteria(searchParameters);
@@ -470,7 +469,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             }
         }
 
-        return this.jdbcTemplate.query(sqlBuilder.toString(), this.centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), hierarchySearchString });
+        return this.jdbcTemplate.query(sqlBuilder.toString(), centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), hierarchySearchString });
     }
 
     @Override
@@ -480,10 +479,11 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
-        final String sql = "select " + this.centerMapper.schema()
+        final CenterDataMapper centerMapper = new CenterDataMapper(this.taskConfigurationUtils);
+        final String sql = "select " + centerMapper.schema()
                 + " where g.office_id = ? and g.parent_id is null and g.level_Id = ? and o.hierarchy like ? order by g.hierarchy";
 
-        return this.jdbcTemplate.query(sql, this.centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), officeId, GroupTypes.CENTER.getId(), hierarchySearchString });
+        return this.jdbcTemplate.query(sql, centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), officeId, GroupTypes.CENTER.getId(), hierarchySearchString });
     }
 
     @Override
@@ -541,14 +541,15 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
 
         final Long defaultOfficeId = defaultToUsersOfficeIfNull(officeId);
 
+        final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper(this.taskConfigurationUtils);
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
-        final String sql = "select " + this.allGroupTypesDataMapper.schema()
+        final String sql = "select " + allGroupTypesDataMapper.schema()
                 + " where g.office_id = ? and g.parent_id is null and g.level_Id = ? and o.hierarchy like ? order by g.hierarchy";
 
-        return this.jdbcTemplate.query(sql, this.allGroupTypesDataMapper, new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(),
+        return this.jdbcTemplate.query(sql, allGroupTypesDataMapper, new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(),
                 defaultOfficeId, GroupTypes.GROUP.getId(), hierarchySearchString });
 
     }
@@ -569,8 +570,9 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final String hierarchy = currentUser.getOffice().getHierarchy();
             final String hierarchySearchString = hierarchy + "%";
 
-            final String sql = "select " + this.centerMapper.schema() + " where g.id = ? and o.hierarchy like ?";
-            return this.jdbcTemplate.queryForObject(sql, this.centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), centerId, hierarchySearchString });
+            final CenterDataMapper centerMapper = new CenterDataMapper(this.taskConfigurationUtils);
+            final String sql = "select " + centerMapper.schema() + " where g.id = ? and o.hierarchy like ?";
+            return this.jdbcTemplate.queryForObject(sql, centerMapper, new Object[] { TaskEntityType.CENTER.getValue(), centerId, hierarchySearchString });
 
         } catch (final EmptyResultDataAccessException e) {
             throw new CenterNotFoundException(centerId);
@@ -703,13 +705,14 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final BigDecimal totaldue = null;
             final BigDecimal installmentDue = null;
             final Boolean isWorkflowEnabled = null;
+            final Long workflowId = null;
 
             final GroupTimelineData timeline = new GroupTimelineData(submittedOnDate, submittedByUsername, submittedByFirstname,
                     submittedByLastname, activationDate, activatedByUsername, activatedByFirstname, activatedByLastname, closedOnDate,
                     closedByUsername, closedByFirstname, closedByLastname);
 
             return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName,
-                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled);
+                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue, isWorkflowEnabled, workflowId);
         }
         
     }

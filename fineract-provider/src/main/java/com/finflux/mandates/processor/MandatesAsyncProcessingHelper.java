@@ -1,9 +1,12 @@
 package com.finflux.mandates.processor;
 
-import com.finflux.mandates.data.MandatesProcessData;
-import com.finflux.mandates.domain.MandateProcessStatusEnum;
-import com.finflux.mandates.domain.MandateProcessTypeEnum;
-import com.finflux.mandates.service.MandatesProcessingReadPlatformService;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.security.service.TenantDetailsService;
@@ -18,13 +21,10 @@ import org.springframework.security.core.authority.mapping.NullAuthoritiesMapper
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import com.finflux.mandates.data.MandatesProcessData;
+import com.finflux.mandates.domain.MandateProcessStatusEnum;
+import com.finflux.mandates.domain.MandateProcessTypeEnum;
+import com.finflux.mandates.service.MandatesProcessingReadPlatformService;
 
 @Component
 public class MandatesAsyncProcessingHelper implements ApplicationListener<ContextRefreshedEvent> {
@@ -109,6 +109,7 @@ public class MandatesAsyncProcessingHelper implements ApplicationListener<Contex
                                 }
 
                         }
+                        ThreadLocalContextUtil.clearTenant();
                         executorService.shutdown();
                 }
         }

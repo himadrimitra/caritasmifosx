@@ -132,6 +132,7 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
                 }
             }
         }
+        ThreadLocalContextUtil.clearTenant();
     }
     
     private boolean isJobLoadingRequired() {
