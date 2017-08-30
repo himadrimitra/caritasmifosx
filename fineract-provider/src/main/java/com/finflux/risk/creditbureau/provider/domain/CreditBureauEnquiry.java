@@ -29,12 +29,12 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
     @Column(name = "type", length = 20, nullable = false)
     private String type;
 
-    @Column(name = "request")
-    private String request;
+    @Column(name = "request_location")
+    private String requestLocation;
 
-    @Column(name = "response")
-    private String response;
-
+    @Column(name = "response_location")
+    private String responseLocation;
+    
     @Column(name = "status", nullable = false)
     private Integer status;
 
@@ -62,14 +62,6 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
 
     public void setType(final String type) {
         this.type = type;
-    }
-
-    public String getRequest() {
-        return this.request;
-    }
-
-    public void setRequest(final String request) {
-        this.request = request;
     }
 
     public Integer getStatus() {
@@ -105,15 +97,23 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
         this.acknowledgementNumber = acknowledgementNumber;
     }
 
-    public String getResponse() {
-        return response;
-    }
-
-    public void setResponse(final String response) {
-        this.response = response;
-    }
-    
     public void setErrorsJosnString(final String errorsJson) {
         this.errorsJson = errorsJson ;
+    }
+    
+    public void setRequestLocation(final String requestLocation) {
+    	this.requestLocation = requestLocation ;
+    }
+    
+    public void setResponseLocation(final String responseLocation) {
+    	this.responseLocation = responseLocation ;
+    }
+    
+    public String getRequestLocation() {
+    	return this.requestLocation ;
+    }
+    
+    public String getResponseLocation() {
+    	return this.responseLocation ;
     }
 }

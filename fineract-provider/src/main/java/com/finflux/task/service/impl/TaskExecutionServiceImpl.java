@@ -28,6 +28,7 @@ import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
 import com.finflux.ruleengine.execution.service.RuleExecutionService;
 import com.finflux.ruleengine.lib.FieldUndefinedException;
 import com.finflux.ruleengine.lib.InvalidExpressionException;
+import com.finflux.ruleengine.lib.RuleUndefinedException;
 import com.finflux.ruleengine.lib.data.ExpressionNode;
 import com.finflux.ruleengine.lib.data.RuleResult;
 import com.finflux.ruleengine.lib.service.ExpressionExecutor;
@@ -421,10 +422,13 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     @SuppressWarnings({})
-    private void runCriteriaCheckAndPopulate(final Task task) {
+    private void runCriteriaCheckAndPopulate(final Task task) throws RuleUndefinedException {
         /**
          * We will reuse this code in future
          */
+    	if(task.getCriteria()==null) {
+    		throw new RuleUndefinedException(task);
+    	}
         Map<String, Object> dataLayerKeyLongMap = new HashMap<>();
         Map<String,String> configValueMap = null;
 
@@ -443,7 +447,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
         TaskDataLayer dataLayer = new TaskDataLayer(dataLayerReadPlatformService);
         dataLayer.build(dataLayerKeyLongMap);
-
         RuleResult ruleResult = ruleExecutionService.executeARule(task.getCriteria().getId(), dataLayer);
         EligibilityResult eligibilityResult = new EligibilityResult();
         eligibilityResult.setStatus(EligibilityStatus.TO_BE_REVIEWED);

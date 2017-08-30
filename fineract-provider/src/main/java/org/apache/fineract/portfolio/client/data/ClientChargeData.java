@@ -180,12 +180,11 @@ public class ClientChargeData {
         this.clientTransactionDatas = clientTransactionDatas;
     }
     
-    public static ClientChargeData lookUp(final Long id, final LocalDate actualDueDate) {
+    public static ClientChargeData lookUp(final Long id, final LocalDate actualDueDate, final LocalDate dueDate) {
         final Long clientId = null;
         final Long chargeId = null;
         final String name = null;
         final EnumOptionData chargeTimeType = null;
-        final LocalDate dueDate = null;
         final EnumOptionData chargeCalculationType = null;
         final CurrencyData currency = null;
         final BigDecimal amount = null;

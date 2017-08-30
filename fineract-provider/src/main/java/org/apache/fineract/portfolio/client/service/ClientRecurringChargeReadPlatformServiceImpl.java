@@ -13,7 +13,6 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
@@ -80,14 +79,11 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
             sql.append("join m_client c on c.status_enum = ? and c.id = mcrc.client_id ");
             sql.append("left join m_client_charge cc on cc.client_recurring_charge_id = mcrc.id ");
             sql.append("and cc.is_active = 1 and cc.waived = 0 and cc.is_paid_derived = 0 and cc.charge_actual_due_date > ");
-            sql.append("'");
-            sql.append(currentDate);
-            sql.append("' ");
-            sql.append("where mcrc.charge_due_date = ");
-            sql.append("'");
-            sql.append(currentDate);
-            sql.append("' ");
-            sql.append("and mcrc.is_active = 1 group by mcrc.id ");
+            sql.append("'").append(currentDate).append("' ");
+            sql.append("where mcrc.charge_due_date <= '").append(currentDate).append("' ");
+            sql.append("and mcrc.is_active = 1 ");
+            sql.append("group by mcrc.id ");
+            sql.append("order by mcrc.charge_due_date ");
             return sql.toString();
         }
     }
@@ -186,19 +182,18 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
     }
     
     @Override
-    public Collection<Map<String, Object>> retrieveClientRecurringChargeIdByOfficesAndHoliday(final Long officeId,
-            final List<Holiday> holidays, final Collection<Integer> chargeTimeTypes, final LocalDate recalculateFrom) {
+    public Collection<Map<String, Object>> retrieveClientRecurringChargeIdByOffice(final Long officeId,
+            final Collection<Integer> chargeTimeTypes, final LocalDate recalculateFrom) {
         final StringBuilder sql = new StringBuilder(1000);
-        sql.append("SELECT DISTINCT(cc.id) as clientChargeId, cc.client_recurring_charge_id as clientRecurringChargeId, cc.charge_actual_due_date as actualDueDate ");
+        sql.append("SELECT cc.id as clientChargeId, cc.client_recurring_charge_id as clientRecurringChargeId, cc.charge_actual_due_date as actualDueDate ");
         sql.append(",cc.charge_due_date as dueDate,cc.charge_time_enum as chargeTimeTypeId,crc.is_synch_meeting as isSynchMeeting,crc.fee_interval as feeInterval ");
-        sql.append("FROM m_office mo ");
-        sql.append("JOIN m_client mc ON mc.office_id = mo.id ");
-        sql.append("JOIN m_client_charge cc on cc.client_id = mc.id ");
-        sql.append("and cc.is_active = 1 and cc.waived = 0 and cc.is_paid_derived = 0 and cc.charge_due_date >= :date ");
+        sql.append("from m_client_charge cc ");
+        sql.append("join m_client_recurring_charge crc on crc.id = cc.client_recurring_charge_id ");
+        sql.append("join m_client mc on mc.id = cc.client_id ");
+        sql.append("where cc.is_active = 1 and cc.waived = 0 and cc.is_paid_derived = 0 and cc.charge_due_date >= :date ");
         sql.append("and cc.charge_time_enum in (:status) ");
-        sql.append("JOIN m_client_recurring_charge crc on crc.id and cc.client_recurring_charge_id ");
-        sql.append("WHERE mo.id = :officeId ");
-        sql.append("order by cc.client_recurring_charge_id ");
+        sql.append("and mc.office_id = :officeId ");
+        sql.append("order by cc.client_recurring_charge_id, cc.charge_actual_due_date, cc.id ");
         final Map<String, Object> paramMap = new HashMap<>(4);
         paramMap.put("date", this.formatter.print(recalculateFrom));
         paramMap.put("status", chargeTimeTypes);

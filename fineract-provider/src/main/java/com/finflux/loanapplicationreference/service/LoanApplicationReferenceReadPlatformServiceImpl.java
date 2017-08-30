@@ -133,16 +133,22 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     @Override
     public Collection<LoanApplicationReferenceData> retrieveAll(final Long clientId) {
         try {
-            String sql = null;
+            StringBuilder sql = new StringBuilder();
 
             if (clientId != null) {
-                sql = "SELECT IF(ISNULL(coapp.client_id), false, true) as isCoApplicant, " + this.dataLookUpMapper.schema();
-                sql += " WHERE lar.client_id = " + clientId + " OR coapp.client_id = " + clientId;
+                sql.append("SELECT IF(ISNULL(coapp.client_id), false, true) as isCoApplicant, " + this.dataLookUpMapper.schema());
+                sql.append(
+                        " LEFT JOIN f_loan_coapplicants_mapping coapp ON coapp.loan_application_reference_id = lar.id AND lar.client_id <> :clientId");
+                sql.append(" WHERE lar.client_id = :clientId  OR coapp.client_id = :clientId");
 
             } else {
-                sql = "SELECT false as isCoApplicant, " + this.dataLookUpMapper.schema();
+                sql.append("SELECT false as isCoApplicant, " + this.dataLookUpMapper.schema());
             }
-            return this.jdbcTemplate.query(sql, this.dataLookUpMapper);
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("clientId", clientId);
+
+            return this.namedParameterJdbcTemplate.query(sql.toString(), paramMap, this.dataLookUpMapper);
+
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
@@ -346,7 +352,6 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("lar.loan_amount_requested AS loanAmountRequested ");
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
-            sqlBuilder.append("LEFT JOIN f_loan_coapplicants_mapping coapp ON coapp.loan_application_reference_id = lar.id ");
           
             this.schemaSql = sqlBuilder.toString();
         }

@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.joda.time.LocalDate;
 
@@ -16,6 +15,6 @@ public interface ClientRecurringChargeReadPlatformService {
 
     List<ClientRecurringChargeData> retriveActiveRecurringChargesForJob(final LocalDate currentDate);
 
-    Collection<Map<String, Object>> retrieveClientRecurringChargeIdByOfficesAndHoliday(final Long officeId, final List<Holiday> holidays,
-            final Collection<Integer> chargeTimeTypes, final LocalDate recalculateFrom);
+    Collection<Map<String, Object>> retrieveClientRecurringChargeIdByOffice(final Long officeId, final Collection<Integer> chargeTimeTypes,
+            final LocalDate recalculateFrom);
 }
