@@ -501,7 +501,7 @@ public final class SearchParameters {
 
     private SearchParameters(final Long provisioningEntryId, final Long officeId, final Long productId, final Long categoryId,
             final Integer offset, final Integer limit) {
-        this.searchConditions = null;
+        this.searchConditions = new LinkedHashMap<>(1);
         this.externalId = null;
         this.name = null;
         this.hierarchy = null;
@@ -529,10 +529,13 @@ public final class SearchParameters {
         this.voucherNumber = null;
     }
 
-    public SearchParameters(final Map<String, String> searchConditions, final Long officeId, final String externalId, final String name,
+    public SearchParameters(Map<String, String> searchConditions, final Long officeId, final String externalId, final String name,
             final String hierarchy, final String firstname, final String lastname, final Integer offset, final Integer limit,
             final String orderBy, final String sortOrder, final Long staffId, final String accountNo, final Long loanId,
             final Long savingsId, final Boolean orphansOnly, final String currencyCode) {
+    	if (searchConditions == null) {
+            searchConditions = new LinkedHashMap<>(1);
+        }
         this.searchConditions = searchConditions;
         this.officeId = officeId;
         this.externalId = externalId;
@@ -562,11 +565,14 @@ public final class SearchParameters {
     }
 
     private SearchParameters(final Long userId, final Integer reportId, final Date startDate, final Date endDate, final Integer offset,
-            final Integer limit, final String orderBy, final String sortOrder, final Map<String, String> searchConditions) {
+            final Integer limit, final String orderBy, final String sortOrder, Map<String, String> searchConditions) {
         this.userId = userId;
         this.reportId = reportId;
         this.startDate = startDate;
         this.endDate = endDate;
+        if (searchConditions == null) {
+            searchConditions = new LinkedHashMap<>(1);
+        }
         this.searchConditions = searchConditions;
         this.offset = offset;
         this.limit = limit;
@@ -595,8 +601,11 @@ public final class SearchParameters {
         this.voucherNumber = null;
     }
 
-    public SearchParameters(final Map<String, String> searchConditions, Integer transactionsCount, Date startDate, Date endDate,
+    public SearchParameters(Map<String, String> searchConditions, Integer transactionsCount, Date startDate, Date endDate,
             Integer offset, Integer limit, String orderBy, String sortOrder) {
+    	if (searchConditions == null) {
+            searchConditions = new LinkedHashMap<>(1);
+        }
         this.searchConditions = searchConditions;
         this.transactionsCount = transactionsCount;
         this.endDate = endDate;
@@ -628,8 +637,11 @@ public final class SearchParameters {
         this.voucherNumber = null;
     }
 
-    public SearchParameters(final Map<String, String> searchConditions, final Date startDate, final Date endDate, final Integer offset,
+    public SearchParameters(Map<String, String> searchConditions, final Date startDate, final Date endDate, final Integer offset,
             final Integer limit, final Integer status) {
+    	if (searchConditions == null) {
+            searchConditions = new LinkedHashMap<>(1);
+        }
         this.searchConditions = searchConditions;
         this.transactionsCount = null;
         this.endDate = endDate;
