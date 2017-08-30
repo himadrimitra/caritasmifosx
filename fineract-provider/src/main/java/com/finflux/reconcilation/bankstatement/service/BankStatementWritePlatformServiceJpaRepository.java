@@ -583,8 +583,10 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         FormDataBodyPart bodyPart = formParams.getField(key);
         InputStream inputStream = bodyPart.getEntityAs(InputStream.class);
         String fileName = bodyPart.getFormDataContentDisposition().getFileName();
+        final Long reportIdentifier = null ;
+        final Long tagIdentifier = null ;
         final DocumentCommand documentCommand = new DocumentCommand(null, null, ReconciliationApiConstants.entityName,
-                ReconciliationApiConstants.bankStatementFolder, name, fileName, fileSize, bodyPart.getMediaType().toString(), description, null);
+                ReconciliationApiConstants.bankStatementFolder, name, fileName, fileSize, bodyPart.getMediaType().toString(), description, null, reportIdentifier, tagIdentifier);
         final String fileLocation = contentRepository.saveFile(inputStream, documentCommand);
         final Document document = Document.createNew(documentCommand.getParentEntityType(), documentCommand.getParentEntityId(),
                 documentCommand.getName(), documentCommand.getFileName(), documentCommand.getSize(), documentCommand.getType(),
@@ -711,16 +713,18 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         modifiedParams.add(ReconciliationApiConstants.nameParamName);
         modifiedParams.add(ReconciliationApiConstants.descriptionParamName);
         DocumentCommand documentCommand = null;
+        final Long reportIdentifier = null ;
+        final Long tagIdentifier = null ;
         if (inputStream != null && fileName != null) {
             modifiedParams.add(ReconciliationApiConstants.FILE_NAME);
             modifiedParams.add(ReconciliationApiConstants.SIZE);
             modifiedParams.add(ReconciliationApiConstants.TYPE);
             modifiedParams.add(ReconciliationApiConstants.LOCATION);
             documentCommand = new DocumentCommand(modifiedParams, documentId, ReconciliationApiConstants.entityName,
-                    ReconciliationApiConstants.bankStatementFolder, name, fileName, fileSize, bodyPart.getMediaType().toString(), description, null);
+                    ReconciliationApiConstants.bankStatementFolder, name, fileName, fileSize, bodyPart.getMediaType().toString(), description, null, reportIdentifier, tagIdentifier);
         } else {
             documentCommand = new DocumentCommand(modifiedParams, documentId, ReconciliationApiConstants.entityName,
-                    ReconciliationApiConstants.bankStatementFolder, name, null, null, null, description, null);
+                    ReconciliationApiConstants.bankStatementFolder, name, null, null, null, description, null, reportIdentifier, tagIdentifier);
         }
 
         final DocumentCommandValidator validator = new DocumentCommandValidator(documentCommand);

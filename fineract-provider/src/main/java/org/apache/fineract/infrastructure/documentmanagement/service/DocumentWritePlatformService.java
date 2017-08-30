@@ -19,6 +19,9 @@
 package org.apache.fineract.infrastructure.documentmanagement.service;
 
 import java.io.InputStream;
+import java.util.Map;
+
+import javax.ws.rs.core.MultivaluedMap;
 
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
@@ -34,5 +37,8 @@ public interface DocumentWritePlatformService {
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'DELETE_DOCUMENT')")
     CommandProcessingResult deleteDocument(DocumentCommand documentCommand);
+    
+    @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'GENERATE_DOCUMENT')")
+    Long generateDocument(final String entityType, final Long entityId, final Long reportIdetifier, final MultivaluedMap<String, String> reportParams);
 
 }
