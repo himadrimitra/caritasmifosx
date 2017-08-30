@@ -74,7 +74,6 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
     private final CenterReadPlatformService centerReadPlatformService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
 
-    private final AllGroupTypesDataMapper allGroupTypesDataMapper;
     private final PaginationHelper<GroupGeneralData> paginationHelper = new PaginationHelper<>();
     private final PaginationParametersDataValidator paginationParametersDataValidator;
     private final TaskConfigurationUtils taskConfigurationUtils;
@@ -95,7 +94,6 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.paginationParametersDataValidator = paginationParametersDataValidator;
         this.taskConfigurationUtils = taskConfigurationUtils;
-        this.allGroupTypesDataMapper = new AllGroupTypesDataMapper(taskConfigurationUtils);
     }
 
     @Override
@@ -154,6 +152,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
+        final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper(this.taskConfigurationUtils);
         final StringBuilder sqlBuilder = new StringBuilder(200);
 		if (parameters.isOrderByRequested()) {
 			sqlBuilder.append("select SQL_CALC_FOUND_ROWS * from (select ");
@@ -161,7 +160,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
 			sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
 		}
         
-        sqlBuilder.append(this.allGroupTypesDataMapper.schema());
+        sqlBuilder.append(allGroupTypesDataMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
 
         final String extraCriteria = getGroupExtraCriteria(searchParameters);
@@ -183,7 +182,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
 
         final String sqlCountRows = "SELECT FOUND_ROWS()";
         return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(),
-                new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), hierarchySearchString }, this.allGroupTypesDataMapper);
+                new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), hierarchySearchString }, allGroupTypesDataMapper);
     }
 
     @Override
@@ -192,9 +191,10 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
+        final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper(this.taskConfigurationUtils);
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select ");
-        sqlBuilder.append(this.allGroupTypesDataMapper.schema());
+        sqlBuilder.append(allGroupTypesDataMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
 
         final String extraCriteria = getGroupExtraCriteria(searchParameters);
@@ -211,7 +211,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
             sqlBuilder.append(parameters.limitSql());
         }
 
-        return this.jdbcTemplate.query(sqlBuilder.toString(), this.allGroupTypesDataMapper, new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), hierarchySearchString });
+        return this.jdbcTemplate.query(sqlBuilder.toString(), allGroupTypesDataMapper, new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), hierarchySearchString });
     }
 
     // 'g.' preffix because of ERROR 1052 (23000): Column 'column_name' in where
@@ -280,8 +280,9 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
             final String hierarchy = currentUser.getOffice().getHierarchy();
             final String hierarchySearchString = hierarchy + "%";
 
-            final String sql = "select " + this.allGroupTypesDataMapper.schema() + " where g.id = ? and o.hierarchy like ?";
-            return this.jdbcTemplate.queryForObject(sql, this.allGroupTypesDataMapper,
+            final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper(this.taskConfigurationUtils);
+            final String sql = "select " + allGroupTypesDataMapper.schema() + " where g.id = ? and o.hierarchy like ?";
+            return this.jdbcTemplate.queryForObject(sql, allGroupTypesDataMapper,
                     new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), groupId, hierarchySearchString });
         } catch (final EmptyResultDataAccessException e) {
             throw new GroupNotFoundException(groupId);

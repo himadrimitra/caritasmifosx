@@ -85,7 +85,6 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 
     // data mappers
     private final PaginationHelper<ClientData> paginationHelper = new PaginationHelper<>();
-    private final ClientMapper clientMapper;
     private final ClientLookupMapper lookupMapper = new ClientLookupMapper();
     private final ClientMembersOfGroupMapper membersOfGroupMapper = new ClientMembersOfGroupMapper();
     private final ParentGroupsMapper clientGroupsMapper = new ParentGroupsMapper();
@@ -108,7 +107,6 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         this.configurationDomainService = configurationDomainService;
         this.addressReadPlatformService = addressReadPlatformService;
         this.taskConfigurationUtils = taskConfigurationUtils;
-        this.clientMapper = new ClientMapper(taskConfigurationUtils);
     }
 
     @Override
@@ -170,10 +168,10 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         // this.context.validateAccessRights(searchParameters.getHierarchy());
         // underHierarchySearchString = searchParameters.getHierarchy() + "%";
         // }
-
+        final ClientMapper clientMapper = new ClientMapper(this.taskConfigurationUtils);
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
-        sqlBuilder.append(this.clientMapper.schema());
+        sqlBuilder.append(clientMapper.schema());
         sqlBuilder.append(" where (o.hierarchy like ? or transferToOffice.hierarchy like ?) ");
         
         if(searchParameters.isSelfUser()){
@@ -212,7 +210,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 		if (searchParameters.isSelfUser()) {
 			params.add(appUserID);
         }
-        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(), params.toArray(), this.clientMapper);
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(), params.toArray(), clientMapper);
     }
 
     private String buildSqlStringFromClientCriteria(final SearchParameters searchParameters) {
@@ -277,9 +275,10 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final String hierarchy = this.context.officeHierarchy();
             final String hierarchySearchString = hierarchy + "%";
 
-            final String sql = "select  " + this.clientMapper.schema()
+            final ClientMapper clientMapper = new ClientMapper(this.taskConfigurationUtils);
+            final String sql = "select  " + clientMapper.schema()
                     + " where ( o.hierarchy like ? or transferToOffice.hierarchy like ?) and c.id = ?";
-            final ClientData clientData = this.jdbcTemplate.queryForObject(sql, this.clientMapper,
+            final ClientData clientData = this.jdbcTemplate.queryForObject(sql, clientMapper,
                     new Object[] { TaskEntityType.CLIENT.getValue(), hierarchySearchString, hierarchySearchString, clientId });
 
             final String clientGroupsSql = "select " + this.clientGroupsMapper.parentGroupsSchema();
