@@ -137,9 +137,11 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
         FormDataBodyPart bodyPart = formParams.getField(key);
         InputStream inputStream = bodyPart.getEntityAs(InputStream.class);
         String fileName = bodyPart.getFormDataContentDisposition().getFileName();
+        final Long reportIdentifier = null ;
+        final Long tagIdentifier = null ;
         final DocumentCommand documentCommand = new DocumentCommand(null, null, ReconciliationApiConstants.entityName,
                 ReconciliationApiConstants.bankStatementFolder, name, fileName, fileSize, bodyPart.getMediaType().toString(), description,
-                null);
+                null, reportIdentifier, tagIdentifier);
         final String fileLocation = contentRepository.saveFile(inputStream, documentCommand);
         final Document document = Document.createNew(documentCommand.getParentEntityType(), documentCommand.getParentEntityId(),
                 documentCommand.getName(), documentCommand.getFileName(), documentCommand.getSize(), documentCommand.getType(),

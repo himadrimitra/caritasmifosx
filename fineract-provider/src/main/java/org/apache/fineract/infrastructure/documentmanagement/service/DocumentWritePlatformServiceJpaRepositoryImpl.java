@@ -18,20 +18,31 @@
  */
 package org.apache.fineract.infrastructure.documentmanagement.service;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.dataqueries.service.ReadReportingService;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommandValidator;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryFactory;
+import org.apache.fineract.infrastructure.documentmanagement.data.DocumentTagData;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Document;
 import org.apache.fineract.infrastructure.documentmanagement.domain.DocumentRepository;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
 import org.apache.fineract.infrastructure.documentmanagement.exception.ContentManagementException;
 import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentNotFoundException;
+import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentReportMappingNotfoundException;
 import org.apache.fineract.infrastructure.documentmanagement.exception.InvalidEntityTypeForDocumentManagementException;
+import org.apache.fineract.infrastructure.report.provider.ReportingProcessServiceProvider;
+import org.apache.fineract.infrastructure.report.service.ReportingProcessService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,13 +59,21 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
     private final PlatformSecurityContext context;
     private final DocumentRepository documentRepository;
     private final ContentRepositoryFactory contentRepositoryFactory;
-
+    private final ReadReportingService readExtraDataAndReportingService;
+    private final ReportingProcessServiceProvider reportingProcessServiceProvider;
+    private final DocumentReadPlatformService documentReadPlatformService ;
     @Autowired
     public DocumentWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
-            final DocumentRepository documentRepository, final ContentRepositoryFactory documentStoreFactory) {
+            final DocumentRepository documentRepository, final ContentRepositoryFactory documentStoreFactory,
+            final ReadReportingService readExtraDataAndReportingService,
+            final ReportingProcessServiceProvider reportingProcessServiceProvider,
+            final DocumentReadPlatformService documentReadPlatformService) {
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = documentStoreFactory;
+        this.readExtraDataAndReportingService = readExtraDataAndReportingService ;
+        this.reportingProcessServiceProvider = reportingProcessServiceProvider ;
+        this.documentReadPlatformService = documentReadPlatformService ;
     }
 
     @Transactional
@@ -76,7 +95,12 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
             final Document document = Document.createNew(documentCommand.getParentEntityType(), documentCommand.getParentEntityId(),
                     documentCommand.getName(), documentCommand.getFileName(), documentCommand.getSize(), documentCommand.getType(),
                     documentCommand.getDescription(), fileLocation, contentRepository.getStorageType());
-
+            if(documentCommand.getReportIdentifier() != null) {
+                document.setReportIdentifier(documentCommand.getReportIdentifier()); 
+            }
+            if(documentCommand.getTagIdentifier() != null) {
+                document.setTagIdentifier(documentCommand.getTagIdentifier()); 
+            }
             this.documentRepository.save(document);
 
             return document.getId();
@@ -167,5 +191,51 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
         public String toString() {
             return name().toString().toLowerCase();
         }
+    }
+
+    @Override
+    public Long generateDocument(String entityType, Long entityId, Long reportIdetifier,
+            final MultivaluedMap<String, String> reportParams) {
+        final DocumentTagData tagData = documentReadPlatformService.retrieveDocumentTagData(reportIdetifier) ;
+        if(tagData == null) throw new DocumentReportMappingNotfoundException() ;
+        Long documentId = null ;
+        String reportName = tagData.getReportName();
+        final String fileName = reportName +"."+tagData.getOutputType();
+        final String description = reportName;
+        final Long fileSize = null;
+        final String type = "application/"+tagData.getOutputType();
+        addRequestParams(tagData.getReportCategory(), reportParams, entityId, tagData.getOutputType()); 
+        final DocumentCommand documentCommand = new DocumentCommand(null, null, entityType, entityId, fileName, fileName, fileSize, type,
+                description, null, reportIdetifier, tagData.getTagId());
+        String reportType = this.readExtraDataAndReportingService.getReportType(reportName);
+        ReportingProcessService reportingProcessService = this.reportingProcessServiceProvider.findReportingProcessService(reportType);
+        Response response = null ;
+        if (reportingProcessService != null) {
+            response = reportingProcessService.processRequest(reportName, reportParams);
+        }
+        
+        if(response != null) {
+            byte[] data = (byte[])response.getEntity() ; 
+            if(data != null) {
+                ByteArrayInputStream stream = new ByteArrayInputStream(data) ;
+                documentId = this.createDocument(documentCommand, stream) ;
+            }
+        }
+        return documentId ;
+    }
+    
+    private void addRequestParams(final String reportCategory, final MultivaluedMap<String, String> reportParams, final Long entityId, final String outputType) {
+        if ("Loan".equalsIgnoreCase(reportCategory)) {
+            List<String> list = new ArrayList<>();
+            list.add(entityId.toString());
+            reportParams.put("R_loanId", list);
+        } else if ("Client".equalsIgnoreCase(reportCategory)) {
+            List<String> list = new ArrayList<>();
+            list.add(entityId.toString());
+            reportParams.put("R_clientId", list);
+        }
+        List<String> output = new ArrayList<>();
+        output.add(outputType);
+        reportParams.put("output-type", output);
     }
 }
