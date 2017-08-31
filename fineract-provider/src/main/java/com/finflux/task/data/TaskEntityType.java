@@ -9,25 +9,26 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public enum TaskEntityType {
 
-    INVALID(0, "taskEntityType.invalid","invalid"), //
+    INVALID(0, "taskEntityType.invalid", "invalid"), //
     LOAN_APPLICATION(1, "taskEntityType.loanapplication", "loanApplication"), //
-    ADHOC(2, "taskEntityType.adhoc","adhoc"),
-    BANK_TRANSACTION(3, "taskEntityType.banktransaction","bankTransaction"),//
-    CENTER(4,"taskEntityType.center","center"),
-    CLIENT(5,"taskEntityType.client","client"),
-    VILLAGE(6,"taskEntityType.village","village"),
-    BANK(7,"taskEntityType.bank","bank"),
-    OFFICE(8,"taskEntityType.office","office"),
-    TEMPLATE_TASK_CENTER(9,"taskEntityType.template_task_center","center"),
-    TEMPLATE_TASK_CLIENT(10,"taskEntityType.template_task_client","client"),
-    TEMPLATE_TASK_VILLAGE(11,"taskEntityType.template_task_village","Village Template"),
-    TEMPLATE_TASK_BANK(12,"taskEntityType.template_task_bank","bank"),
-    TEMPLATE_TASK_OFFICE(13,"taskEntityType.template_task_office","office"),
-    GROUP_ONBOARDING(14, "taskEntityType.grouponbarding","groupOnboarding"),
-    LOAN_APPLICATION_APPLICANT(15, "taskEntityType.loanapplicationMainClient", "loanApplicationApplicant"),
-    LOAN_APPLICATION_COAPPLICANT(16, "taskEntityType.loanapplicationCoApplicant", "loanApplicationCoApplicant"),//
-    CLIENT_ONBOARDING(17, "taskEntityType.client_onboarding", "client_onboarding"), CLIENT_BANKACCOUNT(18,
-            "taskEntityType.client_bankaccount", "client_bankaccount") ;
+    ADHOC(2, "taskEntityType.adhoc", "adhoc"), //
+    BANK_TRANSACTION(3, "taskEntityType.banktransaction", "bankTransaction"), //
+    CENTER(4, "taskEntityType.center", "center"), //
+    CLIENT(5, "taskEntityType.client", "client"), //
+    VILLAGE(6, "taskEntityType.village", "village"), //
+    BANK(7, "taskEntityType.bank", "bank"), //
+    OFFICE(8, "taskEntityType.office", "office"), //
+    TEMPLATE_TASK_CENTER(9, "taskEntityType.template_task_center", "center"), //
+    TEMPLATE_TASK_CLIENT(10, "taskEntityType.template_task_client", "client"), //
+    TEMPLATE_TASK_VILLAGE(11, "taskEntityType.template_task_village", "Village Template"), //
+    TEMPLATE_TASK_BANK(12, "taskEntityType.template_task_bank", "bank"), //
+    TEMPLATE_TASK_OFFICE(13, "taskEntityType.template_task_office", "office"), //
+    GROUP_ONBOARDING(14, "taskEntityType.grouponbarding", "groupOnboarding"), //
+    LOAN_APPLICATION_APPLICANT(15, "taskEntityType.loanapplicationMainClient", "loanApplicationApplicant"), //
+    LOAN_APPLICATION_COAPPLICANT(16, "taskEntityType.loanapplicationCoApplicant", "loanApplicationCoApplicant"), //
+    CLIENT_ONBOARDING(17, "taskEntityType.client_onboarding", "client_onboarding"), //
+    CLIENT_BANKACCOUNT(18, "taskEntityType.client_bankaccount", "client_bankaccount"), //
+    DISTRICT(19, "taskEntityType.district", "district");
 
     private final Integer value;
     private final String code;

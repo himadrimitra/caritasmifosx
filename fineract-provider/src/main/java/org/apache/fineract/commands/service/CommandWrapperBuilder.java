@@ -4161,4 +4161,36 @@ public class CommandWrapperBuilder {
         this.href = "/savingsaccounts/" + accountId + "?command=unblock";
         return this;
     }
+
+    public CommandWrapperBuilder createDistrict() {
+        this.actionName = "CREATE";
+        this.entityName = "DISTRICT";
+        this.entityId = null;
+        this.href = "/districts/template";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateDistrict(final Long districtId) {
+        this.actionName = "UPDATE";
+        this.entityName = "DISTRICT";
+        this.entityId = districtId;
+        this.href = "/districts/"+districtId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateDistrict(final Long districtId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "DISTRICT";
+        this.entityId = districtId;
+        this.href = "/offices/" + districtId;
+        return this;
+    }
+
+    public CommandWrapperBuilder rejectDistrict(final Long districtId) {
+        this.actionName = "REJECT";
+        this.entityName = "DISTRICT";
+        this.entityId = districtId;
+        this.href = "/offices/" + districtId;
+        return this;
+    }
 }

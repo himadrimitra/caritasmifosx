@@ -16,7 +16,8 @@ public enum TaskConfigEntityType {
     CLIENTBANKACCOUNT(8, "taskConfigEntityType.clientbankaccount"), //
     VILLAGEONBOARDING(9, "taskConfigEntityType.villageonboarding"), //
     OFFICEONBOARDING(9, "taskConfigEntityType.officeonboarding"), //
-    CENTERONBOARDING(9, "taskConfigEntityType.centeronboarding");
+    CENTERONBOARDING(9, "taskConfigEntityType.centeronboarding"), //
+    DISTRICTONBOARDING(12, "taskConfigEntityType.districtonboarding");
     
     private final Integer value;
     private final String code;
