@@ -38,9 +38,12 @@ public class DocumentCommand {
     private Integer storageType;
 
     private final Set<String> modifiedParameters;
-
+    private final Long reportIdentifier ;
+    private final Long tagIdentifier ;
+    
     public DocumentCommand(final Set<String> modifiedParameters, final Long id, final String parentEntityType, final Long parentEntityId,
-            final String name, final String fileName, final Long size, final String type, final String description, final String location) {
+            final String name, final String fileName, final Long size, final String type, final String description, final String location, final Long reportIdentifier,
+            final Long tagIdentifier) {
         this.modifiedParameters = modifiedParameters;
         this.id = id;
         this.parentEntityType = parentEntityType;
@@ -51,22 +54,25 @@ public class DocumentCommand {
         this.type = type;
         this.description = description;
         this.location = location;
+        this.reportIdentifier = reportIdentifier ;
+        this.tagIdentifier = tagIdentifier ;
     }
 
-	public DocumentCommand(final String parentEntityType, final Long parentEntityId, final String fileName, 
-			final Long size) {
-		this.id = null ;
-		this.modifiedParameters = null ;
-		this.parentEntityType = parentEntityType ;
-		this.parentEntityId  = parentEntityId ;
-		this.fileName = fileName ;
-		this.type = null ;
-		this.storageType = null ;
-		this.location = null ;
-		this.size = size ;
-		this.description = null ;
-		this.name = null ;
-	}
+    public DocumentCommand(final String parentEntityType, final Long parentEntityId, final String fileName, final Long size) {
+        this.id = null;
+        this.modifiedParameters = null;
+        this.parentEntityType = parentEntityType;
+        this.parentEntityId = parentEntityId;
+        this.fileName = fileName;
+        this.type = null;
+        this.storageType = null;
+        this.location = null;
+        this.size = size;
+        this.description = null;
+        this.name = null;
+        this.reportIdentifier = null ;
+        this.tagIdentifier = null ;
+    }
 	
     public Long getId() {
         return this.id;
@@ -131,7 +137,15 @@ public class DocumentCommand {
     public void setStorageType(final Integer storageType) {
         this.storageType = storageType;
     }
-
+    
+    public Long getReportIdentifier() {
+        return this.reportIdentifier ;
+    }
+    
+    public Long getTagIdentifier() {
+        return this.tagIdentifier ;
+    }
+    
     public boolean isNameChanged() {
         return this.modifiedParameters.contains("name");
     }
