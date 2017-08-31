@@ -45,6 +45,7 @@ import org.apache.fineract.portfolio.account.domain.AccountTransferType;
 import org.apache.fineract.portfolio.account.exception.AccountTransferNotFoundException;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
+import org.apache.fineract.portfolio.savings.service.SavingsEnumerations;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -359,9 +360,9 @@ public class AccountTransfersReadPlatformServiceImpl implements
 			sqlBuilder
 					.append("fromsavtran.transaction_type_enum as fromSavingsAccountTransactionType,");
 			sqlBuilder.append("tosavtran.id as toSavingsAccountTransactionId,");
-			sqlBuilder
-					.append("tosavtran.transaction_type_enum as toSavingsAccountTransactionType");
-			sqlBuilder.append(" FROM m_account_transfer_transaction att ");
+                        sqlBuilder.append("tosavtran.transaction_type_enum as toSavingsAccountTransactionType, ");
+                        sqlBuilder.append("tosavacc.deposit_type_enum as depositType");
+                        sqlBuilder.append(" FROM m_account_transfer_transaction att ");
 			sqlBuilder
 					.append("left join m_account_transfer_details atd on atd.id = att.account_transfer_details_id ");
 			sqlBuilder
@@ -476,12 +477,16 @@ public class AccountTransfersReadPlatformServiceImpl implements
 			final Long toLoanAccountId = JdbcSupport.getLong(rs,
 					"toLoanAccountId");
 			final String toLoanAccountNo = rs.getString("toLoanAccountNo");
-
+			
+			EnumOptionData toAccountDepositType = null;
+			
 			if (toSavingsAccountId != null) {
 				toAccount = PortfolioAccountData.lookup(toSavingsAccountId,
 						toSavingsAccountNo);
 				toAccountType = AccountTransferEnumerations
 						.accountType(PortfolioAccountType.SAVINGS);
+                                final Integer depositTypeId = rs.getInt("depositType");
+                                toAccountDepositType = SavingsEnumerations.depositType(depositTypeId);
 			} else if (toLoanAccountId != null) {
 				toAccount = PortfolioAccountData.lookup(toLoanAccountId,
 						toLoanAccountNo);
@@ -492,7 +497,7 @@ public class AccountTransfersReadPlatformServiceImpl implements
 			return AccountTransferData.instance(id, reversed, transferDate,
 					currency, transferAmount, transferDescription, fromOffice,
 					toOffice, fromClient, toClient, fromAccountType,
-					fromAccount, toAccountType, toAccount);
+					fromAccount, toAccountType, toAccount, toAccountDepositType);
 		}
 	}
 

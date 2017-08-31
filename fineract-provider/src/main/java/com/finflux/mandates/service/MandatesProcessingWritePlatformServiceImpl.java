@@ -213,9 +213,10 @@ public class MandatesProcessingWritePlatformServiceImpl implements MandatesProce
                 final Long size = new Long(formParams.getField("fileSize").getValue());
                 final String type = bodyPart.getMediaType().toString();
                 final String location = null;
-
+                final Long reportIdentifier = null ;
+                final Long tagIdentifier = null ;
                 final DocumentCommand documentCommand = new DocumentCommand(modifiedParameters, id, parentEntityType, parentEntityId,
-                        name, name, size, type, name, location);
+                        name, name, size, type, name, location, reportIdentifier, tagIdentifier);
                 final String fileLocation = contentRepository.saveFile(inputStream, documentCommand);
                 final Document document = Document.createNew(documentCommand.getParentEntityType(), documentCommand.getParentEntityId(),
                         documentCommand.getName(), documentCommand.getFileName(), documentCommand.getSize(), documentCommand.getType(),

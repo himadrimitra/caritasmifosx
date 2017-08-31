@@ -28,19 +28,20 @@ public class DocumentData {
     private final Long id;
     private final String parentEntityType;
     private final Long parentEntityId;
-    @SuppressWarnings("unused")
     private final String name;
     private final String fileName;
-    @SuppressWarnings("unused")
     private final Long size;
     private final String type;
-    @SuppressWarnings("unused")
     private final String description;
     private final String location;
     private final Integer storageType;
+    private final Long reportIdentifier;
+    private final Long tagIdentifier;
+    private final String tagValue;
 
     public DocumentData(final Long id, final String parentEntityType, final Long parentEntityId, final String name, final String fileName,
-            final Long size, final String type, final String description, final String location, final Integer storageType) {
+            final Long size, final String type, final String description, final String location, final Integer storageType,
+            final Long reportIdentifier, final Long tagIdentifier, final String tagValue) {
         this.id = id;
         this.parentEntityType = parentEntityType;
         this.parentEntityId = parentEntityId;
@@ -51,21 +52,27 @@ public class DocumentData {
         this.description = description;
         this.location = location;
         this.storageType = storageType;
+        this.reportIdentifier = reportIdentifier;
+        this.tagIdentifier = tagIdentifier;
+        this.tagValue = tagValue;
     }
-    
+
     public DocumentData(final String location) {
-    	this.location = location ;
-    	 this.id = null ;
-         this.parentEntityType = null;
-         this.parentEntityId = null;
-         this.name = null;
-         this.fileName = null;
-         this.size = null;
-         this.type = null;
-         this.description = null;
-         this.storageType = null;
+        this.location = location;
+        this.id = null;
+        this.parentEntityType = null;
+        this.parentEntityId = null;
+        this.name = null;
+        this.fileName = null;
+        this.size = null;
+        this.type = null;
+        this.description = null;
+        this.storageType = null;
+        this.reportIdentifier = null;
+        this.tagIdentifier = null;
+        this.tagValue = null;
     }
-    
+
     public String contentType() {
         return this.type;
     }
@@ -94,8 +101,44 @@ public class DocumentData {
         return this.id;
     }
 
-    public String getName(){
+    public String getName() {
         return this.name;
+    }
+
+    public String getFileName() {
+        return this.fileName;
+    }
+
+    public Long getSize() {
+        return this.size;
+    }
+
+    public String getType() {
+        return this.type;
+    }
+
+    public String getDescription() {
+        return this.description;
+    }
+
+    public String getLocation() {
+        return this.location;
+    }
+
+    public Integer getStorageType() {
+        return this.storageType;
+    }
+
+    public Long getReportIdentifier() {
+        return this.reportIdentifier;
+    }
+
+    public Long getTagIdentifier() {
+        return this.tagIdentifier;
+    }
+
+    public String getTagValue() {
+        return this.tagValue;
     }
 
 }

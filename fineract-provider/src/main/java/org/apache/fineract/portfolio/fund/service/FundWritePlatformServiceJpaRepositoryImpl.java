@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -72,11 +71,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import au.com.bytecode.opencsv.CSVReader;
-
 import com.google.gson.JsonElement;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
+
+import au.com.bytecode.opencsv.CSVReader;
 
 @Service
 public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatformService {
@@ -525,8 +524,10 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
         String fileName = bodyPart.getFormDataContentDisposition().getFileName();
         String description = fileName;
         String name = fileName;
+        final Long reportIdentifier = null ;
+        final Long tagIdentifier = null ;
         final DocumentCommand documentCommand = new DocumentCommand(null, null, FundApiConstants.entityName,
-                FundApiConstants.fundMappingFolder, name, fileName, fileSize, bodyPart.getMediaType().toString(), description, null);
+                FundApiConstants.fundMappingFolder, name, fileName, fileSize, bodyPart.getMediaType().toString(), description, null, reportIdentifier, tagIdentifier);
         final String fileLocation = contentRepository.saveFile(inputStream, documentCommand);
         final Document document = Document.createNew(documentCommand.getParentEntityType(), documentCommand.getParentEntityId(),
                 documentCommand.getName(), documentCommand.getFileName(), documentCommand.getSize(), documentCommand.getType(),

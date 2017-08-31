@@ -92,9 +92,10 @@ public class MandatesProcessingStatusPlatformWriteServiceImpl implements Mandate
                 final Long parentEntityId = 1L;
                 final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository();
                 final String location = null;
-
+                final Long reportIdentifier = null ;
+                final Long tagIdentifier = null ;
                 final DocumentCommand documentCommand = new DocumentCommand(modifiedParameters, id, parentEntityType, parentEntityId,
-                        name, name, size, type, name, location);
+                        name, name, size, type, name, location, reportIdentifier, tagIdentifier);
                 final String fileLocation = contentRepository.saveFile(inputStream, documentCommand, false);
                 final Document document = Document.createNew(documentCommand.getParentEntityType(), documentCommand.getParentEntityId(),
                         documentCommand.getName(), documentCommand.getFileName(), documentCommand.getSize(), documentCommand.getType(),
@@ -110,11 +111,12 @@ public class MandatesProcessingStatusPlatformWriteServiceImpl implements Mandate
                 final StorageType documentStoreType = documentForUpdate.storageType();
                 String oldLocation = documentForUpdate.getLocation();
                 final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository();
-
+                final Long reportIdentifier = null ;
+                final Long tagIdentifier = null ;
                 final DocumentCommand documentCommand = new DocumentCommand(null, documentForUpdate.getId(),
                         "mandates", 1L, documentForUpdate.getName(), documentForUpdate.getFileName(),
                         (long) fileData.file().available(), fileData.contentType(),
-                        documentForUpdate.getDescription(), documentForUpdate.getLocation());
+                        documentForUpdate.getDescription(), documentForUpdate.getLocation(),reportIdentifier, tagIdentifier);
 
                 documentCommand.setLocation(contentRepository.saveFile(fileData.file(), documentCommand));
                 documentForUpdate.setLocation(documentCommand.getLocation());
