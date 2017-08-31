@@ -33,6 +33,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -53,6 +54,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.loan.mandate.exception.InvalidCommandQueryParamException;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataParam;
@@ -66,7 +68,9 @@ public class DocumentManagementApiResource {
             "name", "fileName", "size", "type", "description"));
 
     private final String SystemEntityType = "DOCUMENT";
-
+    private final String GENERATE_COMMAND = "generate" ;
+    private final String REGENERATE_COMMAND = "regenerate" ;
+    
     private final PlatformSecurityContext context;
     private final DocumentReadPlatformService documentReadPlatformService;
     private final DocumentWritePlatformService documentWritePlatformService;
@@ -181,14 +185,21 @@ public class DocumentManagementApiResource {
         return this.toApiJsonSerializer.serialize(settings, documentData, this.RESPONSE_DATA_PARAMETERS);
     }
 
-    @GET
+    @POST
     @Path("generate/{reportIdentifier}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String generateDocument(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
-            @PathParam("reportIdentifier") final Long reportIdentifier, @Context final UriInfo uriInfo) {
+            @PathParam("reportIdentifier") final Long reportIdentifier, @QueryParam("command") final String commandParam, @Context final UriInfo uriInfo) {
+        Long documentId = null ; 
         this.context.authenticatedUser().validateHasReadPermission(this.SystemEntityType);
-        final Long documentId = this.documentWritePlatformService.generateDocument(entityType, entityId, reportIdentifier, uriInfo.getQueryParameters());
+        if(GENERATE_COMMAND.equals(commandParam)) {
+            documentId = this.documentWritePlatformService.generateDocument(entityType, entityId, reportIdentifier, uriInfo.getQueryParameters());    
+        }else if(REGENERATE_COMMAND.equals(commandParam)) {
+            documentId = this.documentWritePlatformService.reGenerateDocument(entityType, entityId, reportIdentifier, uriInfo.getQueryParameters());
+        }else {
+            throw new InvalidCommandQueryParamException(commandParam) ;
+        }
         return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(documentId, null));
     }
     
