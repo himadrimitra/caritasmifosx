@@ -25,7 +25,7 @@ public class BankTransactionLoanActionsValidationServiceImpl implements BankTran
     }
 
     @Override
-    public void validateForInactiveBankTransactions(Long loanId, List<Integer> statusList, Boolean isSubmitBankTransaction) {
+    public void validateForInactiveBankTransactions(Long loanId, List<Integer> statusList, final BankTransactionType transactionType) {
 
         Integer entityType = BankTransactionEntityType.LOANS.getValue();
         Long activeTransactionCount = this.bankTransactionRepository.countByEntityTypeAndEntityIdAndStatusIsIn(entityType, loanId,
@@ -33,15 +33,17 @@ public class BankTransactionLoanActionsValidationServiceImpl implements BankTran
         if (activeTransactionCount > 0) {
             String globalisationMessageCode = null;
             String defaultUserMessage = null;
-            if (isSubmitBankTransaction) {
+            if (transactionType.equals(BankTransactionType.SUBMIT)) {
                 globalisationMessageCode = "error.msg.unable.to.submit.bank.transaction.since.all.bank.transactions.are.not.in.closed.or.rejected.status";
                 defaultUserMessage = "To submit a bank transaction all bank transactions must be closed or rejected.";
-            } else {
+            } else if(transactionType.equals(BankTransactionType.UNDO_DISBURSEMENT)){
                 globalisationMessageCode = "error.msg.unable.to.undo.disbursal.of.loan.as.all.transactions.are.not.in.rejected.or.closed.status";
-                defaultUserMessage = "Can not undo disbursal of loan, as transactions are found not in reject or closed status";
+                defaultUserMessage = "Cannot undo disbursal of loan, as transactions are found not in reject or closed status";
+            } else if(transactionType.equals(BankTransactionType.CREATE)){
+            	globalisationMessageCode = "error.msg.unable.to.disburse.loan.as.all.bank.transactions.are.not.in.success.or.rejected.or.closed.status";
+                defaultUserMessage = "Cannot disbure loan, as bank transactions are found not in success, reject or closed status";
             }
             throwGeneralPlatformDomainRuleException(globalisationMessageCode, defaultUserMessage, loanId);
-
         }
     }
 
