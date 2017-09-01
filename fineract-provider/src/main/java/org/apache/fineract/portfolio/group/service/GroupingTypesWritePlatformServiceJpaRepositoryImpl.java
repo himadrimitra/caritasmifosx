@@ -95,6 +95,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,7 +116,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
     private final static Logger logger = LoggerFactory.getLogger(GroupingTypesWritePlatformServiceJpaRepositoryImpl.class);
     private boolean loadLazyEntities = true;
-    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final DataSource dataSource;
 
     private final PlatformSecurityContext context;
@@ -142,6 +143,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     private final LoanApplicationReferenceRepository loanApplicationReferenceRepository;
     private final TaskPlatformWriteService taskPlatformWriteService;
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public GroupingTypesWritePlatformServiceJpaRepositoryImpl(final RoutingDataSource dataSource,final PlatformSecurityContext context,
@@ -160,7 +162,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
         this.context = context;
         this.dataSource = dataSource;
-        this.jdbcTemplate = new NamedParameterJdbcTemplate(this.dataSource);
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(this.dataSource);
         this.groupRepository = groupRepository;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
         this.officeRepository = officeRepository;
@@ -184,6 +186,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
         this.taskPlatformWriteService = taskPlatformWriteService;
         this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
+        this.jdbcTemplate = new JdbcTemplate(this.dataSource);
     }
 
     private CommandProcessingResult createGroupingType(final JsonCommand command, final GroupTypes groupingType, final Long centerId) {
@@ -357,8 +360,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
 			paramMap.put("staffId", group.getStaff().getId());
 			if (group.getStaff().isLoanOfficer()) {
-				this.jdbcTemplate.update(updateLoanStaffSql, paramMap);
-				this.jdbcTemplate.update(updateSavingStaffSql, paramMap);
+				this.namedParameterJdbcTemplate.update(updateLoanStaffSql, paramMap);
+				this.namedParameterJdbcTemplate.update(updateSavingStaffSql, paramMap);
 			}
 		}
 	}
@@ -608,6 +611,15 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                 .isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(presentStaffId); }
         final String staffIdParamName = "staffId";
         if (!command.isChangeInLongParameterNamed(staffIdParamName, presentStaffId)) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled()) {
+                unAssignGroupAndGroupMembersStaff(groupForUpdate);
+                List<Group> groupMembers = groupForUpdate.getGroupMembers();
+                if (groupMembers != null && !groupMembers.isEmpty()) {
+                    for (Group group : groupMembers) {
+                        unAssignGroupAndGroupMembersStaff(group);
+                    }
+                }
+            }
             groupForUpdate.unassignStaff();
         }
         this.groupRepository.saveAndFlush(groupForUpdate);
@@ -671,7 +683,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                 .build();
     }
 
-    private void updateGroupAndGroupMembersStaff(Staff staff, Group group) {
+    @Override
+    public void updateGroupAndGroupMembersStaff(Staff staff, Group group) {
         group.updateStaff(staff);
         List<Loan> groupLoans = this.loanRepository.findByGroupId(group.getId());
         if (groupLoans != null && !groupLoans.isEmpty()) {
@@ -694,6 +707,29 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                 if (clientLoanApplicationReference != null && !clientLoanApplicationReference.isEmpty()) {
                     for (LoanApplicationReference loanApplicationReference : clientLoanApplicationReference) {
                         loanApplicationReference.updateLoanOfficer(staff);
+                    }
+                }
+            }
+        }
+    }
+    
+    public void unAssignGroupAndGroupMembersStaff(Group group) {
+        group.unassignStaff();
+        List<Loan> groupLoans = this.loanRepository.findByGroupId(group.getId());
+        LocalDate unassignDate = DateUtils.getLocalDateOfTenant();
+        if (groupLoans != null && !groupLoans.isEmpty()) {
+            for (Loan loan : groupLoans) {
+                loan.removeLoanOfficer(unassignDate);
+            }
+        }
+        Set<Client> clientMembers = group.getActiveClientMembers();
+        if (clientMembers != null && !clientMembers.isEmpty()) {
+            for (Client client : clientMembers) {
+                client.unassignStaff();
+                List<Loan> clientLoans = this.loanRepositoryWrapper.findLoanByClientId(client.getId());
+                if (clientLoans != null && !clientLoans.isEmpty()) {
+                    for (Loan loan : clientLoans) {
+                        loan.removeLoanOfficer(unassignDate);
                     }
                 }
             }
@@ -1150,4 +1186,31 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         map.put(entityEvent, entity);
         return map;
     }
+    
+    @Override
+	public void createStaffAssignmentHistory(Long centerId, Long staffId, LocalDate startDate) {
+		AppUser user = this.context.getAuthenticatedUserIfPresent();
+		final Long userId = user.getId();
+		
+		LocalDate today = DateUtils.getLocalDateOfTenant();
+		StringBuilder sql = new StringBuilder("INSERT INTO ");
+		
+		sql.append("m_staff_assignment_history ");
+		sql.append(
+				"(centre_id, staff_id, start_date, createdby_id, created_date, lastmodified_date, lastmodifiedby_id)");
+		sql.append("VALUES");
+		sql.append("(" + centerId + " ," + staffId + " ,'" + startDate + "' ," + userId + " ,'" + today + "' ,'" + today
+				+ "' ," + userId + ")");
+		this.jdbcTemplate.execute(sql.toString());
+	}
+    
+    @Override 
+    public void updateGroupOrCenterStaff(Long groupId, Long staffId) {
+        StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append("m_group SET ");
+        sql.append("staff_id = " + staffId);
+        sql.append(" WHERE id = " + groupId );
+        this.jdbcTemplate.execute(sql.toString());
+    }
+        
 }
