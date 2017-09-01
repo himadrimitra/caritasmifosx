@@ -2667,7 +2667,35 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         }
 
+        /**
+         * Validate as of the transaction date total Outstanding amount is greater that or equal to charge pay amount
+         */
+        if (getTotalOutstandingAmountAsOfTheDate(transactionDate).plus(getOverdraftLimitAmount()).isLessThan(chargePaid)) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(
+                    "transaction.invalid.total.outstanding.amount.less.than.charge.pay.amount");
+            if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+        }
+
         this.payCharge(savingsAccountCharge, chargePaid, transactionDate, user);
+    }
+
+    private Money getTotalOutstandingAmountAsOfTheDate(final LocalDate date) {
+        Money totalOutstandingAmount = Money.zero(this.currency);
+        for (final SavingsAccountTransaction transaction : this.transactions) {
+            if (!transaction.getTransactionLocalDate().isAfter(date)) {
+                if (transaction.isCredit()) {
+                    totalOutstandingAmount = totalOutstandingAmount.plus(transaction.getAmount(this.currency));
+                } else if (transaction.isDebit()) {
+                    totalOutstandingAmount = totalOutstandingAmount.minus(transaction.getAmount(this.currency));
+                }
+            }
+        }
+        return totalOutstandingAmount;
+    }
+
+    private Money getOverdraftLimitAmount() {
+        if (this.allowOverdraft) { return Money.of(this.currency, this.overdraftLimit); }
+        return Money.zero(this.currency);
     }
 
     public void payCharge(final SavingsAccountCharge savingsAccountCharge, final Money amountPaid, final LocalDate transactionDate,
