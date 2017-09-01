@@ -53,4 +53,5 @@ public interface CenterReadPlatformService {
 
     CenterData retrieveCenterAndMembersDetailsTemplate(Long centerId);
 
+    boolean isCenter(Long centerId);
 }

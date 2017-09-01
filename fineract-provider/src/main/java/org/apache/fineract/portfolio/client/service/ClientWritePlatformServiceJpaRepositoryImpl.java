@@ -472,7 +472,9 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                             clientForUpdate.getOffice().getHierarchy());
                 }
                 if (isLoanOfficerToCenterHierarchyEnabled) {
-                    updateStaffForLoanAndSavings(clientId, newStaff);
+                    if (newStaff.isLoanOfficer()) {
+                        updateStaffForLoanAndSavings(clientId, newStaff.getId());
+                    }
                 }
                 clientForUpdate.updateStaff(newStaff);
             }
@@ -747,7 +749,9 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
              **/
             clientForUpdate.assignStaff(staff);
             if (isLoanOfficerToCenterHierarchyEnabled) {
-                updateStaffForLoanAndSavings(clientId, staff);
+                if (staff.isLoanOfficer()){
+                updateStaffForLoanAndSavings(clientId, staff.getId());
+                }
             }
         }
 
@@ -764,13 +768,12 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 .build();
     }
 
-    private void updateStaffForLoanAndSavings(final Long clientId, final Staff staff) {
+    private void updateStaffForLoanAndSavings(final Long clientId, final Long staffId) {
         final String sql = "update m_loan l  set l.loan_officer_id = ? where l.client_id = ? ";
         final String sqlForSavings = "update m_savings_account s  set s.field_officer_id = ? where s.client_id = ? ";
-        if (staff.isLoanOfficer()) {
-            this.jdbcTemplate.update(sql, staff.getId(), clientId);
-            this.jdbcTemplate.update(sqlForSavings, staff.getId(), clientId);
-        }
+        this.jdbcTemplate.update(sql, staffId, clientId);
+        this.jdbcTemplate.update(sqlForSavings, staffId, clientId);
+
     }
 
     @Transactional
@@ -1049,5 +1052,11 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
 				.withEntityId(entityId) //
 				.build();
 	}
+	
+    @Override
+    public void updateClientStaff(Long clientId, Long staffId) {
+        final String sql = "update m_client c  set c.staff_id = ? where c.id = ?  ";
+        this.jdbcTemplate.update(sql, staffId, clientId);
+    }
 	
 }

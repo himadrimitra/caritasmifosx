@@ -49,6 +49,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavailableException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
@@ -110,7 +111,9 @@ import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeWaivedEx
 import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeWaivedException.LOAN_CHARGE_CANNOT_BE_WAIVED_REASON;
 import org.apache.fineract.portfolio.charge.exception.LoanChargeNotFoundException;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.client.domain.ClientRepository;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkDisbursalCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkRepaymentCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.SingleDisbursalCommand;
@@ -122,8 +125,12 @@ import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
+import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
+import org.apache.fineract.portfolio.group.exception.CenterNotFoundException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
+import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
+import org.apache.fineract.portfolio.group.service.GroupingTypesWritePlatformService;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.command.LoanUpdateCommand;
@@ -134,6 +141,7 @@ import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidByData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanInstallmentChargeData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanOfficerAssignmentHistoryData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail;
@@ -169,6 +177,7 @@ import org.apache.fineract.portfolio.loanaccount.exception.InvalidRefundDateExce
 import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursalException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursementDateException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanMultiDisbursementException;
+import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerAssignmentDateException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerAssignmentException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerUnassignmentException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanWriteOffException;
@@ -210,6 +219,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -223,6 +233,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
     private final static Logger logger = LoggerFactory.getLogger(LoanWritePlatformServiceJpaRepositoryImpl.class);
     private final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
+    private boolean loadLazyEntities = true;
 
     private final PlatformSecurityContext context;
     private final LoanEventApiJsonValidator loanEventApiJsonValidator;
@@ -270,7 +281,15 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final LoanScheduleValidator loanScheduleValidator;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final LoanRescheduleRequestReadPlatformService loanRescheduleRequestReadPlatformService;
-
+    private final GroupingTypesWritePlatformService groupingTypesWritePlatformService;
+    private final GroupRepositoryWrapper groupRepository;
+    private final ClientRepository clientRepository;
+    private final BulkLoansReadPlatformService bulkLoansReadPlatformService;
+    private final JdbcTemplate jdbcTemplate;
+    private final LoanOfficerAssignmentHistoryWriteService loanOfficerAssignmentHistoryWriteService;
+    private final ClientWritePlatformService clientWritePlatformService;
+    private final CenterReadPlatformService centerReadPlatformService;
+    
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final LoanEventApiJsonValidator loanEventApiJsonValidator,
@@ -306,7 +325,14 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
             final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,            
             final LoanScheduleValidator loanScheduleValidator, final FineractEntityAccessUtil fineractEntityAccessUtil,
-            final LoanRescheduleRequestReadPlatformService loanRescheduleRequestReadPlatformService) {
+            final LoanRescheduleRequestReadPlatformService loanRescheduleRequestReadPlatformService,
+            final GroupingTypesWritePlatformService groupingTypesWritePlatformService,
+            final GroupRepositoryWrapper groupRepository, final ClientRepository clientRepository,
+            final BulkLoansReadPlatformService bulkLoansReadPlatformService,
+            final RoutingDataSource dataSource,
+            final LoanOfficerAssignmentHistoryWriteService loanOfficerAssignmentHistoryWriteService,
+            final ClientWritePlatformService clientWritePlatformService,
+            final CenterReadPlatformService centerReadPlatformService) {
 
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
@@ -354,6 +380,14 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanScheduleValidator = loanScheduleValidator;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.loanRescheduleRequestReadPlatformService = loanRescheduleRequestReadPlatformService;
+        this.groupingTypesWritePlatformService = groupingTypesWritePlatformService;
+        this.groupRepository = groupRepository;
+        this.clientRepository = clientRepository;
+        this.bulkLoansReadPlatformService = bulkLoansReadPlatformService;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.loanOfficerAssignmentHistoryWriteService = loanOfficerAssignmentHistoryWriteService;
+        this.clientWritePlatformService = clientWritePlatformService;
+        this.centerReadPlatformService = centerReadPlatformService;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -2330,40 +2364,89 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .build();
     }
 
+    @SuppressWarnings("null")
     @Transactional
     @Override
-    public CommandProcessingResult bulkLoanReassignment(final JsonCommand command) {
+	public CommandProcessingResult bulkLoanReassignment(final JsonCommand command) {
 
-        this.loanEventApiJsonValidator.validateForBulkLoanReassignment(command.json());
+		this.loanEventApiJsonValidator.validateForBulkLoanReassignment(command.json());
 
-        final Long fromLoanOfficerId = command.longValueOfParameterNamed("fromLoanOfficerId");
-        final Long toLoanOfficerId = command.longValueOfParameterNamed("toLoanOfficerId");
-        final Set<String> loanIds= new HashSet<>(Arrays.asList(command.arrayValueOfParameterNamed("loans")));
-        final LocalDate dateOfLoanOfficerAssignment = command.localDateValueOfParameterNamed("assignmentDate");
+		final Long fromLoanOfficerId = command.longValueOfParameterNamed("fromLoanOfficerId");
+		final Long toLoanOfficerId = command.longValueOfParameterNamed("toLoanOfficerId");
+		final Set<String> loanIds = new HashSet<>(Arrays.asList(command.arrayValueOfParameterNamed("loans")));
+		final LocalDate dateOfLoanOfficerAssignment = command.localDateValueOfParameterNamed("assignmentDate");
+		final Set<String> centerIds = new HashSet<>(Arrays.asList(command.arrayValueOfParameterNamed("centers")));
+		final Set<String> groupIds = new HashSet<>(Arrays.asList(command.arrayValueOfParameterNamed("groups")));
+		final Set<String> clientIds = new HashSet<>(Arrays.asList(command.arrayValueOfParameterNamed("clients")));
+		final Staff toLoanOfficer = this.loanAssembler.findLoanOfficerByIdIfProvided(toLoanOfficerId);
+		if (this.configurationDomainService.isLoanOfficerToCenterHierarchyEnabled()) {
+			if (centerIds != null) {
+				for (final String centerIdString : centerIds) {
+					final Long centerId = Long.valueOf(centerIdString);
+					if (!this.centerReadPlatformService.isCenter(centerId)) {
+						throw new CenterNotFoundException(centerId);
+					}
+					this.groupingTypesWritePlatformService.updateGroupOrCenterStaff(centerId, toLoanOfficer.getId());
+					this.groupingTypesWritePlatformService.createStaffAssignmentHistory(centerId, toLoanOfficer.getId(),
+							dateOfLoanOfficerAssignment);
+				}
+			}
+			if (groupIds != null) {
+				for (final String groupIdString : groupIds) {
+					final Long groupId = Long.valueOf(groupIdString);
+					this.groupingTypesWritePlatformService.updateGroupOrCenterStaff(groupId, toLoanOfficer.getId());
+				}
+			}
+			if (clientIds != null) {
+				for (final String clientIdString : clientIds) {
+					final Long clientId = Long.valueOf(clientIdString);
+					this.clientWritePlatformService.updateClientStaff(clientId, toLoanOfficer.getId());
+				}
+			}
 
-        final Staff fromLoanOfficer = this.loanAssembler.findLoanOfficerByIdIfProvided(fromLoanOfficerId);
-        final Staff toLoanOfficer = this.loanAssembler.findLoanOfficerByIdIfProvided(toLoanOfficerId);
+		}
+		for (final String loanIdString : loanIds) {
+			final Long loanId = Long.valueOf(loanIdString);
+			LoanOfficerAssignmentHistoryData loanOfficerAssignmentHistory = this.bulkLoansReadPlatformService
+					.retrieveLoanOfficerAssignmentHistoryByLoanId(loanId);
 
-        for (final String loanIdString : loanIds) {
-            final Long loanId = Long.valueOf(loanIdString);
-            final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
-            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_REASSIGN_OFFICER,
-                    constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
-            checkClientOrGroupActive(loan);
+			validateForReasignLoanOfficerForLoans(dateOfLoanOfficerAssignment, loanOfficerAssignmentHistory, loanId,
+					fromLoanOfficerId);
+			LoanStatus loanStatus = loanOfficerAssignmentHistory.getStatus();
+			final Long loanOfficerAssignmentHistoryId = loanOfficerAssignmentHistory.getLatestHistoryRecordId();
+			final LocalDate latestHistoryRecordStartdate = loanOfficerAssignmentHistory
+					.getLatestHistoryRecordStartdate();
+			if (latestHistoryRecordStartdate != null
+					&& loanOfficerAssignmentHistory.loanOfficerIdentifiedBy(toLoanOfficer.getId())) {
+				this.loanOfficerAssignmentHistoryWriteService.updateStartDate(loanOfficerAssignmentHistoryId,
+						dateOfLoanOfficerAssignment);
+			} else if (latestHistoryRecordStartdate != null
+					&& loanOfficerAssignmentHistory.matchesStartDateOfLatestHistory(dateOfLoanOfficerAssignment)) {
+				this.loanOfficerAssignmentHistoryWriteService.updateLoanOfficer(toLoanOfficer.getId(),
+						loanOfficerAssignmentHistoryId);
+				updateLoanOfficer(loanId, toLoanOfficer.getId());
+			} else {
+				if (latestHistoryRecordStartdate != null) {
+					// loan officer correctly changed from previous loan officer
+					// to
+					// new loan officer
+					this.loanOfficerAssignmentHistoryWriteService.updateEndDate(loanOfficerAssignmentHistoryId,
+							dateOfLoanOfficerAssignment);
+				}
 
-            if (!loan.hasLoanOfficer(fromLoanOfficer)) { throw new LoanOfficerAssignmentException(loanId, fromLoanOfficerId); }
+				updateLoanOfficer(loanId, toLoanOfficer.getId());
+				if (!loanStatus.isSubmittedAndPendingApproval()) {
+					this.loanOfficerAssignmentHistoryWriteService.createLoanOfficerAssignmentHistory(
+							toLoanOfficer.getId(), loanId, dateOfLoanOfficerAssignment);
+				}
+			}
 
-            loan.reassignLoanOfficer(toLoanOfficer, dateOfLoanOfficerAssignment);
-            saveLoanWithDataIntegrityViolationChecks(loan);
-            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_REASSIGN_OFFICER,
-                    constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
-        }
-        this.loanRepository.flush();
+		}
 
-        return new CommandProcessingResultBuilder() //
-                .withCommandId(command.commandId()) //
-                .build();
-    }
+		return new CommandProcessingResultBuilder() //
+				.withCommandId(command.commandId()) //
+				.build();
+	}
 
     @Transactional
     @Override
@@ -3608,5 +3691,37 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     "Loan disbursement details with date - " + updatedDisbursementDate + " for loan - " + loan.getId() + " already exists.",
                     loan.getId(), updatedDisbursementDate.toString()); }
         }
+    }
+    
+    private void updateLoanOfficer(final Long loanId, final Long loanOfficerId){
+        String sql = "update m_loan SET m_loan.loan_officer_id = '" + loanOfficerId + "' where m_loan.id = " + loanId;
+        this.jdbcTemplate.execute(sql);
+    }
+    
+    private void validateForReasignLoanOfficerForLoans(final LocalDate dateOfLoanOfficerAssignment,
+            LoanOfficerAssignmentHistoryData loanOfficerAssignmentHistory, final Long loanId, final Long fromLoanOfficerId) {
+        LocalDate loanSubmitedOnDate = loanOfficerAssignmentHistory.getLoanSubmittedOnDate();
+        
+        if (!loanOfficerAssignmentHistory
+                .hasLoanOfficer(fromLoanOfficerId)) { throw new LoanOfficerAssignmentException(loanId, fromLoanOfficerId); }
+        if (loanSubmitedOnDate.isAfter(dateOfLoanOfficerAssignment)) {
+            final String errorMessage = "The Loan Officer assignment date (" + dateOfLoanOfficerAssignment.toString()
+                    + ") cannot be before loan submitted date (" + loanSubmitedOnDate.toString() + ").";
+
+            throw new LoanOfficerAssignmentDateException("cannot.be.before.loan.submittal.date", errorMessage, dateOfLoanOfficerAssignment,
+                    loanSubmitedOnDate);
+        } else if (DateUtils.getLocalDateOfTenant().isBefore(dateOfLoanOfficerAssignment)) {
+
+            final String errorMessage = "The Loan Officer assignment date (" + dateOfLoanOfficerAssignment + ") cannot be in the future.";
+
+            throw new LoanOfficerAssignmentDateException("cannot.be.a.future.date", errorMessage, dateOfLoanOfficerAssignment);
+        } else if (loanOfficerAssignmentHistory.getLatestHistoryRecordStartdate() != null
+                && loanOfficerAssignmentHistory.hasHistoryStartDateBefore(dateOfLoanOfficerAssignment)) {
+            final String errorMessage = "Loan with identifier " + loanId + " was already assigned before date "
+                    + dateOfLoanOfficerAssignment;
+            throw new LoanOfficerAssignmentDateException("is.before.last.assignment.date", errorMessage, loanId,
+                    dateOfLoanOfficerAssignment);
+        }
+
     }
 }
