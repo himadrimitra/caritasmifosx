@@ -43,19 +43,17 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
     @Override
     public void updateCreditBureauEnquiry() {
         int limit = 1000;
-        int offset = 0;
-        int totalRecords = 0;
+        int offSet = 0 ;
         StringBuilder updateBuilder = new StringBuilder();
         updateBuilder.append("UPDATE f_creditbureau_enquiry enquiry SET enquiry.request_location=? , ");
         updateBuilder.append("enquiry.response_location=?, enquiry.errors_json=? WHERE  enquiry.id=?");
         final String errorsJson = getErrorsJson();
-        do {
-            Page<CreditBureauEnquiryData> pageitems = getCreditBureauEnquiryData(offset, limit);
-            totalRecords = pageitems.getTotalFilteredRecords();
-            List<CreditBureauEnquiryData> enquiryDataList = pageitems.getPageItems();
-            moveDataIntoFileSystem(enquiryDataList, updateBuilder.toString(), errorsJson);
-            offset = offset + enquiryDataList.size();
-        } while (offset < totalRecords);
+        while(true) {
+        	 Page<CreditBureauEnquiryData> pageItems = getCreditBureauEnquiryData(offSet, limit);
+             if(pageItems == null || pageItems.getPageItems() == null || pageItems.getPageItems().isEmpty()) break ;
+             List<CreditBureauEnquiryData> enquiryDataList = pageItems.getPageItems();
+             moveDataIntoFileSystem(enquiryDataList, updateBuilder.toString(), errorsJson);
+        }
     }
 
     private Page<CreditBureauEnquiryData> getCreditBureauEnquiryData(final Integer offset, final Integer limit) {
@@ -104,18 +102,16 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
     @Override
     public void updateLoanCreditBureauEnquiry() {
         int limit = 1000;
-        int offset = 0;
-        int totalRecords = 0;
+        int offSet = 0 ;
         StringBuilder updateBuilder = new StringBuilder();
         updateBuilder.append("UPDATE f_loan_creditbureau_enquiry enquiry SET enquiry.request_location=? , ");
         updateBuilder.append("enquiry.response_location=?, enquiry.report_location=? WHERE  enquiry.id=?");
-        do {
-            Page<LoanCreditBureauEnquiryData> pageitems = getLoanCreditBureauEnquiryData(offset, limit);
-            totalRecords = pageitems.getTotalFilteredRecords();
-            List<LoanCreditBureauEnquiryData> enquiryDataList = pageitems.getPageItems();
+        while(true) {
+        	Page<LoanCreditBureauEnquiryData> pageItems = getLoanCreditBureauEnquiryData(offSet, limit);
+        	if(pageItems == null || pageItems.getPageItems() == null || pageItems.getPageItems().isEmpty()) break ;
+            List<LoanCreditBureauEnquiryData> enquiryDataList = pageItems.getPageItems();
             moveLoanDataIntoFileSystem(enquiryDataList, updateBuilder.toString());
-            offset = offset + enquiryDataList.size();
-        } while (offset < totalRecords);
+        }
     }
 
     private void moveLoanDataIntoFileSystem(List<LoanCreditBureauEnquiryData> list, final String query) {
