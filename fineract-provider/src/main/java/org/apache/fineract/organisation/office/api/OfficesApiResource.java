@@ -194,8 +194,7 @@ public class OfficesApiResource {
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
         if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam,
-                new Object[] { "activate", "unassignStaff", "assignStaff", "close", "proposeTransfer", "withdrawTransfer", "acceptTransfer",
-                        "rejectTransfer", "updateSavingsAccount", "reject", "withdraw", "reactivate" }); }
+                new Object[] { "activate", "reject" }); }
         return this.toApiJsonSerializer.serialize(result);
     }
 
