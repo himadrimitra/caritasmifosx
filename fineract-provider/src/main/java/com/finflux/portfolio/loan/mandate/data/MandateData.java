@@ -42,6 +42,7 @@ public class MandateData {
         private final String applicantName ;
         private final String applicantMobileNo ;
         private final String applicantEmailId ;
+        private final String applicantAlternateMobileNo;
         
         private Collection<EnumOptionData> accountTypeOptions;
         private Collection<EnumOptionData> debitTypeOptions;
@@ -81,7 +82,7 @@ public class MandateData {
                 final Collection<EnumOptionData> debitTypeOptions,
                 final Collection<EnumOptionData> debitFrequencyOptions,
                 final Collection<EnumOptionData> scannedDocumentOptions,
-                final BankAccountDetailData bankAccountDetails){
+                final BankAccountDetailData bankAccountDetails, final String applicantAlternateMobileNo){
 
                 this.id = id;
                 this.loanId = loanId;
@@ -115,6 +116,7 @@ public class MandateData {
                 this.debitFrequencyOptions = debitFrequencyOptions;
                 this.scannedDocumentOptions = scannedDocumentOptions;
                 this.bankAccountDetails = bankAccountDetails ;
+                this.applicantAlternateMobileNo = applicantAlternateMobileNo;
         }
 
         public static MandateData createTemplate(final Collection<EnumOptionData> scannedDocumentOptions, final LoanAccountData loan,
@@ -155,11 +157,12 @@ public class MandateData {
                 final Collection<EnumOptionData> accountTypeOptions = AccountTypeEnum.getAccountTypeOptionData();
                 final Collection<EnumOptionData> debitTypeOptions = DebitTypeEnum.getDebitTypeOptionData();
                 final Collection<EnumOptionData> debitFrequencyOptions = DebitFrequencyEnum.getDebitFrequencyOptionData();
+                final String applicantAlternateMobileNo = null;
 
                 return new MandateData(id, loanId, loanAccountNo, applicantName, applicantMobileNo, applicantEmailId, mandateStatus, requestDate, umrn, bankAccountHolderName, bankName,
                         branchName, bankAccountNumber, micr, ifsc, accountType, periodFromDate, periodToDate, periodUntilCancelled,
                         debitType, amount, debitFrequency, scannedDocumentId, scannedDocumentName, returnReason, returnProcessDate,
-                        returnProcessReferenceId, accountTypeOptions, debitTypeOptions, debitFrequencyOptions, scannedDocumentOptions, bankAccountDetails);
+                        returnProcessReferenceId, accountTypeOptions, debitTypeOptions, debitFrequencyOptions, scannedDocumentOptions, bankAccountDetails, applicantAlternateMobileNo);
         }
 
         public static MandateData createTemplateFrom(final MandateData data,
@@ -181,11 +184,12 @@ public class MandateData {
                 final Collection<EnumOptionData> debitTypeOptions = DebitTypeEnum.getDebitTypeOptionData();
                 final Collection<EnumOptionData> debitFrequencyOptions = DebitFrequencyEnum.getDebitFrequencyOptionData();
                 final BankAccountDetailData bankAccountDetailsData = null ;
+                final String applicantAlternateMobileNo = null;
                 return new MandateData(id, loanId, loanAccountNo, applicantName, applicantMobileNo, applicantEmailId, mandateStatus, requestDate, data.umrn, data.bankAccountHolderName,
                         data.bankName, data.branchName, data.bankAccountNumber, data.micr, data.ifsc, data.accountType,
                         data.periodFromDate, data.periodToDate, data.periodUntilCancelled, data.debitType, data.amount,
                         data.debitFrequency, scannedDocumentId, scannedDocumentName, returnReason, returnProcessDate,
-                        returnProcessReferenceId, accountTypeOptions, debitTypeOptions, debitFrequencyOptions, scannedDocumentOptions, bankAccountDetailsData);
+                        returnProcessReferenceId, accountTypeOptions, debitTypeOptions, debitFrequencyOptions, scannedDocumentOptions, bankAccountDetailsData, applicantAlternateMobileNo);
         }
 
         public static MandateData from(Long id, Long loanId, String loanAccountNo, 
@@ -196,7 +200,7 @@ public class MandateData {
                 String bankAccountHolderName, String bankName, String branchName, String bankAccountNumber, String micr, String ifsc,
                 EnumOptionData accountType, Date periodFromDate, Date periodToDate, Boolean periodUntilCancelled, EnumOptionData debitType,
                 BigDecimal amount, EnumOptionData debitFrequency, Long scannedDocumentId, String scannedDocumentName, String returnReason,
-                Date returnProcessDate, String returnProcessReferenceId) {
+                Date returnProcessDate, String returnProcessReferenceId, final String applicantAlternateMobileNo) {
 
                 final Collection<EnumOptionData> accountTypeOptions = null;
                 final Collection<EnumOptionData> debitTypeOptions = null;
@@ -206,7 +210,7 @@ public class MandateData {
                 return new MandateData(id, loanId, loanAccountNo, applicantName, applicantMobileNo, applicantEmailId, mandateStatus, requestDate, umrn, bankAccountHolderName, bankName,
                         branchName, bankAccountNumber, micr, ifsc, accountType, periodFromDate, periodToDate, periodUntilCancelled,
                         debitType, amount, debitFrequency, scannedDocumentId, scannedDocumentName, returnReason, returnProcessDate,
-                        returnProcessReferenceId, accountTypeOptions, debitTypeOptions, debitFrequencyOptions, scannedDocumentOptions, bankAccountDetailsData);
+                        returnProcessReferenceId, accountTypeOptions, debitTypeOptions, debitFrequencyOptions, scannedDocumentOptions, bankAccountDetailsData, applicantAlternateMobileNo);
         }
 
         public Long getId() {
@@ -311,6 +315,10 @@ public class MandateData {
 
         public String getApplicantEmailId() {
             return this.applicantEmailId;
+        }
+        
+        public String getApplicantAlternateMobileNo() {
+            return this.applicantAlternateMobileNo;
         }
 
         public void setEnumOptions(Collection<EnumOptionData> accountTypeOptionData, Collection<EnumOptionData> debitTypeOptionData,
