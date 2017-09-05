@@ -690,19 +690,19 @@ public class SavingsProductDataValidator {
                 int i = 0;
                 do {
                     final JsonObject jsonObject = paymentChannelMappingArray.get(i).getAsJsonObject();
-                    final Long paymentTypeId = jsonObject.get(SAVINGS_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_TYPE.getValue()).getAsLong();
-                    final Long paymentSpecificFundAccountId = jsonObject.get(SAVINGS_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue())
-                            .getAsLong();
+                    final Long paymentTypeId = this.fromApiJsonHelper.extractLongNamed(SAVINGS_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_TYPE.getValue(), jsonObject);
+                    final Long paymentSpecificFundAccountId =  this.fromApiJsonHelper.extractLongNamed(SAVINGS_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue(),jsonObject);
+                            
                     baseDataValidator
                             .reset()
                             .parameter(
-                                    SAVINGS_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue() + "[" + i + "]."
+                                    SAVINGS_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue() + "."
                                             + SAVINGS_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_TYPE.toString()).value(paymentTypeId).notNull()
                             .integerGreaterThanZero();
                     baseDataValidator
                             .reset()
                             .parameter(
-                                    SAVINGS_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue() + "[" + i + "]."
+                                    SAVINGS_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue() + "."
                                             + SAVINGS_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue()).value(paymentSpecificFundAccountId)
                             .notNull().integerGreaterThanZero();
                     i++;
@@ -713,7 +713,7 @@ public class SavingsProductDataValidator {
 
     private void validateChargeToIncomeAccountMappings(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
         // validate for both fee and penalty charges
-        validateChargeToIncomeAccountMappings(baseDataValidator, element, true);
+        validateChargeToIncomeAccountMappings(baseDataValidator, element, false);
         validateChargeToIncomeAccountMappings(baseDataValidator, element, true);
     }
 
@@ -737,10 +737,10 @@ public class SavingsProductDataValidator {
                     final Long incomeAccountId = this.fromApiJsonHelper.extractLongNamed(
                             SAVINGS_PRODUCT_ACCOUNTING_PARAMS.INCOME_ACCOUNT_ID.getValue(), jsonObject);
                     baseDataValidator.reset()
-                            .parameter(parameterName + "[" + i + "]." + SAVINGS_PRODUCT_ACCOUNTING_PARAMS.CHARGE_ID.getValue())
+                            .parameter(parameterName + "." + SAVINGS_PRODUCT_ACCOUNTING_PARAMS.CHARGE_ID.getValue())
                             .value(chargeId).notNull().integerGreaterThanZero();
                     baseDataValidator.reset()
-                            .parameter(parameterName + "[" + i + "]." + SAVINGS_PRODUCT_ACCOUNTING_PARAMS.INCOME_ACCOUNT_ID.getValue())
+                            .parameter(parameterName + "." + SAVINGS_PRODUCT_ACCOUNTING_PARAMS.INCOME_ACCOUNT_ID.getValue())
                             .value(incomeAccountId).notNull().integerGreaterThanZero();
                     i++;
                 } while (i < chargeToIncomeAccountMappingArray.size());

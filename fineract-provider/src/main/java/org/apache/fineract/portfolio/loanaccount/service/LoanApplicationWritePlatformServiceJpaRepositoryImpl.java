@@ -201,6 +201,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
     private final LoanScheduleValidator loanScheduleValidator;
+    private final BulkLoansReadPlatformService bulkLoansReadPlatformService;
 
     @Autowired
     public LoanApplicationWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final FromJsonHelper fromJsonHelper,
@@ -231,7 +232,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository,
             final PaymentTypeRepositoryWrapper paymentTypeRepository,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
-            final LoanScheduleValidator loanScheduleValidator) {
+            final LoanScheduleValidator loanScheduleValidator,
+            final BulkLoansReadPlatformService bulkLoansReadPlatformService) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -275,6 +277,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.paymentTypeRepository = paymentTypeRepository;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
         this.loanScheduleValidator = loanScheduleValidator;
+        this.bulkLoansReadPlatformService = bulkLoansReadPlatformService;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {

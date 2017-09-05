@@ -832,6 +832,16 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
 
         return centerAccount;
     }
+    
+    @Override
+    public boolean isCenter(Long centerId){
+        StringBuilder sql = new StringBuilder("SELECT ");
+        sql.append("if(center.level_id = gl.id,true,false)");
+        sql.append("from m_group center ");
+        sql.append("left join m_group_level gl on gl.level_name = 'Center' ");
+        sql.append("where center.id = ? ");
+        return this.jdbcTemplate.queryForObject(sql.toString(), Boolean.class, centerId);
+    }
 
 	
 }

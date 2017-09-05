@@ -232,6 +232,7 @@ public class CashBasedAccountingProcessorForSavings implements AccountingProcess
                             CASH_ACCOUNTS_FOR_SAVINGS.INCOME_FROM_FEES, savingsProductId, paymentTypeId, amount, isReversal, feePayments,
                             journalEntry);
                 }
+                
             }
 
             /** Handle Transfers proposal **/
@@ -259,11 +260,12 @@ public class CashBasedAccountingProcessorForSavings implements AccountingProcess
                 this.helper.createCashBasedJournalEntriesAndReversalsForSavings(CASH_ACCOUNTS_FOR_SAVINGS.LOSSES_WRITTEN_OFF.getValue(),
                         CASH_ACCOUNTS_FOR_SAVINGS.OVERDRAFT_PORTFOLIO_CONTROL.getValue(), savingsProductId, paymentTypeId, amount,
                         isReversal, journalEntry);
-            } else if (savingsTransactionDTO.getTransactionType().isOverdraftFee()) {
+            } 
+            /*else if (savingsTransactionDTO.getTransactionType().isOverdraftFee()) {
                 this.helper.createCashBasedJournalEntriesAndReversalsForSavingsCharges(
                         CASH_ACCOUNTS_FOR_SAVINGS.OVERDRAFT_PORTFOLIO_CONTROL, CASH_ACCOUNTS_FOR_SAVINGS.INCOME_FROM_FEES,
                         savingsProductId, paymentTypeId, amount, isReversal, feePayments, journalEntry);
-            }
+            }*/
 
             if (!journalEntry.getJournalEntryDetails().isEmpty()) {
                 journalEntryDetails.add(journalEntry);

@@ -2016,14 +2016,14 @@ public final class LoanProductDataValidator {
                     final Long accountId = this.fromApiJsonHelper.extractLongNamed(
                     		accountIdParamName, jsonObject);
                     baseDataValidator.reset()
-                            .parameter(arrayParamName + "[" + i + "]." + propertyIdParamName)
+                            .parameter(arrayParamName + "." + propertyIdParamName)
                             .value(propertyId).notNull().integerGreaterThanZero();
                     baseDataValidator.reset()
-                            .parameter(arrayParamName + "[" + i + "]." + accountIdParamName)
+                            .parameter(arrayParamName + "." + accountIdParamName)
                             .value(accountId).notNull().integerGreaterThanZero();
                     if(existingpropertyIds.contains(propertyId)){
                     	 baseDataValidator.reset()
-                         .parameter(arrayParamName + "[" + i + "]." + propertyIdParamName)
+                         .parameter(arrayParamName + "." + propertyIdParamName)
                          .value(propertyId).failWithCode("duplicate");
                     }else{
                     	existingpropertyIds.add(propertyId);	

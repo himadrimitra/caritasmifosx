@@ -19,8 +19,11 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import org.apache.fineract.organisation.staff.data.StaffAccountSummaryCollectionData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanOfficerAssignmentHistoryData;
 
 public interface BulkLoansReadPlatformService {
 
     StaffAccountSummaryCollectionData retrieveLoanOfficerAccountSummary(final Long loanOfficerId);
+    
+    LoanOfficerAssignmentHistoryData retrieveLoanOfficerAssignmentHistoryByLoanId(final Long loanId);
 }
