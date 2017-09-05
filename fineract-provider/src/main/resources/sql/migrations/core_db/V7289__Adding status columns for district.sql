@@ -1,5 +1,5 @@
 ALTER TABLE `f_district`
-	CHANGE COLUMN `iso_district_code` `iso_district_code` VARCHAR(5) NULL DEFAULT NULL AFTER `state_id`;
+	CHANGE COLUMN `iso_district_code` `iso_district_code` VARCHAR(5) NULL DEFAULT NULL AFTER `state_id`,
 	ADD COLUMN `status_enum` INT(5) NOT NULL DEFAULT '300' AFTER `district_name`,
 	ADD COLUMN `activation_date` DATE NULL DEFAULT NULL AFTER `status_enum`,
 	ADD COLUMN `actvivatedby_userid` BIGINT(20) NULL DEFAULT NULL AFTER `activation_date`,
