@@ -686,7 +686,7 @@ public class RecurringDepositAccount extends SavingsAccount {
     public void postPreMaturityInterest(final LocalDate accountCloseDate, final boolean isPreMatureClosure,
             final boolean isSavingsInterestPostingAtCurrentPeriodEnd, final Integer financialYearBeginningMonth) {
 
-        final Money interestPostedToDate = totalInterestPosted();
+        final Money interestPostedToDate = reverseFutureTransactionsAndGetTotalInterestPostedAmount(accountCloseDate);
         // calculate interest before one day of closure date
         final LocalDate interestCalculatedToDate = accountCloseDate.minusDays(1);
         final Money interestOnMaturity = calculatePreMatureInterest(interestCalculatedToDate,
@@ -697,7 +697,8 @@ public class RecurringDepositAccount extends SavingsAccount {
 
         // post remaining interest
         final Money remainigInterestToBePosted = interestOnMaturity.minus(interestPostedToDate);
-        if (!remainigInterestToBePosted.isZero()) {
+        
+        if (remainigInterestToBePosted.isGreaterThanZero()) {
             final boolean postInterestAsOn = false;
             final SavingsAccountTransaction newPostingTransaction = SavingsAccountTransaction.interestPosting(this, office(),
                     accountCloseDate, remainigInterestToBePosted, postInterestAsOn);
@@ -799,6 +800,20 @@ public class RecurringDepositAccount extends SavingsAccount {
             }
         }
 
+        return interestPostedToDate;
+    }
+    
+    private Money reverseFutureTransactionsAndGetTotalInterestPostedAmount(final LocalDate accountCloseDate) {
+        Money interestPostedToDate = Money.zero(this.currency);
+        for (final SavingsAccountTransaction transaction : this.transactions) {
+            if (transaction.isInterestPostingAndNotReversed()) {
+                if (!transaction.isAfter(accountCloseDate)) {
+                    interestPostedToDate = interestPostedToDate.plus(transaction.getAmount(this.currency));
+                }else{
+                    transaction.reverse();
+                }
+            }
+        }
         return interestPostedToDate;
     }
 

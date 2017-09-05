@@ -79,9 +79,7 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
                 sqlBuilder.append(", lp.short_name as loanShortName, IF(l.principal_disbursed_derived IS NULL, 0, l.principal_disbursed_derived) AS originalLoanAmount ");
                 sqlBuilder.append(", IF(l.total_outstanding_derived IS NULL, 0, l.total_outstanding_derived) AS loanBalance ");
                 sqlBuilder.append(", IF(l.total_repayment_derived IS NULL, 0, l.total_repayment_derived) AS loanAmountPaid ");
-                sqlBuilder.append(", s.id AS savingsId, s.account_no AS savingsAccountNo, sp.name AS savingsProductName, s.status_enum AS savingsStatusEnum ");
-                sqlBuilder.append(", IF(s.account_balance_derived IS NULL, 0, s.account_balance_derived) AS savingsBalance, ");
-                sqlBuilder.append(" IF(la.principal_overdue_derived IS NULL,false,true) AS inArrears ");
+                sqlBuilder.append(", IF(la.principal_overdue_derived IS NULL,false,true) AS inArrears ");
             }
             sqlBuilder.append("FROM m_group g ");
             sqlBuilder.append("JOIN m_office go ON go.id = g.office_id ");
@@ -92,8 +90,6 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
                 sqlBuilder.append("LEFT JOIN m_loan l ON l.client_id = c.id AND l.loan_status_id = 300 ");
                 sqlBuilder.append(" LEFT JOIN m_loan_arrears_aging la ON la.loan_id = l.id ");
                 sqlBuilder.append("LEFT JOIN m_product_loan AS lp ON lp.id = l.product_id ");
-                sqlBuilder.append("LEFT JOIN m_savings_account s ON s.client_id = c.id ");
-                sqlBuilder.append("LEFT JOIN m_savings_product AS sp ON sp.id = s.product_id ");
             }
 
             this.schemaSql = sqlBuilder.toString();
