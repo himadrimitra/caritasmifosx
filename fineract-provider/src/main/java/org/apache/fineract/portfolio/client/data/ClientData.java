@@ -110,6 +110,7 @@ final public class ClientData implements Comparable<ClientData> {
     private Collection<ClientData> possibleClientMatches = null;
     
     private Collection<AddressData> addressData;
+    private final boolean isLocked;
    
 
     public static ClientData template(final Long officeId, final LocalDate joinedDate, final Collection<OfficeData> officeOptions,
@@ -154,12 +155,14 @@ final public class ClientData implements Comparable<ClientData> {
         final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
         final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         final Collection<AddressData> addressData = null;
+        final boolean isLocked = false;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
-                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, joinedDate, imageId, staffId,
-                staffName, officeOptions, groups, staffOptions, narrations, genderOptions, timeline, savingProductOptions,
-                savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
-                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions,
-                clientNonPersonDetails, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData);
+                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, joinedDate,
+                imageId, staffId, staffName, officeOptions, groups, staffOptions, narrations, genderOptions, timeline,
+                savingProductOptions, savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
+                clientClassification, clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions,
+                clientNonPersonMainBusinessLineOptions, clientNonPersonDetails, clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
+                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData, isLocked);
 
     }
 
@@ -167,15 +170,17 @@ final public class ClientData implements Comparable<ClientData> {
 
         return new ClientData(clientData.accountNo, clientData.status, clientData.subStatus, clientData.officeId, clientData.officeName,
                 clientData.transferToOfficeId, clientData.transferToOfficeName, clientData.id, clientData.firstname, clientData.middlename,
-                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo, clientData.alternateMobileNo,
-                clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId, clientData.staffId,
-                clientData.staffName, templateData.officeOptions, clientData.groups, templateData.staffOptions, templateData.narrations,
-                templateData.genderOptions, clientData.timeline, templateData.savingProductOptions, clientData.savingsProductId,
-                clientData.savingsProductName, clientData.savingsAccountId, clientData.savingAccountOptions, clientData.clientType,
-                clientData.clientClassification, templateData.clientTypeOptions, templateData.clientClassificationOptions,
-                templateData.clientNonPersonConstitutionOptions, templateData.clientNonPersonMainBusinessLineOptions,
-                clientData.clientNonPersonDetails, templateData.clientLegalFormOptions, clientData.legalForm,
-                clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas,templateData.closureReasons, clientData.closureReason, clientData.emailId, clientData.addressData);
+                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo,
+                clientData.alternateMobileNo, clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId,
+                clientData.staffId, clientData.staffName, templateData.officeOptions, clientData.groups, templateData.staffOptions,
+                templateData.narrations, templateData.genderOptions, clientData.timeline, templateData.savingProductOptions,
+                clientData.savingsProductId, clientData.savingsProductName, clientData.savingsAccountId, clientData.savingAccountOptions,
+                clientData.clientType, clientData.clientClassification, templateData.clientTypeOptions,
+                templateData.clientClassificationOptions, templateData.clientNonPersonConstitutionOptions,
+                templateData.clientNonPersonMainBusinessLineOptions, clientData.clientNonPersonDetails,
+                templateData.clientLegalFormOptions, clientData.legalForm, clientData.loanAccountSummaryDatas,
+                clientData.savingsAccountSummaryDatas, templateData.closureReasons, clientData.closureReason, clientData.emailId,
+                clientData.addressData, clientData.isLocked);
 
     }
 
@@ -184,44 +189,46 @@ final public class ClientData implements Comparable<ClientData> {
 
         return new ClientData(clientData.accountNo, clientData.status, clientData.subStatus, clientData.officeId, clientData.officeName,
                 clientData.transferToOfficeId, clientData.transferToOfficeName, clientData.id, clientData.firstname, clientData.middlename,
-                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo, clientData.alternateMobileNo,
-                clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId, clientData.staffId,
-                clientData.staffName, clientData.officeOptions, clientData.groups, clientData.staffOptions, clientData.narrations,
-                clientData.genderOptions, clientData.timeline, clientData.savingProductOptions, clientData.savingsProductId,
-                clientData.savingsProductName, clientData.savingsAccountId, savingAccountOptions, clientData.clientType,
-                clientData.clientClassification, clientData.clientTypeOptions, clientData.clientClassificationOptions,
-                clientData.clientNonPersonConstitutionOptions, clientData.clientNonPersonMainBusinessLineOptions,
-                clientData.clientNonPersonDetails, clientData.clientLegalFormOptions, clientData.legalForm,
-                clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas, clientData.closureReasons, clientData.closureReason, clientData.emailId, clientData.addressData);
+                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo,
+                clientData.alternateMobileNo, clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId,
+                clientData.staffId, clientData.staffName, clientData.officeOptions, clientData.groups, clientData.staffOptions,
+                clientData.narrations, clientData.genderOptions, clientData.timeline, clientData.savingProductOptions,
+                clientData.savingsProductId, clientData.savingsProductName, clientData.savingsAccountId, savingAccountOptions,
+                clientData.clientType, clientData.clientClassification, clientData.clientTypeOptions,
+                clientData.clientClassificationOptions, clientData.clientNonPersonConstitutionOptions,
+                clientData.clientNonPersonMainBusinessLineOptions, clientData.clientNonPersonDetails, clientData.clientLegalFormOptions,
+                clientData.legalForm, clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas, clientData.closureReasons,
+                clientData.closureReason, clientData.emailId, clientData.addressData, clientData.isLocked);
 
     }
 
     public static ClientData setParentGroups(final ClientData clientData, final Collection<GroupGeneralData> parentGroups) {
         return new ClientData(clientData.accountNo, clientData.status, clientData.subStatus, clientData.officeId, clientData.officeName,
                 clientData.transferToOfficeId, clientData.transferToOfficeName, clientData.id, clientData.firstname, clientData.middlename,
-                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo, clientData.alternateMobileNo,
-                clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId, clientData.staffId,
-                clientData.staffName, clientData.officeOptions, parentGroups, clientData.staffOptions, null, null, clientData.timeline,
-                clientData.savingProductOptions, clientData.savingsProductId, clientData.savingsProductName, clientData.savingsAccountId,
-                clientData.savingAccountOptions, clientData.clientType, clientData.clientClassification, clientData.clientTypeOptions,
-                clientData.clientClassificationOptions, clientData.clientNonPersonConstitutionOptions,
+                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo,
+                clientData.alternateMobileNo, clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId,
+                clientData.staffId, clientData.staffName, clientData.officeOptions, parentGroups, clientData.staffOptions, null, null,
+                clientData.timeline, clientData.savingProductOptions, clientData.savingsProductId, clientData.savingsProductName,
+                clientData.savingsAccountId, clientData.savingAccountOptions, clientData.clientType, clientData.clientClassification,
+                clientData.clientTypeOptions, clientData.clientClassificationOptions, clientData.clientNonPersonConstitutionOptions,
                 clientData.clientNonPersonMainBusinessLineOptions, clientData.clientNonPersonDetails, clientData.clientLegalFormOptions,
-                clientData.legalForm, clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas, clientData.closureReasons, clientData.closureReason, clientData.emailId, clientData.addressData);
-
+                clientData.legalForm, clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas, clientData.closureReasons,
+                clientData.closureReason, clientData.emailId, clientData.addressData, clientData.isLocked);
     }
     
-    public static ClientData lookupforhierarchy(final ClientData clientData, final Collection<GroupGeneralData> parentGroups, final Long officeId, final String officeName) {
+    public static ClientData lookupforhierarchy(final ClientData clientData, final Collection<GroupGeneralData> parentGroups,
+            final Long officeId, final String officeName) {
         return new ClientData(clientData.accountNo, clientData.status, clientData.subStatus, officeId, officeName,
                 clientData.transferToOfficeId, clientData.transferToOfficeName, clientData.id, clientData.firstname, clientData.middlename,
-                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo, clientData.alternateMobileNo,
-                clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId, clientData.staffId,
-                clientData.staffName, clientData.officeOptions, parentGroups, clientData.staffOptions, null, null, clientData.timeline,
-                clientData.savingProductOptions, clientData.savingsProductId, clientData.savingsProductName, clientData.savingsAccountId,
-                clientData.savingAccountOptions, clientData.clientType, clientData.clientClassification, clientData.clientTypeOptions,
-                clientData.clientClassificationOptions, clientData.clientNonPersonConstitutionOptions,
+                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo,
+                clientData.alternateMobileNo, clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId,
+                clientData.staffId, clientData.staffName, clientData.officeOptions, parentGroups, clientData.staffOptions, null, null,
+                clientData.timeline, clientData.savingProductOptions, clientData.savingsProductId, clientData.savingsProductName,
+                clientData.savingsAccountId, clientData.savingAccountOptions, clientData.clientType, clientData.clientClassification,
+                clientData.clientTypeOptions, clientData.clientClassificationOptions, clientData.clientNonPersonConstitutionOptions,
                 clientData.clientNonPersonMainBusinessLineOptions, clientData.clientNonPersonDetails, clientData.clientLegalFormOptions,
-                clientData.legalForm, clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas, clientData.closureReasons, clientData.closureReason, clientData.emailId, clientData.addressData);
-
+                clientData.legalForm, clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas, clientData.closureReasons,
+                clientData.closureReason, clientData.emailId, clientData.addressData, clientData.isLocked);
     }
 
     public static ClientData clientIdentifier(final Long id, final String accountNo, final String firstname, final String middlename,
@@ -265,12 +272,14 @@ final public class ClientData implements Comparable<ClientData> {
         final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
         final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         final Collection<AddressData> addressData = null;
+        final boolean isLocked = false;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
-                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
-                staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
-                savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
-                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions,
-                clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData);
+                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
+                imageId, staffId, staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
+                savingProductOptions, savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
+                clientClassification, clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions,
+                clientNonPersonMainBusinessLineOptions, clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
+                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData, isLocked);
     }
 
     public static ClientData lookup(final Long id, final String displayName, final Long officeId, final String officeName) {
@@ -317,12 +326,14 @@ final public class ClientData implements Comparable<ClientData> {
         final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
         final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         final Collection<AddressData> addressData = null;
+        final boolean isLocked = false;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
-                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
-                staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
-                savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
-                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, 
-                clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData);
+                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
+                imageId, staffId, staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
+                savingProductOptions, savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
+                clientClassification, clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions,
+                clientNonPersonMainBusinessLineOptions, clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
+                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData, isLocked);
 
     }
     
@@ -367,12 +378,14 @@ final public class ClientData implements Comparable<ClientData> {
         final String alternateMobileNo = null;
         final String emailId = null;
         final Collection<AddressData> addressData = null;
+        final boolean isLocked = false;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
-                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
-                staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
-                savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
-                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, 
-                clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas, closureReasons, closureReason,emailId, addressData);
+                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
+                imageId, staffId, staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
+                savingProductOptions, savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
+                clientClassification, clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions,
+                clientNonPersonMainBusinessLineOptions, clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
+                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData, isLocked);
 
     }
 
@@ -384,8 +397,7 @@ final public class ClientData implements Comparable<ClientData> {
             final LocalDate activationDate, final Long imageId, final Long staffId, final String staffName,
             final ClientTimelineData timeline, final Long savingsProductId, final String savingsProductName, final Long savingsAccountId,
             final CodeValueData clientType, final CodeValueData clientClassification, final EnumOptionData legalForm,
-            final ClientNonPersonData clientNonPerson, CodeValueData closureReason, final String emailId) {
-
+            final ClientNonPersonData clientNonPerson, CodeValueData closureReason, final String emailId, final boolean isLocked) {
         final Collection<OfficeData> allowedOffices = null;
         final Collection<GroupGeneralData> groups = null;
         final Collection<StaffData> staffOptions = null;
@@ -405,14 +417,13 @@ final public class ClientData implements Comparable<ClientData> {
                 staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
                 savingsProductId, savingsProductName, savingsAccountId, null, clientType, clientClassification, clientTypeOptions,
                 clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientNonPerson,
-                clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData);
+                clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData, isLocked);
 
     }
 
     public static ClientData instanceDedup(final Long id, final String firstname, final String middlename, final String lastname,
             final String fullname, final String displayName, final String mobileNo, final LocalDate dateOfBirth, final CodeValueData gender,
             final EnumOptionData legalForm, final ClientNonPersonData clientNonPerson) {
-        
         final String accountNo = null;
         final EnumOptionData status = null;
         final CodeValueData subStatus = null;
@@ -449,14 +460,14 @@ final public class ClientData implements Comparable<ClientData> {
         final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         final String emailId = null;
         final Collection<AddressData> addressData = null;
-
+        final boolean isLocked = false;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
                 middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
-                imageId, staffId,staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
-                savingProductOptions,savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
-                clientClassification, clientTypeOptions,clientClassificationOptions, clientNonPersonConstitutionOptions,
-                clientNonPersonMainBusinessLineOptions, clientNonPerson,clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
-                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData);
+                imageId, staffId, staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
+                savingProductOptions, savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
+                clientClassification, clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions,
+                clientNonPersonMainBusinessLineOptions, clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
+                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData, isLocked);
 
     }
 
@@ -503,13 +514,14 @@ final public class ClientData implements Comparable<ClientData> {
         final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
         final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         final Collection<AddressData> addressData = null;
+        final boolean isLocked = false;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
                 middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                 imageId, staffId, staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
                 savingProductOptions, savingsProductId, savingsProductName, savingsAccountId, null, clientType, clientClassification,
                 clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions,
                 clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas, closureReasons,
-                closureReason, emailId, addressData);
+                closureReason, emailId, addressData, isLocked);
     }
     
     public static ClientData formClientData(final Long id, final String displayName) {
@@ -558,20 +570,21 @@ final public class ClientData implements Comparable<ClientData> {
         final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = new ArrayList<>();
         final Collection<AddressData> addressData = null;
+        final boolean isLocked = false;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
-                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
-                staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
-                savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
-                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, 
-                clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData);
-
+                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
+                imageId, staffId, staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
+                savingProductOptions, savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
+                clientClassification, clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions,
+                clientNonPersonMainBusinessLineOptions, clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
+                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData, isLocked);
     }
 
     private ClientData(final String accountNo, final EnumOptionData status, final CodeValueData subStatus, final Long officeId,
             final String officeName, final Long transferToOfficeId, final String transferToOfficeName, final Long id,
             final String firstname, final String middlename, final String lastname, final String fullname, final String displayName,
-            final String externalId, final String mobileNo, final String alternateMobileNo, final LocalDate dateOfBirth, final CodeValueData gender,
-            final LocalDate activationDate, final Long imageId, final Long staffId, final String staffName,
+            final String externalId, final String mobileNo, final String alternateMobileNo, final LocalDate dateOfBirth,
+            final CodeValueData gender, final LocalDate activationDate, final Long imageId, final Long staffId, final String staffName,
             final Collection<OfficeData> allowedOffices, final Collection<GroupGeneralData> groups,
             final Collection<StaffData> staffOptions, final Collection<CodeValueData> narrations,
             final Collection<CodeValueData> genderOptions, final ClientTimelineData timeline,
@@ -583,8 +596,8 @@ final public class ClientData implements Comparable<ClientData> {
             final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions, final ClientNonPersonData clientNonPerson,
             final List<EnumOptionData> clientLegalFormOptions, final EnumOptionData legalForm,
             final Collection<LoanAccountSummaryData> loanAccountSummaryDatas,
-            final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas, Collection<CodeValueData> closureReasons, CodeValueData closureReason, String emailId,
-            final Collection<AddressData> addressData) {
+            final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas, Collection<CodeValueData> closureReasons,
+            CodeValueData closureReason, String emailId, final Collection<AddressData> addressData, final boolean isLocked) {
         this.accountNo = accountNo;
         this.status = status;
         if (status != null) {
@@ -650,6 +663,7 @@ final public class ClientData implements Comparable<ClientData> {
         this.savingsAccountSummaryDatas = savingsAccountSummaryDatas;
         this.closureReasons = closureReasons;
         this.addressData = addressData;
+        this.isLocked = isLocked;
     }
     
     public static ClientData formClientData(final Long id, final String displayName, final LocalDate dateOfBirth,
@@ -696,13 +710,14 @@ final public class ClientData implements Comparable<ClientData> {
         final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = new ArrayList<>();
         final Collection<AddressData> addressData = null;
+        final boolean isLocked = false;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
                 middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                 imageId, staffId, staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
                 savingProductOptions, savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
                 clientClassification, clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions,
                 clientNonPersonMainBusinessLineOptions, clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
-                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData);
+                savingsAccountSummaryDatas, closureReasons, closureReason, emailId, addressData, isLocked);
     }
 
     public Long id() {

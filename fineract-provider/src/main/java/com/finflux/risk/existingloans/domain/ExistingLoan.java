@@ -142,6 +142,9 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
     @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "existingLoan", orphanRemoval = true)
     private List<CreditBureauPaymentDetails> creditBureauPaymentDetails = new ArrayList<>();
+    
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
 
     public static ExistingLoan saveExistingLoan(final Client client, final Long loanApplicationId, final Long loanId,
             final CodeValue source, final CreditBureauProduct creditBureauProduct, final Long loanCreditBureauEnquiryId,
@@ -480,5 +483,9 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
     
     public void addPaymentdetail(final CreditBureauPaymentDetails paymentdetail){
         this.creditBureauPaymentDetails.add(paymentdetail);
+    }
+    
+    public boolean isLocked() {
+        return this.isLocked;
     }
 }

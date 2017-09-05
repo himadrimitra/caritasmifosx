@@ -242,6 +242,9 @@ public final class Client extends AbstractPersistable<Long> {
     
     @Column(name = "email_id", length = 100, nullable = true)
     private String emailId;
+    
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
 
     public static Client createNew(final AppUser currentUser, final Office clientOffice, final Group clientParentGroup, final Staff staff,
             final SavingsProduct savingsProduct, final CodeValue gender, final CodeValue clientType, final CodeValue clientClassification,
@@ -1123,6 +1126,10 @@ public final class Client extends AbstractPersistable<Long> {
 
     public CodeValue getClientClassification() {
         return this.clientClassification;
+    }
+
+    public boolean isLocked() {
+        return this.isLocked;
     }
     
 }

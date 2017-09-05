@@ -81,6 +81,9 @@ public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_reference", nullable = true)
     private Client clientReference;
+    
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
 
     protected FamilyDetail() {}
 
@@ -350,5 +353,9 @@ public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
     
     public void removeFamilyMemberAssociation(){
     	this.clientReference = null;
+    }
+    
+    public boolean isLocked() {
+        return this.isLocked;
     }
 }

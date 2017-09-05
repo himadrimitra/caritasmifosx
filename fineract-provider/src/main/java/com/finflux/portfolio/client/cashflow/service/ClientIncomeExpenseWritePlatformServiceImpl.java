@@ -11,15 +11,19 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import com.finflux.common.util.FinfluxCollectionUtils;
 import com.finflux.portfolio.client.cashflow.data.ClientIncomeExpenseDataValidator;
-import com.finflux.portfolio.client.cashflow.domain.ClientIncomeExpenseRepositoryWrapper;
 import com.finflux.portfolio.client.cashflow.domain.ClientIncomeExpense;
+import com.finflux.portfolio.client.cashflow.domain.ClientIncomeExpenseRepositoryWrapper;
 
 @Service
 public class ClientIncomeExpenseWritePlatformServiceImpl implements ClientIncomeExpenseWritePlatformService {
@@ -31,16 +35,19 @@ public class ClientIncomeExpenseWritePlatformServiceImpl implements ClientIncome
     private final ClientIncomeExpenseDataAssembler assembler;
     private final ClientIncomeExpenseRepositoryWrapper repository;
     private final ClientRepositoryWrapper clientRepository;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public ClientIncomeExpenseWritePlatformServiceImpl(final PlatformSecurityContext context,
             final ClientIncomeExpenseDataValidator validator, final ClientIncomeExpenseDataAssembler assembler,
-            final ClientIncomeExpenseRepositoryWrapper loanPurposeGroupRepository, final ClientRepositoryWrapper clientRepository) {
+            final ClientIncomeExpenseRepositoryWrapper loanPurposeGroupRepository, final ClientRepositoryWrapper clientRepository,
+            final BusinessEventNotifierService businessEventNotifierService) {
         this.context = context;
         this.validator = validator;
         this.assembler = assembler;
         this.repository = loanPurposeGroupRepository;
         this.clientRepository = clientRepository;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Transactional
@@ -77,8 +84,9 @@ public class ClientIncomeExpenseWritePlatformServiceImpl implements ClientIncome
             
             final ClientIncomeExpense clientIncomeExpense = this.repository.findOneWithNotFoundDetection(clientIncomeExpenseId);
 
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.CLIENT_INCOME_EXPENSE_UPDATE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, clientIncomeExpense.isLocked()));
             
-
             final Map<String, Object> changes = this.assembler.assembleUpdateForm(clientIncomeExpense, command);
 
             if (!changes.isEmpty()) {

@@ -63,6 +63,7 @@ import org.apache.fineract.portfolio.client.exception.InvalidClientSavingProduct
 import org.apache.fineract.portfolio.client.exception.InvalidClientStateTransitionException;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepository;
@@ -93,6 +94,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.entitylock.service.LockOrUnlockEntityServiceImpl;
 import com.finflux.familydetail.FamilyDetailsApiConstants;
 import com.finflux.familydetail.service.FamilyDetailWritePlatromService;
 import com.finflux.kyc.address.api.AddressApiConstants;
@@ -456,6 +458,10 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             this.fromApiJsonDeserializer.validateForUpdate(command);
 
             final Client clientForUpdate = this.clientRepository.findOneWithNotFoundDetection(clientId);
+            
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.CLIENT_UPDATE,
+                    constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, clientForUpdate.isLocked()));
+            
             final String clientHierarchy = clientForUpdate.getOffice().getHierarchy();
 
             this.context.validateAccessRights(clientHierarchy);

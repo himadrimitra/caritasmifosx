@@ -803,6 +803,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             
             Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.JSON_COMMAND, command);
             eventDetailMap.put(BUSINESS_ENTITY.LOAN, existingLoanApplication);
+            eventDetailMap.put(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, existingLoanApplication.isLocked());
             this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_MODIFY,
                     eventDetailMap);
 
