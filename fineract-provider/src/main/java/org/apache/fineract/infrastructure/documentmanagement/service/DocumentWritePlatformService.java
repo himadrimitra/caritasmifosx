@@ -19,7 +19,6 @@
 package org.apache.fineract.infrastructure.documentmanagement.service;
 
 import java.io.InputStream;
-import java.util.Map;
 
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -40,5 +39,8 @@ public interface DocumentWritePlatformService {
     
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'GENERATE_DOCUMENT')")
     Long generateDocument(final String entityType, final Long entityId, final Long reportIdetifier, final MultivaluedMap<String, String> reportParams);
+    
+    @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'REGENERATE_DOCUMENT')")
+    Long reGenerateDocument(final String entityType, final Long entityId, final Long documentIdentifier, final MultivaluedMap<String, String> reportParams);
 
 }

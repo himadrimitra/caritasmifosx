@@ -20,6 +20,8 @@ package org.apache.fineract.infrastructure.documentmanagement.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +30,7 @@ import javax.ws.rs.core.Response;
 
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.dataqueries.service.ReadReportingService;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommandValidator;
@@ -35,10 +38,9 @@ import org.apache.fineract.infrastructure.documentmanagement.contentrepository.C
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryFactory;
 import org.apache.fineract.infrastructure.documentmanagement.data.DocumentTagData;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Document;
-import org.apache.fineract.infrastructure.documentmanagement.domain.DocumentRepository;
+import org.apache.fineract.infrastructure.documentmanagement.domain.DocumentRepositoryWrapper;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
 import org.apache.fineract.infrastructure.documentmanagement.exception.ContentManagementException;
-import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentNotFoundException;
 import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentReportMappingNotfoundException;
 import org.apache.fineract.infrastructure.documentmanagement.exception.InvalidEntityTypeForDocumentManagementException;
 import org.apache.fineract.infrastructure.report.provider.ReportingProcessServiceProvider;
@@ -57,14 +59,16 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
     private final static Logger logger = LoggerFactory.getLogger(DocumentWritePlatformServiceJpaRepositoryImpl.class);
 
     private final PlatformSecurityContext context;
-    private final DocumentRepository documentRepository;
+    private final DocumentRepositoryWrapper documentRepository;
     private final ContentRepositoryFactory contentRepositoryFactory;
     private final ReadReportingService readExtraDataAndReportingService;
     private final ReportingProcessServiceProvider reportingProcessServiceProvider;
     private final DocumentReadPlatformService documentReadPlatformService ;
+    private final DateFormat fileNameGeneratedateFormat = new SimpleDateFormat("ddMMyyyyHHmmss") ; 
+    
     @Autowired
     public DocumentWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
-            final DocumentRepository documentRepository, final ContentRepositoryFactory documentStoreFactory,
+            final DocumentRepositoryWrapper documentRepository, final ContentRepositoryFactory documentStoreFactory,
             final ReadReportingService readExtraDataAndReportingService,
             final ReportingProcessServiceProvider reportingProcessServiceProvider,
             final DocumentReadPlatformService documentReadPlatformService) {
@@ -122,10 +126,8 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
             validator.validateForUpdate();
             // TODO check if entity id is valid and within data scope for the
             // user
-            final Document documentForUpdate = this.documentRepository.findOne(documentCommand.getId());
-            if (documentForUpdate == null) { throw new DocumentNotFoundException(documentCommand.getParentEntityType(),
-                    documentCommand.getParentEntityId(), documentCommand.getId()); }
-
+            final Document documentForUpdate = this.documentRepository.findOneWithNotFoundDetection(documentCommand.getParentEntityType(),
+                    documentCommand.getParentEntityId(), documentCommand.getId());
             final StorageType documentStoreType = documentForUpdate.storageType();
             oldLocation = documentForUpdate.getLocation();
             if (inputStream != null && documentCommand.isFileNameChanged()) {
@@ -161,9 +163,8 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
 
         validateParentEntityType(documentCommand);
         // TODO: Check document is present under this entity Id
-        final Document document = this.documentRepository.findOne(documentCommand.getId());
-        if (document == null) { throw new DocumentNotFoundException(documentCommand.getParentEntityType(),
-                documentCommand.getParentEntityId(), documentCommand.getId()); }
+        final Document document = this.documentRepository.findOneWithNotFoundDetection(documentCommand.getParentEntityType(),
+                documentCommand.getParentEntityId(), documentCommand.getId());
         this.documentRepository.delete(document);
 
         final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository(document.storageType());
@@ -200,12 +201,12 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
         if(tagData == null) throw new DocumentReportMappingNotfoundException() ;
         Long documentId = null ;
         String reportName = tagData.getReportName();
-        final String fileName = reportName +"."+tagData.getOutputType();
+        final String fileName = reportName +fileNameGeneratedateFormat.format(DateUtils.getLocalDateTimeOfTenant().toDate()) +"."+tagData.getOutputType();
         final String description = reportName;
         final Long fileSize = null;
         final String type = "application/"+tagData.getOutputType();
         addRequestParams(tagData.getReportCategory(), reportParams, entityId, tagData.getOutputType()); 
-        final DocumentCommand documentCommand = new DocumentCommand(null, null, entityType, entityId, fileName, fileName, fileSize, type,
+        final DocumentCommand documentCommand = new DocumentCommand(null, null, entityType, entityId, reportName, fileName, fileSize, type,
                 description, null, reportIdetifier, tagData.getTagId());
         String reportType = this.readExtraDataAndReportingService.getReportType(reportName);
         ReportingProcessService reportingProcessService = this.reportingProcessServiceProvider.findReportingProcessService(reportType);
@@ -237,5 +238,14 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
         List<String> output = new ArrayList<>();
         output.add(outputType);
         reportParams.put("output-type", output);
+    }
+
+    @Override
+    @Transactional
+    public Long reGenerateDocument(String entityType, Long entityId, Long reportIdentifier, MultivaluedMap<String, String> reportParams) {
+        final Document document = this.documentRepository.findDocumentByReportIdentifier(entityType, entityId, reportIdentifier) ;
+        this.documentRepository.delete(document); 
+        //We don't remove the previously created document (To maintain history?)  
+        return this.generateDocument(entityType, entityId, reportIdentifier, reportParams) ;
     }
 }

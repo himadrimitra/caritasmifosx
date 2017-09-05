@@ -395,7 +395,7 @@ public final class LoanEventApiJsonValidator {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
         final Set<String> supportedParameters = new HashSet<>(Arrays.asList("assignmentDate", "fromLoanOfficerId", "toLoanOfficerId",
-                "loans", "locale", "dateFormat"));
+                "loans", "locale", "dateFormat", "centers", "clients", "groups"));
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, supportedParameters);
@@ -413,6 +413,11 @@ public final class LoanEventApiJsonValidator {
         baseDataValidator.reset().parameter("toLoanOfficerId").value(toLoanOfficerId).notNull().longGreaterThanZero();
         final String[] loans = this.fromApiJsonHelper.extractArrayNamed("loans", element);
         baseDataValidator.reset().parameter("loans").value(loans).arrayNotEmpty();
+        
+        if(this.fromApiJsonHelper.parameterExists("centers", element)){
+        final String[] centers = this.fromApiJsonHelper.extractArrayNamed("centers", element);
+        baseDataValidator.reset().parameter("centers").value(centers).arrayNotEmpty();
+        }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }

@@ -51,6 +51,7 @@ import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.fund.api.FundApiConstants;
 import org.apache.fineract.portfolio.fund.data.FundDataValidator;
 import org.apache.fineract.portfolio.fund.data.FundSearchQueryBuilder;
@@ -615,7 +616,9 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
         String allowedFundSql = "select GROUP_CONCAT(DISTINCT(f.id)) as ids from m_fund f "
                 + "left join  m_code_value cv ON cv.id = f.facility_type " + "where cv.code_value NOT IN ('Buyout','Securitization')";
         String fundIdAsString = this.jdbcTemplate.queryForObject(allowedFundSql, String.class);
-        criteria = " l.loan_status_id IN "+FundApiConstants.fundAssignmentValidLoanStatusAsString+" AND (l.fund_id IS NULL OR l.fund_id IN (" + fundIdAsString + ")) ";
+        criteria = " l.loan_status_id IN " + FundApiConstants.fundAssignmentValidLoanStatusAsString
+                + " AND (l.fund_id IS NULL OR l.fund_id IN (" + fundIdAsString + "))  AND l.loan_type_enum in ("
+                + AccountType.INDIVIDUAL.getValue() + " ," + AccountType.JLG.getValue() + ") ";
         return criteria;
     }
 

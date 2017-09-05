@@ -176,6 +176,10 @@ public class Document extends AbstractPersistable<Long> {
         this.reportIdentifier = reportIdentifier ;
     }
     
+    public Long getReportIdentifier() {
+        return this.reportIdentifier ;
+    }
+    
     public void setTagIdentifier(final Long tagIdentifier) {
         this.tagIdentifier = tagIdentifier ;
     }
