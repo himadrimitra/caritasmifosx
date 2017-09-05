@@ -29,7 +29,8 @@ public interface TransactionsFileFormatHelper {
         int SPONSOR_BANK = 14;
         int FILE_NO = 15;
         int MICR_OR_IFSC = 16;
-
+        int TRANSACTION_TYPE = 17;
+        
         FileData formatDownloadFile(MandatesProcessData processData, NACHCredentialsData nachProperties, Collection<MandateTransactionsData> transactionsToProcess)
                 throws IOException, InvalidFormatException;
 

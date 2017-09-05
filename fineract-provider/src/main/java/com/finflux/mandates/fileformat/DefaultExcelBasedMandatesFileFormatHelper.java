@@ -66,7 +66,7 @@ public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFo
                         row = sheet.createRow(rowNum);
                         int[] contents = getContentSpecForMandateDownload();
                         for(int i=0; i < contents.length; i++){
-                                row.createCell(i).setCellValue(getDataValue(contents[i], nachProperties, data));
+                                row.createCell(i).setCellValue(getDataValue(contents[i], nachProperties, data, i));
                         }
                         rowNum++;
                 }
@@ -133,7 +133,7 @@ public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFo
                         fileData.name(), fileData.contentType());
         }
 
-        protected String getDataValue(int contentSpec, NACHCredentialsData nachProperties, MandateData data) {
+        protected String getDataValue(int contentSpec, NACHCredentialsData nachProperties, MandateData data, int index) {
                 String ret = "";
                 switch (contentSpec){
                         case ACTION:
@@ -145,7 +145,7 @@ public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFo
                                 } else if(mandateStatus == 300 || mandateStatus == 301){
                                         ret = "CANCEL";
                                 }
-                                break;
+                            break;
 
                         case UMRN:
                                 ret = null==data.getUmrn()?"":data.getUmrn();
@@ -154,7 +154,7 @@ public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFo
                                 ret = new SimpleDateFormat(getDateFormatForMandateDownload()).format(data.getRequestDate());
                                 break;
                         case BANK_ACCOUNT_TYPE:
-                                ret = data.getAccountType().getCode();
+                            ret = data.getAccountType().getCode();
                                 break;
                         case BANK_ACCOUNT_NUMBER:
                                 ret = data.getBankAccountNumber();
@@ -217,7 +217,6 @@ public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFo
                         case EMAIL:
                                 ret = data.getApplicantEmailId() != null ? data.getApplicantEmailId() : "";
                                 break ;
-
                 }
                 return ret;
         }

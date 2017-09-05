@@ -38,7 +38,9 @@ public interface MandatesFileFormatHelper {
         int REASON = 25;
         int BANK_NAME = 26;
         int BRANCH_NAME = 27;
-        int APPLICANT_NAME = 28 ;
+        int APPLICANT_NAME = 28;
+        int SR_NO = 29;
+        int ALTERNATE_MOBILE_NO = 30;
 
         FileData formatDownloadFile(MandatesProcessData processData, NACHCredentialsData nachProperties, Collection<MandateData> mandatesToProcess)
                 throws IOException, InvalidFormatException;

@@ -246,7 +246,8 @@ public class MandateReadPlatformServiceImpl implements MandateReadPlatformServic
                                 .append("m.return_process_reference_id as returnProcessReferenceId, ")
                                 .append("c.display_name as applicantName, ")
                                 .append("c.mobile_no as applicantMobileNo, ")
-                                .append("c.email_id as applicantEmail ")
+                                .append("c.email_id as applicantEmail, ")
+                                .append("c.alternate_mobile_no as applicantAlternateMobileNo ")
                                 .append("from f_loan_mandates as m ")
                                 .append("left join m_loan as l on l.id = m.loan_id ")
                                 .append("left join m_client as c on l.client_id = c.id ")
@@ -281,7 +282,8 @@ public class MandateReadPlatformServiceImpl implements MandateReadPlatformServic
                                 .append("m.return_process_reference_id as returnProcessReferenceId, ")
                                 .append("c.display_name as applicantName, ")
                                 .append("c.mobile_no as applicantMobileNo, ")
-                                .append("c.email_id as applicantEmail ")
+                                .append("c.email_id as applicantEmail, ")
+                                .append("c.alternate_mobile_no as applicantAlternateMobileNo ")
                                 .append("from f_loan_mandates as m ")
                                 .append("left join m_loan as l on l.id = m.loan_id ")
                                 .append("left join m_document as d on d.id = m.scanned_document_id ")
@@ -323,11 +325,12 @@ public class MandateReadPlatformServiceImpl implements MandateReadPlatformServic
                         final String applicantName = rs.getString("applicantName") ;
                         final String applicantMobileNo = rs.getString("applicantMobileNo") ;
                         final String applicantEmail = rs.getString("applicantEmail") ;
+                        final String applicantAlternateMobileNo = rs.getString("applicantAlternateMobileNo") ;
                         
                         return MandateData.from(id, loanId, loanAccountNo, applicantName, applicantMobileNo, applicantEmail, mandateStatus, requestDate, umrn, bankAccountHolderName,
                                 bankName, branchName, bankAccountNumber, micr, ifsc, accountType, periodFromDate, periodToDate,
                                 periodUntilCancelled, debitType, amount, debitFrequency, scannedDocumentId, scannedDocumentName,
-                                returnReason, returnProcessDate, returnProcessReferenceId);
+                                returnReason, returnProcessDate, returnProcessReferenceId, applicantAlternateMobileNo);
                 }
         }
 

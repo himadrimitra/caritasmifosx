@@ -32,6 +32,7 @@ import com.finflux.mandates.processor.NachStatusValues;
 public class DefaultExcelBasedTransactionsFileFormatHelper implements TransactionsFileFormatHelper{
 
         public static final String xlsContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        public static final String transactionType = "ACH DR";
 
         private String[] headersForTransactionsDownload = {"Corporate Utility code","Corporate Name","UMRN","Customer to be debited",
                 "Customer IFSC/MICR","Customer Debit AC","Transaction ID/REF","Amount (Rs)","Date of Txn","File No"};
@@ -210,7 +211,9 @@ public class DefaultExcelBasedTransactionsFileFormatHelper implements Transactio
                         case MICR_OR_IFSC:
                                 ret = (null != data.getIfsc())? data.getIfsc(): data.getMicr();
                                 break;
-
+                        case TRANSACTION_TYPE: 
+                                ret = transactionType;
+                               break;
                 }
                 return ret;
         }
