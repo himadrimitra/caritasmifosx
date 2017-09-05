@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -24,6 +25,7 @@ import com.finflux.infrastructure.gis.taluka.data.TalukaData;
 import com.finflux.infrastructure.gis.taluka.services.TalukaReadPlatformServices;
 import com.finflux.task.configuration.service.TaskConfigurationUtils;
 import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskEntityType;
 
 @Service
 public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformService {
@@ -54,7 +56,7 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
                 final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
                 final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE d.id = ? ";
-                return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { districtId });
+                return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT, districtId });
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -72,7 +74,7 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
                 final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
                 final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE d.id IN (" + districtIdsStr + ") ";
-                return this.jdbcTemplate.query(sql, dataMapper);
+                return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT });
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -80,18 +82,16 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
 
     @Override
     public Collection<DistrictData> retrieveAllDistrictDataByStateId(final Long stateId) {
-        try {
-            if (stateId != null && stateId > 0) {
-                final String districtIdsSql = "SELECT s.id FROM f_district s WHERE s.state_id = " + stateId + "";
-                final List<Long> districtIds = this.jdbcTemplate.queryForList(districtIdsSql, Long.class);
-                final Collection<TalukaData> talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictIds(districtIds);
-                final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
-                final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
-                final String sql = "SELECT " + dataMapper.schema() + " WHERE d.state_id = ? ";
-                return this.jdbcTemplate.query(sql, dataMapper, new Object[] { stateId });
-            }
-        } catch (final EmptyResultDataAccessException e) {}
-        return null;
+        if (stateId != null && stateId > 0) {
+            final String districtIdsSql = "SELECT s.id FROM f_district s WHERE s.state_id = " + stateId + "";
+            final List<Long> districtIds = this.jdbcTemplate.queryForList(districtIdsSql, Long.class);
+            final Collection<TalukaData> talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictIds(districtIds);
+            final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
+            final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
+            final String sql = "SELECT " + dataMapper.schema() + " WHERE d.state_id = ? ";
+            return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT, stateId });
+        }
+        return Collections.emptyList();
     }
 
     @Override
@@ -105,7 +105,7 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
                 final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
                 final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE d.state_id IN(" + stateIdsStr + ") ";
-                return this.jdbcTemplate.query(sql, dataMapper);
+                return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT });
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -124,8 +124,10 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
             final StringBuilder builder = new StringBuilder(200);
             builder.append("d.id As districtId, d.state_id AS stateId, d.iso_district_code AS isoDistrictCode, ");
             builder.append("d.district_name As districtName, d.status_enum as statusEnum, ");
-            builder.append("d.activation_date as activationDate, d.rejectedon_date as rejectedonDate ");
+            builder.append("d.activation_date as activationDate, d.rejectedon_date as rejectedonDate, ");
+            builder.append("task.id as workflowId ") ;
             builder.append("FROM f_district d ");
+            builder.append("LEFT JOIN f_task task ON task.entity_type=? and task.parent_id is null and task.entity_id = d.id ");
             this.schema = builder.toString();
         }
 
@@ -151,8 +153,9 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
             final EnumOptionData status = DistrictStatus.fromInt(statusEnum).getEnumOptionData();
             final LocalDate activationDate = JdbcSupport.getLocalDate(rs, "activationDate");
             final LocalDate rejectedonDate = JdbcSupport.getLocalDate(rs, "rejectedonDate");
+            final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
             return DistrictData.instance(districtId, stateId, isoDistrictCode, districtName, talukaDatas, this.isWorkflowEnabled, status,
-                    activationDate, rejectedonDate);
+                    activationDate, rejectedonDate, workflowId);
         }
     }
 }
