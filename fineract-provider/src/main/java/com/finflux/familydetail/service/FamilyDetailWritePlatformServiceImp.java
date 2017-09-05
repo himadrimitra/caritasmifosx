@@ -10,12 +10,16 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.util.FinfluxCollectionUtils;
 import com.finflux.familydetail.FamilyDetailsApiConstants;
 import com.finflux.familydetail.data.FamilyDetailDataValidator;
 import com.finflux.familydetail.domain.FamilyDetail;
@@ -33,18 +37,20 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
     private final ClientRepositoryWrapper clientRepository;
     private final FromJsonHelper fromApiJsonHelper;
     private final FamilyDetailDataAssembler assembler;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public FamilyDetailWritePlatformServiceImp(final FamilyDetailsRepository familyDetailsRepository,
             final PlatformSecurityContext context, final FamilyDetailDataValidator validator,
             final ClientRepositoryWrapper clientRepository, final FromJsonHelper fromApiJsonHelper,
-            final FamilyDetailDataAssembler assembler) {
+            final FamilyDetailDataAssembler assembler, final BusinessEventNotifierService businessEventNotifierService) {
         this.familyDetailsRepository = familyDetailsRepository;
         this.context = context;
         this.validator = validator;
         this.clientRepository = clientRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.assembler = assembler;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Transactional
@@ -73,6 +79,8 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
             this.context.authenticatedUser();
             this.clientRepository.findOneWithNotFoundDetection(clientId);
             final FamilyDetail familyDetail = this.familyDetailsRepository.findByIdAndClientId(familyDetailsId, clientId);
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.FAMILY_DETAILS_UPDATE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, familyDetail.isLocked()));
             this.validator.validateForUpdate(command.json());
             final Map<String, Object> changes = this.assembler.assembleUpdateForm(familyDetail, command);
             if (!CollectionUtils.isEmpty(changes)) {

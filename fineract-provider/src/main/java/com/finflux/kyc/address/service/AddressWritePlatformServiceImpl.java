@@ -16,12 +16,16 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import com.finflux.common.util.FinfluxCollectionUtils;
 import com.finflux.kyc.address.api.AddressApiConstants;
 import com.finflux.kyc.address.data.AddressDataValidator;
 import com.finflux.kyc.address.data.AddressEntityTypeEnums;
@@ -44,12 +48,13 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
     private final AddressDataAssembler assembler;
     private final AddressRepositoryWrapper repository;
     private final CodeValueRepositoryWrapper codeValueRepository;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public AddressWritePlatformServiceImpl(final PlatformSecurityContext context, final FromJsonHelper fromApiJsonHelper,
             final AddressDataValidator validator, final AddressBusinessValidators addressBusinessValidators,
             final AddressDataAssembler assembler, final AddressRepositoryWrapper repository,
-            final CodeValueRepositoryWrapper codeValueRepository) {
+            final CodeValueRepositoryWrapper codeValueRepository, final BusinessEventNotifierService businessEventNotifierService) {
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.validator = validator;
@@ -57,6 +62,7 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
         this.assembler = assembler;
         this.repository = repository;
         this.codeValueRepository = codeValueRepository;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @SuppressWarnings({ "unused", "unchecked", "rawtypes" })
@@ -101,6 +107,8 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
              * Checking Address exists or not
              */
             final Address address = this.repository.findOneWithNotFoundDetection(addressId);
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.ADDRESS_UPDATE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, address.isLocked()));
             final Set<AddressEntity> addressEntities = address.getAddressEntities();
 
             Integer entityTypeEnum = null;

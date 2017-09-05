@@ -11,6 +11,9 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.common.util.FinfluxCollectionUtils;
 import com.finflux.risk.existingloans.api.ExistingLoanApiConstants;
 import com.finflux.risk.existingloans.data.ExistingLoanDataValidator;
 import com.finflux.risk.existingloans.domain.ExistingLoan;
@@ -37,17 +41,20 @@ public class ExistingLoanWritePlatformServiceImp implements ExistingLoanWritePla
     private final ExistingLoanRepositoryWrapper existingLoanRepository;
     private final ClientRepositoryWrapper clientRepository;
     private final FromJsonHelper fromApiJsonHelper;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public ExistingLoanWritePlatformServiceImp(final PlatformSecurityContext context, final ExistingLoanAssembler existingLoanAssembler,
             final ExistingLoanDataValidator existingLoanDataValidator, final ExistingLoanRepositoryWrapper existingLoanRepository,
-            final ClientRepositoryWrapper clientRepository, final FromJsonHelper fromApiJsonHelper) {
+            final ClientRepositoryWrapper clientRepository, final FromJsonHelper fromApiJsonHelper,
+            final BusinessEventNotifierService businessEventNotifierService) {
         this.context = context;
         this.existingLoanAssembler = existingLoanAssembler;
         this.existingLoanDataValidator = existingLoanDataValidator;
         this.existingLoanRepository = existingLoanRepository;
         this.clientRepository = clientRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Override
@@ -68,6 +75,8 @@ public class ExistingLoanWritePlatformServiceImp implements ExistingLoanWritePla
         try {
             this.clientRepository.findOneWithNotFoundDetection(clientId);
             final ExistingLoan existingLoan = this.existingLoanRepository.findOneWithNotFoundDetection(existingLoanId);
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.EXISTING_LOAN_UPDATE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, existingLoan.isLocked()));
             this.existingLoanDataValidator.validateForUpdate(command.json());
             final Map<String, Object> changes = this.existingLoanAssembler.assembleForUpdate(existingLoan, command);
             if (!changes.isEmpty()) {

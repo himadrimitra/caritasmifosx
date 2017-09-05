@@ -465,6 +465,9 @@ public class Loan extends AbstractPersistable<Long> {
     
     @Column(name = "amount_for_upfront_collection", scale = 6, precision = 19, nullable = true)
     private BigDecimal amountForUpfrontCollection;
+    
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -8461,5 +8464,9 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         return transactions;
+    }
+
+    public boolean isLocked() {
+        return this.isLocked;
     }
 }

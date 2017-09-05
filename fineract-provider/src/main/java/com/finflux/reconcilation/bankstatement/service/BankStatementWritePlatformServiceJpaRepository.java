@@ -85,6 +85,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.finflux.bulkoperations.BulkStatementEnumType;
+import com.finflux.common.util.FinfluxCollectionUtils;
 import com.finflux.reconcilation.ReconciliationApiConstants;
 import com.finflux.reconcilation.bank.domain.Bank;
 import com.finflux.reconcilation.bank.domain.BankRepositoryWrapper;
@@ -733,7 +734,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             final Document documentForUpdate = this.documentRepository.findOne(documentId);
             if (documentForUpdate == null) { throw new DocumentNotFoundException(ReconciliationApiConstants.entityName,
                     ReconciliationApiConstants.bankStatementFolder, documentId); }
-
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.DOCUMENT_UPDATE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, documentForUpdate.isLocked()));
             if (inputStream != null && documentCommand.isFileNameChanged()) {
                 final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository();
                 documentCommand.setLocation(contentRepository.saveFile(inputStream, documentCommand));

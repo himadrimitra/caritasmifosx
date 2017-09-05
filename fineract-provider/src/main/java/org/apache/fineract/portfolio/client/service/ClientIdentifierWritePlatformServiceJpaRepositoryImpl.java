@@ -36,6 +36,9 @@ import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.exception.ClientIdentifierNotFoundException;
 import org.apache.fineract.portfolio.client.exception.DuplicateClientIdentifierException;
 import org.apache.fineract.portfolio.client.serialization.ClientIdentifierCommandFromApiJsonDeserializer;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.validations.domain.EntityValiDationType;
 import org.apache.fineract.portfolio.validations.service.FieldRegexValidator;
 import org.slf4j.Logger;
@@ -44,6 +47,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.finflux.common.util.FinfluxCollectionUtils;
 
 @Service
 public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements ClientIdentifierWritePlatformService {
@@ -56,18 +61,21 @@ public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements Cl
     private final CodeValueRepositoryWrapper codeValueRepository;
     private final ClientIdentifierCommandFromApiJsonDeserializer clientIdentifierCommandFromApiJsonDeserializer;
     private final FieldRegexValidator fieldRegexValidator;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
-    public ClientIdentifierWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,final FieldRegexValidator fieldRegexValidator,
-            final ClientRepositoryWrapper clientRepository, final ClientIdentifierRepository clientIdentifierRepository,
-            final CodeValueRepositoryWrapper codeValueRepository,
-            final ClientIdentifierCommandFromApiJsonDeserializer clientIdentifierCommandFromApiJsonDeserializer) {
+    public ClientIdentifierWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
+            final FieldRegexValidator fieldRegexValidator, final ClientRepositoryWrapper clientRepository,
+            final ClientIdentifierRepository clientIdentifierRepository, final CodeValueRepositoryWrapper codeValueRepository,
+            final ClientIdentifierCommandFromApiJsonDeserializer clientIdentifierCommandFromApiJsonDeserializer,
+            final BusinessEventNotifierService businessEventNotifierService) {
         this.context = context;
         this.clientRepository = clientRepository;
         this.clientIdentifierRepository = clientIdentifierRepository;
         this.codeValueRepository = codeValueRepository;
         this.clientIdentifierCommandFromApiJsonDeserializer = clientIdentifierCommandFromApiJsonDeserializer;
-        this.fieldRegexValidator=fieldRegexValidator;
+        this.fieldRegexValidator = fieldRegexValidator;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Transactional
@@ -131,9 +139,9 @@ public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements Cl
             final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
             final ClientIdentifier clientIdentifierForUpdate = this.clientIdentifierRepository.findOne(identifierId);
             if (clientIdentifierForUpdate == null) { throw new ClientIdentifierNotFoundException(identifierId); }
-
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.CLIENT_IDENTIFIER_UPDATE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, clientIdentifierForUpdate.isLocked()));
             final Map<String, Object> changes = clientIdentifierForUpdate.update(command);
-
             if (changes.containsKey("documentTypeId")) {
                 documentType = this.codeValueRepository.findOneWithNotFoundDetection(documentTypeId);
                 if (documentType == null) { throw new CodeValueNotFoundException(documentTypeId); }

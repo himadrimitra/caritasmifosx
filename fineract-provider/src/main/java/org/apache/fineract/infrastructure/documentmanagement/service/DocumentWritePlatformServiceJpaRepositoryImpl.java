@@ -46,12 +46,17 @@ import org.apache.fineract.infrastructure.documentmanagement.exception.InvalidEn
 import org.apache.fineract.infrastructure.report.provider.ReportingProcessServiceProvider;
 import org.apache.fineract.infrastructure.report.service.ReportingProcessService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.finflux.common.util.FinfluxCollectionUtils;
 
 @Service
 public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWritePlatformService {
@@ -65,19 +70,21 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
     private final ReportingProcessServiceProvider reportingProcessServiceProvider;
     private final DocumentReadPlatformService documentReadPlatformService ;
     private final DateFormat fileNameGeneratedateFormat = new SimpleDateFormat("ddMMyyyyHHmmss") ; 
+    private final BusinessEventNotifierService businessEventNotifierService;
     
     @Autowired
     public DocumentWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final DocumentRepositoryWrapper documentRepository, final ContentRepositoryFactory documentStoreFactory,
             final ReadReportingService readExtraDataAndReportingService,
             final ReportingProcessServiceProvider reportingProcessServiceProvider,
-            final DocumentReadPlatformService documentReadPlatformService) {
+            final DocumentReadPlatformService documentReadPlatformService, final BusinessEventNotifierService businessEventNotifierService) {
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = documentStoreFactory;
-        this.readExtraDataAndReportingService = readExtraDataAndReportingService ;
-        this.reportingProcessServiceProvider = reportingProcessServiceProvider ;
-        this.documentReadPlatformService = documentReadPlatformService ;
+        this.readExtraDataAndReportingService = readExtraDataAndReportingService;
+        this.reportingProcessServiceProvider = reportingProcessServiceProvider;
+        this.documentReadPlatformService = documentReadPlatformService;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Transactional
@@ -128,6 +135,8 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
             // user
             final Document documentForUpdate = this.documentRepository.findOneWithNotFoundDetection(documentCommand.getParentEntityType(),
                     documentCommand.getParentEntityId(), documentCommand.getId());
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.DOCUMENT_UPDATE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, documentForUpdate.isLocked()));
             final StorageType documentStoreType = documentForUpdate.storageType();
             oldLocation = documentForUpdate.getLocation();
             if (inputStream != null && documentCommand.isFileNameChanged()) {

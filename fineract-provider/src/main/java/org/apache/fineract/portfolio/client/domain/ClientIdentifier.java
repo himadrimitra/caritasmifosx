@@ -60,6 +60,9 @@ public class ClientIdentifier extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "active")
     private Integer active;
     
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
+    
     public static ClientIdentifier fromJson(final Client client, final CodeValue documentType, final JsonCommand command) {
         final String documentKey = command.stringValueOfParameterNamed("documentKey");
         final String description = command.stringValueOfParameterNamed("description");
@@ -128,5 +131,9 @@ public class ClientIdentifier extends AbstractAuditableCustom<AppUser, Long> {
 
     public Long documentTypeId() {
         return this.documentType.getId();
+    }
+
+    public boolean isLocked() {
+        return this.isLocked;
     }
 }

@@ -859,6 +859,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" topup.closure_loan_id as closureLoanId, ");
             sb.append(" topuploan.account_no as closureLoanAccountNo, ");
             sb.append(" topup.topup_amount as topupAmount ");
+            sb.append(",l.is_locked as isLocked ");
             sb.append(" from m_loan l");
             sb.append(" join m_product_loan lp on lp.id = l.product_id");
             sb.append(" left join m_loan_recalculation_details lir on lir.loan_id = l.id ");
@@ -1212,23 +1213,25 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final Boolean allowUpfrontCollection = rs.getBoolean("allowUpfrontCollection");
             final BigDecimal amountForUpfrontCollection = rs.getBigDecimal("amountForUpfrontCollection");
             final BigDecimal calculatedEmiAmount = rs.getBigDecimal("calculatedEmiAmount") ;
+            final boolean isLocked = rs.getBoolean("isLocked");
+
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo,
                     clientOfficeId, groupData, loanType, loanProductId, loanProductName, loanProductDescription,
                     isLoanProductLinkedToFloatingRate, fundId, fundName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName,
                     currencyData, proposedPrincipal, principal, approvedPrincipal, totalOverpaid, inArrearsTolerance, termFrequency,
                     termPeriodFrequencyType, numberOfRepayments, repaymentEvery, repaymentFrequencyType, null, null, transactionStrategyId,
                     transactionStrategyCode, transactionStrategyName, amortizationType, interestRatePerPeriod, interestRateFrequencyType,
-                    annualInterestRate, interestType, isFloatingInterestRate, interestRateDifferential,
-                    interestCalculationPeriodType, allowPartialPeriodInterestCalcualtion, expectedFirstRepaymentOnDate,
-                    graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged,
-                    interestChargedFromDate, timeline, loanSummary, feeChargesDueAtDisbursementCharged, syncDisbursementWithMeeting,
-                    loanCounter, loanProductCounter, multiDisburseLoan, canDefineInstallmentAmount, fixedEmiAmount, outstandingLoanBalance,
-                    inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType,
-                    isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed,
-                    minimumGap,maximumGap,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
-                    topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, flatInterestRate, 
-                    brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, discountOnDisbursalAmount, 
-                    allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
+                    annualInterestRate, interestType, isFloatingInterestRate, interestRateDifferential, interestCalculationPeriodType,
+                    allowPartialPeriodInterestCalcualtion, expectedFirstRepaymentOnDate, graceOnPrincipalPayment,
+                    recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, interestChargedFromDate,
+                    timeline, loanSummary, feeChargesDueAtDisbursementCharged, syncDisbursementWithMeeting, loanCounter,
+                    loanProductCounter, multiDisburseLoan, canDefineInstallmentAmount, fixedEmiAmount, outstandingLoanBalance, inArrears,
+                    graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
+                    interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed, minimumGap,
+                    maximumGap, loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType,
+                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, flatInterestRate,
+                    brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule,
+                    discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount, isLocked);
         }
     }
     
