@@ -186,17 +186,19 @@ public class DocumentManagementApiResource {
     }
 
     @POST
-    @Path("generate/{reportIdentifier}")
+    @Path("generate/{identifier}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String generateDocument(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
-            @PathParam("reportIdentifier") final Long reportIdentifier, @QueryParam("command") final String commandParam, @Context final UriInfo uriInfo) {
+            @PathParam("identifier") final Long identifier, @QueryParam("command") final String commandParam, @Context final UriInfo uriInfo) {
         Long documentId = null ; 
         this.context.authenticatedUser().validateHasReadPermission(this.SystemEntityType);
         if(GENERATE_COMMAND.equals(commandParam)) {
-            documentId = this.documentWritePlatformService.generateDocument(entityType, entityId, reportIdentifier, uriInfo.getQueryParameters());    
+            //identifier is report identifier
+            documentId = this.documentWritePlatformService.generateDocument(entityType, entityId, identifier, uriInfo.getQueryParameters());    
         }else if(REGENERATE_COMMAND.equals(commandParam)) {
-            documentId = this.documentWritePlatformService.reGenerateDocument(entityType, entityId, reportIdentifier, uriInfo.getQueryParameters());
+            //identifier is document identifier
+            documentId = this.documentWritePlatformService.reGenerateDocument(entityType, entityId, identifier, uriInfo.getQueryParameters());
         }else {
             throw new InvalidCommandQueryParamException(commandParam) ;
         }
