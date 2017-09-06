@@ -104,19 +104,36 @@ public enum EntityType {
                 case 4:
                     entityType = EntityType.OFFICE;
                 break;
-                case 7:
-                    entityType = EntityType.LOAN;
-                break;
                 case 5:
                     entityType = EntityType.TASK;
                 break;
                 case 6:
                     entityType = EntityType.STAFF;
                 break;
+                case 7:
+                    entityType = EntityType.LOAN;
+                break;
                 case 8:
                     entityType = EntityType.SAVINGS;
                 break;
-
+                case 51:
+                    entityType = EntityType.ADDRESS;
+                break;
+                case 52:
+                    entityType = EntityType.DOCUMENT;
+                break;
+                case 53:
+                    entityType = EntityType.FAMILY_DETAILS;
+                break;
+                case 101:
+                    entityType = EntityType.CLIENT_IDENTIFIER;
+                break;
+                case 102:
+                    entityType = EntityType.CLIENT_INCOME_EXPENSE;
+                break;
+                case 103:
+                    entityType = EntityType.EXISTING_LOAN;
+                break;
             }
         }
         return entityType;

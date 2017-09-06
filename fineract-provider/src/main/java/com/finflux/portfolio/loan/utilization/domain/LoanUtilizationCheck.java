@@ -47,6 +47,9 @@ public class LoanUtilizationCheck extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     @Column(name = "audit_done_on", nullable = true)
     private Date auditDoneOn;
+    
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
 
     @OneToOne(fetch = FetchType.LAZY, mappedBy = "loanUtilizationCheck", cascade = CascadeType.ALL, orphanRemoval = true)
     private LoanUtilizationCheckDetail loanUtilizationCheckDetail;
@@ -64,7 +67,7 @@ public class LoanUtilizationCheck extends AbstractPersistable<Long> {
 
     public static LoanUtilizationCheck create(final Loan loan, final AppUser toBeAuditedBy, final Date auditeScheduledOn,
             final Staff auditDoneBy, final Date auditDoneOn) {
-        return new LoanUtilizationCheck(loan, toBeAuditedBy, auditeScheduledOn, auditDoneBy, auditDoneOn);
+        return new LoanUtilizationCheck(loan, toBeAuditedBy, auditeScheduledOn, auditDoneBy,auditDoneOn);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -171,8 +174,13 @@ public class LoanUtilizationCheck extends AbstractPersistable<Long> {
     public void setLoanUtilizationCheckDetail(LoanUtilizationCheckDetail loanUtilizationCheckDetail) {
         this.loanUtilizationCheckDetail = loanUtilizationCheckDetail;
     }
-    
+
     public Loan getLoan() {
         return this.loan;
     }
+
+    public void setAuditDoneOn(Date auditDoneOn) {
+        this.auditDoneOn = auditDoneOn;
+    }
+
 }

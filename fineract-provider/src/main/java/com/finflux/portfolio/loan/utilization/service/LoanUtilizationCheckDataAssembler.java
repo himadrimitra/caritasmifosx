@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import com.finflux.portfolio.loan.utilization.api.LoanUtilizationCheckApiConstants;
 import com.finflux.portfolio.loan.utilization.domain.LoanUtilizationCheck;
 import com.finflux.portfolio.loan.utilization.domain.LoanUtilizationCheckDetail;
+import com.finflux.portfolio.loan.utilization.exception.AuditDateBeforeDisbursementDateException;
 import com.finflux.portfolio.loan.utilization.exception.LoanPurpuseAmountMoreThanDisbursalAmountException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -97,13 +98,14 @@ public class LoanUtilizationCheckDataAssembler {
         }
 
         Date auditDoneOn = null;
-        final LocalDate localDateAuditDoneOn = this.fromApiJsonHelper.extractLocalDateNamed(
-                LoanUtilizationCheckApiConstants.auditDoneOnParamName, element);
-        if (localDateAuditDoneOn != null) {
-            auditDoneOn = localDateAuditDoneOn.toDate();
-        }
+        final LocalDate localDateAuditDoneOn = this.fromApiJsonHelper
+                .extractLocalDateNamed(LoanUtilizationCheckApiConstants.auditDoneOnParamName, element);
+
+        if (localDateAuditDoneOn
+                .isBefore(loan.getDisbursementDate())) { throw new AuditDateBeforeDisbursementDateException(localDateAuditDoneOn); }
+
         final LoanUtilizationCheck loanUtilizationCheck = LoanUtilizationCheck.create(loan, toBeAuditedBy, auditeScheduledOn, auditDoneBy,
-                auditDoneOn);
+                localDateAuditDoneOn.toDate());
 
         final LoanUtilizationCheckDetail loanUtilizationCheckDetail = assembleLoanUtilizationCheckDetail(loanUtilizationCheck,
                 element.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName).getAsJsonObject(), locale,totalLoanAmountUtilizedBasedOnLoanId);
@@ -193,6 +195,13 @@ public class LoanUtilizationCheckDataAssembler {
             final Long auditDoneById = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.auditDoneByIdParamName);
             final Staff auditDoneBy = this.staffRepository.findOneWithNotFoundDetection(auditDoneById);
             loanUtilizationCheck.updateAuditDoneBy(auditDoneBy);
+        }
+        if (changes.containsKey(LoanUtilizationCheckApiConstants.auditDoneOnParamName)) {
+            final LocalDate auditDoneOn = command.localDateValueOfParameterNamed(LoanUtilizationCheckApiConstants.auditDoneOnParamName);
+            final Long loanId = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.loanIdParamName);
+            final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
+            if (auditDoneOn.isBefore(loan.getDisbursementDate())) { throw new AuditDateBeforeDisbursementDateException(auditDoneOn); }
+            loanUtilizationCheck.setAuditDoneOn(auditDoneOn.toDate());
         }
         return changes;
     }

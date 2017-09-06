@@ -52,7 +52,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
                 true);
         final LoanUtilizationCheckTemplateDataMapper utilizationChecksDataMapper = new LoanUtilizationCheckTemplateDataMapper(
                 loanPurposeDatas);
-        final String sql = "SELECT " + utilizationChecksDataMapper.schema() + " WHERE g.id = ? GROUP BY l.id ";
+        final String sql = "SELECT " + utilizationChecksDataMapper.schema() + " WHERE g.id = ? and l.loan_status_id =300  GROUP BY l.id ";
         return this.jdbcTemplate.query(sql, utilizationChecksDataMapper, new Object[] { centerId });
     }
 
@@ -144,7 +144,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
     @Override
     public Collection<LoanUtilizationCheckData> retrieveGroupLoanUtilizationchecks(final Long groupId) {
         this.context.authenticatedUser();
-        String sql = "SELECT " + this.loanUtilizationCheckDataExtractor.schema() + "WHERE gp.id = ? ";
+        String sql = "SELECT " + this.loanUtilizationCheckDataExtractor.schema() + "WHERE gp.id = ? and luc.is_active = true";
         return this.jdbcTemplate.query(sql, this.loanUtilizationCheckDataExtractor, new Object[] { groupId });
     }
 
@@ -167,7 +167,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
             sqlBuilder.append(",l.loan_status_id AS loanStatusId, l.loan_type_enum AS loanTypeId,l.principal_amount AS principalAmount ");
             sqlBuilder.append("FROM f_loan_utilization_check luc ");
             sqlBuilder.append("LEFT JOIN m_staff staff ON staff.id = luc.audit_done_by ");
-            sqlBuilder.append("JOIN f_loan_utilization_check_detail lucd ON lucd.loan_utilization_check_id = luc.id ");
+            sqlBuilder.append("JOIN f_loan_utilization_check_detail lucd ON lucd.loan_utilization_check_id = luc.id  ");
             sqlBuilder.append("JOIN m_loan l ON l.id = luc.loan_id ");
             sqlBuilder.append("JOIN m_client c ON c.id = l.client_id ");
             sqlBuilder.append("LEFT JOIN m_group gp ON gp.id = l.group_id ");
@@ -274,7 +274,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
     @Override
     public BigDecimal retrieveUtilityAmountByLoanId(final Long loanId) {
         String sql = "SELECT IFNULL(SUM(IFNULL(lucd.amount, 0)),0) from f_loan_utilization_check_detail lucd "
-                + "join f_loan_utilization_check luc on luc.id = lucd.loan_utilization_check_id" + " WHERE luc.loan_id = ? ";
+                + "join f_loan_utilization_check luc on luc.id = lucd.loan_utilization_check_id and luc.is_active = true " + " WHERE luc.loan_id = ? ";
         return this.jdbcTemplate.queryForObject(sql, new Object[] { loanId }, BigDecimal.class);
     }
 }
