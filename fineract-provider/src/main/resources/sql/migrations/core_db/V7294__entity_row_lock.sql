@@ -2,7 +2,7 @@ CREATE TABLE `f_row_lock_or_unlock_configuration` (
 	`id` BIGINT(20) NOT NULL AUTO_INCREMENT,
 	`business_event_name` VARCHAR(50) NULL DEFAULT NULL,
 	`entity_type` SMALLINT(3) NOT NULL,
-	`condition_json` VARCHAR(250) NULL DEFAULT NULL,
+	`condition_json` TEXT NULL,
 	PRIMARY KEY (`id`)
 );
 
