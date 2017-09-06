@@ -96,11 +96,11 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         }
         CreditBureauLoanProductOfficeMapping creditBureauLoanProductOfficeMapping = this.creditBureauLoanProductOfficeMappingRepository.retrieveCreditBureauAndLoanProductOfficeMapping(enquiryData.getLoanProductId(), enquiryData.getBranchId());
 
-        if (creditBureauLoanProductOfficeMapping == null) {
+        if (creditBureauLoanProductOfficeMapping == null  || !creditBureauLoanProductOfficeMapping.getCreditBureauLoanProductMapping().isActive()) {
             creditBureauLoanProductOfficeMapping = this.creditBureauLoanProductOfficeMappingRepository
                     .retrieveDefaultCreditBureauAndLoanProductOfficeMapping(enquiryData.getLoanProductId());
         }
-        if (creditBureauLoanProductOfficeMapping != null) {
+        if (creditBureauLoanProductOfficeMapping != null && creditBureauLoanProductOfficeMapping.getCreditBureauLoanProductMapping().isActive()) {
             final CreditBureauLoanProductMapping creditBureauLpMapping = creditBureauLoanProductOfficeMapping
                     .getCreditBureauLoanProductMapping();
             final CreditBureauProduct creditBureauProduct = creditBureauLpMapping.getCreditBureauProduct();
