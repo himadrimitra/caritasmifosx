@@ -18,10 +18,11 @@ public class DistrictData {
     private final EnumOptionData status;
     private final LocalDate activationDate;
     private final LocalDate rejectedonDate;
+    private final Long workflowId;
 
     private DistrictData(final Long districtId, final Long stateId, final String isoDistrictCode, final String districtName,
             final Collection<TalukaData> talukaDatas, final Boolean isWorkflowEnabled, final EnumOptionData status,
-            final LocalDate activationDate, final LocalDate rejectedonDate) {
+            final LocalDate activationDate, final LocalDate rejectedonDate, final Long workflowId) {
         this.districtId = districtId;
         this.stateId = stateId;
         this.isoDistrictCode = isoDistrictCode;
@@ -31,13 +32,14 @@ public class DistrictData {
         this.status = status;
         this.activationDate = activationDate;
         this.rejectedonDate = rejectedonDate;
+        this.workflowId = workflowId;
     }
 
     public static DistrictData instance(final Long districtId, final Long stateId, final String isoDistrictCode, final String districtName,
             final Collection<TalukaData> talukaDatas, final Boolean isWorkflowEnabled, final EnumOptionData status,
-            final LocalDate activationDate, final LocalDate rejectedonDate) {
+            final LocalDate activationDate, final LocalDate rejectedonDate, final Long workflowId) {
         return new DistrictData(districtId, stateId, isoDistrictCode, districtName, talukaDatas, isWorkflowEnabled, status, activationDate,
-                rejectedonDate);
+                rejectedonDate, workflowId);
     }
 
     public Long getDistrictId() {
@@ -74,5 +76,9 @@ public class DistrictData {
 
     public LocalDate getRejectedonDate() {
         return this.rejectedonDate;
+    }
+
+    public Long getWorkflowId() {
+        return this.workflowId;
     }
 }
