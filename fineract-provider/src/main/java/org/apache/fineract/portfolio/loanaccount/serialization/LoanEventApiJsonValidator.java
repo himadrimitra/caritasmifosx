@@ -47,6 +47,9 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.finflux.transaction.execution.data.TransactionStatus;
+import com.finflux.transaction.execution.service.BankTransactionLoanActionsValidationService;
+import com.finflux.transaction.execution.service.BankTransactionType;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
@@ -56,12 +59,15 @@ public final class LoanEventApiJsonValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
     private final LoanApplicationCommandFromApiJsonHelper fromApiJsonDeserializer;
+    private final BankTransactionLoanActionsValidationService bankTransactionLoanActionsValidationService;
 
     @Autowired
     public LoanEventApiJsonValidator(final FromJsonHelper fromApiJsonHelper,
-            final LoanApplicationCommandFromApiJsonHelper fromApiJsonDeserializer) {
+            final LoanApplicationCommandFromApiJsonHelper fromApiJsonDeserializer,
+            final BankTransactionLoanActionsValidationService bankTransactionLoanActionsValidationService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
+        this.bankTransactionLoanActionsValidationService = bankTransactionLoanActionsValidationService;
     }
 
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
@@ -69,7 +75,7 @@ public final class LoanEventApiJsonValidator {
                 "Validation errors exist.", dataValidationErrors); }
     }
 
-    public void validateDisbursement(final String json, boolean isAccountTransfer) {
+    public void validateDisbursement(final Long loanId, final String json, boolean isAccountTransfer) {
 
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
@@ -116,6 +122,7 @@ public final class LoanEventApiJsonValidator {
         baseDataValidator.reset().parameter(LoanApiConstants.emiAmountParameterName).value(emiAmount).ignoreIfNull().positiveAmount();
 
         validatePaymentDetails(baseDataValidator, element);
+        validateForActiveBankTransactions(loanId);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -692,5 +699,12 @@ public final class LoanEventApiJsonValidator {
         
     }
 
+    private void validateForActiveBankTransactions(final Long loanId) {
+        List<Integer> activeStatuses = new ArrayList<>(
+                Arrays.asList(TransactionStatus.DRAFTED.getValue(), TransactionStatus.SUBMITTED.getValue(),
+                        TransactionStatus.INITIATED.getValue(), TransactionStatus.PENDING.getValue(), TransactionStatus.ERROR.getValue()));
+        this.bankTransactionLoanActionsValidationService.validateForInactiveBankTransactions(loanId, activeStatuses,
+                BankTransactionType.CREATE);
+    }
 
 }

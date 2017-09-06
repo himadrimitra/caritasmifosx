@@ -401,7 +401,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final AppUser currentUser = getAppUserIfPresent();
 
-        this.loanEventApiJsonValidator.validateDisbursement(command.json(), isAccountTransfer);
+        this.loanEventApiJsonValidator.validateDisbursement(loanId, command.json(), isAccountTransfer);
 
         final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");

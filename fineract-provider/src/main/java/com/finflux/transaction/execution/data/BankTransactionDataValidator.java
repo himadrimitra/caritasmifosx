@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import com.finflux.transaction.execution.api.BankTransactionApiConstants;
 import com.finflux.transaction.execution.domain.BankAccountTransaction;
 import com.finflux.transaction.execution.service.BankTransactionLoanActionsValidationService;
+import com.finflux.transaction.execution.service.BankTransactionType;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
@@ -55,13 +56,12 @@ public class BankTransactionDataValidator {
                 TransactionStatus.INITIATED.getValue(), TransactionStatus.PENDING.getValue(), TransactionStatus.SUCCESS.getValue(),
                 TransactionStatus.FAILED.getValue(), TransactionStatus.ERROR.getValue()));
 
-        Boolean isSubmitBankTransaction = true;
         this.bankTransactionLoanActionsValidationService.validateForInactiveBankTransactions(bankTransaction.getEntityId(), statusList,
-                isSubmitBankTransaction);
+        		BankTransactionType.SUBMIT);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
-
+    
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
