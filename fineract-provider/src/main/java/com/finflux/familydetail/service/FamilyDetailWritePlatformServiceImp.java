@@ -104,8 +104,10 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
     public CommandProcessingResult deleteFamilyDeatails(final Long clientId, final Long familyDetailId) {
         try {
             this.clientRepository.findOneWithNotFoundDetection(clientId);
-            final FamilyDetail familyDetailDelete = this.familyDetailsRepository.findOne(familyDetailId);
-            this.familyDetailsRepository.delete(familyDetailDelete);
+            final FamilyDetail familyDetail = this.familyDetailsRepository.findOne(familyDetailId);
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.FAMILY_DETAILS_DELETE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, familyDetail.isLocked()));
+            this.familyDetailsRepository.delete(familyDetail);
             return new CommandProcessingResultBuilder() //
                     .withEntityId(familyDetailId) //
                     .build();

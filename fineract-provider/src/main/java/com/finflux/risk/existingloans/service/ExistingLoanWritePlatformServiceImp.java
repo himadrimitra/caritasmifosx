@@ -99,6 +99,8 @@ public class ExistingLoanWritePlatformServiceImp implements ExistingLoanWritePla
     @Override
     public CommandProcessingResult deleteExistingLoan(final Long clientId, final Long existingLoanId) {
         final ExistingLoan existingLoan = this.existingLoanRepository.findOneWithNotFoundDetection(existingLoanId);
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.EXISTING_LOAN_DELETE,
+                FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, existingLoan.isLocked()));
         this.existingLoanRepository.delete(existingLoan);
         return new CommandProcessingResultBuilder() //
                 .withEntityId(existingLoan.getId()) //

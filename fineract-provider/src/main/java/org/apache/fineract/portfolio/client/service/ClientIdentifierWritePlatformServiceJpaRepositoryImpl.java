@@ -187,6 +187,8 @@ public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements Cl
 
         final ClientIdentifier clientIdentifier = this.clientIdentifierRepository.findOne(identifierId);
         if (clientIdentifier == null) { throw new ClientIdentifierNotFoundException(identifierId); }
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.CLIENT_IDENTIFIER_DELETE,
+                FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, clientIdentifier.isLocked()));
         this.clientIdentifierRepository.delete(clientIdentifier);
 
         return new CommandProcessingResultBuilder() //
