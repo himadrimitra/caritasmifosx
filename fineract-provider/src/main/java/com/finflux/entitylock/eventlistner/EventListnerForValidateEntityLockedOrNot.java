@@ -24,38 +24,47 @@ public class EventListnerForValidateEntityLockedOrNot implements BusinessEventLi
     @Override
     public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
         final BUSINESS_EVENTS businessEvent = (BUSINESS_EVENTS) businessEventEntity.get(BUSINESS_ENTITY.BUSINESS_EVENT);
-        final boolean isLocked = (boolean) businessEventEntity.get(BUSINESS_ENTITY.ENTITY_LOCK_STATUS);
-        EntityType entityType = null;
-        switch (businessEvent) {
-            case CLIENT_UPDATE:
-                entityType = EntityType.CLIENT;
-            break;
-            case LOAN_MODIFY:
-            case LOAN_UNDO_DISBURSAL:
-                entityType = EntityType.LOAN;
-            break;
-            case ADDRESS_UPDATE:
-                entityType = EntityType.ADDRESS;
-            break;
-            case DOCUMENT_UPDATE:
-                entityType = EntityType.DOCUMENT;
-            break;
-            case FAMILY_DETAILS_UPDATE:
-                entityType = EntityType.FAMILY_DETAILS;
-            break;
-            case CLIENT_IDENTIFIER_UPDATE:
-                entityType = EntityType.CLIENT_IDENTIFIER;
-            break;
-            case CLIENT_INCOME_EXPENSE_UPDATE:
-                entityType = EntityType.CLIENT_INCOME_EXPENSE;
-            break;
-            case EXISTING_LOAN_UPDATE:
-                entityType = EntityType.EXISTING_LOAN;
-            break;
-            default:
-            break;
+        final Object object = businessEventEntity.get(BUSINESS_ENTITY.ENTITY_LOCK_STATUS);
+        if (object != null) {
+            final boolean isLocked = (boolean) object;
+            EntityType entityType = null;
+            switch (businessEvent) {
+                case CLIENT_UPDATE:
+                case CLIENT_DELETE:
+                    entityType = EntityType.CLIENT;
+                break;
+                case LOAN_MODIFY:
+                case LOAN_UNDO_DISBURSAL:
+                    entityType = EntityType.LOAN;
+                break;
+                case ADDRESS_UPDATE:
+                case ADDRESS_DELETE:
+                    entityType = EntityType.ADDRESS;
+                break;
+                case DOCUMENT_UPDATE:
+                case DOCUMENT_DELETE:
+                    entityType = EntityType.DOCUMENT;
+                break;
+                case FAMILY_DETAILS_UPDATE:
+                case FAMILY_DETAILS_DELETE:
+                    entityType = EntityType.FAMILY_DETAILS;
+                break;
+                case CLIENT_IDENTIFIER_UPDATE:
+                case CLIENT_IDENTIFIER_DELETE:
+                    entityType = EntityType.CLIENT_IDENTIFIER;
+                break;
+                case CLIENT_INCOME_EXPENSE_UPDATE:
+                    entityType = EntityType.CLIENT_INCOME_EXPENSE;
+                break;
+                case EXISTING_LOAN_UPDATE:
+                case EXISTING_LOAN_DELETE:
+                    entityType = EntityType.EXISTING_LOAN;
+                break;
+                default:
+                break;
+            }
+            this.service.validateEntityRecordLockedOrNot(entityType, isLocked);
         }
-        this.service.validateEntityRecordLockedOrNot(entityType, isLocked);
     }
 
     @Override

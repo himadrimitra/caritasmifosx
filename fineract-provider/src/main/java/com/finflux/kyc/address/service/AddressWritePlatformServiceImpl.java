@@ -151,7 +151,8 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
              * Checking Address exists or not
              */
             final Address address = this.repository.findOneWithNotFoundDetection(addressId);
-
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.ADDRESS_DELETE,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, address.isLocked()));
             this.repository.delete(address);
 
             return new CommandProcessingResultBuilder() //

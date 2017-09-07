@@ -203,6 +203,9 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
 
         if (client.isNotPending()) { throw new ClientMustBePendingToBeDeletedException(clientId); }
+        
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.CLIENT_DELETE,
+                constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, client.isLocked()));
 
         final List<Note> relatedNotes = this.noteRepository.findByClientId(clientId);
         this.noteRepository.deleteInBatch(relatedNotes);

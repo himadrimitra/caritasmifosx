@@ -174,6 +174,8 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
         // TODO: Check document is present under this entity Id
         final Document document = this.documentRepository.findOneWithNotFoundDetection(documentCommand.getParentEntityType(),
                 documentCommand.getParentEntityId(), documentCommand.getId());
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.DOCUMENT_DELETE,
+                FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, document.isLocked()));
         this.documentRepository.delete(document);
 
         final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository(document.storageType());
