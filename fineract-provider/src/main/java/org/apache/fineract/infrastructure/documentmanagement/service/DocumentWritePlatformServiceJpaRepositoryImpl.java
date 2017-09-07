@@ -251,10 +251,10 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
 
     @Override
     @Transactional
-    public Long reGenerateDocument(String entityType, Long entityId, Long reportIdentifier, MultivaluedMap<String, String> reportParams) {
-        final Document document = this.documentRepository.findDocumentByReportIdentifier(entityType, entityId, reportIdentifier) ;
+    public Long reGenerateDocument(String entityType, Long entityId, Long identifier, MultivaluedMap<String, String> reportParams) {
+        final Document document = this.documentRepository.findOneWithNotFoundDetection(entityType, entityId, identifier) ; 
         this.documentRepository.delete(document); 
         //We don't remove the previously created document (To maintain history?)  
-        return this.generateDocument(entityType, entityId, reportIdentifier, reportParams) ;
+        return this.generateDocument(entityType, entityId, document.getReportIdentifier(), reportParams) ;
     }
 }
