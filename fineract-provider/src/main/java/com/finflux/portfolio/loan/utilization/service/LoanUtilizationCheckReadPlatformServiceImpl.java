@@ -80,7 +80,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
             sql.append(",IFNULL(SUM(IFNULL(lucd.amount,0)),0) AS totalUtilizedAmount ");
             sql.append("FROM m_group g ");
             sql.append("JOIN m_loan l ON l.group_id = g.id ");
-            sql.append("LEFT JOIN f_loan_utilization_check luc ON luc.loan_id = l.id ");
+            sql.append("LEFT JOIN f_loan_utilization_check luc ON luc.loan_id = l.id and luc.is_active = true ");
             sql.append("LEFT JOIN f_loan_utilization_check_detail lucd ON lucd.loan_utilization_check_id = luc.id ");
             sql.append("JOIN m_client c ON c.id = l.client_id ");
             sql.append("JOIN f_loan_purpose lp ON lp.id = l.loan_purpose_id ");
