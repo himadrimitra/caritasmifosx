@@ -1325,7 +1325,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             Integer displayPosition = (column.getAsJsonObject().has("displayPosition"))
                     ? column.getAsJsonObject().get("displayPosition").getAsInt() : null;
 
-            if (displayName != null) {
+            if (displayPosition != null) {
                 updateSqlBuilder.append(", order_position = '" + displayPosition + "' ");
             }
             Boolean visible = (column.getAsJsonObject().has("visible")) ? column.getAsJsonObject().get("visible").getAsBoolean() : null;
