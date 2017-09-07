@@ -9,8 +9,8 @@ public enum BankAccountDetailEntityType {
     CLIENTS(1, "bankAccountDetailEntityType.clients"), //
     LOANS(2, "bankAccountDetailEntityType.loans"), //
     SAVINGS(3, "bankAccountDetailEntityType.savings"), //
-    PAYMENTTYPES(4, "bankAccountDetailEntityType.paymenttypes");
-    
+    PAYMENTTYPES(4, "bankAccountDetailEntityType.paymenttypes"), //
+    OFFICES(5, "bankAccountDetailEntityType.offices");
 
     private final Integer value;
     private final String code;
@@ -92,6 +92,10 @@ public enum BankAccountDetailEntityType {
 
     public boolean isPaymentType() {
         return this.value.equals(BankAccountDetailEntityType.PAYMENTTYPES.getValue());
+    }
+
+    public boolean isOffice() {
+        return this.value.equals(BankAccountDetailEntityType.OFFICES.getValue());
     }
 
 }
