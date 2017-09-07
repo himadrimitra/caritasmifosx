@@ -28,6 +28,7 @@ import com.finflux.risk.creditbureau.provider.data.LoanEnquiryData;
 import com.finflux.risk.creditbureau.provider.data.LoanEnquiryReferenceData;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
 import com.finflux.risk.creditbureau.provider.highmark.data.HighmarkConstants;
+import com.finflux.risk.creditbureau.provider.highmark.domain.HighmarkRequestValidator;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.ack.ERROR;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.ack.INQUIRY;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.ack.REPORTFILE;
@@ -44,12 +45,14 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
 
     final ObjectFactory requestFactory = new ObjectFactory();
     final HttpSendService httpSendService;
+    final HighmarkRequestValidator requestValidator;
 
     // final RestTemplate restClient;
 
     @Autowired
-    public HighmarkRequestServiceImpl(HttpSendService httpSendService) {
+    public HighmarkRequestServiceImpl(HttpSendService httpSendService,HighmarkRequestValidator requestValidator) {
         this.httpSendService = httpSendService;
+        this.requestValidator=requestValidator;
 
         // HttpComponentsClientHttpRequestFactory
         // httpComponentsClientHttpRequestFactory =
@@ -412,6 +415,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         HEADERSEGMENT headerSegment = getHeaderSegment(HighmarkConstants.AT01RequestType, highmarkCredentialsData, key);
         requestFile.setHEADERSEGMENT(headerSegment);
         requestFile.setINQUIRY(inquiry);
+        this.requestValidator.validateEnquiryRequest(requestFile);
         return requestFile;
     }
 
