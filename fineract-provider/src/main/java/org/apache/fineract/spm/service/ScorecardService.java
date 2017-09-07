@@ -34,6 +34,7 @@ import org.apache.fineract.spm.repository.QuestionRepository;
 import org.apache.fineract.spm.repository.ResponseRepository;
 import org.apache.fineract.spm.repository.ScorecardRepository;
 import org.apache.fineract.spm.repository.SurveyTakenRepository;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -82,8 +83,8 @@ public class ScorecardService {
 
     @SuppressWarnings("unused")
     public SurveyTaken createSurveyTakenScorecard(final SurveyTakenData surveyTakenData, final Survey survey) {
-        this.securityContext.authenticatedUser();
-        final Long surveyedById = surveyTakenData.getSurveyedBy();
+        final AppUser currentUser = this.securityContext.authenticatedUser();
+        final Long surveyedById = surveyTakenData.getSurveyedBy() == null ? currentUser.getStaffId() : surveyTakenData.getSurveyedBy();
         final Staff surveyedBy = this.staffRepository.findOneWithNotFoundDetection(surveyedById);
         Staff coSurveyedBy = null;
         if (surveyTakenData.getCoSurveyedBy() != null) {
@@ -114,8 +115,8 @@ public class ScorecardService {
 
     @SuppressWarnings("unused")
     public SurveyTaken updateSurveyTakenScorecard(final SurveyTakenData surveyTakenData, final Survey survey) {
-        this.securityContext.authenticatedUser();
-        final Long surveyedById = surveyTakenData.getSurveyedBy();
+        final AppUser currentUser = this.securityContext.authenticatedUser();
+        final Long surveyedById = surveyTakenData.getSurveyedBy() == null ? currentUser.getStaffId() : surveyTakenData.getSurveyedBy();
         final Staff surveyedBy = this.staffRepository.findOneWithNotFoundDetection(surveyedById);
         Staff coSurveyedBy = null;
         if (surveyTakenData.getCoSurveyedBy() != null) {
