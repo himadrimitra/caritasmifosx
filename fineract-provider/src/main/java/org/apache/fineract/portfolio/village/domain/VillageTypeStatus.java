@@ -24,6 +24,7 @@ public enum  VillageTypeStatus {
     INVALID(0, "VillageStatusType.invalid"), //
     PENDING(100, "VillageStatusType.pending"), //
     ACTIVE(300, "VillageStatusType.active"), //
+    REJECT(400, "VillageStatusType.reject"), //
     CLOSED(600, "VillageStatusType.closed");
     
     private final Integer value;
@@ -39,6 +40,9 @@ public enum  VillageTypeStatus {
             break;
             case 300:
                 enumeration = VillageTypeStatus.ACTIVE;
+            break;
+            case 400:
+                enumeration = VillageTypeStatus.REJECT;
             break;
             case 600:
                 enumeration = VillageTypeStatus.CLOSED;
@@ -76,6 +80,10 @@ public enum  VillageTypeStatus {
     
     public boolean isClosed(){
         return this.value.equals(VillageTypeStatus.CLOSED.getValue());
+    }
+
+    public boolean isReject() {
+        return this.value.equals(VillageTypeStatus.REJECT.getValue());
     }
 
 }

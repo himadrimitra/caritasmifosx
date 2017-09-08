@@ -34,4 +34,6 @@ public interface OfficeWritePlatformService {
     CommandProcessingResult activateOffice(Long officeId, JsonCommand command);
 
     CommandProcessingResult rejectOffice(Long officeId, JsonCommand command);
+
+    CommandProcessingResult intiateOfficeWorkflow(Long officeId, JsonCommand command);
 }

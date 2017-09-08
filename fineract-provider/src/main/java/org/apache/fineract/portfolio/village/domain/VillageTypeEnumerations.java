@@ -45,6 +45,9 @@ public static EnumOptionData status(final Integer statusId){
             case CLOSED: 
                 optionData = new EnumOptionData(VillageTypeStatus.CLOSED.getValue().longValue(), VillageTypeStatus.CLOSED.getCode(), "Closed");
             break;
+            case REJECT: 
+                optionData = new EnumOptionData(VillageTypeStatus.REJECT.getValue().longValue(), VillageTypeStatus.REJECT.getCode(), "Reject");
+            break;
         }
         return optionData;
     }

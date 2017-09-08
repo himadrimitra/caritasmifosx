@@ -7,6 +7,7 @@ package com.finflux.infrastructure.gis.district.service;
 
 import java.util.Map;
 
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -27,6 +28,11 @@ import com.finflux.infrastructure.gis.district.domain.DistrictRepositoryWrapper;
 import com.finflux.infrastructure.gis.district.serialization.DistrictCommandFromApiJsonDeserializer;
 import com.finflux.infrastructure.gis.state.domain.State;
 import com.finflux.infrastructure.gis.state.domain.StateRepositoryWrapper;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.WorkflowDTO;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.CreateWorkflowTaskFactory;
 
 @Service
 public class DistrictWritePlatformServiceJpaRepositoryImpl implements DistrictWritePlatformService {
@@ -37,15 +43,23 @@ public class DistrictWritePlatformServiceJpaRepositoryImpl implements DistrictWr
     private final DistrictCommandFromApiJsonDeserializer fromApiJsonDeserializer;
     private final DistrictRepositoryWrapper districtRepository;
     private final StateRepositoryWrapper stateRepository;
+    private final ConfigurationDomainService configurationDomainService;
+    private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
+    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
 
     @Autowired
     public DistrictWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final DistrictCommandFromApiJsonDeserializer fromApiJsonDeserializer, final DistrictRepositoryWrapper districtRepository,
-            final StateRepositoryWrapper stateRepository) {
+            final StateRepositoryWrapper stateRepository, final ConfigurationDomainService configurationDomainService,
+            final CreateWorkflowTaskFactory createWorkflowTaskFactory,
+            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.districtRepository = districtRepository;
         this.stateRepository = stateRepository;
+        this.configurationDomainService = configurationDomainService;
+        this.createWorkflowTaskFactory = createWorkflowTaskFactory;
+        this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
     }
 
     @Override
@@ -153,5 +167,30 @@ public class DistrictWritePlatformServiceJpaRepositoryImpl implements DistrictWr
         logger.error(dve.getMessage(), dve);
         throw new PlatformDataIntegrityException("error.msg.office.unknown.data.integrity.issue",
                 "Unknown data integrity issue with resource.");
+    }
+
+    @Override
+    @Transactional
+    public CommandProcessingResult intiateDistrictWorkflow(final Long districtId, final JsonCommand command) {
+        try {
+            this.context.authenticatedUser();
+            final District district = this.districtRepository.findOneWithNotFoundDetection(districtId);
+            validateIsDistrictInPendingStatus(district);
+            if (this.configurationDomainService.isWorkFlowEnabled()) {
+                final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                        .findOneByEntityTypeAndEntityId(TaskConfigEntityType.DISTRICTONBOARDING.getValue(), -1L);
+                if(taskConfigEntityTypeMapping != null) {
+                    WorkflowDTO workflowDTO = new WorkflowDTO(district);
+                    this.createWorkflowTaskFactory.create(TaskConfigEntityType.DISTRICTONBOARDING).createWorkFlow(workflowDTO);    
+                }
+            }
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .withEntityId(district.getId()) //
+                    .build();
+        } catch (final DataIntegrityViolationException dve) {
+            handleDistrictDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
     }
 }

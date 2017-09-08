@@ -19,4 +19,6 @@ public interface DistrictWritePlatformService {
 
     CommandProcessingResult rejectDistrict(Long districtId, JsonCommand command);
 
+    CommandProcessingResult intiateDistrictWorkflow(Long districtId, JsonCommand command);
+
 }

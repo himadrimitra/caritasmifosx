@@ -12,6 +12,11 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.staff.data.StaffData;
+import org.apache.fineract.portfolio.village.data.VillageData;
+import org.apache.fineract.portfolio.village.data.VillageTimelineData;
+import org.apache.fineract.portfolio.village.domain.VillageTypeEnumerations;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -156,6 +161,55 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
             final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
             return DistrictData.instance(districtId, stateId, isoDistrictCode, districtName, talukaDatas, this.isWorkflowEnabled, status,
                     activationDate, rejectedonDate, workflowId);
+        }
+    }
+
+    @Override
+    public Collection<VillageData> retrieveVillages(final Long distictId, final Integer status) {
+        final AppUser currentUser = this.context.authenticatedUser();
+        final String hierarchy = currentUser.getOffice().getHierarchy();
+        final String hierarchySearchString = hierarchy + "%";
+        final VillageDataMapper mapper = new VillageDataMapper();
+        final String sql = "SELECT " + mapper.schema() + " WHERE fa.district_id = ? AND o.hierarchy like ? AND v.status = ? ";
+        return this.jdbcTemplate.query(sql, mapper, new Object[] { distictId, hierarchySearchString, status });
+    }
+
+    private static final class VillageDataMapper implements RowMapper<VillageData> {
+
+        private final String schema;;
+
+        public VillageDataMapper() {
+            final StringBuilder builder = new StringBuilder(200);
+            builder.append(" v.id AS villageId, v.external_id AS externalId, v.office_id AS officeId, o.name AS officeName,");
+            builder.append(" v.village_code AS villageCode, v.village_name AS villageName, v.counter AS counter, v.status AS status");
+            builder.append(" FROM chai_villages v");
+            builder.append(" JOIN m_office o ON o.id = v.office_id");
+            builder.append(" JOIN f_address_entity fae ON fae.entity_id = v.id AND fae.entity_type_enum=6");
+            builder.append(" JOIN f_address fa ON fa.id = fae.address_id");
+            this.schema = builder.toString();
+        }
+
+        public String schema() {
+            return this.schema;
+        }
+
+        @Override
+        public VillageData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+            final Long villageId = rs.getLong("villageId");
+            final String externalId = rs.getString("externalId");
+            final Long officeId = rs.getLong("officeId");
+            final String officeName = rs.getString("officeName");
+            final String villageCode = rs.getString("villageCode");
+            final String villageName = rs.getString("villageName");
+            final Long counter = rs.getLong("counter");
+            final Integer status = JdbcSupport.getInteger(rs, "status");
+            final EnumOptionData statusName = VillageTypeEnumerations.status(status);
+            final Long workflowId = null;
+            final Boolean isWorkflowEnabled = null;
+            final VillageTimelineData timeline = null;
+            StaffData staff = null;
+            return VillageData.instance(villageId, externalId, officeId, officeName, villageCode, villageName, counter, statusName,
+                    timeline, workflowId, isWorkflowEnabled, staff);
         }
     }
 }
