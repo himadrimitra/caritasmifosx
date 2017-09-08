@@ -93,6 +93,9 @@ public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements Cl
         try {
             final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
 
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.CLIENT_IDENTIFIER_ADD,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, client.isLocked()));
+            
             CodeValue documentType = null;
             if(null == clientIdentifierCommand.getSystemIdentifier()){
                 documentType = this.codeValueRepository.findOneWithNotFoundDetection(clientIdentifierCommand
