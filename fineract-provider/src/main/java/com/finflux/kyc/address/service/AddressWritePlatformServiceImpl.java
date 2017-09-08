@@ -107,6 +107,10 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
              * Checking Address exists or not
              */
             final Address address = this.repository.findOneWithNotFoundDetection(addressId);
+            if(address.getIsVerified()) {
+                throw new PlatformDataIntegrityException("error.msg.address.type.verified",
+                        "Address is already verified. Updation not allowed.", "addressVerified", address.getId());
+            }
             this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.ADDRESS_UPDATE,
                     FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, address.isLocked()));
             final Set<AddressEntity> addressEntities = address.getAddressEntities();

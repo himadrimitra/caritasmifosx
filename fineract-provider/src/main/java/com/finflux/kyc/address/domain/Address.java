@@ -326,4 +326,10 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
         return this.isLocked;
     }
 
+    
+    public Boolean getIsVerified() {
+        return this.isVerified;
+    }
+    
+
 }
