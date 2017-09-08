@@ -71,9 +71,9 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
 
     @Override
     public CreditBureauResponse sendHighmarkEnquiry(EnquiryReferenceData enquiryReferenceData,
-            HighmarkCredentialsData highmarkCredentialsData) {
+            HighmarkCredentialsData highmarkCredentialsData, String key) {
         Map<String, String> headersMap = constructHeadersMap(highmarkCredentialsData);
-        REQUESTREQUESTFILE requestFile = constructRequestFile(enquiryReferenceData, highmarkCredentialsData);
+        REQUESTREQUESTFILE requestFile = constructRequestFile(enquiryReferenceData, highmarkCredentialsData, key);
         return sendHighmarkAT01Request(headersMap, requestFile, enquiryReferenceData, highmarkCredentialsData.getURL());
     }
 
@@ -147,7 +147,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         return errorsJson ;
     }
     
-    private HEADERSEGMENT getHeaderSegment(String requestType, HighmarkCredentialsData highmarkCredentialsData) {
+    private HEADERSEGMENT getHeaderSegment(String requestType, HighmarkCredentialsData highmarkCredentialsData, String key) {
         HEADERSEGMENT headerSegment = requestFactory.createHEADERSEGMENT();
         headerSegment.setPRODUCTTYP(highmarkCredentialsData.getPRODUCTTYP());
         headerSegment.setPRODUCTVER(highmarkCredentialsData.getPRODUCTVER());
@@ -165,17 +165,36 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         headerSegment.setMEMBERPREOVERRIDE(highmarkCredentialsData.getMEMBERPREOVERRIDE());
         headerSegment.setRESFRMTEMBD(highmarkCredentialsData.getRESFRMTEMBD());
         headerSegment.setLOSNAME(highmarkCredentialsData.getLOSNAME());
-        HEADERSEGMENT.MFI mfi = requestFactory.createHEADERSEGMENTMFI();
-        mfi.setINDV(true);
-        mfi.setGROUP(true);
-        mfi.setSCORE(false);
-        headerSegment.setMFI(mfi);
-        HEADERSEGMENT.CONSUMER consumer = requestFactory.createHEADERSEGMENTCONSUMER();
-        consumer.setINDV(false);
-        consumer.setSCORE(false);
-        headerSegment.setCONSUMER(consumer);
+        setMfiOrConsumer(headerSegment, key);
         headerSegment.setIOI(true);
         return headerSegment;
+    }
+    
+    /*
+     * set Mfi or consumer parameter based on type of report
+     */
+    private void setMfiOrConsumer(HEADERSEGMENT headerSegment, String key) {
+        HEADERSEGMENT.MFI mfi = requestFactory.createHEADERSEGMENTMFI();
+        HEADERSEGMENT.CONSUMER consumer = requestFactory.createHEADERSEGMENTCONSUMER();
+        if (key.equalsIgnoreCase(HighmarkConstants.MFI_KEY)) {
+            // mfi parameters
+            mfi.setINDV(true);
+            mfi.setGROUP(true);
+            mfi.setSCORE(false);
+            // consumer parameters
+            consumer.setINDV(false);
+            consumer.setSCORE(false);
+        } else {
+            // mfi parameters
+            mfi.setINDV(false);
+            mfi.setGROUP(false);
+            mfi.setSCORE(false);
+            // consumer parameters
+            consumer.setINDV(true);
+            consumer.setSCORE(false);
+        }
+        headerSegment.setMFI(mfi);
+        headerSegment.setCONSUMER(consumer);
     }
 
     private Map<String, String> constructHeadersMap(HighmarkCredentialsData highmarkCredentialsData) {
@@ -190,7 +209,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
     }
 
     private REQUESTREQUESTFILE constructRequestFile(EnquiryReferenceData enquiryReferenceData,
-            HighmarkCredentialsData highmarkCredentialsData) {
+            HighmarkCredentialsData highmarkCredentialsData, String key) {
 
         REQUESTREQUESTFILE requestFile = requestFactory.createREQUESTREQUESTFILE();
         // List<INQUIRY> inquiryList = new ArrayList<>();
@@ -390,7 +409,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         // inquiryList.add(inquiry);
         // }
 
-        HEADERSEGMENT headerSegment = getHeaderSegment(HighmarkConstants.AT01RequestType, highmarkCredentialsData);
+        HEADERSEGMENT headerSegment = getHeaderSegment(HighmarkConstants.AT01RequestType, highmarkCredentialsData, key);
         requestFile.setHEADERSEGMENT(headerSegment);
         requestFile.setINQUIRY(inquiry);
         return requestFile;

@@ -50,6 +50,9 @@ public class HighmarkConstants {
     public static final String PHONE_TYPE_P07_OTHER = "P07";
     public static final String PHONE_TYPE_P08_UNTAGGED = "P08";
 
-    public static final String DPD_TYPE_XXX = "XXX";
+    public static final String DPD_TYPE_XXX = "XXX"; 
+    
+    public static final String CONSUMER_KEY = "india.highmark.olp.consumer";
+    public static final String MFI_KEY = "india.highmark.olp";
 
 }

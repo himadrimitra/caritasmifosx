@@ -10,7 +10,7 @@ import com.finflux.risk.creditbureau.provider.data.LoanEnquiryReferenceData;
 import com.finflux.risk.creditbureau.provider.service.CreditBureauProvider;
 
 @Service
-public class HighmarkCreditBureauProviderImpl implements CreditBureauProvider {
+public class HighmarkCreditBureauMFIProviderImpl implements CreditBureauProvider {
 
     final HighmarkRequestService highmarkRequestService;
     final HighmarkIssueService highmarkIssueService;
@@ -19,7 +19,7 @@ public class HighmarkCreditBureauProviderImpl implements CreditBureauProvider {
     private static final String KEY = "india.highmark.olp";
 
     @Autowired
-    public HighmarkCreditBureauProviderImpl(final HighmarkRequestService highmarkRequestService,
+    public HighmarkCreditBureauMFIProviderImpl(final HighmarkRequestService highmarkRequestService,
             final HighmarkIssueService highmarkIssueService,
             ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService) {
         this.highmarkRequestService = highmarkRequestService;
@@ -35,7 +35,7 @@ public class HighmarkCreditBureauProviderImpl implements CreditBureauProvider {
     @Override
     public CreditBureauResponse enquireCreditBureau(final EnquiryReferenceData enquiryReferenceData) {
         return highmarkRequestService.sendHighmarkEnquiry(enquiryReferenceData,
-                this.externalServicesPropertiesReadPlatformService.getHighmarkCredentials());
+                this.externalServicesPropertiesReadPlatformService.getHighmarkCredentials(), KEY);
     }
 
     @Override

@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.finflux.risk.creditbureau.provider.highmark.data.HighmarkData;
+
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -55,8 +56,9 @@ public class HighmarkDataReadPlatformServiceImpl implements HighmarkDataReadPlat
             return this.schema;
         }
 
+        @SuppressWarnings("unused")
         @Override
-        public HighmarkData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+        public HighmarkData mapRow(ResultSet rs, int rowNum) throws SQLException {
             final Long activeLoanCount = rs.getLong(HighmarkDataConstants.ACTIVELOANCOUNT);
             final Long closedLoanCount = rs.getLong(HighmarkDataConstants.CLOSEDLOANCOUNT);
             final Long delinquentLoanCount = rs.getLong(HighmarkDataConstants.DELINQUENTLOANCOUNT);
