@@ -64,6 +64,9 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "checker_info")
     private String checkerInfo;
     
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
+    
     protected BankAccountDetails() {}
 
     private BankAccountDetails(final String name, final String accountNumber, final String ifscCode, final String mobileNumber,
@@ -229,5 +232,9 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
 
     public void updateCheckerInfo(String checkerInfo) {
         this.checkerInfo = checkerInfo;
+    }
+    
+    public boolean isLocked() {
+        return this.isLocked;
     }
 }
