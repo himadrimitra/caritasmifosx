@@ -37,18 +37,22 @@ public class EventListnerForValidateEntityLockedOrNot implements BusinessEventLi
                 case LOAN_UNDO_DISBURSAL:
                     entityType = EntityType.LOAN;
                 break;
+                case ADDRESS_ADD:
                 case ADDRESS_UPDATE:
                 case ADDRESS_DELETE:
                     entityType = EntityType.ADDRESS;
                 break;
+                case DOCUMENT_ADD:
                 case DOCUMENT_UPDATE:
                 case DOCUMENT_DELETE:
                     entityType = EntityType.DOCUMENT;
                 break;
+                case FAMILY_DETAILS_ADD:
                 case FAMILY_DETAILS_UPDATE:
                 case FAMILY_DETAILS_DELETE:
                     entityType = EntityType.FAMILY_DETAILS;
                 break;
+                case CLIENT_IDENTIFIER_ADD:
                 case CLIENT_IDENTIFIER_UPDATE:
                 case CLIENT_IDENTIFIER_DELETE:
                     entityType = EntityType.CLIENT_IDENTIFIER;

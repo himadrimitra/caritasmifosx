@@ -31,6 +31,7 @@ import javax.ws.rs.core.Response;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.dataqueries.service.ReadReportingService;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommandValidator;
@@ -53,6 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,13 +74,15 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
     private final DocumentReadPlatformService documentReadPlatformService ;
     private final DateFormat fileNameGeneratedateFormat = new SimpleDateFormat("ddMMyyyyHHmmss") ; 
     private final BusinessEventNotifierService businessEventNotifierService;
+    private final JdbcTemplate jdbcTemplate;
     
     @Autowired
-    public DocumentWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
+    public DocumentWritePlatformServiceJpaRepositoryImpl(final RoutingDataSource dataSource, final PlatformSecurityContext context,
             final DocumentRepositoryWrapper documentRepository, final ContentRepositoryFactory documentStoreFactory,
             final ReadReportingService readExtraDataAndReportingService,
             final ReportingProcessServiceProvider reportingProcessServiceProvider,
             final DocumentReadPlatformService documentReadPlatformService, final BusinessEventNotifierService businessEventNotifierService) {
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = documentStoreFactory;
@@ -96,6 +101,10 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
             final DocumentCommandValidator validator = new DocumentCommandValidator(documentCommand);
 
             validateParentEntityType(documentCommand);
+            
+            final String parentEntityType = documentCommand.getParentEntityType();
+            final Long parentEntityId = documentCommand.getParentEntityId();
+            validateEntityLockedOrNot(parentEntityType,parentEntityId);
 
             validator.validateForCreate();
 
@@ -122,6 +131,23 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
         }
     }
 
+    private void validateEntityLockedOrNot(final String entityType, final Long entityId) {
+        final DOCUMENT_MANAGEMENT_ENTITY documentEntityType = DOCUMENT_MANAGEMENT_ENTITY.fromString(entityType);
+        String sqlQueryForEntityLockedOrNot = null;
+        if (documentEntityType.getName().equalsIgnoreCase(DOCUMENT_MANAGEMENT_ENTITY.CLIENTS.getName())) {
+            sqlQueryForEntityLockedOrNot = "select c.is_locked from m_client c where c.id = ? ";
+        } else if (documentEntityType.getName().equalsIgnoreCase(DOCUMENT_MANAGEMENT_ENTITY.LOANS.getName())) {
+            sqlQueryForEntityLockedOrNot = "select l.is_locked from m_loan l where l.id = ? ";
+        }
+        if (sqlQueryForEntityLockedOrNot != null) {
+            try {
+                final boolean isLocked = this.jdbcTemplate.queryForObject(sqlQueryForEntityLockedOrNot, Boolean.class, entityId);
+                this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.DOCUMENT_ADD,
+                        FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, isLocked));
+            } catch (final EmptyResultDataAccessException e) {}
+        }
+    }
+    
     @Transactional
     @Override
     public CommandProcessingResult updateDocument(final DocumentCommand documentCommand, final InputStream inputStream) {
@@ -197,14 +223,68 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
 
     /*** Entities for document Management **/
     public static enum DOCUMENT_MANAGEMENT_ENTITY {
-        CLIENTS, CLIENT_IDENTIFIERS, STAFF, LOANS, SAVINGS, GROUPS, BANKSTATEMENT, TASKS, VOUCHERS;
+        CLIENTS("clients"), //
+        CLIENT_IDENTIFIERS("client_identifiers"), //
+        STAFF("staff"), //
+        LOANS("loans"), //
+        SAVINGS("savings"), //
+        GROUPS("groups"), //
+        BANKSTATEMENT("bankstatement"), //
+        TASKS("tasks"), //
+        VOUCHERS("vouchers");
+
+        private final String name;
+
+        DOCUMENT_MANAGEMENT_ENTITY(final String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public static DOCUMENT_MANAGEMENT_ENTITY fromString(final String type) {
+            DOCUMENT_MANAGEMENT_ENTITY entityType = null;
+            if (type != null) {
+                switch (type) {
+                    case "clients":
+                        entityType = CLIENTS;
+                    break;
+                    case "client_identifiers":
+                        entityType = CLIENT_IDENTIFIERS;
+                    break;
+                    case "staff":
+                        entityType = STAFF;
+                    break;
+                    case "loans":
+                        entityType = LOANS;
+                    break;
+                    case "savings":
+                        entityType = SAVINGS;
+                    break;
+                    case "groups":
+                        entityType = GROUPS;
+                    break;
+                    case "bankstatement":
+                        entityType = BANKSTATEMENT;
+                    break;
+                    case "tasks":
+                        entityType = TASKS;
+                    break;
+                    case "vouchers":
+                        entityType = VOUCHERS;
+                    break;
+                }
+            }
+            return entityType;
+        }
 
         @Override
         public String toString() {
             return name().toString().toLowerCase();
         }
     }
-
+    
     @Override
     public Long generateDocument(String entityType, Long entityId, Long reportIdetifier,
             final MultivaluedMap<String, String> reportParams) {
