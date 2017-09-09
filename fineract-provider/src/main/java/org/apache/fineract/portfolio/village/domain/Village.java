@@ -107,6 +107,14 @@ public class Village extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "village", fetch=FetchType.LAZY)
     private Set<VillageStaffAssignmentHistory> villageStaffHistory = new HashSet<>();
     
+    @Column(name="rejectedon_date", nullable = true)
+    @Temporal(TemporalType.DATE)
+    private Date rejectedOnDate;
+    
+    @ManyToOne(optional = true,fetch=FetchType.LAZY)
+    @JoinColumn(name="rejectedon_userid", nullable = true)
+    private AppUser rejectedBy;
+    
     public Village() {
     }
 
@@ -385,7 +393,22 @@ public class Village extends AbstractPersistable<Long> {
     public void setVillageStaffHistory(Set<VillageStaffAssignmentHistory> villageStaffHistory) {
         this.villageStaffHistory = villageStaffHistory;
     }
-    
-    
-    
+
+    public void reject(final AppUser currentUser, final List<ApiParameterError> dataValidationErrors, final Map<String, Object> changes) {
+        validateStatusForPendingAndLogError(dataValidationErrors);
+        this.rejectedBy = currentUser;
+        this.rejectedOnDate = DateUtils.getDateOfTenant();
+        this.status = VillageTypeStatus.REJECT.getValue();
+        changes.put(getId().toString(), VillageTypeEnumerations.status(this.status));
+    }
+
+    private void validateStatusForPendingAndLogError(final List<ApiParameterError> dataValidationErrors) {
+        if (isNotPending()) {
+            final String defaultUserMessage = "Village with identifier `" + getId() + "` is not in pending status.";
+            final String globalisationMessageCode = "error.msg.village.is.not.in.pending.status";
+            final ApiParameterError error = ApiParameterError.parameterError(globalisationMessageCode, defaultUserMessage,
+                    VillageTypeApiConstants.REJECT_COMMAND, getId());
+            dataValidationErrors.add(error);
+        }
+    }
 }

@@ -20,6 +20,7 @@ package org.apache.fineract.organisation.office.service;
 
 import java.util.Map;
 
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -48,6 +49,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.WorkflowDTO;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.CreateWorkflowTaskFactory;
+
 @Service
 public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWritePlatformService {
 
@@ -59,19 +66,27 @@ public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWriteP
     private final OfficeRepositoryWrapper officeRepository;
     private final OfficeTransactionRepository officeTransactionRepository;
     private final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository;
+    private final ConfigurationDomainService configurationDomainService;
+    private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
+    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
 
     @Autowired
     public OfficeWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final OfficeCommandFromApiJsonDeserializer fromApiJsonDeserializer,
             final OfficeTransactionCommandFromApiJsonDeserializer moneyTransferCommandFromApiJsonDeserializer,
             final OfficeRepositoryWrapper officeRepository, final OfficeTransactionRepository officeMonetaryTransferRepository,
-            final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository) {
+            final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
+            final ConfigurationDomainService configurationDomainService, final CreateWorkflowTaskFactory createWorkflowTaskFactory,
+            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.moneyTransferCommandFromApiJsonDeserializer = moneyTransferCommandFromApiJsonDeserializer;
         this.officeRepository = officeRepository;
         this.officeTransactionRepository = officeMonetaryTransferRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
+        this.configurationDomainService = configurationDomainService;
+        this.createWorkflowTaskFactory = createWorkflowTaskFactory;
+        this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
     }
 
     @Transactional
@@ -302,5 +317,31 @@ public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWriteP
     private void validateIsOfficeInPendingStatus(Office office) {
         if (!office.isPending()) { throw new GeneralPlatformDomainRuleException("error.msg.office.is.not.in.pending.status",
                 "Office with identifier `" + office.getId() + "` is not in pending status", office.getId()); }
+    }
+
+    @Override
+    @Transactional
+    public CommandProcessingResult intiateOfficeWorkflow(final Long officeId, final JsonCommand command) {
+        try {
+            final AppUser currentUser = this.context.authenticatedUser();
+            final Office office = validateUserPriviledgeOnOfficeAndRetrieve(currentUser, officeId);
+            validateIsOfficeInPendingStatus(office);
+            if (this.configurationDomainService.isWorkFlowEnabled()) {
+                final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                        .findOneByEntityTypeAndEntityId(TaskConfigEntityType.OFFICEONBOARDING.getValue(), -1L);
+                if(taskConfigEntityTypeMapping != null) {
+                    WorkflowDTO workflowDTO = new WorkflowDTO(office);
+                    this.createWorkflowTaskFactory.create(TaskConfigEntityType.OFFICEONBOARDING).createWorkFlow(workflowDTO);    
+                }
+            }
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .withEntityId(office.getId()) //
+                    .withOfficeId(office.getId()) //
+                    .build();
+        } catch (final DataIntegrityViolationException dve) {
+            handleOfficeDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
     }
 }

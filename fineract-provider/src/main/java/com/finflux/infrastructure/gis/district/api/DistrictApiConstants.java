@@ -10,6 +10,7 @@ public class DistrictApiConstants {
 
     public static final String REJECT_COMMAND_NAME = "reject";
     public static final String ACTIVATE_COMMAND_NAME = "activate";
+    public final static String INITIATE_WORKFLOW_COMMAND = "initiateWorkflow";
 
     public static final String districtNameParamName = "districtName";
     public static final String districtCodeParamName = "districtCode";

@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.village.service;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -393,6 +394,36 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
         this.villageRepository.save(village);
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()).withResourceIdAsString(villageId.toString()).build();
+    }
+
+    @Transactional
+    @Override
+    public CommandProcessingResult rejectMultipleVillages(final JsonCommand command) {
+        try {
+            final AppUser currentUser = this.context.authenticatedUser();
+            this.fromApiJsonDeserializer.validateForRejectMultipleVillages(command);
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+            final Map<String, Object> changes = new HashMap<>();
+
+            final String[] villageIds = command.arrayValueOfParameterNamed(VillageTypeApiConstants.villagesParamName);
+            final List<Village> villages = new ArrayList<>(villageIds.length);
+            for (final String villageId : villageIds) {
+                final Long id = Long.valueOf(villageId);
+                final Village village = this.villageRepository.findOneWithNotFoundDetection(id);
+                village.reject(currentUser, dataValidationErrors, changes);
+                villages.add(village);
+            }
+            if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+            this.villageRepo.save(villages);
+
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .with(changes) //
+                    .build();
+        } catch (final DataIntegrityViolationException dive) {
+            handleVillageDataIntegrityIssues(command, dive);
+            return CommandProcessingResult.empty();
+        }
     }
 
 }

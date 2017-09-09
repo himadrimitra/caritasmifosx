@@ -3,6 +3,8 @@ package com.finflux.infrastructure.gis.district.service;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.fineract.portfolio.village.data.VillageData;
+
 import com.finflux.infrastructure.gis.district.data.DistrictData;
 
 public interface DistrictReadPlatformService {
@@ -15,4 +17,5 @@ public interface DistrictReadPlatformService {
 
     Collection<DistrictData> retrieveAllDistrictDataByStateIds(final List<Long> stateIds);
 
+    Collection<VillageData> retrieveVillages(final Long distictId, final Integer status);
 }

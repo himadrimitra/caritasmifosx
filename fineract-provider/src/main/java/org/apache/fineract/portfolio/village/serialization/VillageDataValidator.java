@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.joda.time.LocalDate;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -32,6 +31,7 @@ import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.village.api.VillageTypeApiConstants;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -162,6 +162,24 @@ public class VillageDataValidator {
         final LocalDate activationDate = this.fromApiJsonHelper.extractLocalDateNamed(VillageTypeApiConstants.activationDateParamName,
                 element);
         baseDataValidator.reset().parameter(VillageTypeApiConstants.activationDateParamName).value(activationDate).notNull();
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+    
+    public void validateForRejectMultipleVillages(final JsonCommand command) {
+
+        final String json = command.json();
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, VillageTypeApiConstants.BULK_REJECT_REQUEST_DATA_PARAMETERS);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(VillageTypeApiConstants.VILLAGE_RESOURCE_NAME);
+
+        final String[] villages = command.arrayValueOfParameterNamed(VillageTypeApiConstants.villagesParamName);
+        baseDataValidator.reset().parameter(VillageTypeApiConstants.villagesParamName).value(villages).arrayNotEmpty();
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }

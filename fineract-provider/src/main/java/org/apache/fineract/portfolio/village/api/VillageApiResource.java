@@ -263,4 +263,29 @@ public class VillageApiResource {
         }
         return result ;
     }
+
+    @POST
+    @Path("bulk")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String handleCommand(@QueryParam("command") final String commandParam, final String apiRequestBodyAsJson) {
+
+        if (StringUtils.isBlank(commandParam)) { throw new UnrecognizedQueryParamException("command", commandParam,
+                new Object[] { VillageTypeApiConstants.REJECT_COMMAND }); }
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
+
+        CommandProcessingResult commandResult = null;
+        CommandWrapper commandRequest = null;
+        String result = null;
+        switch (commandParam.trim()) {
+            case VillageTypeApiConstants.REJECT_COMMAND:
+                commandRequest = builder.rejectMultipleVillages().build();
+                commandResult = this.commandSourceWritePlatformService.logCommandSource(commandRequest);
+                result = this.toApiJsonSerializer.serialize(commandResult);
+            break;
+            default:
+                throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { VillageTypeApiConstants.REJECT_COMMAND });
+        }
+        return this.toApiJsonSerializer.serialize(result);
+    }
 }

@@ -214,6 +214,14 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder intiateOfficeWorkflow(final Long officeId) {
+        this.actionName = "INITIATEWORKFLOW";
+        this.entityName = "OFFICE";
+        this.entityId = officeId;
+        this.href = "/offices/" + officeId + "?command=initiateWorkflow";
+        return this;
+    }
+
     public CommandWrapperBuilder createStaff() {
         this.actionName = "CREATE";
         this.entityName = "STAFF";
@@ -3090,7 +3098,15 @@ public class CommandWrapperBuilder {
         this.href = "/villages/" + villageId;
         return this;
     }
-    
+
+    public CommandWrapperBuilder rejectMultipleVillages() {
+        this.actionName = "REJECT";
+        this.entityName = "VILLAGE";
+        this.option = "MULTIPLE";
+        this.href = "/villages/bulk?command=reject";
+        return this;
+    }
+
     public CommandWrapperBuilder assignStaffToVillage(final Long villageId) {
         this.actionName = "ASSIGNSTAFF";
         this.entityName = "VILLAGE";
@@ -4193,4 +4209,13 @@ public class CommandWrapperBuilder {
         this.href = "/offices/" + districtId;
         return this;
     }
+
+    public CommandWrapperBuilder intiateDistirctWorkflow(final Long districtId) {
+        this.actionName = "INITIATEWORKFLOW";
+        this.entityName = "DISTRICT";
+        this.entityId = districtId;
+        this.href = "/districts/" + districtId + "?command=initiateWorkflow";
+        return this;
+    }
+
 }

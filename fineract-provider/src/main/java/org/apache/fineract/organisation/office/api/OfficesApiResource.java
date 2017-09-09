@@ -186,15 +186,19 @@ public class OfficesApiResource {
         final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
 
         CommandProcessingResult result = null;
-        if (is(commandParam, "activate")) {
+        if (is(commandParam, OfficeApiConstants.ACTIVATE_COMMAND)) {
             final CommandWrapper commandRequest = builder.activateOffice(officeId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        } else if (is(commandParam, "reject")) {
+        } else if (is(commandParam, OfficeApiConstants.REJECT_COMMAND)) {
             final CommandWrapper commandRequest = builder.rejectOffice(officeId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, OfficeApiConstants.INITIATE_WORKFLOW_COMMAND)) {
+            final CommandWrapper commandRequest = builder.intiateOfficeWorkflow(officeId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else {
+            throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { OfficeApiConstants.ACTIVATE_COMMAND,
+                    OfficeApiConstants.REJECT_COMMAND, OfficeApiConstants.INITIATE_WORKFLOW_COMMAND });
         }
-        if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam,
-                new Object[] { "activate", "reject" }); }
         return this.toApiJsonSerializer.serialize(result);
     }
 
