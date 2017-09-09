@@ -64,6 +64,10 @@ public class EventListnerForValidateEntityLockedOrNot implements BusinessEventLi
                 case EXISTING_LOAN_DELETE:
                     entityType = EntityType.EXISTING_LOAN;
                 break;
+                case BANK_ACCOUNT_DETAILS_UPDATE:
+                case BANK_ACCOUNT_DETAILS_DELETE:
+                    entityType = EntityType.BANK_ACCOUNT_DETAILS;
+                break;
                 default:
                 break;
             }
