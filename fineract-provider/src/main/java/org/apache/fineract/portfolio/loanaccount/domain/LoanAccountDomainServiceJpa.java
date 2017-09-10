@@ -398,11 +398,12 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         }
         final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                 holidayDetailDto);
+        
+        newSubsidyTransaction.updateLoan(loan);
 
         final ChangedTransactionDetail changedTransactionDetail = loan.addOrRevokeSubsidyTransaction(newSubsidyTransaction,
                 scheduleGeneratorDTO, currentUser, loanEvent);
 
-        newSubsidyTransaction.updateLoan(loan);
         saveLoanTransactionWithDataIntegrityViolationChecks(newSubsidyTransaction);
 
         saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
