@@ -50,7 +50,7 @@ public class OfficeOnboardingWorkflow implements WorkflowCreator {
             final Date dueTime = null;
             final String description, shortDescription;
             description = shortDescription = office.getId() + "- New Office " + WordUtils.capitalizeFully(office.getName());
-            this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(), TaskEntityType.DISTRICT,
+            this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(), TaskEntityType.OFFICE,
                     office.getId(), client, assignedTo, dueDate, office, map, description, shortDescription.toString(), dueTime);
             isSuccess = true;
         }

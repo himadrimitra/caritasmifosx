@@ -18,11 +18,11 @@ public enum TaskEntityType {
     VILLAGE(6, "taskEntityType.village", "village"), //
     BANK(7, "taskEntityType.bank", "bank"), //
     OFFICE(8, "taskEntityType.office", "office"), //
-    TEMPLATE_TASK_CENTER(9, "taskEntityType.template_task_center", "center"), //
-    TEMPLATE_TASK_CLIENT(10, "taskEntityType.template_task_client", "client"), //
+    TEMPLATE_TASK_CENTER(9, "taskEntityType.template_task_center", "Center Template"), //
+    TEMPLATE_TASK_CLIENT(10, "taskEntityType.template_task_client", "Client Template"), //
     TEMPLATE_TASK_VILLAGE(11, "taskEntityType.template_task_village", "Village Template"), //
-    TEMPLATE_TASK_BANK(12, "taskEntityType.template_task_bank", "bank"), //
-    TEMPLATE_TASK_OFFICE(13, "taskEntityType.template_task_office", "office"), //
+    TEMPLATE_TASK_BANK(12, "taskEntityType.template_task_bank", "Bank Template"), //
+    TEMPLATE_TASK_OFFICE(13, "taskEntityType.template_task_office", "Office Template"), //
     GROUP_ONBOARDING(14, "taskEntityType.grouponbarding", "groupOnboarding"), //
     LOAN_APPLICATION_APPLICANT(15, "taskEntityType.loanapplicationMainClient", "loanApplicationApplicant"), //
     LOAN_APPLICATION_COAPPLICANT(16, "taskEntityType.loanapplicationCoApplicant", "loanApplicationCoApplicant"), //
