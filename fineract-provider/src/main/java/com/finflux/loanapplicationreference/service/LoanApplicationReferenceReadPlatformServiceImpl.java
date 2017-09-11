@@ -331,9 +331,11 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("lar.account_type_enum AS accountTypeEnum, ");
             sqlBuilder.append("lar.loan_product_id AS loanProductId, ");
             sqlBuilder.append("lp.name AS loanProductName, ");
+            sqlBuilder.append(" if(cblm.creditbureau_product_id is null, false , true) as isCreditBureauProduct, ");
             sqlBuilder.append("lar.loan_amount_requested AS loanAmountRequested ");
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
+            sqlBuilder.append("LEFT JOIN f_creditbureau_loanproduct_mapping cblm ON lp.id = cblm.creditbureau_product_id ");
           
             this.schemaSql = sqlBuilder.toString();
         }
@@ -354,9 +356,10 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final String loanProductName = rs.getString("loanProductName");
             final BigDecimal loanAmountRequested = rs.getBigDecimal("loanAmountRequested");
             final Boolean isCoApplicant = rs.getBoolean("isCoApplicant");
+            final Boolean isCreditBureauProduct = rs.getBoolean("isCreditBureauProduct");
             
             return LoanApplicationReferenceData.forLookUp(loanApplicationReferenceId, loanApplicationReferenceNo, 
-                    externalIdOne, loanId, accountType, status, loanProductId, loanProductName, loanAmountRequested, isCoApplicant);
+                    externalIdOne, loanId, accountType, status, loanProductId, loanProductName, loanAmountRequested, isCoApplicant, isCreditBureauProduct);
         }
     
     }
