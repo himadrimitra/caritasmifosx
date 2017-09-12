@@ -13,6 +13,7 @@ import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.accountdetails.service.AccountEnumerations;
 import org.apache.fineract.portfolio.client.domain.ClientEnumerations;
@@ -208,6 +209,8 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("lep.disbursal_2_amount as lepdisbursalAmount2, lep.disbursal_3_amount as lepdisbursalAmount3, ");
             sqlBuilder.append("lep.disbursal_4_amount as lepdisbursalAmount4, lep.disbursal_2_emi as lepdisbursalEmi2, ");
             sqlBuilder.append("lep.disbursal_3_emi as lepdisbursalEmi3, lep.disbursal_4_emi as lepdisbursalEmi4 ");
+            sqlBuilder.append(", if(cblpm.stale_period is null,0,cblpm.stale_period) as stalePeriod ");
+            sqlBuilder.append(", cbe.created_date as initiatedDate ");
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
             sqlBuilder.append("LEFT JOIN m_client cl ON cl.id = lar.client_id ");
@@ -216,6 +219,9 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("LEFT JOIN m_payment_type pt_disburse ON pt_disburse.id = lar.expected_disbursal_payment_type_id ");
             sqlBuilder.append(" LEFT JOIN m_payment_type pt_repayment ON pt_repayment.id = lar.expected_repayment_payment_type_id ");
             sqlBuilder.append(" LEFT JOIN f_loan_emi_packs lep ON lar.loan_emi_pack_id = lep.id ");
+            sqlBuilder.append(" LEFT JOIN f_creditbureau_loanproduct_mapping cblpm ON cblpm.creditbureau_product_id = lp.id ");
+            sqlBuilder.append(" LEFT JOIN f_loan_creditbureau_enquiry lcbe ON lcbe.loan_application_id = lar.id ");
+            sqlBuilder.append(" LEFT JOIN f_creditbureau_enquiry cbe ON cbe.id = lcbe.creditbureau_enquiry_id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -303,12 +309,17 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
                         lepdisbursalEmi4,
                         leploanProductName);
             }
-
+            final Integer stalePeriod = JdbcSupport.getIntegeActualValue(rs, "stalePeriod");
+            final LocalDate initiatedDate = JdbcSupport.getLocalDate(rs, "initiatedDate");
+            boolean isStalePeriodExceeded = false;
+            if(initiatedDate != null){
+                isStalePeriodExceeded = initiatedDate.plusDays(stalePeriod).isBefore(DateUtils.getLocalDateOfTenant());
+            }            
             return LoanApplicationReferenceData.instance(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne,
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
                     loanProductName, loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency,
                     repayEvery, termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, 
-                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName);
+                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName, isStalePeriodExceeded);
         }
     }
     
