@@ -38,7 +38,6 @@ import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.apache.fineract.portfolio.charge.service.ChargeDropdownReadPlatformService;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
-import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.charge.service.ChargeSlabReadPlatformService;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
@@ -257,7 +256,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
         final List<EnumOptionData> clientChargeCalculationTypeOptions = null;
         final List<EnumOptionData> clientChargeTimeTypeOptions = null;
 
-        final List<EnumOptionData> feeFrequencyOptions = this.dropdownReadPlatformService.retrievePeriodFrequencyTypeOptions();
+        final Collection<EnumOptionData> feeFrequencyOptions = this.dropdownReadPlatformService.retrieveLoanPeriodFrequencyTypeOptions();
         // this field is applicable only for client charges
         final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions = null;
         final List<EnumOptionData> shareChargeCalculationTypeOptions = null ;
@@ -265,11 +264,15 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
         final Collection<TaxGroupData> taxGroupOptions = null;
         final List<EnumOptionData> glimChargeCalculationOptions = null;
         final List<EnumOptionData> slabChargeTypeOptions = null;
+        final Collection<EnumOptionData> percentageTypeOptions = this.chargeDropdownReadPlatformService.retriveChargePercentageTypes(); 
+        final Collection<EnumOptionData> percentagePeriodTypeOptions = this.chargeDropdownReadPlatformService.retriveChargePercentagePeriodTypes();
+        final Collection<EnumOptionData> penaltyGraceTypeOptions = this.chargeDropdownReadPlatformService.retrivePenaltyGraceTypes();
+        
         return ChargeData.template(null, allowedChargeCalculationTypeOptions, null, allowedChargeTimeOptions, null,
                 loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions,
                 savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions, clientChargeTimeTypeOptions, feeFrequencyOptions,
                 incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,
-                glimChargeCalculationOptions, slabChargeTypeOptions);
+                glimChargeCalculationOptions, slabChargeTypeOptions, percentageTypeOptions, percentagePeriodTypeOptions, penaltyGraceTypeOptions);
     }
 
     @Override

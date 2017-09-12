@@ -193,6 +193,23 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.dueDate = null;
         this.obligationsMet = false;
     }
+    
+    public LoanRepaymentScheduleInstallment(final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment) {
+        this.loan = loanRepaymentScheduleInstallment.loan;
+        this.installmentNumber = loanRepaymentScheduleInstallment.installmentNumber;
+        this.fromDate = loanRepaymentScheduleInstallment.fromDate;
+        this.dueDate = loanRepaymentScheduleInstallment.dueDate;
+        this.principal = loanRepaymentScheduleInstallment.principal;
+        this.interestCharged = loanRepaymentScheduleInstallment.interestCharged;
+        this.feeChargesCharged = loanRepaymentScheduleInstallment.feeChargesCharged;
+        this.penaltyCharges = loanRepaymentScheduleInstallment.penaltyCharges;
+        this.obligationsMet = false;
+        this.recalculatedInterestComponent = loanRepaymentScheduleInstallment.recalculatedInterestComponent;
+        this.loanCompoundingDetails = loanRepaymentScheduleInstallment.loanCompoundingDetails;
+        this.advancePaymentAmount = loanRepaymentScheduleInstallment.advancePaymentAmount;
+        this.capitalizedCharePortion = loanRepaymentScheduleInstallment.capitalizedCharePortion;
+    }
+
 
     private BigDecimal defaultToNullIfZero(final BigDecimal value) {
         BigDecimal result = value;

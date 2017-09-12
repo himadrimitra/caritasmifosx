@@ -173,6 +173,13 @@ public class LoanAssembler {
 
         return loanAccount;
     }
+    
+    public Loan assembleFromWithInitializeRecurringCharges(final Long accountId) {
+        final Loan loanAccount = this.loanRepository.findOneWithNotFoundDetectionAndInitializeRecurringCharges(accountId);
+        loanAccount.setHelpers(defaultLoanLifecycleStateMachine(), this.loanSummaryWrapper,
+                this.loanRepaymentScheduleTransactionProcessorFactory);
+        return loanAccount;
+    }
 
     public void setHelpers(final Loan loanAccount) {
         loanAccount.setHelpers(defaultLoanLifecycleStateMachine(), this.loanSummaryWrapper,

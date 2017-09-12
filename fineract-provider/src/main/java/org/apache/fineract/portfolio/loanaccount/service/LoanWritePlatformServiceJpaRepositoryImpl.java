@@ -289,7 +289,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final LoanOfficerAssignmentHistoryWriteService loanOfficerAssignmentHistoryWriteService;
     private final ClientWritePlatformService clientWritePlatformService;
     private final CenterReadPlatformService centerReadPlatformService;
-    
+    private final LoanOverdueChargeService loanOverdueChargeService;
+
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final LoanEventApiJsonValidator loanEventApiJsonValidator,
@@ -332,7 +333,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final RoutingDataSource dataSource,
             final LoanOfficerAssignmentHistoryWriteService loanOfficerAssignmentHistoryWriteService,
             final ClientWritePlatformService clientWritePlatformService,
-            final CenterReadPlatformService centerReadPlatformService) {
+            final CenterReadPlatformService centerReadPlatformService, final LoanOverdueChargeService loanOverdueChargeService) {
 
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
@@ -388,6 +389,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanOfficerAssignmentHistoryWriteService = loanOfficerAssignmentHistoryWriteService;
         this.clientWritePlatformService = clientWritePlatformService;
         this.centerReadPlatformService = centerReadPlatformService;
+        this.loanOverdueChargeService = loanOverdueChargeService;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -2865,11 +2867,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             if (group.isNotActive()) { throw new GroupNotActiveException(group.getId()); }
         }
     }
+    
+ 
 
     @Override
     @Transactional
     public void applyOverdueChargesForLoan(final Long loanId, Collection<OverdueLoanScheduleData> overdueLoanScheduleDatas) {
-
         Loan loan = null;
         final Long penaltyWaitPeriodValue = this.configurationDomainService.retrievePenaltyWaitPeriod();
         final Long penaltyPostingWaitPeriodValue = this.configurationDomainService.retrieveGraceOnPenaltyPostingPeriod();
@@ -3340,7 +3343,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     @Transactional
     @Override
     public void recalculateInterest(final long loanId) {
-        Loan loan = this.loanAssembler.assembleFrom(loanId);
+        Loan loan = this.loanAssembler.assembleFromWithInitializeRecurringCharges(loanId);
         LocalDate recalculateFrom = loan.fetchInterestRecalculateFromDate();
         AppUser currentUser = getAppUserIfPresent();
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_INTEREST_RECALCULATION,
@@ -3349,6 +3352,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
 
         ScheduleGeneratorDTO generatorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+        
+       this.loanOverdueChargeService.applyOverdueChargesForLoan(loan, DateUtils.getLocalDateOfTenant());
 
         ChangedTransactionDetail changedTransactionDetail = loan.recalculateScheduleFromLastTransaction(generatorDTO,
                 existingTransactionIds, existingReversedTransactionIds, currentUser);

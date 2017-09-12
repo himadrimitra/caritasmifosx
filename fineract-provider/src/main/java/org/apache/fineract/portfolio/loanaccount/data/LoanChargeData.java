@@ -27,6 +27,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
+import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanChargeTaxDetailsPaidByData;
@@ -105,8 +106,9 @@ public class LoanChargeData {
         final boolean isCapitalized = false;
         final Long taxGroupId = null;
         final boolean isMandatory = false;
+        final LocalDate dueDate = null;
         return new LoanChargeData(null, null, null, null, null, null, null, null, chargeOptions, false, null, false, false, null, null,
-                null, null, null, false, isCapitalized, taxGroupId, isMandatory);
+                null, null, null, false, isCapitalized, taxGroupId, isMandatory, dueDate);
     }
 
     /**
@@ -120,8 +122,9 @@ public class LoanChargeData {
             final BigDecimal amount, final BigDecimal percentage, final EnumOptionData chargeTimeType,
             final EnumOptionData chargeCalculationType, final boolean penalty, final EnumOptionData chargePaymentMode,
             final BigDecimal minCap, final BigDecimal maxCap, boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId, final boolean isMandatory) {
+        final LocalDate dueDate = null;
         return new LoanChargeData(null, chargeId, name, currency, amount, percentage, chargeTimeType, chargeCalculationType, null, penalty,
-                chargePaymentMode, false, false, null, minCap, maxCap, null, null, isGlimCharge, isCapitalized, taxGroupId, isMandatory);
+                chargePaymentMode, false, false, null, minCap, maxCap, null, null, isGlimCharge, isCapitalized, taxGroupId, isMandatory, dueDate);
     }
 
     public LoanChargeData(final Long id, final Long chargeId, final String name, final CurrencyData currency, final BigDecimal amount,
@@ -177,7 +180,8 @@ public class LoanChargeData {
             final BigDecimal percentage, final EnumOptionData chargeTimeType, final EnumOptionData chargeCalculationType,
             final Collection<ChargeData> chargeOptions, final boolean penalty, final EnumOptionData chargePaymentMode, final boolean paid,
             final boolean waived, final Long loanId, final BigDecimal minCap, final BigDecimal maxCap, final BigDecimal amountOrPercentage,
-            Collection<LoanInstallmentChargeData> installmentChargeData, final boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId, final boolean isMandatory) {
+            Collection<LoanInstallmentChargeData> installmentChargeData, final boolean isGlimCharge, final boolean isCapitalized,
+            final Long taxGroupId, final boolean isMandatory, final LocalDate dueDate) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = name;
@@ -188,7 +192,7 @@ public class LoanChargeData {
         this.amountWrittenOff = BigDecimal.ZERO;
         this.amountOutstanding = amount;
         this.chargeTimeType = chargeTimeType;
-        this.dueDate = null;
+        this.dueDate = dueDate;
         this.chargeCalculationType = chargeCalculationType;
         this.percentage = percentage;
         this.amountPercentageAppliedTo = null;
@@ -388,6 +392,29 @@ public class LoanChargeData {
         this.taxGroupId = null;
         this.isMandatory=false;
     }
+    
+    public static LoanChargeData newLoanOverdueCharge(final Long chargeId, final Long loanId, final LocalDate dueDate,
+            final BigDecimal amount, final BigDecimal percentage, final EnumOptionData chargeTimeType,
+            final EnumOptionData chargeCalculationType, final EnumOptionData chargePaymentMode, final Long taxGroupId) {
+        final Long id = null;
+        final String name = null;
+        final CurrencyData currency = null;
+        final BigDecimal amountOrPercentage = null;
+        final Collection<ChargeData> chargeOptions = null;
+        final boolean penalty = true;
+        final boolean paid = false;
+        final boolean waived = false;
+        final BigDecimal minCap = null;
+        final BigDecimal maxCap = null;
+        final Collection<LoanInstallmentChargeData> installmentChargeData = null;
+        boolean isGlimCharge = false;
+        final boolean isCapitalized = false;
+        final boolean isMandatory = false;
+
+        return new LoanChargeData(id, chargeId, name, currency, amount, percentage, chargeTimeType, chargeCalculationType, chargeOptions,
+                penalty, chargePaymentMode, paid, waived, loanId, minCap, maxCap, amountOrPercentage, installmentChargeData, isGlimCharge,
+                isCapitalized, taxGroupId, isMandatory,dueDate);
+    }
 
     public boolean isChargePayable() {
         boolean isAccountTransfer = false;
@@ -491,6 +518,26 @@ public class LoanChargeData {
             this.slabs = new ArrayList<>();
         }
         this.slabs.add(chargeSlabData);       
+    }
+
+    
+    public BigDecimal getPercentage() {
+        return this.percentage;
+    }
+
+    
+    public ChargeTimeType getChargeTimeType() {
+        return ChargeTimeType.fromInt(this.chargeTimeType.getId().intValue());
+    }
+
+    
+    public ChargeCalculationType getChargeCalculationType() {
+        return ChargeCalculationType.fromInt(this.chargeCalculationType.getId().intValue());
+    }
+
+    
+    public ChargePaymentMode getChargePaymentMode() {
+        return ChargePaymentMode.fromInt(this.chargePaymentMode.getId().intValue());
     }
     
 }

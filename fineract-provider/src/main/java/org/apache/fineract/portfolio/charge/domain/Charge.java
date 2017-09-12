@@ -32,6 +32,7 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -47,12 +48,14 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeOverdueData;
 import org.apache.fineract.portfolio.charge.exception.ChargeDueAtDisbursementCannotBePenaltyException;
 import org.apache.fineract.portfolio.charge.exception.ChargeMustBePenaltyException;
 import org.apache.fineract.portfolio.charge.exception.ChargeParameterUpdateNotSupportedException;
 import org.apache.fineract.portfolio.charge.exception.ChargeSlabRangeOverlapException;
 import org.apache.fineract.portfolio.charge.exception.SlabChargeTypeException;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
+import org.apache.fineract.portfolio.common.domain.LoanPeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
@@ -145,6 +148,15 @@ public class Charge extends AbstractPersistable<Long> {
     
     @Column(name = "glim_charge_calculation_enum")
     private Integer glimChargeCalculation;
+    
+    @Column(name = "charge_percentage_type")
+    private Integer percentageType;
+    
+    @Column(name = "charge_percentage_period_type")
+    private Integer percentagePeriodType;
+    
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "charge", optional = true, orphanRemoval = true, fetch=FetchType.EAGER)
+    private ChargeOverueDetail chargeOverueDetail;
 
     public static Charge fromJson(final JsonCommand command, final GLAccount account, final TaxGroup taxGroup) {
 
@@ -180,10 +192,28 @@ public class Charge extends AbstractPersistable<Long> {
         	glimChargeCalculation = GlimChargeCalculationType.fromInt(command.integerValueOfParameterNamed("glimChargeCalculation"));
         }
         
+        ChargePercentageType chargePercentageType = ChargePercentageType.FLAT;
+        if (command.hasParameter(ChargesApiConstants.percentageTypeParamName)) {
+            Integer percentageType = command.integerValueOfParameterNamed(ChargesApiConstants.percentageTypeParamName);
+            chargePercentageType = ChargePercentageType.fromInt(percentageType);
+        }
+        ChargePercentagePeriodType chargePercentagePeriodType = ChargePercentagePeriodType.DAILY;
+        if (command.hasParameter(ChargesApiConstants.percentagePeriodTypeParamName)) {
+            final Integer percentagePeriodType = command.integerValueOfParameterNamed(ChargesApiConstants.percentagePeriodTypeParamName);
+            chargePercentagePeriodType = ChargePercentagePeriodType.fromInt(percentagePeriodType);
+        }
+        
+        ChargeOverueDetail chargeOverueDetail = null;
+        if (chargeTimeType.isOverdueInstallment()) {
+            String overdueJson = command.jsonFragment(ChargesApiConstants.overdueChargeDetailParamName);
+            JsonCommand overdueCommand = JsonCommand.fromExistingCommand(command, overdueJson);
+            chargeOverueDetail = ChargeOverueDetail.fromJson(overdueCommand, command.extractLocale());
+        }
+        
 
         return new Charge(name, amount, currencyCode, chargeAppliesTo, chargeTimeType, chargeCalculationType, penalty, active, paymentMode,
                 feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, account, taxGroup, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation,
-                isCapitalized, chargeSlabs);
+                isCapitalized, chargeSlabs, chargeOverueDetail, chargePercentageType, chargePercentagePeriodType);
     }
     
     
@@ -261,7 +291,8 @@ public class Charge extends AbstractPersistable<Long> {
             final boolean active, final ChargePaymentMode paymentMode, final MonthDay feeOnMonthDay, final Integer feeInterval,
             final BigDecimal minCap, final BigDecimal maxCap, final Integer feeFrequency, final GLAccount account, final TaxGroup taxGroup, 
             final boolean emiRoundingGoalSeek, final boolean isGlimCharge, final GlimChargeCalculationType glimChargeCalculation,
-            final boolean isCapitalized, final List<ChargeSlab> chargeSlab) {
+            final boolean isCapitalized, final List<ChargeSlab> chargeSlab, final ChargeOverueDetail chargeOverueDetail,
+            final ChargePercentageType percentageType, final ChargePercentagePeriodType percentagePeriodType) {
         this.name = name;
         this.amount = amount;
         this.currencyCode = currencyCode;
@@ -291,6 +322,12 @@ public class Charge extends AbstractPersistable<Long> {
         }
         this.feeInterval = feeInterval;
         this.feeFrequency = feeFrequency;
+        this.chargeOverueDetail = chargeOverueDetail;
+        if(this.chargeOverueDetail != null){
+            this.chargeOverueDetail.setCharge(this);
+        }
+        this.percentageType = percentageType.getValue();
+        this.percentagePeriodType = percentagePeriodType.getValue();
 
         if (isSavingsCharge()) {
             // TODO vishwas, this validation seems unnecessary as identical
@@ -372,6 +409,10 @@ public class Charge extends AbstractPersistable<Long> {
     
     public Integer getChargeCalculation() {
         return this.chargeCalculation;
+    }
+    
+    public ChargeCalculationType getChargeCalculationType() {
+        return ChargeCalculationType.fromInt(this.chargeCalculation);
     }
 
     public boolean isActive() {
@@ -611,7 +652,7 @@ public class Charge extends AbstractPersistable<Long> {
             this.feeFrequency = newValue;
         }
 
-        if (this.feeFrequency != null) {
+        if (this.feeFrequency != null && !this.feeFrequency.equals(LoanPeriodFrequencyType.SAME_AS_REPAYMENT_PERIOD.getValue())) {
             baseDataValidator.reset().parameter("feeInterval").value(this.feeInterval).notNull();
         }
 
@@ -683,6 +724,34 @@ public class Charge extends AbstractPersistable<Long> {
                 baseDataValidator.reset().parameter(ChargesApiConstants.taxGroupIdParamName).failWithCode("modification.not.supported");
             }
         }
+        
+        if (command.isChangeInIntegerParameterNamed(ChargesApiConstants.percentageTypeParamName, this.percentageType)) {
+            final Integer newValue = command.integerValueOfParameterNamed(ChargesApiConstants.percentageTypeParamName);
+            final ChargePercentageType percentageType = ChargePercentageType.fromInt(newValue);
+            actualChanges.put(ChargesApiConstants.percentageTypeParamName, percentageType.getValue());
+            this.percentageType = percentageType.getValue();
+        }
+
+        if (command.isChangeInIntegerParameterNamed(ChargesApiConstants.percentagePeriodTypeParamName, this.percentagePeriodType)) {
+            final Integer newValue = command.integerValueOfParameterNamed(ChargesApiConstants.percentagePeriodTypeParamName);
+            final ChargePercentagePeriodType percentageType = ChargePercentagePeriodType.fromInt(newValue);
+            actualChanges.put(ChargesApiConstants.percentagePeriodTypeParamName, percentageType.getValue());
+            this.percentagePeriodType = percentageType.getValue();
+        }
+
+        if (this.fetchChargeTimeType().isOverdueInstallment()) {
+            String overdueJson = command.jsonFragment(ChargesApiConstants.overdueChargeDetailParamName);
+            JsonCommand overdueCommand = JsonCommand.fromExistingCommand(command, overdueJson);
+            if (this.chargeOverueDetail == null) {
+                this.chargeOverueDetail = ChargeOverueDetail.fromJson(overdueCommand, command.extractLocale());
+                this.chargeOverueDetail.setCharge(this);
+            } else {
+                this.chargeOverueDetail.update(overdueCommand, actualChanges, command.extractLocale());
+            }
+        } else {
+            this.chargeOverueDetail = null;
+        }
+        
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
@@ -715,13 +784,19 @@ public class Charge extends AbstractPersistable<Long> {
         if (this.taxGroup != null) {
             taxGroupData = TaxGroupData.lookup(taxGroup.getId(), taxGroup.getName());
         }
+        final EnumOptionData percentageType = ChargePercentageType.chargePercentageType(this.percentageType);
+        final EnumOptionData percentagePeriodType = ChargePercentagePeriodType.chargePercentagePeriodType(this.percentagePeriodType);
+        ChargeOverdueData chargeOverueData = null;
+        if(this.chargeOverueDetail != null){
+            chargeOverueData = this.chargeOverueDetail.toData();
+        }
 
         final CurrencyData currency = new CurrencyData(this.currencyCode, null, 0, 0, null, null);
         final EnumOptionData glimChargeCalculation = ChargeEnumerations.glimChargeCalculationType(this.glimChargeCalculation);
         return ChargeData.instance(getId(), this.name, this.amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType,
                 chargePaymentmode, getFeeOnMonthDay(), this.feeInterval, this.penalty, this.active, this.minCap, this.maxCap,
                 feeFrequencyType, accountData, taxGroupData, this.emiRoundingGoalSeek, this.isGlimCharge, glimChargeCalculation,
-                this.isCapitalized);
+                this.isCapitalized, percentageType, percentagePeriodType, chargeOverueData);
     }
 
     public Integer getChargePaymentMode() {
@@ -856,6 +931,24 @@ public class Charge extends AbstractPersistable<Long> {
 
     public boolean isTrancheDisbursement() {
         return ChargeTimeType.fromInt(this.chargeTimeType).equals(ChargeTimeType.TRANCHE_DISBURSEMENT);
+    }
+
+
+    
+    public ChargePercentageType getPercentageType() {
+        return ChargePercentageType.fromInt(this.percentageType);
+    }
+
+
+    
+    public ChargePercentagePeriodType getPercentagePeriodType() {
+        return ChargePercentagePeriodType.fromInt(this.percentagePeriodType);
+    }
+
+
+    
+    public ChargeOverueDetail getChargeOverueDetail() {
+        return this.chargeOverueDetail;
     }
     
 }

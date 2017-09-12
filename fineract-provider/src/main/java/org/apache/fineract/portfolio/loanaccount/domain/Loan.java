@@ -322,6 +322,11 @@ public class Loan extends AbstractPersistable<Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     private Set<LoanTrancheCharge> trancheCharges = new HashSet<>();
+    
+    @LazyCollection(LazyCollectionOption.TRUE)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "loan_id", referencedColumnName = "id", nullable = false)
+    private List<LoanRecurringCharge> loanRecurringCharges = new ArrayList<>();
 
     @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
@@ -1870,6 +1875,9 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     private void recalculateLoanCharge(final LoanCharge loanCharge, final int penaltyWaitPeriod) {
+        if(loanCharge.isOverdueInstallmentCharge()){
+            return;
+        }
         BigDecimal amount = BigDecimal.ZERO;
         BigDecimal chargeAmt = BigDecimal.ZERO;
         BigDecimal totalChargeAmt = BigDecimal.ZERO;
@@ -3939,7 +3947,7 @@ public class Loan extends AbstractPersistable<Long> {
         return installment;
     }
 
-    private List<LoanTransaction> retreiveListOfIncomePostingTransactions() {
+    public List<LoanTransaction> retreiveListOfIncomePostingTransactions(boolean isReverseOrder) {
         final List<LoanTransaction> incomePostTransactions = new ArrayList<>();
         for (final LoanTransaction transaction : this.loanTransactions) {
             if (transaction.isNotReversed() && transaction.isIncomePosting()) {
@@ -3947,7 +3955,11 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         final LoanTransactionComparator transactionComparator = new LoanTransactionComparator();
-        Collections.sort(incomePostTransactions, transactionComparator);
+        if(isReverseOrder){
+            Collections.sort(incomePostTransactions, transactionComparator.reversed());
+        } else {
+            Collections.sort(incomePostTransactions, transactionComparator);
+        }
         return incomePostTransactions;
     }
 
@@ -4106,14 +4118,15 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     private void processIncomeAccrualTransactionOnLoanClosure(LocalDate transactionDate) {
+        boolean isReverseOrder = false;
         if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()
                 && (this.status().isClosedObligationsMet() || this.status().isOverpaid())) {
-            reverseTransactionsOnOrAfter(retreiveListOfIncomePostingTransactions(), transactionDate.toDate());
+            reverseTransactionsOnOrAfter(retreiveListOfIncomePostingTransactions(isReverseOrder), transactionDate.toDate());
             reverseTransactionsOnOrAfter(retreiveListOfAccrualTransactions(), transactionDate.toDate());
             HashMap<String, BigDecimal> cumulativeIncomeFromInstallments = new HashMap<>();
             determineCumulativeIncomeFromInstallments(cumulativeIncomeFromInstallments);
             HashMap<String, BigDecimal> cumulativeIncomeFromIncomePosting = new HashMap<>();
-            determineCumulativeIncomeDetails(retreiveListOfIncomePostingTransactions(), cumulativeIncomeFromIncomePosting);
+            determineCumulativeIncomeDetails(retreiveListOfIncomePostingTransactions(isReverseOrder), cumulativeIncomeFromIncomePosting);
             BigDecimal interestToPost = cumulativeIncomeFromInstallments.get("interest").subtract(
                     cumulativeIncomeFromIncomePosting.get("interest"));
             BigDecimal feeToPost = cumulativeIncomeFromInstallments.get("fee").subtract(cumulativeIncomeFromIncomePosting.get("fee"));
@@ -6398,10 +6411,11 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public void processIncomeTransactions(AppUser currentUser) {
+        boolean isReverseOrder = false;
         if (!this.isNpa() && this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) {
             LocalDate lastCompoundingDate = this.getDisbursementDate();
             List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails = extractInterestRecalculationAdditionalDetails();
-            List<LoanTransaction> incomeTransactions = retreiveListOfIncomePostingTransactions();
+            List<LoanTransaction> incomeTransactions = retreiveListOfIncomePostingTransactions(isReverseOrder);
             List<LoanTransaction> accrualTransactions = retreiveListOfAccrualTransactions();
             for (LoanInterestRecalcualtionAdditionalDetails compoundingDetail : compoundingDetails) {
                 if (!compoundingDetail.getEffectiveDate().isBefore(DateUtils.getLocalDateOfTenant())) {
@@ -8468,5 +8482,24 @@ public class Loan extends AbstractPersistable<Long> {
 
     public boolean isLocked() {
         return this.isLocked;
+    }
+
+    public List<LoanRecurringCharge> getLoanRecurringCharges() {
+        return this.loanRecurringCharges;
+    }
+
+    public List<LoanTransaction> retrivePaymentTransactions() {
+        List<LoanTransaction> paymentTransactions = new ArrayList<>();
+        for (LoanTransaction transaction : this.loanTransactions) {
+            if (transaction.isPaymentTransaction()) {
+                paymentTransactions.add(transaction);
+            }
+        }
+        return paymentTransactions;
+    }
+
+    public boolean isCompoundingToBePostedAsTransaction() {
+        return this.loanInterestRecalculationDetails != null
+                && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction();
     }
 }
