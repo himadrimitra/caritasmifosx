@@ -11,6 +11,7 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -40,10 +41,10 @@ public class LockOrUnlockEntityServiceImpl implements LockOrUnlockEntityService 
     public void lockEntity(final Long entityId, final EntityType entityType, final String businessEventName) {
         final ActionType actionType = ActionType.LOCK;
         final String conditionJsonString = getLockOrUnlockConfigVaues(businessEventName, entityType);
-        processForLockOrUnlockEntity(entityId, actionType, conditionJsonString);
+        processForLockOrUnlockEntity(entityId, actionType, conditionJsonString, entityType);
     }
 
-    private void processForLockOrUnlockEntity(final Long entityId, final ActionType actionType, final String conditionJsonString) {
+    private void processForLockOrUnlockEntity(final Long entityId, final ActionType actionType, final String conditionJsonString, final EntityType lockEntityType) {
         if (StringUtils.isNotEmpty(conditionJsonString)) {
             final JsonElement element = this.fromApiJsonHelper.parse(conditionJsonString);
             final JsonArray jsonArray = element.getAsJsonArray();
@@ -51,9 +52,13 @@ public class LockOrUnlockEntityServiceImpl implements LockOrUnlockEntityService 
                 final List<String> sqlStatements = new ArrayList<>();
                 final HashMap<String, Object> params = new HashMap<>();
                 params.put(CommonConstants.entityIdParam, entityId);
+                Boolean isLoanUnlock = lockEntityType.isLoan() && actionType.isUnlock() ;
                 for (int i = 0; i < jsonArray.size(); i++) {
                     final JsonElement elem = jsonArray.get(i).getAsJsonObject();
                     final String tableName = this.fromApiJsonHelper.extractStringNamed(EntityLockApiConstants.TABLE_NAME, elem);
+                    if (tableName.equalsIgnoreCase(EntityLockApiConstants.CLIENT_ENTITY) && isLoanUnlock) {
+                        continue;
+                    }
                     final Long entityTypeId = this.fromApiJsonHelper.extractLongNamed(CommonConstants.entityTypeParam, elem);
                     final EntityType entityType = EntityType.fromInt(entityTypeId.intValue());
                     String sqlJoinCondition = null;
@@ -98,17 +103,21 @@ public class LockOrUnlockEntityServiceImpl implements LockOrUnlockEntityService 
         sql.append("where rluc.entity_type = ? ");
         if (businessEventName != null) {
             sql.append("and rluc.business_event_name = ? ");
-            return this.jdbcTemplate
-                    .queryForObject(sql.toString(), String.class, new Object[] { entityType.getValue(), businessEventName });
+            return this.jdbcTemplate.queryForObject(sql.toString(), String.class,
+                    new Object[] { entityType.getValue(), businessEventName });
         }
-        return this.jdbcTemplate.queryForObject(sql.toString(), String.class, new Object[] { entityType.getValue() });
+        try {
+            return this.jdbcTemplate.queryForObject(sql.toString(), String.class, new Object[] { entityType.getValue() });
+        } catch (EmptyResultDataAccessException e) {
+            return new String();
+        }
     }
 
     @Override
     public void unlockEntity(final Long entityId, final EntityType entityType, final String businessEventName) {
         final ActionType actionType = ActionType.UNLOCK;
         final String conditionJsonString = getLockOrUnlockConfigVaues(businessEventName, entityType);
-        processForLockOrUnlockEntity(entityId, actionType, conditionJsonString);
+        processForLockOrUnlockEntity(entityId, actionType, conditionJsonString, entityType);
     }
 
     @Override
