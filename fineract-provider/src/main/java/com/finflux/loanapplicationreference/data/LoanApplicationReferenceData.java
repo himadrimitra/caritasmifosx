@@ -94,8 +94,8 @@ public class LoanApplicationReferenceData {
             final Integer repayEvery, final EnumOptionData termPeriodFrequency, final Integer termFrequency,
             final BigDecimal fixedEmiAmount, final Integer noOfTranche, final LocalDate submittedOnDate,
             final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType,
-            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant, final String clientName, final boolean isStalePeriodExceeded) {
-        final boolean isCreditBureauProduct = false;
+            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant, final String clientName, final boolean isStalePeriodExceeded,
+            final boolean isCreditBureauProduct) {
         return new LoanApplicationReferenceData(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne, externalIdTwo,
                 loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId, loanProductName,
                 loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency, repayEvery,
