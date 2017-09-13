@@ -61,7 +61,7 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
                 final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
                 final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE d.id = ? ";
-                return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT, districtId });
+                return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT.getValue(), districtId });
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -79,7 +79,7 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
                 final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
                 final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE d.id IN (" + districtIdsStr + ") ";
-                return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT });
+                return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT.getValue() });
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -94,7 +94,7 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
             final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
             final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
             final String sql = "SELECT " + dataMapper.schema() + " WHERE d.state_id = ? ";
-            return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT, stateId });
+            return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT.getValue(), stateId });
         }
         return Collections.emptyList();
     }
@@ -110,7 +110,7 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
                 final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.DISTRICTONBOARDING);
                 final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas, isWorkflowEnabled);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE d.state_id IN(" + stateIdsStr + ") ";
-                return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT });
+                return this.jdbcTemplate.query(sql, dataMapper, new Object[] { TaskEntityType.DISTRICT.getValue() });
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;

@@ -1691,6 +1691,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         if (appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) { return; }
         if (appTable.equalsIgnoreCase(DataTableApiConstant.LOAN_APPLICATION_REFERENCE)) { return; }
         if (appTable.equalsIgnoreCase(DataTableApiConstant.VILLAGE)) { return; }
+        if (appTable.equalsIgnoreCase(DataTableApiConstant.DISTRICT)) { return; }
 
         throw new PlatformDataIntegrityException("error.msg.invalid.application.table", "Invalid Application Table: " + appTable, "name",
                 appTable);

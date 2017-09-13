@@ -61,4 +61,5 @@ public class DataTableApiConstant {
     public static final String dropSectionsParamName = "dropSections";
     public static final String changeSectionsParamName = "changeSections";
     public static final String VILLAGE = "chai_villages";
+    public static final String DISTRICT = "f_district";
 }
