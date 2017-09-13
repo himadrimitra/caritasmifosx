@@ -44,6 +44,7 @@ import org.apache.fineract.organisation.office.domain.OfficeRepository;
 import org.apache.fineract.organisation.office.exception.OfficeNotFoundException;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
+import org.apache.fineract.organisation.staff.service.StaffJoinDateException;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepository;
 import org.apache.fineract.useradministration.api.AppUserApiConstant;
@@ -58,6 +59,7 @@ import org.apache.fineract.useradministration.exception.AppUserActionException;
 import org.apache.fineract.useradministration.exception.PasswordPreviouslyUsedException;
 import org.apache.fineract.useradministration.exception.RoleNotFoundException;
 import org.apache.fineract.useradministration.exception.UserNotFoundException;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,6 +136,10 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
             Staff linkedStaff = null;
             if (staffId != null) {
                 linkedStaff = this.staffRepositoryWrapper.findByOfficeWithNotFoundDetection(staffId, userOffice.getId());
+            } else {
+                linkedStaff = Staff.fromJson(userOffice, command);
+                validateInputDates(linkedStaff);
+                this.staffRepositoryWrapper.save(linkedStaff);
             }
             
             Collection<Client> clients = null;
@@ -233,6 +239,19 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
                     linkedStaff = this.staffRepositoryWrapper.findByOfficeWithNotFoundDetection(staffId, userToUpdate.getOffice().getId());
                 }
                 userToUpdate.changeStaff(linkedStaff);
+            } else {
+                final Staff linkedStaff = userToUpdate.getStaff();
+                if (linkedStaff != null) {
+                    final Map<String, Object> actualChanges = linkedStaff.update(command);
+                    if (actualChanges.containsKey("officeId")) {
+                        final Long officeId = (Long) actualChanges.get("officeId");
+                        final Office office = this.officeRepository.findOne(officeId);
+                        if (office == null) { throw new OfficeNotFoundException(officeId); }
+                        linkedStaff.changeOffice(office);
+                    }
+                    validateInputDates(linkedStaff);
+                    changes.putAll(actualChanges);
+                }
             }
 
             if (changes.containsKey("roles")) {
@@ -391,4 +410,13 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
         throw new PlatformDataIntegrityException("error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
     }
 
+    private void validateInputDates(final Staff staff) {
+        final LocalDate officeOpenDate = staff.office().getOpeningLocalDate();
+        final LocalDate staffJoinDate = staff.getJoiningLocalDate();
+
+        if (officeOpenDate != null && staffJoinDate != null) {
+            if (staffJoinDate
+                    .isBefore(officeOpenDate)) { throw new StaffJoinDateException(officeOpenDate.toString(), staffJoinDate.toString()); }
+        }
+    }
 }
