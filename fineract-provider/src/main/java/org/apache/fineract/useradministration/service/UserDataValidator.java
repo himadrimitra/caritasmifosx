@@ -34,6 +34,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +50,9 @@ public final class UserDataValidator {
      */
     private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("username", "firstname", "lastname", "password",
             "repeatPassword", "email", "officeId", "notSelectedRoles", "roles", "sendPasswordToEmail", "staffId", "passwordNeverExpires",
-            AppUserConstants.IS_SELF_SERVICE_USER, AppUserConstants.CLIENTS));
+            AppUserConstants.IS_SELF_SERVICE_USER, AppUserConstants.CLIENTS, AppUserConstants.externalIdParamName,
+            AppUserConstants.mobileNoParamName, AppUserConstants.isLoanOfficerParamName, AppUserConstants.isActiveParamName,
+            AppUserConstants.joiningDateParamName, AppUserConstants.dateFormatParamName, AppUserConstants.localeParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -141,6 +144,36 @@ public final class UserDataValidator {
 
         final String[] roles = this.fromApiJsonHelper.extractArrayNamed("roles", element);
         baseDataValidator.reset().parameter("roles").value(roles).arrayNotEmpty();
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.mobileNoParamName, element)) {
+            final String mobileNo = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.mobileNoParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.mobileNoParamName).value(mobileNo).ignoreIfNull().notExceedingLengthOf(50);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.isLoanOfficerParamName, element)) {
+            final Boolean loanOfficerFlag = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.isLoanOfficerParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.isLoanOfficerParamName).value(loanOfficerFlag).notNull().validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.isActiveParamName, element)) {
+            final Boolean activeFlag = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.isActiveParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.isActiveParamName).value(activeFlag).notNull().validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.joiningDateParamName, element)) {
+            final LocalDate joiningDate = this.fromApiJsonHelper.extractLocalDateNamed(AppUserConstants.joiningDateParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.joiningDateParamName).value(joiningDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.dateFormatParamName, element)) {
+            final String dateFormat = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.dateFormatParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.dateFormatParamName).value(dateFormat).notBlank();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.localeParamName, element)) {
+            final String locale = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.localeParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.localeParamName).value(locale).notBlank();
+        }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -235,6 +268,36 @@ public final class UserDataValidator {
             		baseDataValidator.reset().parameter(AppUserConstants.CLIENTS).value(clientId).longGreaterThanZero();
             	}
         	}
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.mobileNoParamName, element)) {
+            final String mobileNo = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.mobileNoParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.mobileNoParamName).value(mobileNo).ignoreIfNull().notExceedingLengthOf(50);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.isLoanOfficerParamName, element)) {
+            final Boolean loanOfficerFlag = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.isLoanOfficerParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.isLoanOfficerParamName).value(loanOfficerFlag).notNull().validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.isActiveParamName, element)) {
+            final Boolean activeFlag = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.isActiveParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.isActiveParamName).value(activeFlag).notNull().validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.joiningDateParamName, element)) {
+            final LocalDate joiningDate = this.fromApiJsonHelper.extractLocalDateNamed(AppUserConstants.joiningDateParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.joiningDateParamName).value(joiningDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.dateFormatParamName, element)) {
+            final String dateFormat = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.dateFormatParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.dateFormatParamName).value(dateFormat).notBlank();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.localeParamName, element)) {
+            final String locale = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.localeParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.localeParamName).value(locale).notBlank();
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
