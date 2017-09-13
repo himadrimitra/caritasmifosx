@@ -231,7 +231,12 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
         GROUPS("groups"), //
         BANKSTATEMENT("bankstatement"), //
         TASKS("tasks"), //
-        VOUCHERS("vouchers");
+        VOUCHERS("vouchers"), //
+        OFFICES("offices"), //
+        DISTRICTS("districts"), //
+        VILLAGES("villages"), //
+        CENTERS("centers"), //
+        LOANAPPLICATION("loanapplication");
 
         private final String name;
 
@@ -273,6 +278,21 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
                     break;
                     case "vouchers":
                         entityType = VOUCHERS;
+                    break;
+                    case "offices":
+                        entityType = OFFICES;
+                    break;
+                    case "districts":
+                        entityType = DISTRICTS;
+                    break;
+                    case "villages":
+                        entityType = VILLAGES;
+                    break;
+                    case "centers":
+                        entityType = CENTERS;
+                    break;
+                    case "loanapplication":
+                        entityType = LOANAPPLICATION;
                     break;
                 }
             }
