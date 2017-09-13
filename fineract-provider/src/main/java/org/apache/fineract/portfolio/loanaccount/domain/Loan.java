@@ -6838,7 +6838,6 @@ public class Loan extends AbstractPersistable<Long> {
                         outstanding = outstanding.minus(loanTransaction.getFeeChargesPortion())
                                 .minus(loanTransaction.getPenaltyChargesPortion(getCurrency()));
                     }
-                    outstanding = outstanding.minus(loanTransaction.getAmount(getCurrency()));
                 }
                 outstanding = outstanding.minus(loanTransaction.getPrincipalPortion(getCurrency()));
 
