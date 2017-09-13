@@ -27,4 +27,11 @@ public class AppUserConstants {
     public static final String ACTION_DELETE = "delete";
     public static final String USERNAME_PARAM = "system";
 
+    public static final String externalIdParamName = "externalId";
+    public static final String mobileNoParamName = "mobileNo";
+    public static final String isLoanOfficerParamName = "isLoanOfficer";
+    public static final String isActiveParamName = "isActive";
+    public static final String joiningDateParamName = "joiningDate";
+    public static final String dateFormatParamName = "dateFormat";
+    public static final String localeParamName = "locale";
 }
