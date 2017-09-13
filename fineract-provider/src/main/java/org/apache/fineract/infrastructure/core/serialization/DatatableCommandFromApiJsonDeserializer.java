@@ -74,7 +74,8 @@ public class DatatableCommandFromApiJsonDeserializer {
     private final Set<String> supportedParametersForDropColumns = new HashSet<>(Arrays.asList("name"));
     private final Object[] supportedColumnTypes = { "string", "number", "boolean", "decimal", "date", "datetime", "text", "dropdown" };
     private final Object[] supportedApptableNames = { "m_loan", "m_savings_account", "m_client", "m_group", "m_center", "m_office",
-            "m_savings_product", "m_product_loan",DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME, DataTableApiConstant.LOAN_APPLICATION_REFERENCE, DataTableApiConstant.VILLAGE};
+            "m_savings_product", "m_product_loan", DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME,
+            DataTableApiConstant.LOAN_APPLICATION_REFERENCE, DataTableApiConstant.VILLAGE, DataTableApiConstant.DISTRICT };
     private final Set<String> supportedParametersForVisibilityCriteria = new HashSet<>(Arrays.asList("columnName", "value"));
     private final Set<String> supportedParametersForSections = new HashSet<>(Arrays.asList(DataTableApiConstant.displayNameParamName,
             DataTableApiConstant.displayPositionParamName, DataTableApiConstant.columnsParamName));
