@@ -1176,4 +1176,19 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.paymentDetail = paymentDetail;
     }
     
+    public boolean isPaidFromAndUpToAndIncluding(final LocalDate fromNotInclusive, final LocalDate upToAndInclusive) {
+        final LocalDate dueDate = getTransactionDate();
+        return occursOnDayFromAndUpToAndIncluding(fromNotInclusive, upToAndInclusive, dueDate);
+    }
+
+    private boolean occursOnDayFromAndUpToAndIncluding(final LocalDate fromNotInclusive, final LocalDate upToAndInclusive,
+            final LocalDate target) {
+        return target != null && target.isAfter(fromNotInclusive) && !target.isAfter(upToAndInclusive);
+    }
+
+    
+    public BigDecimal getPenaltyChargesPortion() {
+        return this.penaltyChargesPortion;
+    }
+    
 }

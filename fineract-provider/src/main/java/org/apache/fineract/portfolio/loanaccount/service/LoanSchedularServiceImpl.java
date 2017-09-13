@@ -81,6 +81,10 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     @CronTarget(jobName = JobName.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT)
     public void applyChargeForOverdueLoans() throws JobExecutionException {
 
+        if(true){
+            return;
+        }
+        @SuppressWarnings("unused")
         final Long penaltyWaitPeriodValue = this.configurationDomainService.retrievePenaltyWaitPeriod();
         final Boolean backdatePenalties = this.configurationDomainService.isBackdatePenaltiesEnabled();
         final Collection<OverdueLoanScheduleData> overdueLoanScheduledInstallments = this.loanReadPlatformService

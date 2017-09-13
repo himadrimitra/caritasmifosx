@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -33,6 +34,9 @@ import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.RepaymentScheduleRelatedLoanData;
+import org.apache.fineract.portfolio.loanaccount.domain.Loan;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalcualtionAdditionalDetails;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.joda.time.Days;
@@ -42,6 +46,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -213,6 +218,45 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
             return new LoanScheduleData(this.currency, periods, loanTermInDays, totalPrincipalDisbursed,
                     totalPrincipalExpected.getAmount(), totalInterestCharged.getAmount(), totalFeeChargesCharged.getAmount(),
                     totalPenaltyChargesCharged.getAmount(), totalRepaymentExpected.getAmount());
+        }
+
+    }
+
+    @Override
+    public List<LoanRepaymentScheduleInstallment> retrieveRepaymentArchiveAsInstallments(Long loanId) {
+        final LoanScheduleArchiveAsInstallmentsMapper mapper = new LoanScheduleArchiveAsInstallmentsMapper();
+        final String sql = "select " + mapper.schema() + " where ml.id = ? order by ls.loan_id, ls.installment";
+
+        return this.jdbcTemplate.query(sql, mapper, new Object[] { loanId });
+    }
+
+    private static final class LoanScheduleArchiveAsInstallmentsMapper implements RowMapper<LoanRepaymentScheduleInstallment> {
+
+        public String schema() {
+            StringBuilder stringBuilder = new StringBuilder(200);
+            stringBuilder.append(" ls.installment as period, ls.fromdate as fromDate, ls.duedate as dueDate, ");
+            stringBuilder
+                    .append("ls.principal_amount as principalDue, ls.interest_amount as interestDue, ls.fee_charges_amount as feeChargesDue, ls.penalty_charges_amount as penaltyChargesDue, ");
+            stringBuilder
+                    .append(" ls.recalculated_interest_component as recalculatedInterestComponent from m_loan ml inner join m_loan_repayment_schedule_history ls on ls.loan_id=ml.id and ls.version=ml.repayment_history_version ");
+            return stringBuilder.toString();
+        }
+
+        @Override
+        public LoanRepaymentScheduleInstallment mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+
+            final Integer installmentNumber = JdbcSupport.getInteger(rs, "period");
+            final LocalDate fromDate = JdbcSupport.getLocalDate(rs, "fromDate");
+            final LocalDate dueDate = JdbcSupport.getLocalDate(rs, "dueDate");
+            final BigDecimal principal = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalDue");
+            final BigDecimal interest = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestDue");
+            final BigDecimal feeCharges = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesDue");
+            final BigDecimal penaltyCharges = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesDue");
+            final Boolean recalculatedInterestComponent = rs.getBoolean("recalculatedInterestComponent");
+            final Loan loan = null;
+            final List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails = null;
+            return new LoanRepaymentScheduleInstallment(loan, installmentNumber, fromDate, dueDate, principal, interest, feeCharges,
+                    penaltyCharges, recalculatedInterestComponent, compoundingDetails);
         }
 
     }

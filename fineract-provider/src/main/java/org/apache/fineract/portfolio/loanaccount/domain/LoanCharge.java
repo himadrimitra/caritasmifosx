@@ -56,6 +56,7 @@ import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoring
 import org.apache.fineract.portfolio.charge.exception.LoanChargeWithoutMandatoryFieldException;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.command.LoanChargeCommand;
+import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidDetail;
 import org.apache.fineract.portfolio.tax.domain.TaxComponent;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
@@ -393,6 +394,74 @@ public class LoanCharge extends AbstractPersistable<Long> {
         copyLoanInstallmentCharge(charge.loanInstallmentCharge, this.loanInstallmentCharge);
         copyLoanChargeTaxDetails(charge.taxDetails, this.taxDetails);
     }
+    
+    
+    // this is used only for overdue charge. don't use for any other purpose 
+    public LoanCharge(final Loan loan, final Charge chargeDefinition, final BigDecimal amount,final BigDecimal percentage,
+            final ChargeTimeType chargeTime, final ChargeCalculationType chargeCalculation, final LocalDate dueDate,
+            final ChargePaymentMode chargePaymentMode, final boolean isPenalty) {
+        this.loan = loan;
+        this.charge = chargeDefinition;
+        this.penaltyCharge = isPenalty;
+        this.minCap = chargeDefinition.getMinCap();
+        this.maxCap = chargeDefinition.getMaxCap();
+
+        this.chargeTime = chargeDefinition.getChargeTimeType();
+        if (chargeTime != null) {
+            this.chargeTime = chargeTime.getValue();
+        }
+
+        if (ChargeTimeType.fromInt(this.chargeTime).equals(ChargeTimeType.SPECIFIED_DUE_DATE)
+                || ChargeTimeType.fromInt(this.chargeTime).equals(ChargeTimeType.OVERDUE_INSTALLMENT)) {
+
+            if (dueDate == null) {
+                final String defaultUserMessage = "Loan charge is missing due date.";
+                throw new LoanChargeWithoutMandatoryFieldException("loanCharge", "dueDate", defaultUserMessage, chargeDefinition.getId(),
+                        chargeDefinition.getName());
+            }
+
+            this.dueDate = dueDate.toDate();
+        } else {
+            this.dueDate = null;
+        }
+
+        this.chargeCalculation = chargeDefinition.getChargeCalculation();
+        if (chargeCalculation != null) {
+            this.chargeCalculation = chargeCalculation.getValue();
+        }
+
+        BigDecimal chargeAmount = chargeDefinition.getAmount();
+        if (amount != null) {
+            chargeAmount = amount;
+        }
+
+        this.chargePaymentMode = chargeDefinition.getChargePaymentMode();
+        if (chargePaymentMode != null) {
+            this.chargePaymentMode = chargePaymentMode.getValue();
+        }
+        if (percentage == null) {
+            this.amountOrPercentage = amount;
+        } else {
+            this.amountOrPercentage = percentage;
+        }
+        this.percentage = percentage;
+        this.amountPercentageAppliedTo = null;
+        this.amountPaid = null;
+        this.amount = chargeAmount;
+        this.amountOutstanding = this.amount;
+        this.amountWaived = null;
+        this.amountWrittenOff = null;
+        this.paid = determineIfFullyPaid();
+
+        if (this.charge != null && this.charge.getTaxGroup() != null) {
+            this.taxGroup = this.charge.getTaxGroup();
+        }
+        if (loan != null && this.charge.getTaxGroup() != null) {
+            createLoanChargeTaxDetails(loan.getDisbursementDate(), chargeAmount);
+        }
+        this.isCapitalized = this.charge == null ? false : this.charge.isCapitalized();
+
+    }
 
     private void copyLoanChargeTaxDetails(final List<LoanChargeTaxDetails> fromTaxDetails, final List<LoanChargeTaxDetails> toTaxDetails) {
         for (LoanChargeTaxDetails details : fromTaxDetails) {
@@ -409,7 +478,9 @@ public class LoanCharge extends AbstractPersistable<Long> {
 
     private void populateDerivedFields(final BigDecimal amountPercentageAppliedTo, final BigDecimal chargeAmount,
             Integer numberOfRepayments, BigDecimal loanCharge) {
-
+        if(this.isOverdueInstallmentCharge()){
+            return;
+        }
         switch (ChargeCalculationType.fromInt(this.chargeCalculation)) {
             case INVALID:
                 this.percentage = null;
@@ -469,7 +540,9 @@ public class LoanCharge extends AbstractPersistable<Long> {
     private void populateDerivedFields(final BigDecimal amountPercentageAppliedTo, final BigDecimal chargeAmount,
             Integer numberOfRepayments, BigDecimal loanCharge, HashMap<Long, BigDecimal> clientMembers, List<GroupLoanIndividualMonitoringCharge> glimCharges,
             BigDecimal totalFee) {
-    	
+        if(this.isOverdueInstallmentCharge()){
+            return;
+        }
         switch (ChargeCalculationType.fromInt(this.chargeCalculation)) {
             case INVALID:
                 this.percentage = null;
@@ -600,6 +673,9 @@ public class LoanCharge extends AbstractPersistable<Long> {
             BigDecimal loanCharge) {
         if (dueDate != null) {
             this.dueDate = dueDate.toDate();
+        }
+        if(this.isOverdueInstallmentCharge()){
+            return;
         }
 
         if (amount != null) {

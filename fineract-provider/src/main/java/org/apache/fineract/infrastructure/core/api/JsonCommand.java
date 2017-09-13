@@ -96,6 +96,15 @@ public final class JsonCommand {
 
     public static JsonCommand fromExistingCommand(JsonCommand command, final JsonElement parsedCommand) {
         final String jsonCommand = command.fromApiJsonHelper.toJson(parsedCommand);
+        return fromExistingCommand(command, parsedCommand, jsonCommand);
+    }
+    
+    public static JsonCommand fromExistingCommand(JsonCommand command,  final String jsonCommand) {
+        final JsonElement parsedCommand = command.fromApiJsonHelper.parse(jsonCommand);
+        return fromExistingCommand(command, parsedCommand, jsonCommand);
+    }
+
+    private static JsonCommand fromExistingCommand(JsonCommand command, final JsonElement parsedCommand, final String jsonCommand) {
         return new JsonCommand(command.commandId, jsonCommand, parsedCommand, command.fromApiJsonHelper, command.entityName,
                 command.resourceId, command.subresourceId, command.groupId, command.clientId, command.loanId, command.savingsId,
                 command.transactionId, command.url, command.productId, command.entityTypeId, command.formDataMultiPart);
@@ -547,8 +556,11 @@ public final class JsonCommand {
      * always returns true or false
      */
     public boolean booleanPrimitiveValueOfParameterNamed(final String parameterName) {
-        final Boolean value = this.fromApiJsonHelper.extractBooleanNamed(parameterName, this.parsedCommand);
-        return (Boolean) ObjectUtils.defaultIfNull(value, Boolean.FALSE);
+        if (this.fromApiJsonHelper.parameterExists(parameterName, this.parsedCommand)) {
+            final Boolean value = this.fromApiJsonHelper.extractBooleanNamed(parameterName, this.parsedCommand);
+            return (Boolean) ObjectUtils.defaultIfNull(value, Boolean.FALSE);
+        }
+        return false;
     }
 
     public boolean isChangeInArrayParameterNamed(final String parameterName, final String[] existingValue) {

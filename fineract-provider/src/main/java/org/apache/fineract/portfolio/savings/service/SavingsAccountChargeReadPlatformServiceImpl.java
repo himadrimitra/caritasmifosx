@@ -37,7 +37,6 @@ import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.exception.SavingsAccountChargeNotFoundException;
 import org.apache.fineract.portfolio.charge.service.ChargeDropdownReadPlatformService;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
-import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountAnnualFeeData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountChargeData;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
@@ -58,7 +57,6 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
     private final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService;
-    private final DropdownReadPlatformService dropdownReadPlatformService;
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     // mappers
@@ -66,13 +64,11 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
 
     @Autowired
     public SavingsAccountChargeReadPlatformServiceImpl(final PlatformSecurityContext context,
-            final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService, final RoutingDataSource dataSource,
-            final DropdownReadPlatformService dropdownReadPlatformService) {
+            final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService, final RoutingDataSource dataSource) {
         this.context = context;
         this.chargeDropdownReadPlatformService = chargeDropdownReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.chargeDueMapper = new SavingsAccountChargeDueMapper();
-        this.dropdownReadPlatformService = dropdownReadPlatformService;
     }
 
     private static final class SavingsAccountChargeMapper implements RowMapper<SavingsAccountChargeData> {
@@ -167,7 +163,7 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
         final List<EnumOptionData> clientChargeCalculationTypeOptions = null;
         final List<EnumOptionData> clientChargeTimeTypeOptions = null;
 
-        final List<EnumOptionData> feeFrequencyOptions = this.dropdownReadPlatformService.retrievePeriodFrequencyTypeOptions();
+        final List<EnumOptionData> feeFrequencyOptions = null;
         // this field is applicable only for client charges
         final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions = null;
         final List<EnumOptionData> shareChargeCalculationTypeOptions = null;
@@ -176,11 +172,14 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
         // TODO AA : revisit for merge conflict - Not sure method signature
         final List<EnumOptionData> glimChargeCalculationOptions = null;
         final List<EnumOptionData> slabChargeTypeOptions = null;
+        final Collection<EnumOptionData> percentageTypeOptions = null; 
+        final Collection<EnumOptionData> percentagePeriodTypeOptions = null;
+        final Collection<EnumOptionData> penaltyGraceTypeOptions = null;
         return ChargeData.template(null, allowedChargeCalculationTypeOptions, null, allowedChargeTimeOptions, null,
                 loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions,
                 savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions, clientChargeTimeTypeOptions, feeFrequencyOptions,
                 incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,glimChargeCalculationOptions,
-                slabChargeTypeOptions);
+                slabChargeTypeOptions,percentageTypeOptions, percentagePeriodTypeOptions, penaltyGraceTypeOptions);
     }
 
     @Override
