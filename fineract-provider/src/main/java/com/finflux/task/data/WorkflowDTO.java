@@ -70,13 +70,13 @@ public class WorkflowDTO
         this.district = null;
     }
 
-    public WorkflowDTO(final District district) {
+    public WorkflowDTO(final District district, final Office office) {
         this.loanApplicationReference = null;
         this.loanProduct = null;
         this.client = null;
         this.loanCoApplicant = null;
         this.village = null;
-        this.office = null;
+        this.office = office;
         this.district = district;
     }
 

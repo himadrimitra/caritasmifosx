@@ -46,7 +46,7 @@ public class DistrictOnboardingWorkflow implements WorkflowCreator {
             final Map<TaskConfigKey, String> map = new HashMap<>();
             map.put(TaskConfigKey.DISTRICT_ID, String.valueOf(district.getId()));
             final Client client = null;
-            final Office office = null;
+            final Office office = workflowDTO.getOffice();
             final AppUser assignedTo = null;
             final Date dueDate = null;
             final Date dueTime = null;
