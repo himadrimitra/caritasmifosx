@@ -3118,6 +3118,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             final Set<LoanCharge> loanCharges, final HolidayDetailDTO holidayDetailDTO) {
         BigDecimal firstEmiAmount = null;
         if (loanApplicationTerms.adjustFirstEMIAmount()) {
+            final boolean adjustInterestForRounding = loanApplicationTerms.isAdjustInterestForRounding();
+            loanApplicationTerms.setAdjustInterestForRounding(false);
             final LoanScheduleParams loanScheduleRecalculationDTO = null;
             EmiDetails emiDetails = new EmiDetails();
             BigDecimal lastDiffAmount = BigDecimal.ZERO;
@@ -3204,6 +3206,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 }
                 loanApplicationTerms.setFirstEmiAmount(firstEmiAmount);
             }
+            loanApplicationTerms.setAdjustInterestForRounding(adjustInterestForRounding);
         }
         return firstEmiAmount;
 
