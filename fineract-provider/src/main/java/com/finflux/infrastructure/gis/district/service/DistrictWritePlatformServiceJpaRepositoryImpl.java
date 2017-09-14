@@ -173,14 +173,14 @@ public class DistrictWritePlatformServiceJpaRepositoryImpl implements DistrictWr
     @Transactional
     public CommandProcessingResult intiateDistrictWorkflow(final Long districtId, final JsonCommand command) {
         try {
-            this.context.authenticatedUser();
+            final AppUser currentUser = this.context.authenticatedUser();
             final District district = this.districtRepository.findOneWithNotFoundDetection(districtId);
             validateIsDistrictInPendingStatus(district);
             if (this.configurationDomainService.isWorkFlowEnabled()) {
                 final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
                         .findOneByEntityTypeAndEntityId(TaskConfigEntityType.DISTRICTONBOARDING.getValue(), -1L);
                 if(taskConfigEntityTypeMapping != null) {
-                    WorkflowDTO workflowDTO = new WorkflowDTO(district);
+                    WorkflowDTO workflowDTO = new WorkflowDTO(district, currentUser.getOffice());
                     this.createWorkflowTaskFactory.create(TaskConfigEntityType.DISTRICTONBOARDING).createWorkFlow(workflowDTO);    
                 }
             }
