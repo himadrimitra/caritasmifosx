@@ -1385,22 +1385,25 @@ public class Loan extends AbstractPersistable<Long> {
         List<LoanTransaction> reversedTransactions = new ArrayList<>();
         final MonetaryCurrency currency = getCurrency();
         LocalDate latestReversedDate = getDisbursementDate();
+        
         for (LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
-            Money interest = Money.zero(currency);
-            Money fee = Money.zero(currency);
-            Money penality = Money.zero(currency);
+
+            BigDecimal interest = BigDecimal.ZERO;
+            BigDecimal fee = BigDecimal.ZERO;
+            BigDecimal penalty = BigDecimal.ZERO;
+
             for (LoanTransaction loanTransaction : accruals) {
                 if (loanTransaction.getTransactionDate().isAfter(installment.getFromDate())
                         && !loanTransaction.getTransactionDate().isAfter(installment.getDueDate())) {
-                    interest = interest.plus(loanTransaction.getInterestPortion(currency));
-                    fee = fee.plus(loanTransaction.getFeeChargesPortion(currency));
-                    penality = penality.plus(loanTransaction.getPenaltyChargesPortion(currency));
-                    if (installment.getFeeChargesCharged(currency).isLessThan(fee)
-                            || installment.getInterestCharged(currency).isLessThan(interest)
-                            || installment.getPenaltyChargesCharged(currency).isLessThan(penality)) {
-                        interest = interest.minus(loanTransaction.getInterestPortion(currency));
-                        fee = fee.minus(loanTransaction.getFeeChargesPortion(currency));
-                        penality = penality.minus(loanTransaction.getPenaltyChargesPortion(currency));
+                    interest = interest.add(MathUtility.zeroIfNull(loanTransaction.getInterestPortion()));
+                    fee = fee.add(MathUtility.zeroIfNull(loanTransaction.getFeeChargesPortion()));
+                    penalty = penalty.add(loanTransaction.getPenaltyChargesPortion());
+                    if (MathUtility.isLesser(installment.getFeeChargesCharged(), fee)
+                            || MathUtility.isLesser(installment.getInterestCharged(), interest)
+                            || MathUtility.isLesser(installment.getPenaltyChargesCharged(), penalty)) {
+                        interest = interest.subtract(MathUtility.zeroIfNull(loanTransaction.getInterestPortion()));
+                        fee = fee.subtract(MathUtility.zeroIfNull(loanTransaction.getFeeChargesPortion()));
+                        penalty = penalty.subtract(loanTransaction.getPenaltyChargesPortion());
                         loanTransaction.reverse();
                         reversedTransactions.add(loanTransaction);
                         if (latestReversedDate.isBefore(loanTransaction.getTransactionDate())) {
@@ -1409,7 +1412,7 @@ public class Loan extends AbstractPersistable<Long> {
                     }
                 }
             }
-            installment.updateAccrualPortion(interest, fee, penality);
+            installment.updateAccrualPortion(Money.of(currency, interest), Money.of(currency, fee), Money.of(currency, penalty));
         }
         LoanRepaymentScheduleInstallment lastInstallment = this.repaymentScheduleInstallments
                 .get(this.repaymentScheduleInstallments.size() - 1);

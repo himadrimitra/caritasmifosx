@@ -912,4 +912,16 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
     public BigDecimal getCapitalizedCharePortion() {
         return this.capitalizedCharePortion;
     }
+    
+    public BigDecimal getFeeChargesCharged() {
+        return MathUtility.zeroIfNull(this.feeChargesCharged);
+    }
+
+    public BigDecimal getInterestCharged() {
+        return MathUtility.zeroIfNull(this.interestCharged);
+    }
+
+    public BigDecimal getPenaltyChargesCharged() {
+        return MathUtility.zeroIfNull(this.penaltyCharges);
+    }
 }
