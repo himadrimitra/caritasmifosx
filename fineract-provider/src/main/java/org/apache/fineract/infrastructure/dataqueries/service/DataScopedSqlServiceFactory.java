@@ -42,7 +42,10 @@ public class DataScopedSqlServiceFactory {
             break;    
             case DataTableApiConstant.VILLAGE:
                 scopedSqlService = new VillageDataScopedSqlServiceImpl ();
-            break;    
+            break;   
+            case DataTableApiConstant.DISTRICT:
+                scopedSqlService=new DistrictDataScopedSqlServiceImpl();
+            break;
         }
         return scopedSqlService;
     }
