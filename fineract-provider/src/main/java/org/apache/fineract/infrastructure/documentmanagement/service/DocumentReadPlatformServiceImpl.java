@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
@@ -32,6 +33,7 @@ import org.apache.fineract.infrastructure.documentmanagement.data.DocumentData;
 import org.apache.fineract.infrastructure.documentmanagement.data.DocumentTagData;
 import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
 import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentNotFoundException;
+import org.apache.fineract.infrastructure.documentmanagement.service.DocumentWritePlatformServiceJpaRepositoryImpl.DOCUMENT_MANAGEMENT_ENTITY;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -68,13 +70,27 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
         if(existingDocuments != null && existingDocuments.size() > 0) {
             documents.addAll(existingDocuments) ;
         }
-        final VirtualDocumentMapper virtualDocumentsMapper = new VirtualDocumentMapper(entityType, entityId) ;
+        final Long productId = getProductIdBasedOnEntityTypeAndId(entityType, entityId);
+        final VirtualDocumentMapper virtualDocumentsMapper = new VirtualDocumentMapper(entityType, entityId, productId) ;
         final String virtualDocsSql = select + virtualDocumentsMapper.schema() + " and tags.entity_type=?";
         List<DocumentData> virtualDocuments = this.jdbcTemplate.query(virtualDocsSql, virtualDocumentsMapper, new Object[] { entityType, entityId, entityType });
         if(virtualDocuments != null && virtualDocuments.size() > 0) {
             documents.addAll(virtualDocuments) ;
         }
         return documents ;
+    }
+
+    private Long getProductIdBasedOnEntityTypeAndId(String entityType, Long entityId) {
+        String sql = null;
+        if (DOCUMENT_MANAGEMENT_ENTITY.LOANAPPLICATION.toString().equalsIgnoreCase(entityType)) {
+            sql = "SELECT loan_product_id FROM f_loan_application_reference WHERE id = ?";
+        } else if (DOCUMENT_MANAGEMENT_ENTITY.LOANS.toString().equalsIgnoreCase(entityType)) {
+            sql = "SELECT product_id FROM m_loan WHERE id = ?";
+        } else if (DOCUMENT_MANAGEMENT_ENTITY.SAVINGS.toString().equalsIgnoreCase(entityType)) {
+            sql = "SELECT product_id FROM m_savings_account WHERE id = ?";
+        }
+        if (StringUtils.isBlank(sql)) { return null; }
+        return this.jdbcTemplate.queryForObject(sql, Long.class, new Object[] { entityId });
     }
 
     @Override
@@ -170,7 +186,7 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
         private final String entityType ;
         private final Long entityId ;
         
-        public VirtualDocumentMapper(final String entityType, final Long entityId) {
+        public VirtualDocumentMapper(final String entityType, final Long entityId, final Long productId) {
             this.entityType = entityType ;
             this.entityId = entityId ;
             builder = new StringBuilder() ;
@@ -180,8 +196,36 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
             builder.append(" from f_entity_tag_report_mapping mappings ") ;
             builder.append(" LEFT JOIN f_entity_tags tags ON tags.id = mappings.entity_tag_id ") ;
             builder.append(" LEFT JOIN m_code_value codeValue ON tags.tag_id = codeValue.id ") ;
+            if (isEntityLinkedToProduct(entityType)) {
+                getJoinEntityTypeBaseOnEntityType(builder, entityType, entityId);
+            }
             builder.append(" where mappings.id not in ") ;
             builder.append(" (select doc.report_mapping_id from m_document doc where doc.parent_entity_type=? and doc.parent_entity_id=? and doc.report_mapping_id is not null) ") ;
+            if (isEntityLinkedToProduct(entityType)) {
+                builder.append(" and (product.id IS NULL OR product.id = ").append(productId).append(") ");
+            }
+        }
+
+        private boolean isEntityLinkedToProduct(final String entityType) {
+            return DOCUMENT_MANAGEMENT_ENTITY.LOANAPPLICATION.toString().equalsIgnoreCase(entityType)
+                    || DOCUMENT_MANAGEMENT_ENTITY.LOANS.toString().equalsIgnoreCase(entityType)
+                    || DOCUMENT_MANAGEMENT_ENTITY.SAVINGS.toString().equalsIgnoreCase(entityType);
+        }
+
+        private void getJoinEntityTypeBaseOnEntityType(final StringBuilder builder, final String entityType, final Long entityId) {
+            if (DOCUMENT_MANAGEMENT_ENTITY.LOANAPPLICATION.toString().equalsIgnoreCase(entityType)) {
+                builder.append(" LEFT JOIN f_loan_application_reference lar on lar.id = ");
+                builder.append(entityId);
+                builder.append(" LEFT JOIN m_product_loan product ON product.id = lar.loan_product_id ");
+            } else if (DOCUMENT_MANAGEMENT_ENTITY.LOANS.toString().equalsIgnoreCase(entityType)) {
+                builder.append(" LEFT JOIN m_loan ml on ml.id = ");
+                builder.append(entityId);
+                builder.append(" LEFT JOIN m_product_loan product ON product.id = ml.product_id ");
+            } else if (DOCUMENT_MANAGEMENT_ENTITY.SAVINGS.toString().equalsIgnoreCase(entityType)) {
+                builder.append(" LEFT JOIN m_savings_account msa on msa.id = ");
+                builder.append(entityId);
+                builder.append(" LEFT JOIN m_savings_product product ON product.id = msa.product_id ");
+            }
         }
 
         public String schema() {
