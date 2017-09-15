@@ -123,14 +123,15 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
                     if (!installment.getDueDate().isAfter(transactionDate)) {
                         isOverduePresentBeforeTranasctionDate = true;
                         isOverduePresent = true;
+                        for (final Long chargeId : chargeApplicableFromDates.keySet()) {
+                            chargeApplicableFromDates.get(chargeId).getChargeOverueDetail()
+                                    .setLastAppliedOnDate(installment.getDueDate().toDate());
+                        }
 
                     } else if (!installment.getDueDate().isAfter(currentDate)) {
                         isOverduePresent = true;
                     }
-                    for (final Long chargeId : chargeApplicableFromDates.keySet()) {
-                        chargeApplicableFromDates.get(chargeId).getChargeOverueDetail()
-                                .setLastAppliedOnDate(installment.getDueDate().toDate());
-                    }
+
                     break;
                 }
                 if (installment.getDueDate().isAfter(currentDate)) {
@@ -140,22 +141,28 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
             if (isOverduePresent) {
                 Collection<LoanCharge> charges = loan.getLoanCharges();
                 for (LoanCharge loanCharge : charges) {
-                    if (loanCharge.isActive() && loanCharge.isOverdueInstallmentCharge()
-                            && loanCharge.getDueLocalDate().isAfter(transactionDate)) {
-                        loanCharge.setActive(false);
-                        isChargeChanged = true;
-                    } else if (loanCharge.getDueLocalDate().isAfter(
-                            chargeApplicableFromDates.get(loanCharge.getCharge().getId()).getChargeOverueDetail().getLastAppliedOnDate())) {
-                        chargeApplicableFromDates.get(loanCharge.getCharge().getId()).getChargeOverueDetail()
-                                .setLastAppliedOnDate(loanCharge.getDueLocalDate().toDate());
+                    if (loanCharge.isActive() && loanCharge.isOverdueInstallmentCharge()) {
+                        if (loanCharge.getDueLocalDate().isAfter(transactionDate)) {
+                            loanCharge.setActive(false);
+                            isChargeChanged = true;
+                        } else if (loanCharge.getDueLocalDate().isAfter(
+                                chargeApplicableFromDates.get(loanCharge.getCharge().getId()).getChargeOverueDetail()
+                                        .getLastAppliedOnDate())) {
+                            chargeApplicableFromDates.get(loanCharge.getCharge().getId()).getChargeOverueDetail()
+                                    .setLastAppliedOnDate(loanCharge.getDueLocalDate().toDate());
+                        }
                     }
                 }
             }
 
             if (isOverduePresentBeforeTranasctionDate) {
                 isChargeChanged = isChargeChanged || applyOverdueChargesForLoan(loan, transactionDate, transactionDate);
+            } else {
+                for (final Long chargeId : chargeApplicableFromDates.keySet()) {
+                    chargeApplicableFromDates.get(chargeId).getChargeOverueDetail().setLastAppliedOnDate(null);
+                    chargeApplicableFromDates.get(chargeId).getChargeOverueDetail().setLastRunOnDate(transactionDate.toDate());
+                }
             }
-
         }
         return isChargeChanged;
 
@@ -512,6 +519,7 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
         }
 
         Money chargeAmount = Money.zero(currency);
+        Money totalCahrgeApplied = chargeAmount.zero();
         for (Map.Entry<LocalDate, PenaltyPeriod> penaltyPeriod : penaltyPeriods.entrySet()) {
             chargeAmount = chargeAmount.plus(chargeCalculator.calculateCharge(penaltyPeriod.getValue()));
             if (includeBrokenPeriodDate && penaltyPeriod.getKey().isEqual(overdueCalculationDetail.getBrokenPeriodOnDate())) {
@@ -521,12 +529,15 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
                         ChargeEnumerations.chargeCalculationType(recurringCharge.getChargeCalculation()),
                         ChargeEnumerations.chargePaymentMode(recurringCharge.getChargePaymentMode()), recurringCharge.getTaxGroupId());
                 addChargeDataToCollection(overdueChargeData, chargeData);
+                totalCahrgeApplied = totalCahrgeApplied.plus(chargeAmount);
                 chargeAmount = chargeAmount.zero();
             }
         }
-        if (chargeAmount.isGreaterThanZero() && lastChargeAppliedDate != null) {
+        totalCahrgeApplied = totalCahrgeApplied.plus(chargeAmount);
+        if (totalCahrgeApplied.isGreaterThanZero() && lastChargeAppliedDate != null) {
             recurringCharge.getChargeOverueDetail().setLastAppliedOnDate(lastChargeAppliedDate.toDate());
         }
+        recurringCharge.getChargeOverueDetail().setLastRunOnDate(overdueCalculationDetail.getRunOnDate().toDate());
         LoanChargeData chargeData = LoanChargeData.newLoanOverdueCharge(recurringCharge.getChargeId(),
                 overdueCalculationDetail.getLoanId(), overdueCalculationDetail.getRunOnDate(), chargeAmount.getAmount(),
                 recurringCharge.getAmount(), ChargeEnumerations.chargeTimeType(recurringCharge.getChargeTimeType()),
