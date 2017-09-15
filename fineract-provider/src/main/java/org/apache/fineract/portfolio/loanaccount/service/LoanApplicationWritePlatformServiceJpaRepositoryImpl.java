@@ -1512,7 +1512,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
                 calculatedRepaymentsStartingFromDate, expectedDisbursementDate, calendar, minimumDaysBetweenDisbursalAndFirstRepayment,
                 AccountType.fromInt(loan.getLoanType()), loan.isSyncDisbursementWithMeeting());
-        
+        copyOverdueChargeDetail(loan);
         final Map<String, Object> changes = loan.loanApplicationApproval(currentUser, command, disbursementDataArray,
                 defaultLoanLifecycleStateMachine());
 
@@ -1555,7 +1555,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                             "Topup loan amount should be greater than outstanding amount of loan to be closed.");
                 }
             }
-            copyOverdueChargeDetail(loan);
 
             saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
 

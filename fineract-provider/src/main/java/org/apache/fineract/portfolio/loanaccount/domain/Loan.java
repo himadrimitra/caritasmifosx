@@ -323,7 +323,7 @@ public class Loan extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     private Set<LoanTrancheCharge> trancheCharges = new HashSet<>();
     
-    @LazyCollection(LazyCollectionOption.TRUE)
+    @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "loan_id", referencedColumnName = "id", nullable = false)
     private List<LoanRecurringCharge> loanRecurringCharges = new ArrayList<>();
@@ -3328,6 +3328,12 @@ public class Loan extends AbstractPersistable<Long> {
                 charge.setActive(false);
             } else {
                 charge.resetToOriginal(loanCurrency());
+            }
+        }
+        
+        for(final LoanRecurringCharge charge : getLoanRecurringCharges()){
+            if(charge.chargeTimeType().isOverdueInstallment()){
+                charge.getChargeOverueDetail().resetToOriginal();
             }
         }
 

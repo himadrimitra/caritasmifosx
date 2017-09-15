@@ -67,10 +67,10 @@ public enum PenaltyGraceType {
         EnumOptionData optionData = null;
         switch (type) {
             case FIRST_OVERDUE_INSTALLEMNT:
-                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "apply for first overdue installment");
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "First overdue installment");
             break;
             case EACH_OVERDUE_INSTALLEMNT:
-                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "apply for each overdue installment");
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Each overdue installment");
             break;
             default:
             break;

@@ -62,16 +62,8 @@ public class LoanRepositoryWrapper {
         Hibernate.initialize(loan.getLoanOfficerHistory());
         Hibernate.initialize(loan.getFund());
         Hibernate.initialize(loan.getCollateral());
-        Hibernate.initialize(loan.getLoanRecurringCharges());
     }
     
-    public Loan findOneWithNotFoundDetectionAndInitializeRecurringCharges(final Long id) {
-        final Loan loan = this.repository.findOne(id);
-        if (loan == null) { throw new LoanNotFoundException(id); }
-        Hibernate.initialize(loan.getLoanRecurringCharges());
-        return loan;
-    }
-
     public Collection<Loan> findActiveLoansByLoanIdAndGroupId(Long clientId, Long groupId) {
         final Collection<Integer> loanStatuses = new ArrayList<>(Arrays.asList(LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(),
                 LoanStatus.APPROVED.getValue(), LoanStatus.ACTIVE.getValue(), LoanStatus.OVERPAID.getValue()));

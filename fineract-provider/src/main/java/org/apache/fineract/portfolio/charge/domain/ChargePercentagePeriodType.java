@@ -67,10 +67,10 @@ public enum ChargePercentagePeriodType {
         EnumOptionData optionData = null;
         switch (type) {
             case SAME_AS_FREQUENCY:
-                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "same as frequency");
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Same as frequency");
             break;
             case DAILY:
-                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "daily");
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Daily");
             break;
             default:
             break;

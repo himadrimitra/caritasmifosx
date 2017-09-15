@@ -1,6 +1,5 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
-import java.util.Collection;
 import java.util.Map;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
@@ -15,7 +14,7 @@ public class PenaltyPeriodGeneratorForAverageOuststanding extends PenaltyChargeP
 
     @Override
     public void createPeriods(LoanRecurringCharge recurringCharge, LoanOverdueCalculationDTO overdueCalculationDetail,
-            Collection<PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate) {
+            Map<LocalDate,PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate) {
         LocalDate currentPeriodEndDate = endDate;
         for (LocalDate date : overdueCalculationDetail.getDatesForOverdueAmountChange()) {
             if (occursOnDayFromAndUpToAndIncluding(recurrerDate, endDate, date)) {
@@ -25,7 +24,7 @@ public class PenaltyPeriodGeneratorForAverageOuststanding extends PenaltyChargeP
                         overdueCalculationDetail.getChargeOutstingAsOnDate());
                 PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, endDate,
                         amountForChargeCalculation, date, currentPeriodEndDate, recurringCharge.getFeeFrequency());
-                penaltyPeriods.add(penaltyPeriod);
+                penaltyPeriods.put(currentPeriodEndDate,penaltyPeriod);
                 }
                 handleReversalOfTransactionForOverdueCalculation(overdueCalculationDetail, date);
                 handleReversalOfOverdueInstallment(overdueCalculationDetail, date);
@@ -43,7 +42,7 @@ public class PenaltyPeriodGeneratorForAverageOuststanding extends PenaltyChargeP
                     overdueCalculationDetail.getCurrency()))) {
                 PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, endDate,
                         amountForChargeCalculation, chargeApplicableFromDate, currentPeriodEndDate, recurringCharge.getFeeFrequency());
-                penaltyPeriods.add(penaltyPeriod);
+                penaltyPeriods.put(currentPeriodEndDate,penaltyPeriod);
             }
         }
         
@@ -63,7 +62,7 @@ public class PenaltyPeriodGeneratorForAverageOuststanding extends PenaltyChargeP
                                 mapEntry.getValue().getFeeChargesOutstanding(currency).plus(mapEntry.getValue().getPenaltyChargesOutstanding(currency)));
                         PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, endDate,
                                 amountForChargeCalculation, mapEntry.getKey(), lastAppliedOnDate, recurringCharge.getFeeFrequency());
-                        penaltyPeriods.add(penaltyPeriod);
+                        penaltyPeriods.put(lastAppliedOnDate,penaltyPeriod);
                     }
                     
                 }

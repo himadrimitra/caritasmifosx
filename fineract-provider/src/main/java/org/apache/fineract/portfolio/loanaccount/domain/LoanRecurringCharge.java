@@ -20,7 +20,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 @Entity
 @Table(name = "f_loan_recurring_charge")
 public class LoanRecurringCharge extends AbstractPersistable<Long> {
-    
+
     @Column(name = "charge_id")
     private Long chargeId;
 
@@ -57,10 +57,10 @@ public class LoanRecurringCharge extends AbstractPersistable<Long> {
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "loanRecurringCharge", optional = true, orphanRemoval = true, fetch = FetchType.EAGER)
     private LoanChargeOverdueDetails chargeOverueDetail;
 
-    protected LoanRecurringCharge(){
-        
+    protected LoanRecurringCharge() {
+
     }
-    
+
     public LoanRecurringCharge(final ChargeData charge) {
         this.chargeId = charge.getId();
         this.amount = charge.getAmount();
@@ -80,62 +80,71 @@ public class LoanRecurringCharge extends AbstractPersistable<Long> {
         }
     }
 
-    
+    public LoanRecurringCharge(final Long chargeId, final BigDecimal amount, final Integer chargeTimeType, final Integer chargeCalculation,
+            Integer chargePaymentMode, Integer feeInterval, boolean penalty, Integer feeFrequency, Integer percentageType,
+            Integer percentagePeriodType, Long taxGroupId, LoanChargeOverdueDetails chargeOverueDetail) {
+        this.chargeId = chargeId;
+        this.amount = amount;
+        this.chargeTimeType = chargeTimeType;
+        this.chargeCalculation = chargeCalculation;
+        this.penalty = penalty;
+        this.taxGroupId = taxGroupId;
+        this.chargePaymentMode = chargePaymentMode;
+        this.feeInterval = feeInterval;
+        this.feeFrequency = feeFrequency;
+        this.percentageType = percentageType;
+        this.percentagePeriodType = percentagePeriodType;
+        this.chargeOverueDetail = chargeOverueDetail;
+    }
+
     public Long getChargeId() {
         return this.chargeId;
     }
 
-    
     public BigDecimal getAmount() {
         return this.amount;
     }
 
-    
     public Integer getChargeTimeType() {
         return this.chargeTimeType;
     }
-
     
+    public ChargeTimeType chargeTimeType() {
+        return ChargeTimeType.fromInt(this.chargeTimeType);
+    }
+
     public ChargeCalculationType getChargeCalculation() {
         return ChargeCalculationType.fromInt(this.chargeCalculation);
     }
 
-    
     public Integer getChargePaymentMode() {
         return this.chargePaymentMode;
     }
 
-    
     public Integer getFeeInterval() {
         return this.feeInterval;
     }
 
-    
     public boolean isPenalty() {
         return this.penalty;
     }
 
-    
     public LoanPeriodFrequencyType getFeeFrequency() {
         return LoanPeriodFrequencyType.fromInt(this.feeFrequency);
     }
 
-    
     public ChargePercentageType getPercentageType() {
         return ChargePercentageType.fromInt(this.percentageType);
     }
 
-    
     public ChargePercentagePeriodType getPercentagePeriodType() {
         return ChargePercentagePeriodType.fromInt(this.percentagePeriodType);
     }
 
-    
     public Long getTaxGroupId() {
         return this.taxGroupId;
     }
 
-    
     public LoanChargeOverdueDetails getChargeOverueDetail() {
         return this.chargeOverueDetail;
     }

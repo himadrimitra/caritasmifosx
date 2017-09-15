@@ -28,6 +28,7 @@ public class LoanOverdueCalculationDTO {
     Money onlyFeePeriodPaidAmount;
     Money onlyFeePeriodOverdueAmount;
     final LocalDate runOnDate;
+    final LocalDate brokenPeriodOnDate;
     LocalDate interestOnlyPeriodStartDate;
     LocalDate firstOverdueDate;
     LocalDate applyChargeFromDate;
@@ -38,7 +39,7 @@ public class LoanOverdueCalculationDTO {
     Set<LocalDate> datesForOverdueAmountChange = new TreeSet<>(Collections.reverseOrder());
 
     public LoanOverdueCalculationDTO(final Long loanId,final LocalDate runOnDate, MonetaryCurrency currency, List<LoanTransaction> paymentTransactions,
-            List<LoanRepaymentScheduleInstallment> installments) {
+            List<LoanRepaymentScheduleInstallment> installments, final LocalDate brokenPeriodOnDate) {
         this.loanId = loanId;
         this.principalOutstingAsOnDate = Money.zero(currency);
         this.interestOutstingAsOnDate = Money.zero(currency);
@@ -51,6 +52,7 @@ public class LoanOverdueCalculationDTO {
         this.onlyFeePeriodPaidAmount = Money.zero(currency);
         this.onlyFeePeriodOverdueAmount = Money.zero(currency);
         this.runOnDate = runOnDate;
+        this.brokenPeriodOnDate = brokenPeriodOnDate;
         this.interestOnlyPeriodStartDate = runOnDate;
         this.firstOverdueDate = runOnDate;
         this.currency = currency;
@@ -120,6 +122,10 @@ public class LoanOverdueCalculationDTO {
         this.principalPaidAfterOnDate = this.principalPaidAfterOnDate.plus(principalPaidAfterOnDate);
     }
 
+    public void plusPrincipalPaidAfterOnDate(BigDecimal principalPaidAfterOnDate) {
+        this.principalPaidAfterOnDate = this.principalPaidAfterOnDate.plus(principalPaidAfterOnDate);
+    }
+    
     public void minusPrincipalPaidAfterOnDate(Money principalPaidAfterOnDate) {
         this.principalPaidAfterOnDate = this.principalPaidAfterOnDate.minus(principalPaidAfterOnDate);
     }
@@ -143,7 +149,12 @@ public class LoanOverdueCalculationDTO {
     public void plusInterestPaidAfterOnDate(Money interestPaidAfterOnDate) {
         this.interestPaidAfterOnDate = this.interestPaidAfterOnDate.plus(interestPaidAfterOnDate);
     }
+    
+    public void plusInterestPaidAfterOnDate(BigDecimal interestPaidAfterOnDate) {
+        this.interestPaidAfterOnDate = this.interestPaidAfterOnDate.plus(interestPaidAfterOnDate);
+    }
 
+    
     public void minusInterestPaidAfterOnDate(Money interestPaidAfterOnDate) {
         this.interestPaidAfterOnDate = this.interestPaidAfterOnDate.minus(interestPaidAfterOnDate);
     }
@@ -237,9 +248,12 @@ public class LoanOverdueCalculationDTO {
         return this.overdueInstallments;
     }
 
-    public void createDatesForOverdueChange() {
+    public void createDatesForOverdueChange(final boolean includeBrokenPeriodDate) {
          this.datesForOverdueAmountChange.addAll(this.paymentTransactions.keySet());
          this.datesForOverdueAmountChange.addAll(this.overdueInstallments.keySet());
+         if(includeBrokenPeriodDate){
+             this.datesForOverdueAmountChange.add(brokenPeriodOnDate);
+         }
     }
 
     
@@ -250,6 +264,11 @@ public class LoanOverdueCalculationDTO {
     
     public Long getLoanId() {
         return this.loanId;
+    }
+
+    
+    public LocalDate getBrokenPeriodOnDate() {
+        return this.brokenPeriodOnDate;
     }
     
 }

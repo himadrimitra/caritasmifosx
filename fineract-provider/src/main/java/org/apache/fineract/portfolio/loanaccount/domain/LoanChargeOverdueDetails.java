@@ -51,6 +51,10 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long>{
     @Column(name = "last_applied_on_date")
     private Date lastAppliedOnDate;
     
+    @Temporal(TemporalType.DATE)
+    @Column(name = "last_run_on_date")
+    private Date lastRunOnDate;
+    
     @Column(name = "min_overdue_amount_required")
     private BigDecimal minOverdueAmountRequired;
     
@@ -68,6 +72,22 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long>{
         this.considerOnlyPostedInterest = chargeOverueDetail.isConsiderOnlyPostedInterest();
         this.calculateChargeOnCurrentOverdue = chargeOverueDetail.isCalculateChargeOnCurrentOverdue();
         this.minOverdueAmountRequired = chargeOverueDetail.getMinOverdueAmountRequired();
+    }
+    
+    public LoanChargeOverdueDetails(final Integer gracePeriod, final Integer penaltyFreePeriod, final Integer graceType,
+            final boolean applyChargeForBrokenPeriod, final boolean isBasedOnOriginalSchedule, final boolean considerOnlyPostedInterest,
+            final boolean calculateChargeOnCurrentOverdue, final BigDecimal minOverdueAmountRequired, final Date lastAppliedOnDate,
+            final Date lastRunOnDate) {
+        this.gracePeriod = gracePeriod;
+        this.penaltyFreePeriod = penaltyFreePeriod;
+        this.graceType = graceType;
+        this.applyChargeForBrokenPeriod = applyChargeForBrokenPeriod;
+        this.isBasedOnOriginalSchedule = isBasedOnOriginalSchedule;
+        this.considerOnlyPostedInterest = considerOnlyPostedInterest;
+        this.calculateChargeOnCurrentOverdue = calculateChargeOnCurrentOverdue;
+        this.minOverdueAmountRequired =minOverdueAmountRequired;
+        this.lastAppliedOnDate = lastAppliedOnDate;
+        this.lastRunOnDate = lastRunOnDate;
     }
 
     
@@ -125,6 +145,9 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long>{
         this.lastAppliedOnDate = lastAppliedOnDate;
     }
     
-   
+   public void resetToOriginal(){
+       this.lastAppliedOnDate = null ;
+       this.lastRunOnDate = null;
+   }
 
 }

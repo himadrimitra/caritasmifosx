@@ -1,6 +1,6 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
-import java.util.Collection;
+import java.util.Map;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
@@ -15,7 +15,7 @@ public class PenaltyPeriodGeneratorForOneTimeCharge extends PenaltyChargePeriodG
 
     @Override
     public void createPeriods(LoanRecurringCharge recurringCharge, LoanOverdueCalculationDTO overdueCalculationDetail,
-            Collection<PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate) {
+            Map<LocalDate,PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate) {
 
         MonetaryCurrency currency = overdueCalculationDetail.getCurrency();
         Money principalAmount = Money.zero(currency);
@@ -83,7 +83,7 @@ public class PenaltyPeriodGeneratorForOneTimeCharge extends PenaltyChargePeriodG
                 && chargeApplicableFromDate.isEqual(recurrerDate)) {
             PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, endDate,
                     amountForChargeCalculation, chargeApplicableFromDate, endDate, recurringCharge.getFeeFrequency());
-            penaltyPeriods.add(penaltyPeriod);
+            penaltyPeriods.put(endDate,penaltyPeriod);
         }
 
     }

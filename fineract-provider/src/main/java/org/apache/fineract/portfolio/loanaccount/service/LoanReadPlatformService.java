@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
+import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.floatingrates.data.InterestRatePeriodData;
@@ -39,6 +40,9 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.data.PaidInAdvanceData;
 import org.apache.fineract.portfolio.loanaccount.data.RepaymentScheduleRelatedLoanData;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRecurringCharge;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
@@ -169,4 +173,12 @@ public interface LoanReadPlatformService {
             final boolean excludeLoanScheduleMappedToPDC);
     
     Long retrivePaymentDetailsIdWithLoanAccountNumberAndLoanTransactioId(final long loanTransactionId, final String loanAccountNumber);
+
+    List<LoanRepaymentScheduleInstallment> retrieveLoanRepaymentScheduleInstallments(Long loanId);
+
+    List<LoanTransaction> retrieveLoanTransactions(Long loanId, Integer... types);
+
+    List<LoanRecurringCharge> retrieveLoanOverdueRecurringCharge(Long loanId);
+    
+    MonetaryCurrency retrieveLoanCurrency(Long loanId);
 }
