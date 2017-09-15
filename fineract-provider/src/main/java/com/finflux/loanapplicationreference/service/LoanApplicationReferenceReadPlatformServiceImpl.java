@@ -148,11 +148,12 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     public LoanApplicationReferenceData retrieveOne(final Long loanApplicationReferenceId) {
         try {
             final String sql = "SELECT false as isCoApplicant, " + this.dataMapper.schema() + " WHERE lar.id = ? ";
+			
             return this.jdbcTemplate.queryForObject(sql, this.dataMapper, new Object[] { loanApplicationReferenceId });
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
-    }
+    };
 
     @Override
     public Collection<LoanApplicationChargeData> retrieveChargesByLoanAppRefId(final Long loanApplicationReferenceId) {
@@ -221,6 +222,8 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(" LEFT JOIN m_payment_type pt_repayment ON pt_repayment.id = lar.expected_repayment_payment_type_id ");
             sqlBuilder.append(" LEFT JOIN f_loan_emi_packs lep ON lar.loan_emi_pack_id = lep.id ");
             sqlBuilder.append(" LEFT join f_creditbureau_loanproduct_office_mapping cblpom on cblpom.loan_product_id= lp.id ");
+			sqlBuilder.append(
+					" and cblpom.id = case when cl.office_id = (select m.office_id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) then (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) else (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id is null) end ");
             sqlBuilder.append(" LEFT JOIN f_creditbureau_loanproduct_mapping cblpm ON cblpm.id = cblpom.credit_bureau_loan_product_mapping_id ");
             sqlBuilder.append(" LEFT JOIN f_loan_creditbureau_enquiry lcbe ON lcbe.loan_application_id = lar.id ");
             sqlBuilder.append(" LEFT JOIN f_creditbureau_enquiry cbe ON cbe.id = lcbe.creditbureau_enquiry_id ");
@@ -345,12 +348,11 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("lar.account_type_enum AS accountTypeEnum, ");
             sqlBuilder.append("lar.loan_product_id AS loanProductId, ");
             sqlBuilder.append("lp.name AS loanProductName, ");
-            sqlBuilder.append(" if(cblpom.loan_product_id is null, false , if(cblpm.is_active is null, false,cblpm.is_active)) as isCreditBureauProduct, ");
+            sqlBuilder.append("(select  (if(cblpom.loan_product_id is null, false , if(cblpm.is_active is null, false,cblpm.is_active))) from f_creditbureau_loanproduct_office_mapping cblpom  LEFT join f_creditbureau_loanproduct_mapping cblpm on cblpm.id=cblpom.credit_bureau_loan_product_mapping_id where cblpom.loan_product_id = lp.id and cblpom.id = case when cl.office_id = (select m.office_id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) then (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) else (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id is null) end )  as isCreditBureauProduct, ");
             sqlBuilder.append("lar.loan_amount_requested AS loanAmountRequested ");
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
-            sqlBuilder.append("LEFT join f_creditbureau_loanproduct_office_mapping cblpom on cblpom.loan_product_id = lp.id ");
-            sqlBuilder.append("LEFT join f_creditbureau_loanproduct_mapping cblpm on cblpm.id=cblpom.credit_bureau_loan_product_mapping_id ");
+            sqlBuilder.append(" LEFT JOIN m_client cl ON cl.id = lar.client_id ");
           
             this.schemaSql = sqlBuilder.toString();
         }
