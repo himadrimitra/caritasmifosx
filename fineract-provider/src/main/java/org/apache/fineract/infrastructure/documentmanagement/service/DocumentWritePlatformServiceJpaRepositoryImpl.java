@@ -23,12 +23,14 @@ import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -362,6 +364,12 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
             reportParams.put("R_villageId", list);
         } else if ("Center".equalsIgnoreCase(reportCategory)) {
             reportParams.put("R_centerId", list);
+        } else {
+            final String globalisationMessageCode = "error.msg.document.generate.invalid.report.category";
+            final String defaultUserMessage = "Invalid report category `" + reportCategory + "` for document generation";
+            final List<String> categories = Arrays.asList("Loan", "Client", "Savings", "LoanApplication", "Staff", "Group", "Task",
+                    "Office", "District", "Village", "Center");
+            throw new GeneralPlatformDomainRuleException(globalisationMessageCode, defaultUserMessage, categories);
         }
         List<String> output = new ArrayList<>();
         output.add(outputType);
