@@ -6,6 +6,8 @@ import org.joda.time.LocalDate;
 
 public interface LoanOverdueChargeService {
 
-    void applyOverdueChargesForLoan(Loan loan, LocalDate runOndate);
+    boolean applyOverdueChargesForLoan(Loan loan, LocalDate runOndate);
+
+    boolean updateOverdueChargesOnPayment(Loan loan, LocalDate transactionDate);
 
 }

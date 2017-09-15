@@ -75,10 +75,13 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanScheduleAccrualData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanStateTransitionException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanForeclosureException;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleHistoryWritePlatformService;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAssembler;
+import org.apache.fineract.portfolio.loanaccount.service.LoanOverdueChargeService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
@@ -119,6 +122,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     private final StandingInstructionRepository standingInstructionRepository;
     private final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService;
     private final PaymentTypeRepository paymentTypeRepository;
+    private final LoanOverdueChargeService loanOverdueChargeService;
 
     @Autowired
     public LoanAccountDomainServiceJpa(final LoanAssembler loanAccountAssembler, final LoanRepository loanRepository,
@@ -135,7 +139,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
             final PaymentDetailWritePlatformService paymentDetailWritePlatformService, 
             final StandingInstructionRepository standingInstructionRepository,
-            final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService, final PaymentTypeRepository paymentTypeRepository) {
+            final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService, final PaymentTypeRepository paymentTypeRepository,
+            final LoanOverdueChargeService loanOverdueChargeService) {
         this.loanAccountAssembler = loanAccountAssembler;
         this.loanRepository = loanRepository;
         this.loanTransactionRepository = loanTransactionRepository;
@@ -157,6 +162,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         this.standingInstructionRepository = standingInstructionRepository;
         this.loanScheduleHistoryWritePlatformService = loanScheduleHistoryWritePlatformService;
         this.paymentTypeRepository=paymentTypeRepository;
+        this.loanOverdueChargeService = loanOverdueChargeService;
     }
 
     @Override
@@ -266,6 +272,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 holidayDetailDto);
 
         final boolean allowPaymentsOnClosedLoans = configurationDomainService.isAllowPaymentsOnClosedLoansEnabled();
+        
+        // to recompute overdue charges
+        boolean isOriginalScheduleNeedsUpdate = this.loanOverdueChargeService.updateOverdueChargesOnPayment(loan, transactionDate);
+        
         final ChangedTransactionDetail changedTransactionDetail = loan.makeRepayment(newRepaymentTransaction,
                 defaultLoanLifecycleStateMachine(), isRecoveryRepayment, scheduleGeneratorDTO, currentUser,
                 isHolidayValidationDone, allowPaymentsOnClosedLoans);
@@ -330,6 +340,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         //Fix to recalculate Accruals only in case of back dated entries.
         if (!DateUtils.getLocalDateOfTenant().isEqual(transactionDate) || (loan.status().isClosedObligationsMet() || loan.status().isOverpaid())) {
         	recalculateAccruals(loan);
+        }
+        
+        if(isOriginalScheduleNeedsUpdate && loan.isInterestRecalculationEnabled()){
+            this.createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
         }
 
         if(changedTransactionDetail != null){
@@ -843,7 +857,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         return newRefundTransaction;
     }
 
-    @SuppressWarnings("null")
     @Override
     public LoanTransaction foreCloseLoan(final Loan loan, final LocalDate foreClosureDate, final String noteText,
             final boolean isAccountTransfer, final boolean isLoanToLoanTransfer, Map<String, Object> changes) {
@@ -1044,6 +1057,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+        
+        // to recompute overdue charges
+        boolean isOriginalScheduleNeedsUpdate = this.loanOverdueChargeService.updateOverdueChargesOnPayment(loan, recalculateFrom);
 
         final ChangedTransactionDetail changedTransactionDetail = loan.adjustExistingTransaction(newTransactionDetail,
                 defaultLoanLifecycleStateMachine(), transactionToAdjust, scheduleGeneratorDTO, currentUser);
@@ -1118,6 +1134,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer, isLoanToLoanTransfer);
 
         recalculateAccruals(loan);
+        
+        if(isOriginalScheduleNeedsUpdate){
+            this.createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
+        }
 
         return new AdjustedLoanTransactionDetails(changes, transactionToAdjust, newTransactionDetail);
 
@@ -1462,5 +1482,27 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         return accrualWriteOff.getAmount(currency).isGreaterThanZero() ? accrualWriteOff : null;
     }
 
-   
+    @Override
+    public void createAndSaveLoanScheduleArchive(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO) {
+        LoanRescheduleRequest loanRescheduleRequest = null;
+        LoanScheduleModel loanScheduleModel = loan.regenerateScheduleModel(scheduleGeneratorDTO);
+        List<LoanRepaymentScheduleInstallment> installments = retrieveRepaymentScheduleFromModel(loanScheduleModel);
+        this.loanScheduleHistoryWritePlatformService.createAndSaveLoanScheduleArchive(installments, loan, loanRescheduleRequest);
+    }
+
+    private List<LoanRepaymentScheduleInstallment> retrieveRepaymentScheduleFromModel(LoanScheduleModel model) {
+        final List<LoanRepaymentScheduleInstallment> installments = new ArrayList<>();
+        for (final LoanScheduleModelPeriod scheduledLoanInstallment : model.getPeriods()) {
+            if (scheduledLoanInstallment.isRepaymentPeriod()) {
+                final LoanRepaymentScheduleInstallment installment = new LoanRepaymentScheduleInstallment(null,
+                        scheduledLoanInstallment.periodNumber(), scheduledLoanInstallment.periodFromDate(),
+                        scheduledLoanInstallment.periodDueDate(), scheduledLoanInstallment.principalDue(),
+                        scheduledLoanInstallment.interestDue(), scheduledLoanInstallment.feeChargesDue(),
+                        scheduledLoanInstallment.penaltyChargesDue(), scheduledLoanInstallment.isRecalculatedInterestComponent(),
+                        scheduledLoanInstallment.getLoanCompoundingDetails());
+                installments.add(installment);
+            }
+        }
+        return installments;
+    }
 }

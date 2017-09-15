@@ -1,6 +1,6 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
-import java.util.Collection;
+import java.util.Map;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
@@ -15,7 +15,7 @@ import org.joda.time.LocalDate;
 public abstract class PenaltyChargePeriodGenerator {
 
    abstract void createPeriods(LoanRecurringCharge recurringCharge, LoanOverdueCalculationDTO overdueCalculationDetail,
-            Collection<PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate);
+            Map<LocalDate,PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate);
 
     public boolean occursOnDayFromAndUpToAndIncluding(final LocalDate fromNotInclusive, final LocalDate upToAndInclusive,
             final LocalDate target) {
@@ -48,10 +48,24 @@ public abstract class PenaltyChargePeriodGenerator {
         MonetaryCurrency currency = overdueCalculationDetail.getCurrency();
         if (overdueCalculationDetail.getPaymentTransactions().containsKey(date)) {
             LoanTransaction transaction = overdueCalculationDetail.getPaymentTransactions().get(date);
-            overdueCalculationDetail.minusPrincipalPaidAfterOnDate(transaction.getPrincipalPortion());
-            overdueCalculationDetail.minusInterestPaidAfterOnDate(transaction.getInterestPortion());
-            overdueCalculationDetail.minusChargePaidAfterOnDate(transaction.getPenaltyChargesPortion(currency).plus(
-                    transaction.getFeeChargesPortion()));
+            if(transaction.isRefund() || transaction.isRefundForActiveLoan()){
+                overdueCalculationDetail.plusPrincipalPaidAfterOnDate(transaction.getPrincipalPortion());
+                overdueCalculationDetail.plusInterestPaidAfterOnDate(transaction.getInterestPortion());
+                overdueCalculationDetail.plusChargePaidAfterOnDate(transaction.getPenaltyChargesPortion(currency).plus(
+                        transaction.getFeeChargesPortion()));
+            } else {
+                overdueCalculationDetail.minusPrincipalPaidAfterOnDate(transaction.getPrincipalPortion());
+                overdueCalculationDetail.minusInterestPaidAfterOnDate(transaction.getInterestPortion());
+                overdueCalculationDetail.minusChargePaidAfterOnDate(transaction.getPenaltyChargesPortion(currency).plus(
+                        transaction.getFeeChargesPortion()));
+                if (transaction.isInterestWaiver()) {
+                    overdueCalculationDetail.minusInterestPaidAfterOnDate(transaction.getUnrecognizedIncomePortion(currency));
+                } else if (transaction.isChargesWaiver()) {
+                    overdueCalculationDetail.minusChargePaidAfterOnDate(transaction.getUnrecognizedIncomePortion(currency));
+                }
+            }
+            
+            
             if (overdueCalculationDetail.getPrincipalPaidAfterOnDate().isLessThanZero()) {
                 overdueCalculationDetail.plusPrincipalOutstingAsOnDate(overdueCalculationDetail.getPrincipalPaidAfterOnDate().negated());
                 overdueCalculationDetail.resetPrincipalPaidAfterOnDate();
@@ -65,6 +79,7 @@ public abstract class PenaltyChargePeriodGenerator {
                 overdueCalculationDetail.plusChargeOutstingAsOnDate(overdueCalculationDetail.getChargePaidAfterOnDate().negated());
                 overdueCalculationDetail.resetChargePaidAfterOnDate();
             }
+            
         }
     }
 

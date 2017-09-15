@@ -209,6 +209,39 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.advancePaymentAmount = loanRepaymentScheduleInstallment.advancePaymentAmount;
         this.capitalizedCharePortion = loanRepaymentScheduleInstallment.capitalizedCharePortion;
     }
+    
+    public LoanRepaymentScheduleInstallment(final Integer installmentNumber, final LocalDate fromDate,
+            final LocalDate dueDate, final BigDecimal principal, final BigDecimal principalCompleted, final BigDecimal principalWrittenOff,
+            final BigDecimal interest, final BigDecimal interestPaid, final BigDecimal interestWaived, final BigDecimal interestWrittenOff,
+            final BigDecimal feeCharges, final BigDecimal feeChargesPaid, final BigDecimal feeChargesWaived,
+            final BigDecimal feeChargesWrittenOff, final BigDecimal penaltyCharges, final boolean recalculatedInterestComponent,
+            final BigDecimal penaltyChargesPaid, final BigDecimal penaltyChargesWaived, final BigDecimal penaltyChargesWrittenOff,
+            final boolean obligationsMet, final LocalDate obligationsMetOnDate, BigDecimal capitalizedCharePortion) {
+        this.installmentNumber = installmentNumber;
+        this.fromDate = fromDate.toDate();
+        this.dueDate = dueDate.toDate();
+        this.principal = defaultToNullIfZero(principal);
+        this.principalCompleted = defaultToNullIfZero(principalCompleted);
+        this.principalWrittenOff = defaultToNullIfZero(principalWrittenOff);
+        this.interestCharged = defaultToNullIfZero(interest);
+        this.interestPaid = defaultToNullIfZero(interestPaid);
+        this.interestWaived = defaultToNullIfZero(interestWaived);
+        this.interestWrittenOff = defaultToNullIfZero(interestWrittenOff);
+        this.feeChargesCharged = defaultToNullIfZero(feeCharges);
+        this.feeChargesPaid = defaultToNullIfZero(feeChargesPaid);
+        this.feeChargesWaived = defaultToNullIfZero(feeChargesWaived);
+        this.feeChargesWrittenOff = defaultToNullIfZero(feeChargesWrittenOff);
+        this.penaltyCharges = defaultToNullIfZero(penaltyCharges);
+        this.penaltyChargesPaid = defaultToNullIfZero(penaltyChargesPaid);
+        this.penaltyChargesWaived = defaultToNullIfZero(penaltyChargesWaived);
+        this.penaltyChargesWrittenOff = defaultToNullIfZero(penaltyChargesWrittenOff);
+        this.obligationsMet = obligationsMet;
+        this.recalculatedInterestComponent = recalculatedInterestComponent;
+        if (obligationsMetOnDate != null) {
+            this.obligationsMetOnDate = obligationsMetOnDate.toDate();
+        }
+        this.capitalizedCharePortion = capitalizedCharePortion;
+    }
 
 
     private BigDecimal defaultToNullIfZero(final BigDecimal value) {

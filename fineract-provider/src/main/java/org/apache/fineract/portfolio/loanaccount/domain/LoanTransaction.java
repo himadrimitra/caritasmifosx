@@ -469,6 +469,25 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.submittedOnDate = DateUtils.getDateOfTenant();
     }
     
+    public LoanTransaction(final Long id, final Integer typeOf, final Integer loanTransactionSubType, final Date dateOf,
+            final BigDecimal amount, final BigDecimal principalPortion, final BigDecimal interestPortion,
+            final BigDecimal feeChargesPortion, final BigDecimal penaltyChargesPortion, final BigDecimal unrecognizedIncome,
+            final BigDecimal overPaymentPortion, final Date createdDate, final Date submittedOnDate) {
+        this.setId(id);
+        this.typeOf = typeOf;
+        this.subTypeOf = loanTransactionSubType;
+        this.dateOf = dateOf;
+        this.amount = amount;
+        this.principalPortion = principalPortion;
+        this.interestPortion = interestPortion;
+        this.feeChargesPortion = feeChargesPortion;
+        this.penaltyChargesPortion = penaltyChargesPortion;
+        this.overPaymentPortion = overPaymentPortion;
+        this.unrecognizedIncomePortion = unrecognizedIncome;
+        this.submittedOnDate = submittedOnDate;
+        this.updateCreatedDate(createdDate);
+    }
+    
     public static LoanTransaction waiveLoanCharge(final Loan loan, final Office office, final Money waived, final LocalDate waiveDate,
             final Money feeChargesWaived, final Money penaltyChargesWaived, final Money unrecognizedCharge) {
         Integer loanTransactionSubType = null;

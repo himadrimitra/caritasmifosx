@@ -67,10 +67,10 @@ public enum ChargePercentageType {
         EnumOptionData optionData = null;
         switch (type) {
             case FLAT:
-                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "flat");
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Flat");
             break;
             case YEARLY:
-                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "yearly");
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Yearly");
             break;
             default:
             break;

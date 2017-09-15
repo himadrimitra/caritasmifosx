@@ -98,12 +98,15 @@ import org.apache.fineract.portfolio.loanaccount.data.PaidInAdvanceData;
 import org.apache.fineract.portfolio.loanaccount.data.RepaymentScheduleRelatedLoanData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanChargeOverdueDetails;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRecurringCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanSubStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionNotFoundException;
@@ -1680,6 +1683,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
 
     }
+    
+    
+ 
 
     private static final class LoanTransactionsMapper implements RowMapper<LoanTransactionData> {
 
@@ -3268,5 +3274,222 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             return LoanSchedulePeriodData.lookUpByPeriodNumberAndDueDateAndDueAmounts(periodNumber, dueDate, totalDueForPeriod);
         }
     }
+    
+    @Override
+    public List<LoanRepaymentScheduleInstallment> retrieveLoanRepaymentScheduleInstallments(final Long loanId) {
+        LoanRepaymentScheduleEntityMapper mapper = new LoanRepaymentScheduleEntityMapper();
+        String sql = "select " + mapper.schema() + " where ls.loan_id = ?";
+        return this.jdbcTemplate.query(sql, mapper, loanId);
+    }
+    
+    @Override
+    public List<LoanTransaction> retrieveLoanTransactions(final Long loanId, final Integer... types) {
+        LoanTransactionEntityMapper mapper = new LoanTransactionEntityMapper();
+        String sql = "select " + mapper.LoanPaymentsSchema()
+                + " where tr.loan_id = :loanId and tr.is_reversed = 0 and tr.transaction_type_enum in (:types)";
+        Map<String, Object> paramMap = new HashMap<>(3);
+        paramMap.put("loanId", loanId);
+        paramMap.put("types", types);
+        return this.namedParameterJdbcTemplate.query(sql, paramMap, mapper);
+    }
+    
+    @Override
+    public List<LoanRecurringCharge> retrieveLoanOverdueRecurringCharge(final Long loanId){
+        RecurreringChargeMapper mapper = new RecurreringChargeMapper();
+        String sql = "select " + mapper.schema() + " where c.loan_id = ? and c.charge_time_enum = ?";
+        return this.jdbcTemplate.query(sql, mapper, loanId,ChargeTimeType.OVERDUE_INSTALLMENT.getValue());
+    }
+    
+    @Override
+    public MonetaryCurrency retrieveLoanCurrency(Long loanId) {
+        MonetaryCurrencyMapper mapper = new MonetaryCurrencyMapper();
+         String sql = mapper.schema() +  " where l.id = ?";
+        return this.jdbcTemplate.queryForObject(sql, mapper, loanId);
+    }
+    
+    private static final class LoanRepaymentScheduleEntityMapper implements RowMapper<LoanRepaymentScheduleInstallment> {
 
+        public String schema() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(" ls.loan_id as loanId, ls.installment as period, ls.fromdate as fromDate, ls.duedate as dueDate, ls.obligations_met_on_date as obligationsMetOnDate, ls.completed_derived as complete,");
+            sb.append(" ls.principal_amount as principalDue, ls.principal_completed_derived as principalPaid, ls.principal_writtenoff_derived as principalWrittenOff, ");
+            sb.append(" ls.interest_amount as interestDue, ls.interest_completed_derived as interestPaid, ls.interest_waived_derived as interestWaived, ls.interest_writtenoff_derived as interestWrittenOff, ");
+            sb.append(" ls.fee_charges_amount as feeChargesDue, ls.fee_charges_completed_derived as feeChargesPaid, ls.fee_charges_waived_derived as feeChargesWaived, ls.fee_charges_writtenoff_derived as feeChargesWrittenOff, ");
+            sb.append(" ls.penalty_charges_amount as penaltyChargesDue, ls.penalty_charges_completed_derived as penaltyChargesPaid, ls.penalty_charges_waived_derived as penaltyChargesWaived, ls.penalty_charges_writtenoff_derived as penaltyChargesWrittenOff, ");
+            sb.append(" ls.total_paid_in_advance_derived as totalPaidInAdvanceForPeriod, ls.total_paid_late_derived as totalPaidLateForPeriod, ls.advance_payment_amount as advancePaymentAmount, ");
+            sb.append(" ls.recalculated_interest_component as recalculatedInterestComponent, ls.capitalized_charge_amount as  capitalizedCharePortion ");
+            sb.append(" from  m_loan_repayment_schedule ls ");
+            return sb.toString();
+        }
+
+        @Override
+        public LoanRepaymentScheduleInstallment mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+            final Integer period = JdbcSupport.getInteger(rs, "period");
+            LocalDate fromDate = JdbcSupport.getLocalDate(rs, "fromDate");
+            final LocalDate dueDate = JdbcSupport.getLocalDate(rs, "dueDate");
+            final LocalDate obligationsMetOnDate = JdbcSupport.getLocalDate(rs, "obligationsMetOnDate");
+            final boolean complete = rs.getBoolean("complete");
+            final boolean recalculatedInterestComponent = rs.getBoolean("recalculatedInterestComponent");
+
+            final BigDecimal principalDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalDue");
+            final BigDecimal principalPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalPaid");
+            final BigDecimal principalWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalWrittenOff");
+
+            final BigDecimal interestExpectedDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestDue");
+            final BigDecimal interestPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestPaid");
+            final BigDecimal interestWaived = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestWaived");
+            final BigDecimal interestWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestWrittenOff");
+
+            final BigDecimal feeChargesExpectedDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesDue");
+            final BigDecimal feeChargesPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesPaid");
+            final BigDecimal feeChargesWaived = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesWaived");
+            final BigDecimal feeChargesWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesWrittenOff");
+
+            final BigDecimal penaltyChargesExpectedDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesDue");
+            final BigDecimal penaltyChargesPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesPaid");
+            final BigDecimal penaltyChargesWaived = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesWaived");
+            final BigDecimal penaltyChargesWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesWrittenOff");
+
+            final BigDecimal capitalizedCharePortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "capitalizedCharePortion");
+
+            return new LoanRepaymentScheduleInstallment(period, fromDate, dueDate, principalDue, principalPaid, principalWrittenOff,
+                    interestExpectedDue, interestPaid, interestWaived, interestWrittenOff, feeChargesExpectedDue, feeChargesPaid,
+                    feeChargesWaived, feeChargesWrittenOff, penaltyChargesExpectedDue, recalculatedInterestComponent, penaltyChargesPaid,
+                    penaltyChargesWaived, penaltyChargesWrittenOff, complete, obligationsMetOnDate, capitalizedCharePortion);
+        }
+
+    }
+    
+    
+    private static final class LoanTransactionEntityMapper implements RowMapper<LoanTransaction> {
+
+        public String LoanPaymentsSchema() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(" tr.id as id, tr.transaction_type_enum as transactionType, tr.transaction_sub_type_enum as transactionSubType, ");
+            sb.append("tr.transaction_date as `date`, tr.amount as total, ");
+            sb.append(" tr.principal_portion_derived as principal, tr.interest_portion_derived as interest, ");
+            sb.append(" tr.fee_charges_portion_derived as fees, tr.penalty_charges_portion_derived as penalties, ");
+            sb.append(" tr.overpayment_portion_derived as overpayment,  ");
+            sb.append(" tr.unrecognized_income_portion as unrecognizedIncome,");
+            sb.append(" tr.submitted_on_date as submittedOnDate, ");
+            sb.append(" tr.created_date as createdDate  ");
+            sb.append(" from m_loan_transaction tr ");
+            return sb.toString();
+        }
+
+        @Override
+        public LoanTransaction mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final int transactionType = JdbcSupport.getInteger(rs, "transactionType");
+            final int transactionSubType = JdbcSupport.getInteger(rs, "transactionSubType");
+
+            final DateTime createdDateTime = JdbcSupport.getDateTime(rs, "createdDate");
+            final Date createdDate = createdDateTime == null ? null : createdDateTime.toDate();
+            final Date date = rs.getDate("date");
+            final Date submittedOnDate = rs.getDate("submittedOnDate");
+            final BigDecimal totalAmount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "total");
+            final BigDecimal principalPortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principal");
+            final BigDecimal interestPortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interest");
+            final BigDecimal feeChargesPortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "fees");
+            final BigDecimal penaltyChargesPortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penalties");
+            final BigDecimal overPaymentPortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "overpayment");
+            final BigDecimal unrecognizedIncomePortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "unrecognizedIncome");
+            return new LoanTransaction(id, transactionType, transactionSubType, date, totalAmount, principalPortion,
+                    interestPortion, feeChargesPortion, penaltyChargesPortion, unrecognizedIncomePortion, overPaymentPortion, createdDate,
+                    submittedOnDate);
+        }
+
+    }
+    
+    
+    private static final class RecurreringChargeMapper implements RowMapper<LoanRecurringCharge> {
+
+        LoanChargeOverdueDetailMapper chargeOverdueDetailMapper = new LoanChargeOverdueDetailMapper();
+
+        public String schema() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("c.charge_id as chargeId, c.amount as amount, ");
+            sb.append("c.charge_applies_to_enum as chargeAppliesTo, c.charge_time_enum as chargeTime, ");
+            sb.append("c.charge_payment_mode_enum as chargePaymentMode, ");
+            sb.append("c.charge_calculation_enum as chargeCalculation, c.is_penalty as penalty, ");
+            sb.append("c.fee_interval as feeInterval, c.fee_frequency as feeFrequency, ");
+            sb.append("c.charge_percentage_type as percentageType, c.charge_percentage_period_type as percentagePeriodType,");
+            sb.append("cod.id as overdueDetailId,cod.grace_period as penaltyGracePeriod, cod.penalty_free_period as penaltyFreePeriod, ");
+            sb.append("cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, ");
+            sb.append("cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,");
+            sb.append("cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue, cod.min_overdue_amount_required as minOverdueAmountRequired, ");
+            sb.append("cod.last_applied_on_date as lastAppliedOnDate, cod.last_run_on_date as lastRunOnDate,");
+            sb.append("c.tax_group_id as taxGroupId ");
+            sb.append(" from f_loan_recurring_charge c ");
+            sb.append(" LEFT JOIN f_loan_overdue_charge_detail cod on cod.charge_id = c.id ");
+
+            return sb.toString();
+        }
+
+        @Override
+        public LoanRecurringCharge mapRow(ResultSet rs, int rowNum) throws SQLException {
+
+            final Long chargeId = rs.getLong("chargeId");
+            final BigDecimal amount = rs.getBigDecimal("amount");
+            final int chargeTime = rs.getInt("chargeTime");
+            ChargeTimeType chargeTimeTypeEnum = ChargeTimeType.fromInt(chargeTime);
+            final int chargeCalculation = rs.getInt("chargeCalculation");
+            final int paymentMode = rs.getInt("chargePaymentMode");
+            final boolean penalty = rs.getBoolean("penalty");
+            final Integer feeInterval = JdbcSupport.getInteger(rs, "feeInterval");
+            final Integer feeFrequency = JdbcSupport.getInteger(rs, "feeFrequency");
+            final Long taxGroupId = JdbcSupport.getLong(rs, "taxGroupId");
+            final int percentageType = rs.getInt("percentageType");
+            final int percentagePeriodType = rs.getInt("percentagePeriodType");
+            LoanChargeOverdueDetails chargeOverdueData = null;
+            if (chargeTimeTypeEnum.isOverdueInstallment()) {
+                chargeOverdueData = this.chargeOverdueDetailMapper.mapRow(rs, rowNum);
+            }
+
+            return new LoanRecurringCharge(chargeId, amount, chargeTime, chargeCalculation, paymentMode, feeInterval, penalty,
+                    feeFrequency, percentageType, percentagePeriodType, taxGroupId, chargeOverdueData);
+        }
+
+    }
+    
+    private static final class LoanChargeOverdueDetailMapper implements RowMapper<LoanChargeOverdueDetails> {
+
+        @Override
+        public LoanChargeOverdueDetails mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+
+            final Integer gracePeriod = JdbcSupport.getInteger(rs, "penaltyGracePeriod");
+            final Integer penaltyFreePeriod = JdbcSupport.getInteger(rs, "penaltyFreePeriod");
+            final Integer penaltyGraceType = JdbcSupport.getInteger(rs, "penaltyGraceType");
+            final boolean applyChargeForBrokenPeriod = rs.getBoolean("applyPenaltyForBrokenPeriod");
+            final boolean isBasedOnOriginalSchedule = rs.getBoolean("penaltyBasedOnOriginalSchedule");
+            final boolean considerOnlyPostedInterest = rs.getBoolean("penaltyOnPostedInterestOnly");
+            final boolean calculateChargeOnCurrentOverdue = rs.getBoolean("penaltyOnCurrentOverdue");
+            final BigDecimal minOverdueAmountRequired = rs.getBigDecimal("minOverdueAmountRequired");
+            final Date lastAppliedOnDate = rs.getDate("lastAppliedOnDate");
+            final Date lastRunOnDate = rs.getDate("lastRunOnDate");
+
+            return new LoanChargeOverdueDetails(gracePeriod, penaltyFreePeriod, penaltyGraceType, applyChargeForBrokenPeriod,
+                    isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, minOverdueAmountRequired,
+                    lastAppliedOnDate, lastRunOnDate);
+        }
+
+    }
+    
+    private static final class MonetaryCurrencyMapper implements RowMapper<MonetaryCurrency> {
+
+        public String schema() {
+            return "select l.currency_code as code, l.currency_digits as digitsAfterDecimal, l.currency_multiplesof as inMultiplesOf  from m_loan l ";
+        }
+
+        @Override
+        public MonetaryCurrency mapRow(ResultSet rs, int rowNum) throws SQLException {
+            String code = rs.getString("code");
+            Integer digitsAfterDecimal = JdbcSupport.getInteger(rs, "digitsAfterDecimal");
+            Integer inMultiplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
+            return new MonetaryCurrency(code, digitsAfterDecimal, inMultiplesOf);
+        }
+
+    }
+    
 }
