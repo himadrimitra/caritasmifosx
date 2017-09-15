@@ -48,6 +48,7 @@ import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.account.data.AccountTransferData;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionEnumData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
@@ -1176,4 +1177,8 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.paymentDetail = paymentDetail;
     }
     
+    public BigDecimal getPenaltyChargesPortion() {
+        return MathUtility.zeroIfNull(this.penaltyChargesPortion);
+    }
+
 }
