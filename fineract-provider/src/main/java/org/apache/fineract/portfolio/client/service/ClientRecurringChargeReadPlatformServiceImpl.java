@@ -80,7 +80,8 @@ public class ClientRecurringChargeReadPlatformServiceImpl implements ClientRecur
             sql.append("left join m_client_charge cc on cc.client_recurring_charge_id = mcrc.id ");
             sql.append("and cc.is_active = 1 and cc.waived = 0 and cc.is_paid_derived = 0 and cc.charge_actual_due_date > ");
             sql.append("'").append(currentDate).append("' ");
-            sql.append("where mcrc.charge_due_date <= '").append(currentDate).append("' ");
+			sql.append("where if(mcrc.client_charge_applies_on_date IS NULL, mcrc.charge_due_date <= '").append(currentDate);
+			sql.append("' , mcrc.client_charge_applies_on_date <= '").append(currentDate).append("') ");
             sql.append("and mcrc.is_active = 1 ");
             sql.append("group by mcrc.id ");
             sql.append("order by mcrc.charge_due_date ");
