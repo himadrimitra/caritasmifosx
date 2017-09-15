@@ -13,6 +13,7 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.accountdetails.service.AccountEnumerations;
 import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,8 +63,8 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
                 true);
         final LoanUtilizationCheckTemplateDataMapper utilizationChecksDataMapper = new LoanUtilizationCheckTemplateDataMapper(
                 loanPurposeDatas);
-        final String sql = "SELECT " + utilizationChecksDataMapper.schema() + " WHERE g.parent_id = ? GROUP BY l.id ";
-        return this.jdbcTemplate.query(sql, utilizationChecksDataMapper, new Object[] { centerId });
+        final String sql = "SELECT " + utilizationChecksDataMapper.schema() + " WHERE g.parent_id = ? and l.loan_status_id = ? GROUP BY l.id ";
+        return this.jdbcTemplate.query(sql, utilizationChecksDataMapper, new Object[] { centerId,LoanStatus.ACTIVE.getValue()});
     }
 
     private static final class LoanUtilizationCheckTemplateDataMapper implements RowMapper<LoanUtilizationCheckTemplateData> {
