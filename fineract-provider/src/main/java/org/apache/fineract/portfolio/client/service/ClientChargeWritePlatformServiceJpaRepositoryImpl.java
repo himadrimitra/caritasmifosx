@@ -672,7 +672,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                 final Boolean isSynchMeeting = clientRecurringChargeData.getSynchMeeting();
                 final Long clientRecurringChargeId = clientRecurringChargeData.getRecurringChargeId();
                 LocalDate chargeLocalStartDate = clientRecurringChargeData.getChargeDueDate();
-
+                LocalDate clientChargeAppliensOndate = chargeLocalStartDate;
                 final PeriodFrequencyType periodFrequencyType = ChargeTimeType
                         .getPeriodFrequencyTypeFromChargeTimeType(clientRecurringChargeData.getChargeTimeType().getId().intValue());
                 final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(clientRecurringChargeData
@@ -685,11 +685,14 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                     calendarData = this.calendarReadPlatformService.retrieveCalendarByEntityIdAndEntityType(clientRecurringChargeId,
                             CalendarEntityType.CHARGES.getValue());
                 }
-                while (countOfExistingFutureInstallments <= minimumNoOfFutureInstallments) {
+                while (countOfExistingFutureInstallments < minimumNoOfFutureInstallments) {
                     try {
                         countOfExistingFutureInstallments++;                        
                         if (adjustedDateDetailsDTO != null) {
                             chargeLocalStartDate = getNextRecurringChargeDueDate(calendarData,adjustedDateDetailsDTO,periodFrequencyType,clientRecurringChargeData);
+                            if(countOfExistingFutureInstallments == minimumNoOfFutureInstallments -1){
+                            	clientChargeAppliensOndate = chargeLocalStartDate;
+                            }
                         }
                         adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(chargeLocalStartDate, chargeLocalStartDate,
                                 chargeLocalStartDate);
@@ -709,6 +712,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                         insertSql.append(" and crc.charge_due_date <= '").append(fromDate).append("' ");
                         int result = this.jdbcTemplate.update(insertSql.toString());
                         logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by update: " + result);
+                        
                         if (countOfExistingFutureInstallments == minimumNoOfFutureInstallments) {
                             chargeLocalStartDate = getNextRecurringChargeDueDate(calendarData, adjustedDateDetailsDTO, periodFrequencyType,
                                     clientRecurringChargeData);
@@ -723,9 +727,12 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                             updateSqlBuilder.append("'");
                             updateSqlBuilder.append(chargeLocalStartDate);
                             updateSqlBuilder.append("' ");
+                            updateSqlBuilder.append(" ,crc.client_charge_applies_on_date = ");
+                            updateSqlBuilder.append("'");
+                            updateSqlBuilder.append(clientChargeAppliensOndate);
+                            updateSqlBuilder.append("' ");
                             updateSqlBuilder.append("WHERE crc.id =" + clientRecurringChargeId + " ");
                             this.jdbcTemplate.update(updateSqlBuilder.toString());
-                            break;
                         }
                     } catch (final Exception e) {
                         ExceptionHelper.handleExceptions(e, sb, errorMessage, clientRecurringChargeId, logger);
