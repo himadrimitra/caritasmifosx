@@ -224,16 +224,33 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
         }
         return documentId ;
     }
-    
-    private void addRequestParams(final String reportCategory, final MultivaluedMap<String, String> reportParams, final Long entityId, final String outputType) {
+
+    private void addRequestParams(final String reportCategory, final MultivaluedMap<String, String> reportParams, final Long entityId,
+            final String outputType) {
+        final List<String> list = new ArrayList<>();
+        list.add(entityId.toString());
         if ("Loan".equalsIgnoreCase(reportCategory)) {
-            List<String> list = new ArrayList<>();
-            list.add(entityId.toString());
             reportParams.put("R_loanId", list);
         } else if ("Client".equalsIgnoreCase(reportCategory)) {
-            List<String> list = new ArrayList<>();
-            list.add(entityId.toString());
             reportParams.put("R_clientId", list);
+        } else if ("Savings".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_savingsId", list);
+        } else if ("LoanApplication".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_loanApplicationId", list);
+        } else if ("Staff".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_staffId", list);
+        } else if ("Group".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_groupId", list);
+        } else if ("Task".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_taskId", list);
+        } else if ("Office".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_officeId", list);
+        } else if ("District".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_districtId", list);
+        } else if ("Village".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_villageId", list);
+        } else if ("Center".equalsIgnoreCase(reportCategory)) {
+            reportParams.put("R_centerId", list);
         }
         List<String> output = new ArrayList<>();
         output.add(outputType);
