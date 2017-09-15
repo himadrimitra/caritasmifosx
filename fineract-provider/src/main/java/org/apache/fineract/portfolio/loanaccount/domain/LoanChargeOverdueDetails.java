@@ -150,4 +150,14 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long>{
        this.lastRunOnDate = null;
    }
 
+
+public Date getLastRunOnDate() {
+    return this.lastRunOnDate;
+}
+
+
+public void setLastRunOnDate(Date lastRunOnDate) {
+    this.lastRunOnDate = lastRunOnDate;
+}
+
 }
