@@ -71,9 +71,14 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
             documents.addAll(existingDocuments) ;
         }
         final Long productId = getProductIdBasedOnEntityTypeAndId(entityType, entityId);
-        final VirtualDocumentMapper virtualDocumentsMapper = new VirtualDocumentMapper(entityType, entityId, productId) ;
-        final String virtualDocsSql = select + virtualDocumentsMapper.schema() + " and tags.entity_type=?";
-        List<DocumentData> virtualDocuments = this.jdbcTemplate.query(virtualDocsSql, virtualDocumentsMapper, new Object[] { entityType, entityId, entityType });
+        final VirtualDocumentMapper virtualDocumentsMapper = new VirtualDocumentMapper(entityType, entityId) ;
+        String virtualDocsSql = select + virtualDocumentsMapper.schema() + " and tags.entity_type=?";
+        Object[] params = new Object[] { entityType, entityId, entityType };
+        if (productId != null) {
+            virtualDocsSql = virtualDocsSql + " and (tags.product_id = ? OR tags.product_id IS NULL) ";
+            params = new Object[] { entityType, entityId, entityType, productId };
+        }
+        List<DocumentData> virtualDocuments = this.jdbcTemplate.query(virtualDocsSql, virtualDocumentsMapper, params);
         if(virtualDocuments != null && virtualDocuments.size() > 0) {
             documents.addAll(virtualDocuments) ;
         }
@@ -186,7 +191,7 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
         private final String entityType ;
         private final Long entityId ;
         
-        public VirtualDocumentMapper(final String entityType, final Long entityId, final Long productId) {
+        public VirtualDocumentMapper(final String entityType, final Long entityId) {
             this.entityType = entityType ;
             this.entityId = entityId ;
             builder = new StringBuilder() ;
@@ -196,40 +201,12 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
             builder.append(" from f_entity_tag_report_mapping mappings ") ;
             builder.append(" LEFT JOIN f_entity_tags tags ON tags.id = mappings.entity_tag_id ") ;
             builder.append(" LEFT JOIN m_code_value codeValue ON tags.tag_id = codeValue.id ") ;
-            if (isEntityLinkedToProduct(entityType)) {
-                getJoinEntityTypeBaseOnEntityType(builder, entityType, entityId);
-            }
             builder.append(" where mappings.id not in ") ;
             builder.append(" (select doc.report_mapping_id from m_document doc where doc.parent_entity_type=? and doc.parent_entity_id=? and doc.report_mapping_id is not null) ") ;
-            if (isEntityLinkedToProduct(entityType)) {
-                builder.append(" and (product.id IS NULL OR product.id = ").append(productId).append(") ");
-            }
-        }
-
-        private boolean isEntityLinkedToProduct(final String entityType) {
-            return DOCUMENT_MANAGEMENT_ENTITY.LOANAPPLICATION.toString().equalsIgnoreCase(entityType)
-                    || DOCUMENT_MANAGEMENT_ENTITY.LOANS.toString().equalsIgnoreCase(entityType)
-                    || DOCUMENT_MANAGEMENT_ENTITY.SAVINGS.toString().equalsIgnoreCase(entityType);
-        }
-
-        private void getJoinEntityTypeBaseOnEntityType(final StringBuilder builder, final String entityType, final Long entityId) {
-            if (DOCUMENT_MANAGEMENT_ENTITY.LOANAPPLICATION.toString().equalsIgnoreCase(entityType)) {
-                builder.append(" LEFT JOIN f_loan_application_reference lar on lar.id = ");
-                builder.append(entityId);
-                builder.append(" LEFT JOIN m_product_loan product ON product.id = lar.loan_product_id ");
-            } else if (DOCUMENT_MANAGEMENT_ENTITY.LOANS.toString().equalsIgnoreCase(entityType)) {
-                builder.append(" LEFT JOIN m_loan ml on ml.id = ");
-                builder.append(entityId);
-                builder.append(" LEFT JOIN m_product_loan product ON product.id = ml.product_id ");
-            } else if (DOCUMENT_MANAGEMENT_ENTITY.SAVINGS.toString().equalsIgnoreCase(entityType)) {
-                builder.append(" LEFT JOIN m_savings_account msa on msa.id = ");
-                builder.append(entityId);
-                builder.append(" LEFT JOIN m_savings_product product ON product.id = msa.product_id ");
-            }
         }
 
         public String schema() {
-            return builder.toString() ;
+            return builder.toString();
         }
 
         @Override
