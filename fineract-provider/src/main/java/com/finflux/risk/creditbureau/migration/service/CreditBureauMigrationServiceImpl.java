@@ -63,7 +63,7 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
         CreditBureauEnquiryMapper mapper = new CreditBureauEnquiryMapper();
         builder.append("select SQL_CALC_FOUND_ROWS ");
         builder.append(mapper.query());
-        builder.append(" where enquiry.request_location is null");
+        builder.append(" where enquiry.request_location is null and enquiry.request is not null and enquiry.response is not null ");
         builder.append(" limit " + limit);
         builder.append(" offset " + offset);
         return this.creditBureauEnquiryDataPaginationHelper.fetchPage(jdbcTemplate, sqlCountRows, builder.toString(), params, mapper);
@@ -140,7 +140,7 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
         LoanCreditBureauEnquiryMapper mapper = new LoanCreditBureauEnquiryMapper();
         builder.append("select SQL_CALC_FOUND_ROWS ");
         builder.append(mapper.query());
-        builder.append(" where enquiry.request_location is null");
+        builder.append(" where enquiry.request_location is null and enquiry.request is not null and enquiry.response is not null ");
         builder.append(" limit " + limit);
         builder.append(" offset " + offset);
         return this.loanCreditBureauEnquiryDataPaginationHelper.fetchPage(jdbcTemplate, sqlCountRows, builder.toString(), params, mapper);
