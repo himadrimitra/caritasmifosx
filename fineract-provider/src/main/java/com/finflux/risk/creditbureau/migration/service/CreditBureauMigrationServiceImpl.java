@@ -43,7 +43,7 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
 
     @Override
     public void updateCreditBureauEnquiry() {
-        int limit = 1000;
+        int limit = 500;
         int offSet = 0 ;
         StringBuilder updateBuilder = new StringBuilder();
         updateBuilder.append("UPDATE f_creditbureau_enquiry enquiry SET enquiry.request_location=? , ");
@@ -102,7 +102,7 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
 
     @Override
     public void updateLoanCreditBureauEnquiry() {
-        int limit = 1000;
+        int limit = 500;
         int offSet = 0 ;
         StringBuilder updateBuilder = new StringBuilder();
         updateBuilder.append("UPDATE f_loan_creditbureau_enquiry enquiry SET enquiry.request_location=? , ");
