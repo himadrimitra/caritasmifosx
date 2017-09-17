@@ -103,14 +103,19 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
     @Override
     public void updateLoanCreditBureauEnquiry() {
         int limit = 500;
-        int offSet = 0 ;
+        int offSet = 0;
+        Long startIndex = 88288L;
+        final Long endIndex = 187661L;
         StringBuilder updateBuilder = new StringBuilder();
         updateBuilder.append("UPDATE f_loan_creditbureau_enquiry enquiry SET enquiry.request_location=? , ");
         updateBuilder.append("enquiry.response_location=?, enquiry.report_location=? WHERE  enquiry.id=?");
-        while(true) {
-        	Collection<LoanCreditBureauEnquiryData> pageItems = getLoanCreditBureauEnquiryData(offSet, limit);
-        	if(pageItems == null ||  pageItems.isEmpty()) break ;
+        Long index = startIndex;
+        while (true) {
+            Collection<LoanCreditBureauEnquiryData> pageItems = getLoanCreditBureauEnquiryData(startIndex, startIndex + limit);
+            startIndex += limit;
+            if (pageItems == null || pageItems.isEmpty()) break;
             moveLoanDataIntoFileSystem(pageItems, updateBuilder.toString());
+            if(startIndex > endIndex) break ;
         }
     }
 
@@ -133,14 +138,17 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
         this.jdbcTemplate.batchUpdate(query, args);
     }
 
-    private Collection<LoanCreditBureauEnquiryData> getLoanCreditBureauEnquiryData(final Integer offset, final Integer limit) {
+    private Collection<LoanCreditBureauEnquiryData> getLoanCreditBureauEnquiryData(final Long startIndex, final Long endIndex) {
         final StringBuilder builder = new StringBuilder();
         LoanCreditBureauEnquiryMapper mapper = new LoanCreditBureauEnquiryMapper();
         builder.append("select ") ;
         builder.append(mapper.query());
         builder.append(" where enquiry.request_location is null and enquiry.request is not null and enquiry.response is not null ");
-        builder.append(" limit " + limit);
-        builder.append(" offset " + offset);
+        builder.append("and enquiry.id >= "+startIndex.toString()) ;
+        builder.append(" and ") ;
+        builder.append("enquiry.id <= "+endIndex.toString()) ;
+        //builder.append(" limit " + limit);
+        //builder.append(" offset " + offset);
         return this.jdbcTemplate.query(builder.toString(), mapper) ;
     }
 
