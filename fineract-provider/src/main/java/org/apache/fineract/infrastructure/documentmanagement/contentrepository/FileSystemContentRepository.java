@@ -35,6 +35,7 @@ import org.apache.fineract.infrastructure.documentmanagement.exception.ContentMa
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.finflux.common.util.FinfluxFileUtils;
 import com.lowagie.text.pdf.codec.Base64;
 
 public class FileSystemContentRepository implements ContentRepository {
@@ -57,11 +58,16 @@ public class FileSystemContentRepository implements ContentRepository {
         if(checkUploadSize){
             ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
         }
+        return saveFile(fileName, uploadDocumentLocation, uploadedInputStream);
+    }
+
+    private String saveFile(final String fileName, final String uploadDocumentLocation, final InputStream uploadedInputStream) {
         makeDirectories(uploadDocumentLocation);
 
         final String fileLocation = uploadDocumentLocation + File.separator + fileName;
 
         writeFileToFileSystem(fileName, uploadedInputStream, fileLocation);
+
         return fileLocation;
     }
 
@@ -181,4 +187,13 @@ public class FileSystemContentRepository implements ContentRepository {
             throw new ContentManagementException(fileName, ioException.getMessage());
         }
     }
+
+    @Override
+    public String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand, final String parentDirectoryPath,
+            final String... childDirectoriesPaths) {
+        final String fileName = documentCommand.getFileName();
+        final String uploadDocumentLocation = FinfluxFileUtils.generateFileLocation(parentDirectoryPath, childDirectoriesPaths);
+        return saveFile(fileName, uploadDocumentLocation, uploadedInputStream);
+    }
+    
 }

@@ -26,6 +26,9 @@ public class FileProcess extends AbstractPersistable<Long> {
     @Column(name = "file_type", length = 50, nullable = false)
     private String fileType;
 
+    @Column(name = "content_type", length = 500, nullable = false)
+    private String contentType;
+
     @Column(name = "file_path", length = 250, nullable = false)
     private String filePath;
 
@@ -64,12 +67,13 @@ public class FileProcess extends AbstractPersistable<Long> {
 
     protected FileProcess() {}
 
-    private FileProcess(final String fileName, final String fileType, final String filePath, final Integer fileProcessType,
-            final Integer totalRecords, final Integer totalPendingRecords, final Integer totalSuccessRecords,
-            final Integer totalFailureRecords, final Integer status, final Date lastProcessedDate, final Long createdbyId,
-            final Date createdDate) {
+    private FileProcess(final String fileName, final String fileType, final String contentType, final String filePath,
+            final Integer fileProcessType, final Integer totalRecords, final Integer totalPendingRecords,
+            final Integer totalSuccessRecords, final Integer totalFailureRecords, final Integer status, final Date lastProcessedDate,
+            final Long createdbyId, final Date createdDate) {
         this.fileName = fileName;
         this.fileType = fileType;
+        this.contentType = contentType;
         this.filePath = filePath;
         this.fileProcessType = fileProcessType;
         this.totalRecords = totalRecords;
@@ -82,12 +86,12 @@ public class FileProcess extends AbstractPersistable<Long> {
         this.createdDate = createdDate;
     }
 
-    public static FileProcess create(final String fileName, final String fileType, final String filePath, final Integer fileProcessType,
-            final Integer totalRecords, final Integer totalPendingRecords, final Integer totalSuccessRecords,
-            final Integer totalFailureRecords, final Integer status, final Date lastProcessedDate, final Long createdbyId,
-            final Date createdDate) {
-        return new FileProcess(fileName, fileType, filePath, fileProcessType, totalRecords, totalPendingRecords, totalSuccessRecords,
-                totalFailureRecords, status, lastProcessedDate, createdbyId, createdDate);
+    public static FileProcess create(final String fileName, final String fileType, final String contentType, final String filePath,
+            final Integer fileProcessType, final Integer totalRecords, final Integer totalPendingRecords,
+            final Integer totalSuccessRecords, final Integer totalFailureRecords, final Integer status, final Date lastProcessedDate,
+            final Long createdbyId, final Date createdDate) {
+        return new FileProcess(fileName, fileType, contentType, filePath, fileProcessType, totalRecords, totalPendingRecords,
+                totalSuccessRecords, totalFailureRecords, status, lastProcessedDate, createdbyId, createdDate);
     }
 
     public String getFileName() {
@@ -104,6 +108,14 @@ public class FileProcess extends AbstractPersistable<Long> {
 
     public void setFileType(String fileType) {
         this.fileType = fileType;
+    }
+
+    public String getContentType() {
+        return this.contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
     }
 
     public String getFilePath() {
@@ -194,4 +206,17 @@ public class FileProcess extends AbstractPersistable<Long> {
         this.fileRecords = fileRecords;
     }
 
+    public void incrementTotalSuccessRecords() {
+        this.setTotalSuccessRecords(this.getTotalSuccessRecords() + 1);
+        this.reCalculateTotalPendingRecords();
+    }
+
+    public void incrementTotalFailureRecords() {
+        this.setTotalFailureRecords(this.getTotalFailureRecords() + 1);
+        this.reCalculateTotalPendingRecords();
+    }
+
+    public void reCalculateTotalPendingRecords() {
+        this.setTotalPendingRecords(this.getTotalRecords() - (this.getTotalSuccessRecords() + this.getTotalFailureRecords()));
+    }
 }

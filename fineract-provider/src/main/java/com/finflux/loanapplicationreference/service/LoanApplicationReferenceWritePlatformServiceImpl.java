@@ -239,12 +239,13 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             loanApplicationReference.updateStatusEnum(statusEnum);
             this.repository.saveAndFlush(loanApplicationReference);
 
-            return new CommandProcessingResultBuilder() //
-                    .withCommandId(command.commandId()) //
-                    .withEntityId(loanApplicationReferenceId) //
+            final CommandProcessingResultBuilder builder = new CommandProcessingResultBuilder() //
                     .with(changes) //
-                    .build();
-
+                    .withEntityId(loanApplicationReferenceId);
+            if (command != null) {
+                builder.withCommandId(command.commandId());
+            }
+            return builder.build();
         } catch (final DataIntegrityViolationException dve) {
             handleDataIntegrityIssues(dve);
             return CommandProcessingResult.empty();
@@ -252,7 +253,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     }
 
     @Override
-    public CommandProcessingResult reject(Long loanApplicationReferenceId, JsonCommand command) {
+    public CommandProcessingResult reject(final Long loanApplicationReferenceId, final JsonCommand command) {
         try {
             final LoanApplicationReference loanApplicationReference = this.repository
                     .findOneWithNotFoundDetection(loanApplicationReferenceId);
@@ -262,12 +263,13 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             loanApplicationReference.updateStatusEnum(statusEnum);
             this.repository.saveAndFlush(loanApplicationReference);
 
-            return new CommandProcessingResultBuilder() //
-                    .withCommandId(command.commandId()) //
-                    .withEntityId(loanApplicationReferenceId) //
+            final CommandProcessingResultBuilder builder = new CommandProcessingResultBuilder() //
                     .with(changes) //
-                    .build();
-
+                    .withEntityId(loanApplicationReferenceId);
+            if (command != null) {
+                builder.withCommandId(command.commandId());
+            }
+            return builder.build();
         } catch (final DataIntegrityViolationException dve) {
             handleDataIntegrityIssues(dve);
             return CommandProcessingResult.empty();

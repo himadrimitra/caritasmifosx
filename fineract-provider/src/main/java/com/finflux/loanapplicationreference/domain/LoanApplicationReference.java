@@ -495,4 +495,60 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
         return this.accountTypeEnum;
     }
 
+    public String getExternalIdOne() {
+        return this.externalIdOne;
+    }
+
+    public String getExternalIdTwo() {
+        return this.externalIdTwo;
+    }
+
+    public Staff getLoanOfficer() {
+        return this.loanOfficer;
+    }
+
+    public Group getGroup() {
+        return this.group;
+    }
+
+    public LoanPurpose getLoanPurpose() {
+        return this.loanPurpose;
+    }
+
+    public Integer getNumberOfRepayments() {
+        return this.numberOfRepayments;
+    }
+
+    public Integer getRepaymentPeriodFrequencyEnum() {
+        return this.repaymentPeriodFrequencyEnum;
+    }
+
+    public Integer getRepayEvery() {
+        return this.repayEvery;
+    }
+
+    public Integer getTermPeriodFrequencyEnum() {
+        return this.termPeriodFrequencyEnum;
+    }
+
+    public Integer getTermFrequency() {
+        return this.termFrequency;
+    }
+
+    public BigDecimal getFixedEmiAmount() {
+        return this.fixedEmiAmount;
+    }
+
+    public Date getSubmittedOnDate() {
+        return this.submittedOnDate;
+    }
+
+    public List<LoanApplicationCharge> getLoanApplicationCharges() {
+        return this.loanApplicationCharges;
+    }
+
+    public LoanEMIPack getLoanEMIPack() {
+        return this.loanEMIPack;
+    }
+
 }

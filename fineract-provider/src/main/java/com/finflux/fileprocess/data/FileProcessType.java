@@ -2,7 +2,7 @@ package com.finflux.fileprocess.data;
 
 public enum FileProcessType {
 
-    INVALID(0, "fileProcessType.invalid", "invalid", "invalid"), //
+    INVALID(0, "fileProcessType.invalid", "invalid", "Invalid"), //
     SND(1, "fileProcessType.sanctioned.but.not.disbursed", "sanctionedButNotDisbursed", "Sanctioned but not disbursed");
 
     private final Integer value;

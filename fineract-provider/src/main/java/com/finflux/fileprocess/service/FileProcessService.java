@@ -7,5 +7,4 @@ import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCom
 public interface FileProcessService {
 
     Long fileUploadProcess(final String fileProcessType, final DocumentCommand documentCommand, final InputStream inputStream);
-
 }

@@ -43,6 +43,7 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.finflux.common.util.FinfluxFileUtils;
 import com.lowagie.text.pdf.codec.Base64;
 
 public class S3ContentRepository implements ContentRepository {
@@ -72,10 +73,7 @@ public class S3ContentRepository implements ContentRepository {
 
         final String uploadDocFolder = generateFileParentDirectory(documentCommand.getParentEntityType(),
                 documentCommand.getParentEntityId());
-        final String uploadDocFullPath = uploadDocFolder + File.separator + fileName;
-
-        uploadDocument(fileName, toUpload, uploadDocFullPath);
-        return uploadDocFullPath;
+        return saveFile(fileName, uploadDocFolder, toUpload);
     }
 
     @Override
@@ -181,5 +179,19 @@ public class S3ContentRepository implements ContentRepository {
             final String message = ace.getMessage();
             throw new ContentManagementException(filename, message);
         }
+    }
+
+    @Override
+    public String saveFile(final InputStream toUpload, final DocumentCommand documentCommand, final String parentDirectoryPath,
+            final String... childDirectoriesPaths) {
+        final String fileName = documentCommand.getFileName();
+        final String uploadDocFolder = FinfluxFileUtils.generateFileLocation(parentDirectoryPath, childDirectoriesPaths);
+        return saveFile(fileName, uploadDocFolder, toUpload);
+    }
+
+    private String saveFile(final String fileName, final String uploadDocFolder, final InputStream toUpload) {
+        final String uploadDocFullPath = uploadDocFolder + File.separator + fileName;
+        uploadDocument(fileName, toUpload, uploadDocFullPath);
+        return uploadDocFullPath;
     }
 }
