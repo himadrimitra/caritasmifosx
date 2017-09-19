@@ -477,6 +477,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                 sb.append(savingsId);
                 sb.append(",'");
                 sb.append(formatter.print(adjustedDateDetailsDTO.getChangedActualRepaymentDate()));
+                sb.append("'");
                 sb.append(",'");
                 sb.append(formatter.print(adjustedDateDetailsDTO.getChangedScheduleDate()));
                 sb.append("',");
@@ -490,13 +491,13 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                 sb.append("')");
                 iterations++;
                 if (iterations > 200) {
-                    jdbcTemplate.update(insertSql + sb.toString(), currentDate);
+                    jdbcTemplate.update(insertSql + sb.toString());
                     sb = new StringBuilder();
                 }
             }
         }
         if (sb.length() > 0) {
-            jdbcTemplate.update(insertSql + sb.toString(), currentDate);
+            jdbcTemplate.update(insertSql + sb.toString());
         }
     }
 
