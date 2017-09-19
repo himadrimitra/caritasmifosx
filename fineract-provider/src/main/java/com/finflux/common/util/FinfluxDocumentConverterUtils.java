@@ -1,6 +1,8 @@
 package com.finflux.common.util;
 
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -40,17 +42,20 @@ public class FinfluxDocumentConverterUtils {
                     if (row == null) {
                         continue;
                     }
-                    boolean idHeaderRow = false;
+                    boolean isHeaderRow = false;
                     if (rowHeaderNames.isEmpty()) {
-                        idHeaderRow = true;
+                        isHeaderRow = true;
                     }
                     boolean hasValues = false;
                     final Map<String, Object> rowData = new LinkedHashMap<>();
+                    rowData.put("sheetName", sheet.getSheetName());
+                    rowData.put("rowIndex", j);
                     for (int k = 0; k <= row.getLastCellNum(); k++) {
                         final Cell cell = row.getCell(k);
-                        final Object value = cellToObject(cell);
-                        if (value != null) {
-                            if (idHeaderRow) {
+                        if (cell != null && !cell.toString().equalsIgnoreCase("null") && cell.toString().length() > 0) {
+                            cell.setCellType(Cell.CELL_TYPE_STRING);
+                            final Object value = cellToObject(cell);
+                            if (isHeaderRow) {
                                 rowHeaderNames.add(value.toString());
                             } else {
                                 hasValues = true;
@@ -68,7 +73,6 @@ public class FinfluxDocumentConverterUtils {
         } catch (InvalidFormatException | IOException e) {
             e.printStackTrace();
         }
-        System.out.println(json);
         return json;
     }
 
@@ -84,7 +88,7 @@ public class FinfluxDocumentConverterUtils {
 
             if (cell.getCellStyle().getDataFormatString().contains("%")) { return cell.getNumericCellValue() * 100; }
 
-            return numeric(cell);
+            return cleanString(cell.toString());
         }
         if (type == Cell.CELL_TYPE_FORMULA) {
             switch (cell.getCachedFormulaResultType()) {
@@ -106,4 +110,97 @@ public class FinfluxDocumentConverterUtils {
         return Double.valueOf(cell.getNumericCellValue());
     }
 
+    public static void addColumnsToExcelWorksheet(final File file, final String... columns) {
+        try {
+            final FileInputStream inputStream = new FileInputStream(file);
+            final Workbook workbook = WorkbookFactory.create(inputStream);
+            final int numberOfSheets = workbook.getNumberOfSheets();
+            final int headerRowIndex = 0;
+            for (int i = 0; i < numberOfSheets; i++) {
+                final Sheet sheet = workbook.getSheetAt(i);
+                if (sheet == null) {
+                    continue;
+                }
+                for (int j = sheet.getFirstRowNum(); j <= sheet.getLastRowNum(); j++) {
+                    final Row row = sheet.getRow(j);
+                    if (row == null) {
+                        continue;
+                    }
+                    boolean isHeaderRow = false;
+                    if (j == headerRowIndex) {
+                        isHeaderRow = true;
+                    }
+                    Cell previousCell = null;
+                    for (int k = 0; k <= row.getLastCellNum(); k++) {
+                        Cell cell = row.getCell(k);
+                        final Object value = cellToObject(cell);
+                        if (value == null) {
+                            cell = row.createCell(k);
+                            if (isHeaderRow) {
+                                for (final String column : columns) {
+                                    cell.setCellValue(column);
+                                    break;
+                                }
+                            }
+                            if (previousCell != null) {
+                                cell.setCellStyle(previousCell.getCellStyle());
+                            }
+                            break;
+                        }
+                        previousCell = cell;
+                    }
+                }
+            }
+            inputStream.close();
+
+            final FileOutputStream outputStream = new FileOutputStream(file);
+            workbook.write(outputStream);
+            // workbook.close();
+            outputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeContentToExcelWorksheet(final int rowIndex, final File file, final Map<String, String> map,
+            final String... sheetNames) {
+        try {
+            final FileInputStream inputStream = new FileInputStream(file);
+            final Workbook workbook = WorkbookFactory.create(inputStream);
+            final int headerRowIndex = 0;
+            for (final String sheetName : sheetNames) {
+                final Sheet sheet = workbook.getSheet(sheetName);
+                if (sheet == null) {
+                    continue;
+                }
+                final Row headerRow = sheet.getRow(headerRowIndex);
+                for (int k = 0; k <= headerRow.getLastCellNum(); k++) {
+                    final Cell headerCell = headerRow.getCell(k);
+                    final Object value = cellToObject(headerCell);
+                    if (map.containsKey(value)) {
+                        for (Map.Entry<String, String> entry : map.entrySet()) {
+                            final String headerColumnName = entry.getKey();
+                            final String content = entry.getValue();
+                            if (value.toString().equalsIgnoreCase(headerColumnName)) {
+                                final Row row = sheet.getRow(rowIndex);
+                                Cell cell = row.getCell(k);
+                                if (null == cell) {
+                                    cell = row.createCell(k);
+                                }
+                                cell.setCellValue(content);
+                            }
+                        }
+                    }
+                }
+            }
+            inputStream.close();
+
+            final FileOutputStream outputStream = new FileOutputStream(file);
+            workbook.write(outputStream);
+            // workbook.close();
+            outputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

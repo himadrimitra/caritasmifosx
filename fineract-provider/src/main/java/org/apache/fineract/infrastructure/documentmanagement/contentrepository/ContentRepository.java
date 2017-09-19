@@ -55,4 +55,7 @@ public interface ContentRepository {
 
     public abstract StorageType getStorageType();
 
+    public abstract String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand,
+            final String parentDirectoryPath, final String... childDirectoriesPaths);
+
 }

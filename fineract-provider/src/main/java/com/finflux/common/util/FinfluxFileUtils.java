@@ -2,19 +2,20 @@ package com.finflux.common.util;
 
 import java.io.File;
 
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
+
 public class FinfluxFileUtils {
 
-    public static File createDirectories(final boolean isHierarchy, final String... finalDirectories) {
-        File file = null;
-        for (String finalDirectory : finalDirectories) {
-            if (isHierarchy && file != null) {
-                finalDirectory = file.getPath() + File.separator + finalDirectory;
-            }
-            file = new File(finalDirectory);
-            if (!file.exists()) {
-                file.mkdir();
-            }
+    public static String getFinfluxBaseDirectory() {
+        return System.getProperty("user.home") + File.separator + ".finflux";
+    }
+
+    public static String generateFileLocation(final String parentDirectoryPath, final String... childDirectoriesPaths) {
+        String fileLocation = FinfluxFileUtils.getFinfluxBaseDirectory() + File.separator
+                + ThreadLocalContextUtil.getTenant().getName().replaceAll(" ", "").trim() + File.separator + parentDirectoryPath;
+        for (final Object childDirectory : childDirectoriesPaths) {
+            fileLocation += File.separator + childDirectory;
         }
-        return file;
+        return fileLocation;
     }
 }
