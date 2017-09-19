@@ -742,10 +742,19 @@ public class RecurringDepositAccount extends SavingsAccount {
 
         Money interestOnMaturity = Money.zero(this.currency);
 
-        for (final PostingPeriod interestPostingPeriod : postingPeriods) {
-            final Money interestEarnedForPeriod = interestPostingPeriod.getInterestEarned();
-            interestOnMaturity = interestOnMaturity.plus(interestEarnedForPeriod);
-        }
+		for (SavingsAccountTransaction transaction : this.transactions) {
+			if (transaction.isInterestPostingAndNotReversed()
+					&& !transaction.transactionLocalDate().isAfter(this.getStartInterestCalculationDate())) {
+				interestOnMaturity = interestOnMaturity.plus(transaction.getAmount());
+			}
+		}
+
+		for (final PostingPeriod interestPostingPeriod : postingPeriods) {
+			if (interestPostingPeriod.dateOfPostingTransaction().isAfter(this.getStartInterestCalculationDate())) {
+				final Money interestEarnedForPeriod = interestPostingPeriod.getInterestEarned();
+				interestOnMaturity = interestOnMaturity.plus(interestEarnedForPeriod);
+			}
+		}
         this.summary.updateFromInterestPeriodSummaries(this.currency, postingPeriods);
         return interestOnMaturity;
     }
