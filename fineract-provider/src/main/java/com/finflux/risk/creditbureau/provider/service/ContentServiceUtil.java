@@ -27,8 +27,8 @@ public class ContentServiceUtil {
     public final String getContent(final String location) {
         String data = null;
         InputStream inputStream = null;
-        if (StringUtils.isNotEmpty(location)) {
-            final FileData fileData = this.contentRepositoryFactory.getRepository().fetchFile(new DocumentData(location));
+        final FileData fileData = fetchFile(location);
+        if (null != fileData) {
             try {
                 inputStream = fileData.file();
                 byte[] receivedData = IOUtils.toByteArray(inputStream);
@@ -46,5 +46,13 @@ public class ContentServiceUtil {
             }
         }
         return data;
+    }
+
+    public final FileData fetchFile(final String location) {
+        FileData fileData = null;
+        if (StringUtils.isNotEmpty(location)) {
+            fileData = this.contentRepositoryFactory.getRepository().fetchFile(new DocumentData(location));
+        }
+        return fileData;
     }
 }
