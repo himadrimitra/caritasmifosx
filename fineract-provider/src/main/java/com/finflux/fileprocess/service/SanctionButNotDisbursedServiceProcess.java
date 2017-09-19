@@ -49,6 +49,8 @@ public class SanctionButNotDisbursedServiceProcess {
     private final DefaultToApiJsonSerializer toApiJsonSerializer;
     private final FromJsonHelper fromApiJsonHelper;
     private final FileProcessRepositoryWrapper fileProcessRepository;
+    
+    private final DateFormat dateFormatter = new SimpleDateFormat("dd MMMM yyyy");
 
     @SuppressWarnings("rawtypes")
     @Autowired
@@ -153,15 +155,14 @@ public class SanctionButNotDisbursedServiceProcess {
 
     class LoanApprovalData {
 
-        private DateFormat dateFormatter2 = new SimpleDateFormat("dd MMMM yyyy");
         Map<String, Object> formValidationData = new HashMap<>();
         Map<String, Object> formRequestData = new HashMap<>();
 
         LoanApprovalData(final BigDecimal approvedAmount, Date sanctionedDate, final LoanApplicationReference reference) {
 
-            String formattedSanctionDate = dateFormatter2.format(sanctionedDate);
+            String formattedSanctionDate = dateFormatter.format(sanctionedDate);
 
-            formValidationData.put("submittedOnDate", dateFormatter2.format(reference.getSubmittedOnDate()));// Format
+            formValidationData.put("submittedOnDate", dateFormatter.format(reference.getSubmittedOnDate()));// Format
             formValidationData.put("clientId", reference.getClient().getId());
             formValidationData.put("productId", reference.getLoanProduct().getId());
             formValidationData.put("principal", reference.getLoanAmountRequested());
@@ -174,6 +175,8 @@ public class SanctionButNotDisbursedServiceProcess {
             // ;//
             formValidationData.put("expectedDisbursementDate", formattedSanctionDate);
             formValidationData.put("repaymentsStartingFromDate", formattedSanctionDate);
+            formValidationData.put("locale", "en");
+            formValidationData.put("dateFormat", "dd MMMM yyyy");
 
             formRequestData.put("loanAmountApproved", approvedAmount);
             formRequestData.put("expectedDisbursementDate", formattedSanctionDate);
@@ -184,6 +187,8 @@ public class SanctionButNotDisbursedServiceProcess {
             formRequestData.put("termFrequency", reference.getTermFrequency());
             formRequestData.put("repaymentPeriodFrequencyEnum", reference.getRepaymentPeriodFrequencyEnum());
             formRequestData.put("termPeriodFrequencyEnum", reference.getTermPeriodFrequencyEnum());
+            formRequestData.put("locale", "en");
+            formRequestData.put("dateFormat", "dd MMMM yyyy");
         }
     }
 
