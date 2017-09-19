@@ -1,4 +1,14 @@
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
 package com.finflux.fileprocess.data;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public enum FileProcessType {
 
@@ -49,11 +59,29 @@ public enum FileProcessType {
         FileProcessType fileProcessType = FileProcessType.INVALID;
         if (type != null) {
             switch (type) {
-                case "snd":
+                case "sanctionedButNotDisbursed":
                     fileProcessType = FileProcessType.SND;
                 break;
             }
         }
         return fileProcessType;
+    }
+
+    public EnumOptionData getEnumOptionData() {
+        return new EnumOptionData(getValue().longValue(), getSystemName(), getDisplayName());
+    }
+
+    public static Collection<EnumOptionData> fileProcessTypeOptions() {
+        final Collection<EnumOptionData> fileProcessTypeOptions = new ArrayList<>();
+        for (final FileProcessType fileProcessType : values()) {
+            if (fileProcessType.isNotInvalid()) {
+                fileProcessTypeOptions.add(fileProcessType.getEnumOptionData());
+            }
+        }
+        return fileProcessTypeOptions;
+    }
+
+    private boolean isNotInvalid() {
+        return !this.value.equals(FileProcessType.INVALID.getValue());
     }
 }

@@ -1,5 +1,7 @@
 package com.finflux.fileprocess.data;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
 public enum FileStatus {
 
     INVALID(0, "fileStatus.invalid", "invalid", "Invalid"), //
@@ -51,5 +53,9 @@ public enum FileStatus {
             }
         }
         return fileStatus;
+    }
+    
+    public EnumOptionData getEnumOptionData() {
+        return new EnumOptionData(getValue().longValue(), getCode(), getDisplayName());
     }
 }
