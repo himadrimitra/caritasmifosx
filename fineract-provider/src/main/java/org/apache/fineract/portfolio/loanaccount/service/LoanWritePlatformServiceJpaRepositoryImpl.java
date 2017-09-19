@@ -111,7 +111,6 @@ import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeWaivedEx
 import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeWaivedException.LOAN_CHARGE_CANNOT_BE_WAIVED_REASON;
 import org.apache.fineract.portfolio.charge.exception.LoanChargeNotFoundException;
 import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.portfolio.client.domain.ClientRepository;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkDisbursalCommand;
@@ -125,7 +124,6 @@ import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
-import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.group.exception.CenterNotFoundException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
@@ -189,11 +187,7 @@ import org.apache.fineract.portfolio.loanaccount.guarantor.service.GuarantorDoma
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleHistoryWritePlatformService;
-import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.service.LoanRescheduleRequestReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationCommandFromApiJsonHelper;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanEventApiJsonValidator;
@@ -233,7 +227,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
     private final static Logger logger = LoggerFactory.getLogger(LoanWritePlatformServiceJpaRepositoryImpl.class);
     private final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
-    private boolean loadLazyEntities = true;
 
     private final PlatformSecurityContext context;
     private final LoanEventApiJsonValidator loanEventApiJsonValidator;
@@ -261,7 +254,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final FromJsonHelper fromApiJsonHelper;
     private final CalendarRepository calendarRepository;
     private final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository;
-    private final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService;
     private final LoanApplicationCommandFromApiJsonHelper loanApplicationCommandFromApiJsonHelper;
     private final AccountAssociationsRepository accountAssociationRepository;
     private final AccountTransferDetailRepository accountTransferDetailRepository;
@@ -282,8 +274,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final LoanRescheduleRequestReadPlatformService loanRescheduleRequestReadPlatformService;
     private final GroupingTypesWritePlatformService groupingTypesWritePlatformService;
-    private final GroupRepositoryWrapper groupRepository;
-    private final ClientRepository clientRepository;
+    private final LoanCalculationReadService loanCalculationReadService;
     private final BulkLoansReadPlatformService bulkLoansReadPlatformService;
     private final JdbcTemplate jdbcTemplate;
     private final LoanOfficerAssignmentHistoryWriteService loanOfficerAssignmentHistoryWriteService;
@@ -311,7 +302,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final FromJsonHelper fromApiJsonHelper,
             final CalendarRepository calendarRepository,
             final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository,
-            final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService,
             final LoanApplicationCommandFromApiJsonHelper loanApplicationCommandFromApiJsonHelper,
             final AccountAssociationsRepository accountAssociationRepository,
             final AccountTransferDetailRepository accountTransferDetailRepository,
@@ -328,12 +318,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final LoanScheduleValidator loanScheduleValidator, final FineractEntityAccessUtil fineractEntityAccessUtil,
             final LoanRescheduleRequestReadPlatformService loanRescheduleRequestReadPlatformService,
             final GroupingTypesWritePlatformService groupingTypesWritePlatformService,
-            final GroupRepositoryWrapper groupRepository, final ClientRepository clientRepository,
             final BulkLoansReadPlatformService bulkLoansReadPlatformService,
             final RoutingDataSource dataSource,
             final LoanOfficerAssignmentHistoryWriteService loanOfficerAssignmentHistoryWriteService,
             final ClientWritePlatformService clientWritePlatformService,
-            final CenterReadPlatformService centerReadPlatformService, final LoanOverdueChargeService loanOverdueChargeService) {
+            final CenterReadPlatformService centerReadPlatformService, final LoanOverdueChargeService loanOverdueChargeService,
+            final LoanCalculationReadService loanCalculationReadService) {
 
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
@@ -361,7 +351,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.calendarRepository = calendarRepository;
         this.repaymentScheduleInstallmentRepository = repaymentScheduleInstallmentRepository;
-        this.loanScheduleHistoryWritePlatformService = loanScheduleHistoryWritePlatformService;
         this.loanApplicationCommandFromApiJsonHelper = loanApplicationCommandFromApiJsonHelper;
         this.accountAssociationRepository = accountAssociationRepository;
         this.accountTransferDetailRepository = accountTransferDetailRepository;
@@ -382,14 +371,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.loanRescheduleRequestReadPlatformService = loanRescheduleRequestReadPlatformService;
         this.groupingTypesWritePlatformService = groupingTypesWritePlatformService;
-        this.groupRepository = groupRepository;
-        this.clientRepository = clientRepository;
         this.bulkLoansReadPlatformService = bulkLoansReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.loanOfficerAssignmentHistoryWriteService = loanOfficerAssignmentHistoryWriteService;
         this.clientWritePlatformService = clientWritePlatformService;
         this.centerReadPlatformService = centerReadPlatformService;
         this.loanOverdueChargeService = loanOverdueChargeService;
+        this.loanCalculationReadService = loanCalculationReadService;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -491,7 +479,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                                     +" should be after last transaction date of loan to be closed "+ lastUserTransactionOnLoanToClose);
                 }
                 boolean calcualteInterestTillDate = true;
-                BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(actualDisbursementDate,
+                BigDecimal loanOutstanding = this.loanCalculationReadService.retrieveLoanPrePaymentTemplate(actualDisbursementDate,
                         calcualteInterestTillDate, loanToClose).getAmount();
                 final BigDecimal firstDisbursalAmount = loan.getFirstDisbursalAmount();
                 if(loanOutstanding.compareTo(firstDisbursalAmount) > 0){

@@ -210,13 +210,14 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.capitalizedCharePortion = loanRepaymentScheduleInstallment.capitalizedCharePortion;
     }
     
-    public LoanRepaymentScheduleInstallment(final Integer installmentNumber, final LocalDate fromDate,
+    public LoanRepaymentScheduleInstallment(final Long id,final Integer installmentNumber, final LocalDate fromDate,
             final LocalDate dueDate, final BigDecimal principal, final BigDecimal principalCompleted, final BigDecimal principalWrittenOff,
             final BigDecimal interest, final BigDecimal interestPaid, final BigDecimal interestWaived, final BigDecimal interestWrittenOff,
             final BigDecimal feeCharges, final BigDecimal feeChargesPaid, final BigDecimal feeChargesWaived,
             final BigDecimal feeChargesWrittenOff, final BigDecimal penaltyCharges, final boolean recalculatedInterestComponent,
             final BigDecimal penaltyChargesPaid, final BigDecimal penaltyChargesWaived, final BigDecimal penaltyChargesWrittenOff,
             final boolean obligationsMet, final LocalDate obligationsMetOnDate, BigDecimal capitalizedCharePortion) {
+        this.setId(id);
         this.installmentNumber = installmentNumber;
         this.fromDate = fromDate.toDate();
         this.dueDate = dueDate.toDate();

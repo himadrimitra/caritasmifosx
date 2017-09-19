@@ -1059,7 +1059,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
         
         // to recompute overdue charges
-        boolean isOriginalScheduleNeedsUpdate = this.loanOverdueChargeService.updateOverdueChargesOnPayment(loan, recalculateFrom);
+        boolean isOriginalScheduleNeedsUpdate = this.loanOverdueChargeService.updateOverdueChargesOnAdjustPayment(loan, transactionToAdjust, newTransactionDetail);
 
         final ChangedTransactionDetail changedTransactionDetail = loan.adjustExistingTransaction(newTransactionDetail,
                 defaultLoanLifecycleStateMachine(), transactionToAdjust, scheduleGeneratorDTO, currentUser);

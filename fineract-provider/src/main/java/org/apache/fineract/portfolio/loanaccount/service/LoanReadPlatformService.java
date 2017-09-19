@@ -39,7 +39,6 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.data.PaidInAdvanceData;
 import org.apache.fineract.portfolio.loanaccount.data.RepaymentScheduleRelatedLoanData;
-import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRecurringCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
@@ -119,8 +118,6 @@ public interface LoanReadPlatformService {
 
     List<Long> fetchLoansForInterestRecalculation();
 
-    LoanTransactionData retrieveLoanPrePaymentTemplate(Long loanId, LocalDate onDate, boolean calcualteInterestTillDate);
-
     Collection<LoanTransactionData> retrieveWaiverLoanTransactions(Long loanId);
 
     Collection<LoanSchedulePeriodData> fetchWaiverInterestRepaymentData(Long loanId);
@@ -141,8 +138,6 @@ public interface LoanReadPlatformService {
     
     Collection<LoanAccountData> retrieveAllForTaskLookupBySearchParameters(SearchParameters searchParameters);
 	
-    LoanTransactionData retrieveLoanForeclosureTemplate(final Long loanId, final LocalDate transactionDate);
-
     LoanTransactionData refundTemplate(Long loanId);
 
     boolean isAnyActiveJLGLoanForClient(Long clientid, Long groupId);
@@ -161,8 +156,6 @@ public interface LoanReadPlatformService {
     
     Map<String, Object> retrieveLoanProductIdApprovedAmountClientId(final Long loanId);
 
-    LoanTransactionData retrieveLoanPrePaymentTemplate(LocalDate onDate, boolean calcualteInterestTillDate, Loan loan);
-    
     LoanTransactionData retrieveLoanInstallmentDetails(Long loanId);
 
     Collection<Long> retriveLoansForMarkingAsNonNPAWithPeriodicAccounding();
@@ -181,4 +174,6 @@ public interface LoanReadPlatformService {
     List<LoanRecurringCharge> retrieveLoanOverdueRecurringCharge(Long loanId);
     
     MonetaryCurrency retrieveLoanCurrency(Long loanId);
+
+    List<Long> fetchLoanIdsForOverdueCharge();
 }

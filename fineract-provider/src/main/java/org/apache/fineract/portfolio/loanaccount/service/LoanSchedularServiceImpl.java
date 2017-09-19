@@ -21,7 +21,6 @@ package org.apache.fineract.portfolio.loanaccount.service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -43,7 +42,6 @@ import org.apache.fineract.infrastructure.jobs.service.JobRunner;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -65,52 +63,56 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     private final LoanWritePlatformService loanWritePlatformService;
     private final JobExecuter jobExecuter;
     private final JdbcTemplate jdbcTemplate;
+    private final LoanOverdueChargeService loanOverdueChargeService;
 
     @Autowired
     public LoanSchedularServiceImpl(final ConfigurationDomainService configurationDomainService,
             final LoanReadPlatformService loanReadPlatformService, final LoanWritePlatformService loanWritePlatformService,
-            final JobExecuter jobExecuter, final RoutingDataSource dataSource) {
+            final JobExecuter jobExecuter, final RoutingDataSource dataSource, final LoanOverdueChargeService loanOverdueChargeService) {
         this.configurationDomainService = configurationDomainService;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanWritePlatformService = loanWritePlatformService;
         this.jobExecuter = jobExecuter;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.loanOverdueChargeService = loanOverdueChargeService;
     }
 
     @Override
     @CronTarget(jobName = JobName.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT)
     public void applyChargeForOverdueLoans() throws JobExecutionException {
+        List<Long> loanIds = this.loanReadPlatformService.fetchLoanIdsForOverdueCharge();
+        JobRunner<List<Long>> runner = new LoanOverdueChargeJobRunner();
+        final String errors = this.jobExecuter.executeJob(loanIds, runner);
+        if (errors.length() > 0) { throw new JobExecutionException(errors); }
+    }
 
-        if(true){
-            return;
+    private class LoanOverdueChargeJobRunner implements JobRunner<List<Long>> {
+
+        final LocalDate runOndate;
+        final LocalDate brokenPeriodOnDate;
+
+        public LoanOverdueChargeJobRunner() {
+            runOndate = DateUtils.getLocalDateOfTenant();
+            brokenPeriodOnDate = null;
         }
-        @SuppressWarnings("unused")
-        final Long penaltyWaitPeriodValue = this.configurationDomainService.retrievePenaltyWaitPeriod();
-        final Boolean backdatePenalties = this.configurationDomainService.isBackdatePenaltiesEnabled();
-        final Collection<OverdueLoanScheduleData> overdueLoanScheduledInstallments = this.loanReadPlatformService
-                .retrieveAllLoansWithOverdueInstallments(penaltyWaitPeriodValue, backdatePenalties);
 
-        if (!overdueLoanScheduledInstallments.isEmpty()) {
-            final StringBuilder sb = new StringBuilder();
-            final Map<Long, Collection<OverdueLoanScheduleData>> overdueScheduleData = new HashMap<>();
-            for (final OverdueLoanScheduleData overdueInstallment : overdueLoanScheduledInstallments) {
-                if (overdueScheduleData.containsKey(overdueInstallment.getLoanId())) {
-                    overdueScheduleData.get(overdueInstallment.getLoanId()).add(overdueInstallment);
-                } else {
-                    Collection<OverdueLoanScheduleData> loanData = new ArrayList<>();
-                    loanData.add(overdueInstallment);
-                    overdueScheduleData.put(overdueInstallment.getLoanId(), loanData);
-                }
+        @Override
+        public void runJob(final List<Long> loanIds, final StringBuilder sb) {
+            applyChargeForOverdueLoans(loanIds, sb, runOndate, this.brokenPeriodOnDate);
+
+        }
+
+    }
+
+    public void applyChargeForOverdueLoans(final List<Long> loanIds, final StringBuilder sb, LocalDate runOndate,
+            LocalDate brokenPeriodOnDate) {
+        final String errorMessage = "Apply Charges due for overdue loans failed for account:";
+        for (Long loanId : loanIds) {
+            try {
+                this.loanOverdueChargeService.applyOverdueChargesForNonInterestRecalculationLoans(loanId, runOndate, brokenPeriodOnDate);
+            } catch (Exception e) {
+                ExceptionHelper.handleExceptions(e, sb, errorMessage, loanId, logger);
             }
-            final String errorMessage = "Apply Charges due for overdue loans failed for account:";
-            for (final Long loanId : overdueScheduleData.keySet()) {
-                try {
-                    this.loanWritePlatformService.applyOverdueChargesForLoan(loanId, overdueScheduleData.get(loanId));
-                } catch (Exception e) {
-                    ExceptionHelper.handleExceptions(e, sb, errorMessage, loanId, logger);
-                }
-            }
-            if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
         }
     }
 
