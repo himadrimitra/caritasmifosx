@@ -35,6 +35,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepositoryWrapper;
 import org.apache.fineract.organisation.office.exception.OfficeNotFoundException;
@@ -76,6 +77,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
     private final CashierTransactionRepository cashierTxnRepository;
     private final JournalEntryRepositoryWrapper journalEntryRepository;
     private final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper;
+    private final CurrencyReadPlatformService currencyReadPlatformService;
 
     @Autowired
     public TellerWritePlatformServiceJpaImpl(final PlatformSecurityContext context,
@@ -83,7 +85,8 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             final TellerRepositoryWrapper tellerRepositoryWrapper, final OfficeRepositoryWrapper officeRepository,
             final StaffRepository staffRepository, CashierRepository cashierRepository, CashierTransactionRepository cashierTxnRepository,
             JournalEntryRepositoryWrapper journalEntryRepository,
-            FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper) {
+            FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper,
+            final CurrencyReadPlatformService currencyReadPlatformService) {
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.tellerRepository = tellerRepository;
@@ -94,6 +97,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
         this.cashierTxnRepository = cashierTxnRepository;
         this.journalEntryRepository = journalEntryRepository;
         this.financialActivityAccountRepositoryWrapper = financialActivityAccountRepositoryWrapper;
+        this.currencyReadPlatformService = currencyReadPlatformService;
     }
 
     @Override
@@ -426,7 +430,11 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             Long paymentDetailId = null;
             String referenceNumber =null;
             // FIXME: Take currency code from the transaction
-            String currencyCode = "USD";
+            String currencyCode = cashierTxn.getCurrencyCode();
+            if(currencyCode == null){
+            	currencyCode = currencyReadPlatformService.getDefaultCurrencyCode();
+            }
+            
             /** Validate current code is appropriate **/
             JournalEntry journalEntry = JournalEntry.createNew(cashierOffice.getId(), paymentDetailId, currencyCode,
                     transactionId, manualEntry, cashierTxn.getTxnDate(), cashierTxn.getTxnDate(), cashierTxn.getTxnDate(), cashierTxn.getTxnNote(), entityTypeId, entityId,
