@@ -261,8 +261,11 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
                 depositAccountOnHoldTransactions = this.depositAccountOnHoldTransactionRepository
                         .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
             }
+            final CalendarInstance calendarInstance = null;
+            final Boolean isUndDepositTransaction = false;
+            final LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
             account.validateAccountBalanceDoesNotBecomeNegative(SavingsAccountTransactionType.PAY_CHARGE.name(),
-                    depositAccountOnHoldTransactions);
+                    depositAccountOnHoldTransactions, calendarInstance, isUndDepositTransaction, transactionDate);
             this.savingAccountRepository.save(account);
         }
 
@@ -361,8 +364,11 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
                         .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
             }
 
+            final CalendarInstance calendarInstance = null;
+            final Boolean isUndDepositTransaction = false;
+            final LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
             account.validateAccountBalanceDoesNotBecomeNegative(SavingsAccountTransactionType.PAY_CHARGE.name(),
-                    depositAccountOnHoldTransactions);
+                    depositAccountOnHoldTransactions, calendarInstance, isUndDepositTransaction, transactionDate);
 
             this.savingAccountRepository.save(account);
         }
@@ -632,7 +638,11 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
                     .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
         }
 
-        account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.undoTransactionAction, depositAccountOnHoldTransactions);
+        final CalendarInstance calendarInstance = null;
+        final Boolean isUndDepositTransaction = false;
+        final LocalDate transactionDate = new LocalDate(savingsAccountTransaction.getDateOf());
+        account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.undoTransactionAction, depositAccountOnHoldTransactions,
+                calendarInstance, isUndDepositTransaction, transactionDate);
         // account.activateAccountBasedOnBalance();
         
         this.savingsAccountDomainService.updateMaturityDateAndAmount(account);
@@ -735,7 +745,10 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
                     .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
         }
 
-        account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.adjustTransactionAction, depositAccountOnHoldTransactions);
+        final CalendarInstance calendarInstance = null;
+        final Boolean isUndDepositTransaction = false;
+        account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.adjustTransactionAction, depositAccountOnHoldTransactions,
+                calendarInstance, isUndDepositTransaction, transactionDate);
         account.activateAccountBasedOnBalance();
 
         if (savingsAccountTransaction.isDeposit()) {
@@ -1180,8 +1193,11 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
                     .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
         }
 
+        final CalendarInstance calendarInstance = null;
+        final Boolean isUndDepositTransaction = false;
+        final LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
         account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.waiveChargeTransactionAction,
-                depositAccountOnHoldTransactions);
+                depositAccountOnHoldTransactions, calendarInstance, isUndDepositTransaction, transactionDate);
 
         this.savingAccountRepository.saveAndFlush(account);
 
@@ -1315,8 +1331,10 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
                     .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
         }
 
+        final CalendarInstance calendarInstance = null;
+        final Boolean isUndDepositTransaction = false;
         account.validateAccountBalanceDoesNotBecomeNegative("." + SavingsAccountTransactionType.PAY_CHARGE.getCode(),
-                depositAccountOnHoldTransactions);
+                depositAccountOnHoldTransactions, calendarInstance, isUndDepositTransaction, transactionDate);
 
         this.savingAccountRepository.save(account);
 
