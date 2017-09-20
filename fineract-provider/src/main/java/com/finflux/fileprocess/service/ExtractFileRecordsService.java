@@ -78,6 +78,7 @@ public class ExtractFileRecordsService {
                 }
                 if (totalRecords > 0) {
                     fileProcess.setTotalRecords(totalRecords);
+                    fileProcess.setTotalPendingRecords(totalRecords);
                     fileProcess.setFileRecords(fileRecords);
                     this.repository.save(fileProcess);
                     fileRecordsProcess(fileProcess);

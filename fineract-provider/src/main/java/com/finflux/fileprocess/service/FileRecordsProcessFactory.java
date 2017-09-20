@@ -8,10 +8,10 @@ import com.finflux.fileprocess.data.FileProcessType;
 @Component
 public class FileRecordsProcessFactory {
 
-    private final SanctionButNotDisbursedService sanctionButNotDisbursedService;
+    private final SanctionedButNotDisbursedService sanctionButNotDisbursedService;
 
     @Autowired
-    public FileRecordsProcessFactory(final SanctionButNotDisbursedService sanctionButNotDisbursedService) {
+    public FileRecordsProcessFactory(final SanctionedButNotDisbursedService sanctionButNotDisbursedService) {
         this.sanctionButNotDisbursedService = sanctionButNotDisbursedService;
     }
 

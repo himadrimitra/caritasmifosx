@@ -59,7 +59,7 @@ public class FinfluxDocumentConverterUtils {
                                 rowHeaderNames.add(value.toString());
                             } else {
                                 hasValues = true;
-                                rowData.put(rowHeaderNames.get(k), value);
+                                rowData.put(rowHeaderNames.get(k), value.toString().trim());
                             }
                         }
                     }
@@ -130,24 +130,19 @@ public class FinfluxDocumentConverterUtils {
                     if (j == headerRowIndex) {
                         isHeaderRow = true;
                     }
-                    Cell previousCell = null;
                     for (int k = 0; k <= row.getLastCellNum(); k++) {
                         Cell cell = row.getCell(k);
-                        final Object value = cellToObject(cell);
-                        if (value == null) {
+                        if (cell == null) {
                             cell = row.createCell(k);
+                            cell.setCellStyle(row.getCell(k - 1).getCellStyle());
                             if (isHeaderRow) {
                                 for (final String column : columns) {
                                     cell.setCellValue(column);
                                     break;
                                 }
                             }
-                            if (previousCell != null) {
-                                cell.setCellStyle(previousCell.getCellStyle());
-                            }
                             break;
                         }
-                        previousCell = cell;
                     }
                 }
             }
