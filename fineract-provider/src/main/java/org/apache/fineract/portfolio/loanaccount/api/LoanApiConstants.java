@@ -172,4 +172,12 @@ public interface LoanApiConstants {
     public static final Set<LoanStatus> loanStatusAllowedForPayment = new HashSet<>(Arrays.asList(LoanStatus.ACTIVE ,LoanStatus.CLOSED_OBLIGATIONS_MET ,LoanStatus.OVERPAID ));
     public static final Set<Integer> EXCLUDED_STATUS_FOR_GLIM_PAYMENT_AS_GROUP = new HashSet<>(Arrays.asList(
             LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(), LoanStatus.APPROVED.getValue()));
+    
+    public static final String tillDateParamName = "tillDate";
+    public static final String loanListParamName = "loanList";
+    public static final String localeParamName = "locale";
+    public static final String dateFormatParamName = "dateFormat";
+    
+    public static final Set<String> LOAN_SCHEDULE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(tillDateParamName,
+            localeParamName, dateFormatParamName, loanListParamName));
 }

@@ -86,6 +86,8 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanApplicationTimelineData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanApprovalData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanInterestRecalculationData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanOverdueChargeData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanOverdueData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanScheduleAccrualData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanSummaryData;
@@ -106,7 +108,6 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException
 import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
@@ -474,9 +475,41 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             String sql = "select " + mapper.schema() + " where l.id =?";
             LoanTransactionData loanTransactionData = this.jdbcTemplate.queryForObject(sql, mapper,
                     LoanTransactionType.REPAYMENT.getValue(), loanId, loanId);
-
+            LoanOverdueData loanOverdueData = loanTransactionData.getLoanOverdueData();
             final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
-            return LoanTransactionData.templateOnTop(loanTransactionData, paymentOptions);
+            loanTransactionData = LoanTransactionData.templateOnTop(loanTransactionData, paymentOptions);
+            loanTransactionData.setLoanOverdueData(loanOverdueData);
+
+            if (loanOverdueData != null
+                    && loanOverdueData.getLastOverdueDate().isBefore(DateUtils.getLocalDateOfTenant())) {
+                List<LoanRecurringCharge> recurringCharges = this.retrieveLoanOverdueRecurringCharge(loanId);
+                LocalDate lastRunOnDate = null;
+                LocalDate lastChargeAppliedOnDate = null;
+                boolean canApplyBrokenPeriodChargeAsOnCurrentDate = false;
+                if (!recurringCharges.isEmpty()) {
+                    for (LoanRecurringCharge charge : recurringCharges) {
+                        if (lastRunOnDate == null || lastRunOnDate.isAfter(charge.getChargeOverueDetail().getLastRunOnDate())) {
+                            lastRunOnDate = charge.getChargeOverueDetail().getLastRunOnDate();
+                        }
+                        if (lastChargeAppliedOnDate == null
+                                || lastChargeAppliedOnDate.isAfter(charge.getChargeOverueDetail().getLastRunOnDate())) {
+                            lastChargeAppliedOnDate = charge.getChargeOverueDetail().getLastRunOnDate();
+                        }
+
+                        if (charge.getChargeOverueDetail().isApplyChargeForBrokenPeriod()
+                                && (lastChargeAppliedOnDate == null || DateUtils.getLocalDateOfTenant().isEqual(
+                                        charge.getChargeOverueDetail().getLastRunOnDate()))) {
+                            canApplyBrokenPeriodChargeAsOnCurrentDate = true;
+                        }
+
+                    }
+                    LoanOverdueChargeData chargeData = new LoanOverdueChargeData(lastRunOnDate, lastChargeAppliedOnDate,
+                            canApplyBrokenPeriodChargeAsOnCurrentDate);
+                    loanTransactionData.setLoanOverdueChargeData(chargeData);
+                }
+            }
+            return loanTransactionData;
+
         } catch (EmptyResultDataAccessException e) {
             throw new LoanNotFoundException(loanId);
         }
@@ -1342,56 +1375,6 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                      principal, expectedDisbursalPaymentTypeData,group);
         }
     }
-    private static final class MusoniOverdueLoanScheduleMapper implements RowMapper<OverdueLoanScheduleData> {
-
-        public String schema() {
-            return " ls.loan_id as loanId, ls.installment as period, ls.fromdate as fromDate, ls.duedate as dueDate, ls.obligations_met_on_date as obligationsMetOnDate, ls.completed_derived as complete,"
-                    + " ls.principal_amount as principalDue, ls.principal_completed_derived as principalPaid, ls.principal_writtenoff_derived as principalWrittenOff, "
-                    + " ls.interest_amount as interestDue, ls.interest_completed_derived as interestPaid, ls.interest_waived_derived as interestWaived, ls.interest_writtenoff_derived as interestWrittenOff, "
-                    + " ls.fee_charges_amount as feeChargesDue, ls.fee_charges_completed_derived as feeChargesPaid, ls.fee_charges_waived_derived as feeChargesWaived, ls.fee_charges_writtenoff_derived as feeChargesWrittenOff, "
-                    + " ls.penalty_charges_amount as penaltyChargesDue, ls.penalty_charges_completed_derived as penaltyChargesPaid, ls.penalty_charges_waived_derived as penaltyChargesWaived, ls.penalty_charges_writtenoff_derived as penaltyChargesWrittenOff, "
-                    + " ls.total_paid_in_advance_derived as totalPaidInAdvanceForPeriod, ls.total_paid_late_derived as totalPaidLateForPeriod, "
-                    + " mc.amount,mc.id as chargeId "
-                    + " from m_loan ml "
-                    + " inner join m_loan_repayment_schedule ls on ml.id = ls.loan_id "
-                    + " join m_product_loan_charge plc on plc.product_loan_id = ml.product_id "
-                    + " join m_charge mc on mc.id = plc.charge_id ";
-
-        }
-
-        @Override
-        public OverdueLoanScheduleData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
-            final Long chargeId = rs.getLong("chargeId");
-            final Long loanId = rs.getLong("loanId");
-            final BigDecimal amount = rs.getBigDecimal("amount");
-            final String dateFormat = "yyyy-MM-dd";
-            final String dueDate = rs.getString("dueDate");
-            final String locale = "en_GB";
-
-            final BigDecimal principalDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalDue");
-            final BigDecimal principalPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalPaid");
-            final BigDecimal principalWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalWrittenOff");
-
-            final BigDecimal principalOutstanding = principalDue.subtract(principalPaid).subtract(principalWrittenOff);
-
-            final BigDecimal interestExpectedDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestDue");
-            final BigDecimal interestPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestPaid");
-            final BigDecimal interestWaived = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestWaived");
-            final BigDecimal interestWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestWrittenOff");
-
-            final BigDecimal interestActualDue = interestExpectedDue.subtract(interestWaived).subtract(interestWrittenOff);
-            final BigDecimal interestOutstanding = interestActualDue.subtract(interestPaid);
-
-            final Integer installmentNumber = JdbcSupport.getIntegerDefaultToNullIfZero(rs, "period");
-            
-            final BigDecimal feeChargesDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesDue");
-            
-            final OverdueLoanScheduleData overdueLoanScheduleData = new OverdueLoanScheduleData(loanId, chargeId, dueDate, amount,
-                    dateFormat, locale, principalOutstanding, interestOutstanding, installmentNumber, feeChargesDue);
-
-            return overdueLoanScheduleData;
-        }
-    }
 
     private static final class LoanScheduleResultSetExtractor implements ResultSetExtractor<LoanScheduleData> {
 
@@ -1904,26 +1887,6 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
 
         return allowedLoanOfficers;
-    }
-
-    @Override
-    public Collection<OverdueLoanScheduleData> retrieveAllLoansWithOverdueInstallments(final Long penaltyWaitPeriod,
-            final Boolean backdatePenalties) {
-        final MusoniOverdueLoanScheduleMapper rm = new MusoniOverdueLoanScheduleMapper();
-        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
-        final StringBuilder sqlBuilder = new StringBuilder(400);
-        sqlBuilder.append("select ").append(rm.schema()).append(" where ml.loan_status_id = 300 ")
-                .append(" and mc.charge_time_enum = 9 ")
-                .append(" and DATE_SUB(?,INTERVAL ? DAY) > ls.duedate ")
-                .append(" and ls.recalculated_interest_component <> 1 ")
-                .append(" and ls.completed_derived <> 1 and mc.charge_applies_to_enum =1 ");
-        if (backdatePenalties) { return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { currentdate,penaltyWaitPeriod }); }
-        // Only apply for duedate = yesterday (so that we don't apply
-        // penalties on the duedate itself)
-        sqlBuilder.append(" and ls.duedate >= DATE_SUB(?,INTERVAL (? + 1) DAY)");
-
-        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { currentdate,penaltyWaitPeriod,currentdate, penaltyWaitPeriod });
-
     }
 
     @SuppressWarnings("deprecation")
@@ -2612,6 +2575,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             StringBuilder sqlBuilder = new StringBuilder();
 
             sqlBuilder.append("if(max(tr.transaction_date)>ls.dueDate,max(tr.transaction_date),ls.dueDate) as transactionDate,");
+            sqlBuilder.append("ls.dueDate as lastUnpaidInstallmentDate,");
             sqlBuilder
                     .append("ls.principal_amount - IFNULL(ls.principal_writtenoff_derived,0) - IFNULL(ls.principal_completed_derived,0) as principalDue,");
             sqlBuilder
@@ -2657,9 +2621,14 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final String externalId = null;
             final AccountTransferData transfer = null;
             final BigDecimal fixedEmiAmount = null;
-            return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, currencyData, date, totalDue,
+            LoanTransactionData transaction =  new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, currencyData, date, totalDue,
                     principalPortion, interestDue, feeDue, penaltyDue, overPaymentPortion, externalId, transfer, fixedEmiAmount,
                     outstandingLoanBalance, unrecognizedIncomePortion, manuallyReversed);
+            final LocalDate lastOverdueDate = (JdbcSupport.getLocalDate(rs, "lastUnpaidInstallmentDate") == null) ? DateUtils.getLocalDateOfTenant() : JdbcSupport.getLocalDate(
+                    rs, "lastUnpaidInstallmentDate");
+            LoanOverdueData loanOverdueData = new LoanOverdueData(lastOverdueDate);
+            transaction.setLoanOverdueData(loanOverdueData);
+            return transaction;
         }
 
     }
@@ -3224,18 +3193,29 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
     
     @Override
-    public List<Long> fetchLoanIdsForOverdueCharge() {
+    public List<Long> fetchLoanIdsForOverdueCharge(boolean isRunForBrokenPeriod, boolean isInterestRecalculationLoans) {
         StringBuilder sb = new StringBuilder();
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
 
-        sb.append("SELECT if( DATE_SUB(?,INTERVAL MIN(od.grace_period) DAY) > MIN(ls.duedate) , ml.id, 0) as loanId ");
+        sb.append("SELECT if( DATE_SUB(:currentdate ,INTERVAL MIN(od.grace_period) DAY) > MIN(ls.duedate) , ml.id, 0) as loanId ");
         sb.append(" FROM m_loan ml");
         sb.append(" JOIN f_loan_recurring_charge rc ON rc.loan_id = ml.id");
-        sb.append(" JOIN f_loan_overdue_charge_detail od ON od.recurrence_charge_id = rc.id AND (od.last_run_on_date <> ? OR od.last_run_on_date IS NULL)");
+        sb.append(" JOIN f_loan_overdue_charge_detail od ON od.recurrence_charge_id = rc.id AND (od.last_run_on_date <> :currentdate OR od.last_run_on_date IS NULL)");
+        if (isRunForBrokenPeriod) {
+            sb.append("or (od.apply_charge_for_broken_period = 1 and (od.last_applied_on_date IS NULL or  od.last_run_on_date <> :currentdate))");
+        }
         sb.append(" JOIN m_loan_repayment_schedule ls ON ml.id = ls.loan_id");
-        sb.append(" WHERE  ml.loan_status_id = 300 and ml.interest_recalculation_enabled = 0 AND ? > ls.duedate AND ls.recalculated_interest_component <> 1 AND ls.completed_derived <> 1");
+        sb.append(" WHERE  ml.loan_status_id = 300 and ");
+        if (isInterestRecalculationLoans) {
+            sb.append("ml.interest_recalculation_enabled = 1 ");
+        } else {
+            sb.append("ml.interest_recalculation_enabled = 0 ");
+        }
+        sb.append("AND :currentdate > ls.duedate AND ls.recalculated_interest_component <> 1 AND ls.completed_derived <> 1");
         sb.append(" GROUP BY ml.id");
-        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
-        return this.jdbcTemplate.queryForList(sb.toString(), Long.class, currentdate, currentdate, currentdate);
+        Map<String, Object> paramMap = new HashMap<>(3);
+        paramMap.put("currentdate", currentdate);
+        return this.namedParameterJdbcTemplate.queryForList(sb.toString(), paramMap, Long.class);
     }
     
     private static final class LoanRepaymentScheduleEntityMapper implements RowMapper<LoanRepaymentScheduleInstallment> {

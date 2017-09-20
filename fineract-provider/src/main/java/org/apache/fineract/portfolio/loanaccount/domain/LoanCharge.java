@@ -56,7 +56,6 @@ import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoring
 import org.apache.fineract.portfolio.charge.exception.LoanChargeWithoutMandatoryFieldException;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.command.LoanChargeCommand;
-import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidDetail;
 import org.apache.fineract.portfolio.tax.domain.TaxComponent;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
@@ -138,9 +137,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
     private boolean active = true;
 
     @OneToOne(mappedBy = "loancharge", cascade = CascadeType.ALL, optional = true, orphanRemoval = true, fetch = FetchType.LAZY)
-    private LoanOverdueInstallmentCharge overdueInstallmentCharge;
-
-    @OneToOne(mappedBy = "loancharge", cascade = CascadeType.ALL, optional = true, orphanRemoval = true, fetch = FetchType.LAZY)
     private LoanTrancheDisbursementCharge loanTrancheDisbursementCharge;
     
     @ManyToOne
@@ -204,6 +200,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 } else {
                     amountPercentageAppliedTo = loan.getPrincpal().getAmount().add(loan.getTotalInterest()).add(loan.getSummary().getTotalFeeChargesCharged());
                 }
+            	break;
             default:
             break;
         }
@@ -383,10 +380,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
         this.maxCap = charge.maxCap;
         this.minCap = charge.minCap;
         this.taxGroup = charge.taxGroup;
-        if (charge.overdueInstallmentCharge != null) {
-            this.overdueInstallmentCharge = LoanOverdueInstallmentCharge.copyLoanOverdueInstallmentCharge(charge.overdueInstallmentCharge,
-                    this);
-        }
         if (charge.loanTrancheDisbursementCharge != null) {
             this.loanTrancheDisbursementCharge = LoanTrancheDisbursementCharge.copyLoanTrancheDisbursementCharge(
                     charge.loanTrancheDisbursementCharge, this);
@@ -1230,7 +1223,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
     public void setActive(boolean active) {
         this.active = active;
         if (!active) {
-            this.overdueInstallmentCharge = null;
             this.loanTrancheDisbursementCharge = null;
             this.clearLoanInstallmentCharges();
         }
@@ -1252,10 +1244,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
             totalChargeAmount = totalChargeAmount.add(this.amountWrittenOff);
         }
         return totalChargeAmount;
-    }
-
-    public void updateOverdueInstallmentCharge(LoanOverdueInstallmentCharge overdueInstallmentCharge) {
-        this.overdueInstallmentCharge = overdueInstallmentCharge;
     }
 
     public void updateLoanTrancheDisbursementCharge(final LoanTrancheDisbursementCharge loanTrancheDisbursementCharge) {
@@ -1291,10 +1279,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
             }
         }
 
-    }
-
-    public LoanOverdueInstallmentCharge getOverdueInstallmentCharge() {
-        return this.overdueInstallmentCharge;
     }
 
     public LoanTrancheDisbursementCharge getTrancheDisbursementCharge() {

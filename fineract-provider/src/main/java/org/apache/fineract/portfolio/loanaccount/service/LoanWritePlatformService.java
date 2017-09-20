@@ -36,7 +36,6 @@ import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.joda.time.LocalDate;
 
@@ -105,9 +104,7 @@ public interface LoanWritePlatformService {
 
     CommandProcessingResult addAndDeleteLoanDisburseDetails(Long loanId, JsonCommand command);
 
-    void applyOverdueChargesForLoan(Long loanId, Collection<OverdueLoanScheduleData> overdueLoanScheduleDatas);
-
-    void recalculateInterest(long loanId);
+    void recalculateInterest(final long loanId, final LocalDate penaltiesRunOnDate, final LocalDate penaltiesBrokenPeriodOnDate);
 
     CommandProcessingResult undoLastLoanDisbursal(Long loanId, JsonCommand command);
 

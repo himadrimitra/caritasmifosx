@@ -97,7 +97,6 @@ public class LoanCalculationReadServiceImpl implements LoanCalculationReadServic
     public LoanTransactionData retrieveLoanForeclosureTemplate(final Long loanId, final LocalDate transactionDate) {
 
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
         boolean validateForFutureDate = false;
         loan.validateForForeclosure(transactionDate, validateForFutureDate);
         final MonetaryCurrency currency = loan.getCurrency();
@@ -126,6 +125,14 @@ public class LoanCalculationReadServiceImpl implements LoanCalculationReadServic
                 loanRepaymentScheduleInstallment.getInterestOutstanding(currency).getAmount(), loanRepaymentScheduleInstallment
                         .getFeeChargesOutstanding(currency).getAmount(), penaltyCharges.getAmount(), null, unrecognizedIncomePortion,
                 paymentTypeOptions, null, null, null, outstandingLoanBalance, isReversed);
+    }
+    
+    @Override
+    public LoanOverdueChargeData retrieveLoanOverdueChargeDetailAsOnDate(final Long loanId, final LocalDate date) {
+        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        LoanOverdueChargeData overdueChargeData = this.loanOverdueChargeService.calculateOverdueChargesAsOnDate(loan, date, date);
+        return overdueChargeData;
+
     }
 
 }

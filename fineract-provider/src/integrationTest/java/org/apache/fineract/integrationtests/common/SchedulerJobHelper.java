@@ -41,6 +41,7 @@ public class SchedulerJobHelper {
     public static final String ACCOUNTING_RUNNING_BALANCE_UPDATE = "Update Accounting Running Balances";
     public static final String PAY_DUE_SAVINGS_CHARGES = "Pay Due Savings Charges";
     public static final String APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT = "Apply penalty to overdue loans";
+    public static final String APPLY_PENALTY_CHARGE_FOR_BROKEN_PERIODS = "Apply Penalty For Broken Periods";
     public static final String EXECUTE_STANDING_INSTRUCTIONS = "Execute Standing Instruction";
     public static final String ADD_DUE_DATE_ACCRUAL_ENTRIES = "Add Due Date Accrual Transactions";
     public static final String UPDATE_NPA = "Update Non Performing Assets";

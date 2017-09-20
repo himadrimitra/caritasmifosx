@@ -22,7 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
+import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 
@@ -38,5 +41,9 @@ public interface LoanSchedularService {
     void updateNPAForNonAccrualBasedProducts(StringBuilder sb);
 
     void updateNPAForAccrualBasedProducts(StringBuilder sb);
+
+    void applyChargeForOverdueLoansWithBrokenPeriodDate() throws JobExecutionException;
+
+    CommandProcessingResult executeJobForLoans(JsonCommand command, JobName jobName);
     
 }

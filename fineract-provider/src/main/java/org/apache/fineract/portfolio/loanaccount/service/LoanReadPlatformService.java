@@ -44,7 +44,6 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleIns
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.joda.time.LocalDate;
 
 public interface LoanReadPlatformService {
@@ -87,16 +86,6 @@ public interface LoanReadPlatformService {
     Page<LoanAccountData> retrieveAll(SearchParameters searchParameters, boolean lookup);
 
     Collection<StaffData> retrieveAllowedLoanOfficers(Long selectedOfficeId, boolean staffInSelectedOfficeOnly);
-
-    /*
-     * musoni-specific at present - will find overdue scheduled installments
-     * that have a special 'overdue charge' associated with the loan product.
-     * 
-     * The 'overdue-charge' is only ever applied once to an installment and as a
-     * result overdue installments with this charge already applied are not
-     * returned.
-     */
-    Collection<OverdueLoanScheduleData> retrieveAllLoansWithOverdueInstallments(final Long penaltyWaitPeriod, final Boolean backdatePenalties);
 
     Integer retriveLoanCounter(Long groupId, Integer loanType, Long productId);
 
@@ -175,5 +164,5 @@ public interface LoanReadPlatformService {
     
     MonetaryCurrency retrieveLoanCurrency(Long loanId);
 
-    List<Long> fetchLoanIdsForOverdueCharge();
+    List<Long> fetchLoanIdsForOverdueCharge(boolean isRunForBrokenPeriod, boolean isInterestRecalculationLoans);
 }
