@@ -20,6 +20,8 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -39,7 +41,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 @Component
-public class SanctionButNotDisbursedServiceProcess {
+public class SanctionedButNotDisbursedServiceProcess {
 
     private final FromJsonHelper fromJsonHelper;
     private final JdbcTemplate jdbcTemplate;
@@ -49,12 +51,12 @@ public class SanctionButNotDisbursedServiceProcess {
     private final DefaultToApiJsonSerializer toApiJsonSerializer;
     private final FromJsonHelper fromApiJsonHelper;
     private final FileProcessRepositoryWrapper fileProcessRepository;
-    
+
     private final DateFormat dateFormatter = new SimpleDateFormat("dd MMMM yyyy");
 
     @SuppressWarnings("rawtypes")
     @Autowired
-    public SanctionButNotDisbursedServiceProcess(final RoutingDataSource dataSource, final FromJsonHelper fromJsonHelper,
+    public SanctionedButNotDisbursedServiceProcess(final RoutingDataSource dataSource, final FromJsonHelper fromJsonHelper,
             final LoanApplicationReferenceWritePlatformService loanApplicationReferenceWritePlatformService,
             final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository,
             final DefaultToApiJsonSerializer toApiJsonSerializer, final FromJsonHelper fromApiJsonHelper,
@@ -79,6 +81,7 @@ public class SanctionButNotDisbursedServiceProcess {
             jsonObject.addProperty("locale", "en");
             jsonObject.addProperty("dateFormat", "dd MMMM yyyy");
             if (sheetName != null) {
+                validateCustomerRecord(jsonObject.toString());
                 if (sheetName.equalsIgnoreCase("Sanctioned Not Disbursed")) {
                     validateSanctionRecord(jsonObject.toString());
                     sanction(jsonObject, fileRecords);
@@ -104,7 +107,7 @@ public class SanctionButNotDisbursedServiceProcess {
         this.fileProcessRepository.saveAndFlush(fileProcess);
     }
 
-    private void validateSanctionRecord(final String json) {
+    private void validateCustomerRecord(final String json) {
         final JsonElement element = this.fromJsonHelper.parse(json);
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("snd");
@@ -114,6 +117,25 @@ public class SanctionButNotDisbursedServiceProcess {
         baseDataValidator.reset().parameter("documentKey").value(documentKey).notBlank().notExceedingLengthOf(50);
         final String customerName = this.fromJsonHelper.extractStringNamed("Customer Name", element);
         baseDataValidator.reset().parameter("customerName").value(customerName).notBlank().notExceedingLengthOf(100);
+        if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+
+        final StringBuilder sb = new StringBuilder(100);
+        sb.append("select count(*) from m_client c ");
+        sb.append("join m_client_identifier ci on ci.client_id = c.id ");
+        sb.append("join m_code_value cv on cv.system_identifier = 'UID' and cv.id = ci.document_type_id ");
+        sb.append("where ");
+        sb.append("c.external_id = '").append(externalId).append("' ");
+        sb.append("and c.display_name = '").append(customerName).append("' ");
+        sb.append("and ci.document_key = '").append(documentKey).append("' ");
+        final int count = this.jdbcTemplate.queryForObject(sb.toString(), Integer.class);
+        if (count == 0) { throw new GeneralPlatformDomainRuleException("error.msg.customer.records.not.matched",
+                "Customer records not matched"); }
+    }
+
+    private void validateSanctionRecord(final String json) {
+        final JsonElement element = this.fromJsonHelper.parse(json);
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("snd");
         final BigDecimal sanctionedAmount = this.fromJsonHelper.extractBigDecimalWithLocaleNamed("Sanctioned Amount", element);
         baseDataValidator.reset().parameter("sanctionedAmount").value(sanctionedAmount).notBlank().positiveAmount();
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
@@ -137,7 +159,7 @@ public class SanctionButNotDisbursedServiceProcess {
     private void reject(final JsonObject jsonObject) {
         final Long loanApplicationReferenceId = getLoanApplicationReferenceId(jsonObject);
         JsonCommand command = null;
-        this.loanApplicationReferenceWritePlatformService.requestForApproval(loanApplicationReferenceId, command);
+        this.loanApplicationReferenceWritePlatformService.reject(loanApplicationReferenceId, command);
     }
 
     private Long getLoanApplicationReferenceId(final JsonObject jsonObject) {
@@ -145,11 +167,12 @@ public class SanctionButNotDisbursedServiceProcess {
             final String externalId = jsonObject.get("LAF Barcode No.").getAsString();
             final StringBuilder sb = new StringBuilder(100);
             sb.append("select lar.id as loanAppId from f_loan_application_reference lar join m_client c on c.id = lar.client_id ");
-            sb.append("where lar.status_enum = ").append(LoanApplicationReferenceStatus.APPLICATION_CREATED.getValue());
-            sb.append(" and c.external_id = '").append(externalId).append("' ");
+            sb.append("where (lar.status_enum = ").append(LoanApplicationReferenceStatus.APPLICATION_CREATED.getValue()).append(" ");
+            sb.append("or lar.status_enum = ").append(LoanApplicationReferenceStatus.APPLICATION_IN_APPROVE_STAGE.getValue()).append(") ");
+            sb.append("and c.external_id = '").append(externalId).append("' ");
             return this.jdbcTemplate.queryForObject(sb.toString(), Long.class);
-        } catch (EmptyResultDataAccessException e) {
-            throw new GeneralPlatformDomainRuleException("error.msg.record.not.found", "Record not found");
+        } catch (final EmptyResultDataAccessException e) {
+            throw new GeneralPlatformDomainRuleException("error.msg.loan..application.not.found", "Loan application not found");
         }
     }
 
@@ -161,6 +184,7 @@ public class SanctionButNotDisbursedServiceProcess {
         LoanApprovalData(final BigDecimal approvedAmount, Date sanctionedDate, final LoanApplicationReference reference) {
 
             String formattedSanctionDate = dateFormatter.format(sanctionedDate);
+            final LoanProduct loanProduct = reference.getLoanProduct();
 
             formValidationData.put("submittedOnDate", dateFormatter.format(reference.getSubmittedOnDate()));// Format
             formValidationData.put("clientId", reference.getClient().getId());
@@ -171,10 +195,14 @@ public class SanctionButNotDisbursedServiceProcess {
             formValidationData.put("numberOfRepayments", reference.getNumberOfRepayments());
             formValidationData.put("repaymentEvery", reference.getRepayEvery());
             formValidationData.put("repaymentFrequencyType", reference.getRepaymentPeriodFrequencyEnum());
-            // formValidationData.put("interestRatePerPeriod", reference.geloan)
-            // ;//
             formValidationData.put("expectedDisbursementDate", formattedSanctionDate);
             formValidationData.put("repaymentsStartingFromDate", formattedSanctionDate);
+            formValidationData.put("loanType", AccountType.fromInt(reference.getAccountTypeEnum()).name().toLowerCase());
+            formValidationData.put("interestType", loanProduct.getLoanProductRelatedDetail().getInterestMethod().getValue());
+            formValidationData.put("interestCalculationPeriodType", loanProduct.getLoanProductRelatedDetail().getInterestCalculationPeriodMethod().getValue());
+            formValidationData.put("interestRatePerPeriod", loanProduct.getLoanProductRelatedDetail().getNominalInterestRatePerPeriod());
+            formValidationData.put("amortizationType", loanProduct.getLoanProductRelatedDetail().getAmortizationMethod().getValue());
+            formValidationData.put("transactionProcessingStrategyId", loanProduct.getRepaymentStrategy().getId());
             formValidationData.put("locale", "en");
             formValidationData.put("dateFormat", "dd MMMM yyyy");
 

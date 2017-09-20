@@ -12,13 +12,14 @@ import com.finflux.fileprocess.domain.FileProcessRepositoryWrapper;
 import com.finflux.fileprocess.domain.FileRecords;
 
 @Component
-public class SanctionButNotDisbursedService implements FileRecordsProcessService {
+public class SanctionedButNotDisbursedService implements FileRecordsProcessService {
 
-    private final SanctionButNotDisbursedServiceProcess process;
+    private final SanctionedButNotDisbursedServiceProcess process;
     private final FileProcessRepositoryWrapper fileProcessRepository;
 
     @Autowired
-    public SanctionButNotDisbursedService(final SanctionButNotDisbursedServiceProcess process,final FileProcessRepositoryWrapper fileProcessRepository) {
+    public SanctionedButNotDisbursedService(final SanctionedButNotDisbursedServiceProcess process,
+            final FileProcessRepositoryWrapper fileProcessRepository) {
         this.process = process;
         this.fileProcessRepository = fileProcessRepository;
     }
