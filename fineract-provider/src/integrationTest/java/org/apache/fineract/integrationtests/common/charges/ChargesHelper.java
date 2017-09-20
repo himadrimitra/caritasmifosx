@@ -294,6 +294,14 @@ public class ChargesHelper {
         map.put("chargePaymentMode", ChargesHelper.CHARGE_PAYMENT_MODE_REGULAR);
         map.put("chargeTimeType", CHARGE_OVERDUE_INSTALLMENT_FEE);
         map.put("chargeCalculationType", ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENT_OF_AMOUNT_INTEREST_AND_FEES);
+        map.put("chargeTimeType", CHARGE_OVERDUE_INSTALLMENT_FEE);
+        final HashMap<String, Object> overdueMap = new HashMap<>(); 
+        overdueMap.put("gracePeriod", 2);
+        overdueMap.put("penaltyFreePeriod", 0);
+        overdueMap.put("graceType", 2);
+        overdueMap.put("calculateChargeOnCurrentOverdue", true);
+        
+        map.put("overdueChargeDetail",overdueMap);
         String chargesCreateJson = new Gson().toJson(map);
         System.out.println(chargesCreateJson);
         return chargesCreateJson;

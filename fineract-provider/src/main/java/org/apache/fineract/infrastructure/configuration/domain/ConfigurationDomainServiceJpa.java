@@ -121,20 +121,6 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     }
 
     @Override
-    public Long retrievePenaltyWaitPeriod() {
-        final String propertyName = "penalty-wait-period";
-        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
-        return longValue(property.getValue());
-    }
-
-    @Override
-    public Long retrieveGraceOnPenaltyPostingPeriod() {
-        final String propertyName = "grace-on-penalty-posting";
-        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
-        return longValue(property.getValue());
-    }
-
-    @Override
     public boolean isPasswordForcedResetEnable() {
         final String propertyName = "force-password-reset-days";
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
@@ -217,13 +203,6 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
             return value;
         }
         return defaultValue;
-    }
-
-    @Override
-    public boolean isBackdatePenaltiesEnabled() {
-        final String propertyName = "backdate-penalties-enabled";
-        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
-        return property.isEnabled();
     }
 
     @Override

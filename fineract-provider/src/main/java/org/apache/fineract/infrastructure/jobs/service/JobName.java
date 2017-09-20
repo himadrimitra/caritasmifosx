@@ -30,6 +30,7 @@ public enum JobName {
     ACCOUNTING_RUNNING_BALANCE_UPDATE("Update Accounting Running Balances"), //
     PAY_DUE_SAVINGS_CHARGES("Pay Due Savings Charges"), //
     APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT("Apply penalty to overdue loans"), //
+    APPLY_PENALTY_CHARGE_FOR_BROKEN_PERIODS("Apply Penalty For Broken Periods"), //
     EXECUTE_STANDING_INSTRUCTIONS("Execute Standing Instruction"), //
     ADD_DUE_DATE_ACCRUAL_ENTRIES("Add Due Date Accrual Transactions"), //
     UPDATE_NPA("Update Non Performing Assets"), //

@@ -12,6 +12,9 @@ import java.util.TreeMap;
 
 import javax.transaction.Transactional;
 
+import org.apache.fineract.accounting.closure.domain.GLClosure;
+import org.apache.fineract.accounting.closure.domain.GLClosureRepository;
+import org.apache.fineract.accounting.closure.exception.GLClosureForOfficeException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
@@ -26,9 +29,12 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanOverdueCalculationDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanOverdueChargeData;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalcualtionAdditionalDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRecurringCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleProcessingWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanRepaymentScheduleTransactionProcessor;
@@ -52,6 +58,8 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
     private final LoanReadPlatformService loanReadPlatformService;
     private final LoanAssembler loanAssembler;
     private final JdbcTemplate jdbcTemplate;
+    private final GLClosureRepository closureRepository;
+    private final LoanRepository loanRepository;
 
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     final String LOAN_CHARGE_INSERT_STATEMENT = "INSERT INTO `m_loan_charge` (`loan_id`, `charge_id`, `is_penalty`, `charge_time_enum`, `due_for_collection_as_of_date`, `charge_calculation_enum`, `calculation_percentage`, `charge_amount_or_percentage`, `amount`, `amount_paid_derived`, `amount_outstanding_derived`) VALUES (";
@@ -65,22 +73,149 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
     public LoanOverdueChargeServiceImpl(final ChargeRepositoryWrapper chargeRepository,
             final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService,
             final LoanRepaymentScheduleTransactionProcessorFactory transactionProcessingStrategy,
-            final LoanReadPlatformService loanReadPlatformService, final LoanAssembler loanAssembler, final RoutingDataSource dataSource) {
+            final LoanReadPlatformService loanReadPlatformService, final LoanAssembler loanAssembler, final RoutingDataSource dataSource,
+            final GLClosureRepository closureRepository, final LoanRepository loanRepository) {
         this.chargeRepository = chargeRepository;
         this.loanScheduleHistoryReadPlatformService = loanScheduleHistoryReadPlatformService;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanAssembler = loanAssembler;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.closureRepository = closureRepository;
+        this.loanRepository = loanRepository;
     }
 
     @Override
-    public boolean applyOverdueChargesForLoan(final Loan loan, final LocalDate runOndate) {
+    public boolean updateAndApplyOverdueChargesForLoan(final Loan loan, final LocalDate runOndate, LocalDate brokenPeriodOnDate) {
+        if (brokenPeriodOnDate == null) { return applyOverdueChargesForLoan(loan, runOndate, brokenPeriodOnDate); }
+        validateLatestClosureByBranch(loan.getOfficeId(), brokenPeriodOnDate, loan.isPeriodicAccrualAccountingEnabledOnLoanProduct());
+        return updateOverdueChargesOnPayment(loan, brokenPeriodOnDate);
+    }
 
+    @Override
+    public boolean updateOverdueChargesOnPayment(final Loan loan, final LocalDate runOnDate) {
+        LocalDate reverseLoanChargesBefore = runOnDate;
+        List<LoanRecurringCharge> recurringCharges = loan.getLoanRecurringCharges();
+        return updatePenaltiesOnPaymentTransaction(loan, runOnDate, reverseLoanChargesBefore, recurringCharges);
+
+    }
+  
+    @Override
+    public boolean updateOverdueChargesOnAdjustPayment(final Loan loan, final LoanTransaction previousTransaction,
+            final LoanTransaction newTransaction) {
+        boolean isChargeChanged = false;
+        List<LoanRecurringCharge> recurringCharges = loan.getLoanRecurringCharges();
+        if (!recurringCharges.isEmpty()) {
+            LoanTransaction copyTransaction = LoanTransaction.copyTransactionProperties(previousTransaction);
+            final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessingStrategy
+                    .determineProcessor(loan.transactionProcessingStrategy());
+            copyTransaction.resetDerivedComponents();
+            loanRepaymentScheduleTransactionProcessor.handleRefund(copyTransaction, loan.getCurrency(),
+                    loan.fetchRepaymentScheduleInstallments(), loan.chargesCopy());
+            final Comparator<LoanRepaymentScheduleInstallment> byDate = new Comparator<LoanRepaymentScheduleInstallment>() {
+
+                @Override
+                public int compare(LoanRepaymentScheduleInstallment ord1, LoanRepaymentScheduleInstallment ord2) {
+                    return ord1.getDueDate().compareTo(ord2.getDueDate());
+                }
+            };
+            Collections.sort(loan.fetchRepaymentScheduleInstallments(), byDate);
+            LocalDate runOnDate = newTransaction.getAmount(loan.getCurrency()).isGreaterThanZero() ? newTransaction.getTransactionDate()
+                    : previousTransaction.getTransactionDate();
+            LocalDate reverseLoanChargesBefore = previousTransaction.getTransactionDate().isBefore(newTransaction.getTransactionDate()) ? previousTransaction
+                    .getTransactionDate() : newTransaction.getTransactionDate();
+            isChargeChanged = updatePenaltiesOnPaymentTransaction(loan, runOnDate, reverseLoanChargesBefore, recurringCharges);
+        }
+        return isChargeChanged;
+    }
+
+    @Override
+    @Transactional
+    public void applyOverdueChargesForNonInterestRecalculationLoans(final Long loanId, final LocalDate runOndate,
+            final LocalDate brokenPeriodOnDate) {
+        List<LoanRecurringCharge> recurringCharges = this.loanReadPlatformService.retrieveLoanOverdueRecurringCharge(loanId);
+        boolean isLastRunBeforeBrokenPeriodDate = false;
+        if (brokenPeriodOnDate != null) {
+            for (LoanRecurringCharge loanRecurringCharge : recurringCharges) {
+                if (loanRecurringCharge.getChargeOverueDetail() != null
+                        && loanRecurringCharge.getChargeOverueDetail().getLastRunOnDate().isAfter(brokenPeriodOnDate)) {
+                    isLastRunBeforeBrokenPeriodDate = true;
+                    break;
+                }
+            }
+        }
+        if (brokenPeriodOnDate == null || isLastRunBeforeBrokenPeriodDate) {
+            applyOverdueChargesForNonInterestRecalculationLoans(loanId, runOndate, brokenPeriodOnDate, recurringCharges);
+        } else {
+            Loan loan = this.loanAssembler.assembleFrom(loanId);
+            final boolean isChargeChanged = updateAndApplyOverdueChargesForLoan(loan, runOndate, brokenPeriodOnDate);
+            if (isChargeChanged) {
+                addInstallmentIfPenaltyAppliedAfterLastDueDate(loan, brokenPeriodOnDate);
+                final LoanRepaymentScheduleProcessingWrapper wrapper = new LoanRepaymentScheduleProcessingWrapper();
+                wrapper.reprocess(loan.getCurrency(), loan.getDisbursementDate(), loan.fetchRepaymentScheduleInstallments(),
+                        loan.charges(), loan.getDisbursementDetails());
+                loan.updateLoanSummaryAndStatus();
+                this.loanRepository.save(loan);
+            }
+        }
+    }
+
+    @Override
+    public LoanOverdueChargeData calculateOverdueChargesAsOnDate(final Loan loan, LocalDate runOnDate, LocalDate reverseLoanChargesBefore) {
+
+        BigDecimal postedPenaltyChargeAmount = BigDecimal.ZERO;
+        BigDecimal notPostedPenaltyChargeAmount = BigDecimal.ZERO;
+        LoanOverdueChargeData loanOverdueChargeData = new LoanOverdueChargeData(postedPenaltyChargeAmount, notPostedPenaltyChargeAmount,
+                runOnDate);
+        if (!loan.getLoanRecurringCharges().isEmpty()) {
+            List<LoanRecurringCharge> recurringCharges = new ArrayList<>(loan.getLoanRecurringCharges().size());
+            LocalDate lastRunOnDate = null;
+            LocalDate lastChargeAppliedOnDate = null;
+            boolean canApplyBrokenPeriodChargeAsOnCurrentDate = false;
+            for (LoanRecurringCharge charge : loan.getLoanRecurringCharges()) {
+                recurringCharges.add(LoanRecurringCharge.copyFrom(charge));
+                if (lastRunOnDate == null || lastRunOnDate.isAfter(charge.getChargeOverueDetail().getLastRunOnDate())) {
+                    lastRunOnDate = charge.getChargeOverueDetail().getLastRunOnDate();
+                }
+                if (lastChargeAppliedOnDate == null || lastChargeAppliedOnDate.isAfter(charge.getChargeOverueDetail().getLastRunOnDate())) {
+                    lastChargeAppliedOnDate = charge.getChargeOverueDetail().getLastRunOnDate();
+                }
+
+                if (charge.getChargeOverueDetail().isApplyChargeForBrokenPeriod()
+                        && (lastChargeAppliedOnDate == null || DateUtils.getLocalDateOfTenant().isEqual(
+                                charge.getChargeOverueDetail().getLastRunOnDate()))) {
+                    canApplyBrokenPeriodChargeAsOnCurrentDate = true;
+                }
+
+            }
+            loanOverdueChargeData.setCanApplyBrokenPeriodChargeAsOnCurrentDate(canApplyBrokenPeriodChargeAsOnCurrentDate);
+            loanOverdueChargeData.setLastChargeAppliedOnDate(lastChargeAppliedOnDate);
+            loanOverdueChargeData.setLastRunOnDate(lastRunOnDate);
+
+            List<LoanRepaymentScheduleInstallment> installments = loan.getRepaymentScheduleInstallments();
+            Collection<LoanCharge> charges = loan.chargesCopy();
+
+            boolean isOverduePresentBeforeTranasctionDate = reprocessPenaltyChargesOnDate(runOnDate, reverseLoanChargesBefore,
+                    loanOverdueChargeData, recurringCharges, installments, charges);
+            if (isOverduePresentBeforeTranasctionDate) {
+                Map<Long, Collection<LoanChargeData>> overdueChargeData = new HashMap<>(1);
+                calculateOverdueCharges(loan, runOnDate, recurringCharges, overdueChargeData, runOnDate);
+                for (Map.Entry<Long, Collection<LoanChargeData>> mapEntry : overdueChargeData.entrySet()) {
+                    for (LoanChargeData loanChargeData : mapEntry.getValue()) {
+                        loanOverdueChargeData.setPenaltyToBePostedAsOnDate(MathUtility.add(
+                                loanOverdueChargeData.getPenaltyToBePostedAsOnDate(), loanChargeData.getAmount()));
+                    }
+                }
+            }
+
+        }
+        return loanOverdueChargeData;
+    }
+    
+    private boolean applyOverdueChargesForLoan(final Loan loan, final LocalDate runOndate, final LocalDate brokenPeriodOnDate) {
         List<LoanRecurringCharge> recurringCharges = loan.getLoanRecurringCharges();
 
         Map<Long, Collection<LoanChargeData>> overdueChargeData = new HashMap<>(1);
-        LocalDate brokenPeriodOnDate = null;
         if (!recurringCharges.isEmpty()) {
             calculateOverdueCharges(loan, runOndate, recurringCharges, overdueChargeData, brokenPeriodOnDate);
         }
@@ -95,39 +230,8 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
             }
         }
         return !overdueChargeData.isEmpty();
-
     }
-
-    public Map<Long, Collection<LoanChargeData>> applyOverdueChargesForLoan(final Loan loan, final LocalDate runOndate,
-            final LocalDate brokenPeriodOnDate) {
-        List<LoanRecurringCharge> recurringCharges = loan.getLoanRecurringCharges();
-
-        Map<Long, Collection<LoanChargeData>> overdueChargeData = new HashMap<>(1);
-        if (!recurringCharges.isEmpty()) {
-            calculateOverdueCharges(loan, runOndate, recurringCharges, overdueChargeData, brokenPeriodOnDate);
-        }
-
-        for (Map.Entry<Long, Collection<LoanChargeData>> mapEntry : overdueChargeData.entrySet()) {
-            final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(mapEntry.getKey());
-            for (LoanChargeData chargeData : mapEntry.getValue()) {
-                LoanCharge loanCharge = new LoanCharge(loan, charge, chargeData.getAmount(), chargeData.getPercentage(),
-                        chargeData.getChargeTimeType(), chargeData.getChargeCalculationType(), chargeData.getDueDate(),
-                        chargeData.getChargePaymentMode(), chargeData.isPenalty());
-                loan.getLoanCharges().add(loanCharge);
-            }
-        }
-        return overdueChargeData;
-    }
-
-    @Override
-    public boolean updateOverdueChargesOnPayment(final Loan loan, final LocalDate transactionDate) {
-        LocalDate runOnDate = transactionDate;
-        LocalDate reverseLoanChargesBefore = transactionDate;
-        List<LoanRecurringCharge> recurringCharges = loan.getLoanRecurringCharges();
-        return updatePenaltiesOnPaymentTransaction(loan, runOnDate, reverseLoanChargesBefore, recurringCharges);
-
-    }
-
+    
     private boolean updatePenaltiesOnPaymentTransaction(final Loan loan, LocalDate runOnDate, LocalDate reverseLoanChargesBefore,
             List<LoanRecurringCharge> recurringCharges) {
         boolean isChargeChanged = false;
@@ -210,7 +314,7 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
                     }
                     chargeApplicableFromDates.get(chargeId).getChargeOverueDetail().setLastRunOnDate(runOnDate.toDate());
                 }
-                isChargeChanged = isChargeChanged || !applyOverdueChargesForLoan(loan, runOnDate, runOnDate).isEmpty();
+                isChargeChanged = isChargeChanged || applyOverdueChargesForLoan(loan, runOnDate, runOnDate);
             } else {
                 for (final Long chargeId : chargeApplicableFromDates.keySet()) {
                     chargeApplicableFromDates.get(chargeId).getChargeOverueDetail().setLastAppliedOnDate(null);
@@ -221,40 +325,31 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
         return isChargeChanged;
     }
 
-    @Override
-    public boolean updateOverdueChargesOnAdjustPayment(final Loan loan, final LoanTransaction previousTransaction,
-            final LoanTransaction newTransaction) {
-        boolean isChargeChanged = false;
-        List<LoanRecurringCharge> recurringCharges = loan.getLoanRecurringCharges();
-        if (!recurringCharges.isEmpty()) {
-            LoanTransaction copyTransaction = LoanTransaction.copyTransactionProperties(previousTransaction);
-            final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessingStrategy
-                    .determineProcessor(loan.transactionProcessingStrategy());
-            copyTransaction.resetDerivedComponents();
-            loanRepaymentScheduleTransactionProcessor.handleRefund(copyTransaction, loan.getCurrency(),
-                    loan.fetchRepaymentScheduleInstallments(), loan.chargesCopy());
-            final Comparator<LoanRepaymentScheduleInstallment> byDate = new Comparator<LoanRepaymentScheduleInstallment>() {
-
-                @Override
-                public int compare(LoanRepaymentScheduleInstallment ord1, LoanRepaymentScheduleInstallment ord2) {
-                    return ord1.getDueDate().compareTo(ord2.getDueDate());
+    private void addInstallmentIfPenaltyAppliedAfterLastDueDate(Loan loan, LocalDate lastChargeDate) {
+        if (lastChargeDate != null) {
+            List<LoanRepaymentScheduleInstallment> installments = loan.fetchRepaymentScheduleInstallments();
+            LoanRepaymentScheduleInstallment lastInstallment = loan.fetchRepaymentScheduleInstallment(installments.size());
+            if (lastChargeDate.isAfter(lastInstallment.getDueDate())) {
+                if (lastInstallment.isRecalculatedInterestComponent()) {
+                    installments.remove(lastInstallment);
+                    lastInstallment = loan.fetchRepaymentScheduleInstallment(installments.size());
                 }
-            };
-            Collections.sort(loan.fetchRepaymentScheduleInstallments(), byDate);
-            LocalDate runOnDate = newTransaction.getAmount(loan.getCurrency()).isGreaterThanZero() ? newTransaction.getTransactionDate()
-                    : previousTransaction.getTransactionDate();
-            LocalDate reverseLoanChargesBefore = previousTransaction.getTransactionDate().isBefore(newTransaction.getTransactionDate()) ? previousTransaction
-                    .getTransactionDate() : newTransaction.getTransactionDate();
-            isChargeChanged = updatePenaltiesOnPaymentTransaction(loan, runOnDate, reverseLoanChargesBefore, recurringCharges);
+                boolean recalculatedInterestComponent = true;
+                BigDecimal principal = BigDecimal.ZERO;
+                BigDecimal interest = BigDecimal.ZERO;
+                BigDecimal feeCharges = BigDecimal.ZERO;
+                BigDecimal penaltyCharges = BigDecimal.ONE;
+                final List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails = null;
+                LoanRepaymentScheduleInstallment newEntry = new LoanRepaymentScheduleInstallment(loan, installments.size() + 1,
+                        lastInstallment.getDueDate(), lastChargeDate, principal, interest, feeCharges, penaltyCharges,
+                        recalculatedInterestComponent, compoundingDetails);
+                installments.add(newEntry);
+            }
         }
-        return isChargeChanged;
     }
 
-    @Override
-    @Transactional
-    public void applyOverdueChargesForNonInterestRecalculationLoans(final Long loanId, final LocalDate runOndate,
-            final LocalDate brokenPeriodOnDate) {
-        List<LoanRecurringCharge> recurringCharges = this.loanReadPlatformService.retrieveLoanOverdueRecurringCharge(loanId);
+    private void applyOverdueChargesForNonInterestRecalculationLoans(final Long loanId, final LocalDate runOndate,
+            final LocalDate brokenPeriodOnDate, List<LoanRecurringCharge> recurringCharges) {
         Map<Long, Collection<LoanChargeData>> overdueChargeData = new HashMap<>(1);
         LoanRepaymentScheduleInstallment lastInstallment = calculateOverdueCharges(loanId, runOndate, recurringCharges, overdueChargeData,
                 brokenPeriodOnDate);
@@ -299,39 +394,6 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
                 this.jdbcTemplate.batchUpdate(sqlStatements.toArray(new String[sqlStatements.size()]));
             }
         }
-    }
-
-    @Override
-    public LoanOverdueChargeData calculateOverdueChargesAsOnDate(final Loan loan, LocalDate runOnDate, LocalDate reverseLoanChargesBefore) {
-
-        BigDecimal postedPenaltyChargeAmount = BigDecimal.ZERO;
-        BigDecimal notPostedPenaltyChargeAmount = BigDecimal.ZERO;
-        LoanOverdueChargeData loanOverdueChargeData = new LoanOverdueChargeData(postedPenaltyChargeAmount, notPostedPenaltyChargeAmount,
-                runOnDate);
-        if (!loan.getLoanRecurringCharges().isEmpty()) {
-            List<LoanRecurringCharge> recurringCharges = new ArrayList<>(loan.getLoanRecurringCharges().size());
-            for (LoanRecurringCharge charge : loan.getLoanRecurringCharges()) {
-                recurringCharges.add(LoanRecurringCharge.copyFrom(charge));
-            }
-
-            List<LoanRepaymentScheduleInstallment> installments = loan.getRepaymentScheduleInstallments();
-            Collection<LoanCharge> charges = loan.chargesCopy();
-
-            boolean isOverduePresentBeforeTranasctionDate = reprocessPenaltyChargesOnDate(runOnDate, reverseLoanChargesBefore,
-                    loanOverdueChargeData, recurringCharges, installments, charges);
-            if (isOverduePresentBeforeTranasctionDate) {
-                Map<Long, Collection<LoanChargeData>> overdueChargeData = new HashMap<>(1);
-                calculateOverdueCharges(loan, runOnDate, recurringCharges, overdueChargeData, runOnDate);
-                for (Map.Entry<Long, Collection<LoanChargeData>> mapEntry : overdueChargeData.entrySet()) {
-                    for (LoanChargeData loanChargeData : mapEntry.getValue()) {
-                        loanOverdueChargeData.setPenaltyToBePostedAsOnDate(MathUtility.add(
-                                loanOverdueChargeData.getPenaltyToBePostedAsOnDate(), loanChargeData.getAmount()));
-                    }
-                }
-            }
-
-        }
-        return loanOverdueChargeData;
     }
 
     private boolean reprocessPenaltyChargesOnDate(LocalDate runOnDate, LocalDate reverseLoanChargesBefore,
@@ -382,7 +444,7 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
                 if (loanCharge.isActive() && loanCharge.isOverdueInstallmentCharge()) {
                     if (!loanCharge.getDueLocalDate().isAfter(reverseLoanChargesBefore)) {
                         loanOverdueChargeData.setPenaltyPostedAsOnDate(MathUtility.add(loanOverdueChargeData.getPenaltyPostedAsOnDate(),
-                                loanCharge.amount()));
+                                loanCharge.amountOutstanding()));
                         if (loanCharge.getDueLocalDate().isAfter(
                                 chargeApplicableFromDates.get(loanCharge.getCharge().getId()).getChargeOverueDetail()
                                         .getLastAppliedOnDate())) {
@@ -509,48 +571,6 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
         sb.append(" and rc.charge_id = ");
         sb.append(chargeId);
         return sb.toString();
-    }
-
-    public BigDecimal calculateOverdueChargesForLoan(final Long loanId, final LocalDate runOndate, final LocalDate brokenPeriodOnDate) {
-
-        List<LoanRecurringCharge> recurringCharges = this.loanReadPlatformService.retrieveLoanOverdueRecurringCharge(loanId);
-        Map<Long, Collection<LoanChargeData>> overdueChargeData = new HashMap<>(1);
-        if (!recurringCharges.isEmpty()) {
-            boolean isBasedOnOriginalSchedule = false;
-            boolean isBasedOnCurrentSchedule = false;
-            boolean isOriginalScheduleWithPostingInterest = false;
-            boolean isPenaltyOnlyBasedOriginalSchedule = false;
-            boolean isOverdueChargePresent = false;
-            boolean considerOnlyPostedInterest = false;
-            for (LoanRecurringCharge recurringCharge : recurringCharges) {
-                if (recurringCharge.getChargeOverueDetail() == null) {
-                    continue;
-                }
-                isOverdueChargePresent = true;
-                isBasedOnOriginalSchedule = isBasedOnOriginalSchedule
-                        || recurringCharge.getChargeOverueDetail().isBasedOnOriginalSchedule();
-                isBasedOnCurrentSchedule = isBasedOnCurrentSchedule || !recurringCharge.getChargeOverueDetail().isBasedOnOriginalSchedule();
-                considerOnlyPostedInterest = considerOnlyPostedInterest
-                        || recurringCharge.getChargeOverueDetail().isConsiderOnlyPostedInterest();
-                isOriginalScheduleWithPostingInterest = isOriginalScheduleWithPostingInterest || considerOnlyPostedInterest;
-                isPenaltyOnlyBasedOriginalSchedule = isPenaltyOnlyBasedOriginalSchedule
-                        || (recurringCharge.getChargeOverueDetail().isBasedOnOriginalSchedule() && !considerOnlyPostedInterest);
-            }
-            if (isOverdueChargePresent && (isBasedOnOriginalSchedule || considerOnlyPostedInterest)) {
-                final Loan loan = this.loanAssembler.assembleFrom(loanId);
-                calculateOverdueCharges(loan, runOndate, recurringCharges, overdueChargeData, brokenPeriodOnDate);
-            } else {
-                calculateOverdueCharges(loanId, runOndate, recurringCharges, overdueChargeData, brokenPeriodOnDate);
-            }
-
-        }
-        BigDecimal chargesToBeApplied = BigDecimal.ZERO;
-        for (Map.Entry<Long, Collection<LoanChargeData>> mapEntry : overdueChargeData.entrySet()) {
-            for (LoanChargeData charge : mapEntry.getValue()) {
-                chargesToBeApplied = MathUtility.add(chargesToBeApplied, charge.getAmount());
-            }
-        }
-        return chargesToBeApplied;
     }
 
     private void calculateOverdueCharges(final Loan loan, final LocalDate runOndate, List<LoanRecurringCharge> recurringCharges,
@@ -916,5 +936,13 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
             applyOverdueChargesForLoan(recurringCharge, overdueCalculationDetail, overdueChargeData);
         }
         return lastInstallment;
+    }
+
+    private void validateLatestClosureByBranch(final long officeId, final LocalDate runOnDate, final boolean isPeriodicAccrualEnabled) {
+        if (isPeriodicAccrualEnabled) {
+            GLClosure closure = this.closureRepository.getLatestGLClosureByBranch(officeId);
+            if (closure != null && !runOnDate.isAfter(closure.getClosingLocalDate())) { throw new GLClosureForOfficeException(officeId,
+                    closure.getClosingDate()); }
+        }
     }
 }

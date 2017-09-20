@@ -6091,7 +6091,7 @@ public class ClientLoanIntegrationTest {
         loanStatusHashMap = this.loanTransactionHelper.disburseLoan(LOAN_DISBURSEMENT_DATE, loanID);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
 
-        final String jobName = SchedulerJobHelper.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT;
+        final String jobName = SchedulerJobHelper.APPLY_PENALTY_CHARGE_FOR_BROKEN_PERIODS;
         try {
             this.schedulerJobHelper.executeJob(jobName);
         } catch (InterruptedException e) {

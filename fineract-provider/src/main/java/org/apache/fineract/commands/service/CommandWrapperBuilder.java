@@ -4145,4 +4145,12 @@ public class CommandWrapperBuilder {
         this.href = "/savingsaccounts/" + accountId + "?command=unblock";
         return this;
     }
+    
+    public CommandWrapperBuilder executeOverdueCharges() {
+        this.actionName = "EXECUTE";
+        this.entityName = "OVERDUECHARGE";
+        this.entityId = null;
+        this.href = "/runoverduecharges";
+        return this;
+    }
 }

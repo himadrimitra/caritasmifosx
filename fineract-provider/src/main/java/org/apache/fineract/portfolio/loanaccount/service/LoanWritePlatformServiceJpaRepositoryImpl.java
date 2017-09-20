@@ -121,7 +121,6 @@ import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTrans
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.domain.EntityType;
-import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.exception.CenterNotFoundException;
@@ -155,9 +154,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanEvent;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanGlimRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanGlimRepaymentScheduleInstallmentRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanInstallmentCharge;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalcualtionAdditionalDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanLifecycleStateMachine;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanOverdueInstallmentCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallmentRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
@@ -184,7 +181,6 @@ import org.apache.fineract.portfolio.loanaccount.exception.SubsidyAmountExceedsP
 import org.apache.fineract.portfolio.loanaccount.exception.SubsidyNotApplicableException;
 import org.apache.fineract.portfolio.loanaccount.exception.SubsidyNotAppliedException;
 import org.apache.fineract.portfolio.loanaccount.guarantor.service.GuarantorDomainService;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
@@ -192,7 +188,6 @@ import org.apache.fineract.portfolio.loanaccount.rescheduleloan.service.LoanResc
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationCommandFromApiJsonHelper;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanEventApiJsonValidator;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanUpdateCommandFromApiJsonDeserializer;
-import org.apache.fineract.portfolio.loanproduct.data.LoanOverdueDTO;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductBusinessRuleValidator;
@@ -220,7 +215,6 @@ import org.springframework.util.CollectionUtils;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.sun.jersey.multipart.FormDataMultiPart;
 
 @Service
 public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatformService {
@@ -2848,197 +2842,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }
     }
     
- 
-
-    @Override
-    @Transactional
-    public void applyOverdueChargesForLoan(final Long loanId, Collection<OverdueLoanScheduleData> overdueLoanScheduleDatas) {
-        Loan loan = null;
-        final Long penaltyWaitPeriodValue = this.configurationDomainService.retrievePenaltyWaitPeriod();
-        final Long penaltyPostingWaitPeriodValue = this.configurationDomainService.retrieveGraceOnPenaltyPostingPeriod();
-        final List<Long> existingTransactionIds = new ArrayList<>();
-        final List<Long> existingReversedTransactionIds = new ArrayList<>();
-        boolean runInterestRecalculation = false;
-        LocalDate recalculateFrom = DateUtils.getLocalDateOfTenant();
-        LocalDate lastChargeDate = null;
-        Map<Long, Charge> chargeDetails = new HashMap<>();
-        Collection<Long> chargeIds = new ArrayList<>();
-        for (final OverdueLoanScheduleData overdueInstallment : overdueLoanScheduleDatas) {
-            chargeIds.add(overdueInstallment.getChargeId());
-        }
-        Collection<Charge> charges = this.chargeRepository.findAllCharges(chargeIds);
-        for(Charge charge: charges){
-            chargeDetails.put(charge.getId(), charge);
-        }
-        
-        Collection<LoanCharge> createdCharges = new ArrayList<>();
-        Collection<LoanTransaction> chargeTransactions = new ArrayList<>();
-        
-        for (final OverdueLoanScheduleData overdueInstallment : overdueLoanScheduleDatas) {
-
-            final JsonElement parsedCommand = this.fromApiJsonHelper.parse(overdueInstallment.toString());
-            FormDataMultiPart formDataMultiPart = null;
-            final JsonCommand command = JsonCommand.from(overdueInstallment.toString(), parsedCommand, this.fromApiJsonHelper, null, null,
-                    null, null, null, loanId, null, null, null, null, null,formDataMultiPart);
-            LoanOverdueDTO overdueDTO = applyChargeToOverdueLoanInstallment(loanId, chargeDetails.get(overdueInstallment.getChargeId()),
-                    overdueInstallment.getPeriodNumber(), command, loan, existingTransactionIds, existingReversedTransactionIds,
-                    penaltyWaitPeriodValue, penaltyPostingWaitPeriodValue, createdCharges, chargeTransactions);
-            loan = overdueDTO.getLoan();
-            runInterestRecalculation = runInterestRecalculation || overdueDTO.isRunInterestRecalculation();
-            if (recalculateFrom.isAfter(overdueDTO.getRecalculateFrom())) {
-                recalculateFrom = overdueDTO.getRecalculateFrom();
-            }
-            if (lastChargeDate == null || overdueDTO.getLastChargeAppliedDate().isAfter(lastChargeDate)) {
-                lastChargeDate = overdueDTO.getLastChargeAppliedDate();
-            }
-        }
-        if (loan != null) {
-            boolean reprocessRequired = true;
-            LocalDate recalculatedTill = loan.fetchInterestRecalculateFromDate();
-            if (recalculateFrom.isAfter(recalculatedTill)) {
-                recalculateFrom = recalculatedTill;
-            }
-
-            if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
-                if (runInterestRecalculation && loan.isFeeCompoundingEnabledForInterestRecalculation()) {
-                    runScheduleRecalculation(loan, recalculateFrom);
-                    reprocessRequired = false;
-                }
-                updateOriginalSchedule(loan);
-            }
-            
-            if(!createdCharges.isEmpty()){
-                this.loanChargeRepository.save(createdCharges);
-                if(!chargeTransactions.isEmpty()){
-                    this.loanTransactionRepository.save(chargeTransactions);
-                }
-            }
-
-            if (reprocessRequired) {
-                addInstallmentIfPenaltyAppliedAfterLastDueDate(loan, lastChargeDate);
-                ChangedTransactionDetail changedTransactionDetail = loan.reprocessTransactions();
-                if (changedTransactionDetail != null) {
-                    for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
-                        this.loanTransactionRepository.save(mapEntry.getValue());
-                        // update loan with references to the newly created
-                        // transactions
-                        loan.getLoanTransactions().add(mapEntry.getValue());
-                        this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
-                    }
-                    Map<BUSINESS_ENTITY, Object> changedTransactionEntityMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
-                    this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_APPLY_OVERDUE_CHARGE, changedTransactionEntityMap);
-                }
-            }
-            
-            saveLoanWithDataIntegrityViolationChecks(loan);
-
-            postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
-
-            if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled() && runInterestRecalculation
-                    && loan.isFeeCompoundingEnabledForInterestRecalculation()) {
-                this.loanAccountDomainService.recalculateAccruals(loan);
-            }
-            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_APPLY_OVERDUE_CHARGE,
-                    constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
-
-        }
-    }
-
-    private void addInstallmentIfPenaltyAppliedAfterLastDueDate(Loan loan, LocalDate lastChargeDate) {
-        if (lastChargeDate != null) {
-            List<LoanRepaymentScheduleInstallment> installments = loan.fetchRepaymentScheduleInstallments();
-            LoanRepaymentScheduleInstallment lastInstallment = loan.fetchRepaymentScheduleInstallment(installments.size());
-            if (lastChargeDate.isAfter(lastInstallment.getDueDate())) {
-                if (lastInstallment.isRecalculatedInterestComponent()) {
-                    installments.remove(lastInstallment);
-                    lastInstallment = loan.fetchRepaymentScheduleInstallment(installments.size());
-                }
-                boolean recalculatedInterestComponent = true;
-                BigDecimal principal = BigDecimal.ZERO;
-                BigDecimal interest = BigDecimal.ZERO;
-                BigDecimal feeCharges = BigDecimal.ZERO;
-                BigDecimal penaltyCharges = BigDecimal.ONE;
-                final List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails = null;
-                LoanRepaymentScheduleInstallment newEntry = new LoanRepaymentScheduleInstallment(loan, installments.size() + 1,
-                        lastInstallment.getDueDate(), lastChargeDate, principal, interest, feeCharges, penaltyCharges,
-                        recalculatedInterestComponent, compoundingDetails);
-                installments.add(newEntry);
-            }
-        }
-    }
-
-    public LoanOverdueDTO applyChargeToOverdueLoanInstallment(final Long loanId, final Charge chargeDefinition, final Integer periodNumber,
-            final JsonCommand command, Loan loan, final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds,
-            final Long penaltyWaitPeriodValue, final Long penaltyPostingWaitPeriodValue, Collection<LoanCharge> createdCharges, Collection<LoanTransaction> chargeTransactions) {
-        boolean runInterestRecalculation = false;
-
-        Collection<Integer> frequencyNumbers = loanChargeReadPlatformService.retrieveOverdueInstallmentChargeFrequencyNumber(loanId,
-                chargeDefinition.getId(), periodNumber);
-
-        Integer feeFrequency = chargeDefinition.feeFrequency();
-        final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
-        Map<Integer, LocalDate> scheduleDates = new HashMap<>();
-        final LocalDate dueDate = command.localDateValueOfParameterNamed("dueDate");
-        Long diff = penaltyWaitPeriodValue + 1 - penaltyPostingWaitPeriodValue;
-        if (diff < 0) {
-            diff = 0L;
-        }
-        LocalDate startDate = dueDate.plusDays(penaltyWaitPeriodValue.intValue() + 1);
-        Integer frequencyNunber = 1;
-        if (feeFrequency == null) {
-            scheduleDates.put(frequencyNunber++, startDate.minusDays(diff.intValue()));
-        } else {
-            while (DateUtils.getLocalDateOfTenant().isAfter(startDate)) {
-                scheduleDates.put(frequencyNunber++, startDate.minusDays(diff.intValue()));
-                LocalDate scheduleDate = scheduledDateGenerator.getRepaymentPeriodDate(PeriodFrequencyType.fromInt(feeFrequency),
-                        chargeDefinition.feeInterval(), startDate);
-
-                startDate = scheduleDate;
-            }
-        }
-
-        for (Integer frequency : frequencyNumbers) {
-            scheduleDates.remove(frequency);
-        }
-
-        LoanRepaymentScheduleInstallment installment = null;
-        LocalDate lastChargeAppliedDate = dueDate;
-        if (!scheduleDates.isEmpty()) {
-            if (loan == null) {
-                loan = this.loanAssembler.assembleFrom(loanId);
-                checkClientOrGroupActive(loan);
-                existingTransactionIds.addAll(loan.findExistingTransactionIds());
-                existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
-            }
-            installment = loan.fetchRepaymentScheduleInstallment(periodNumber);
-            lastChargeAppliedDate = installment.getDueDate();
-        }
-        LocalDate recalculateFrom = DateUtils.getLocalDateOfTenant();
-
-        if (loan != null) {
-            for (Map.Entry<Integer, LocalDate> entry : scheduleDates.entrySet()) {
-
-                final LoanCharge loanCharge = LoanCharge.createNewFromJson(loan, chargeDefinition, command, entry.getValue());
-                if(loanCharge.getAmount(loan.getCurrency()).isGreaterThanZero()){
-                LoanOverdueInstallmentCharge overdueInstallmentCharge = new LoanOverdueInstallmentCharge(loanCharge, installment,
-                        entry.getKey());
-                loanCharge.updateOverdueInstallmentCharge(overdueInstallmentCharge);
-
-                boolean isAppliedOnBackDate = addCharge(loan, chargeDefinition, loanCharge, createdCharges, chargeTransactions);
-                runInterestRecalculation = runInterestRecalculation || isAppliedOnBackDate;
-                if (entry.getValue().isBefore(recalculateFrom)) {
-                    recalculateFrom = entry.getValue();
-                }
-                if (entry.getValue().isAfter(lastChargeAppliedDate)) {
-                    lastChargeAppliedDate = entry.getValue();
-                }
-               } 
-            }
-        }
-
-        return new LoanOverdueDTO(loan, runInterestRecalculation, recalculateFrom, lastChargeAppliedDate);
-    }
-
     @Override
     public CommandProcessingResult undoWriteOff(Long loanId) {
         final AppUser currentUser = getAppUserIfPresent();
@@ -3322,7 +3125,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
     @Transactional
     @Override
-    public void recalculateInterest(final long loanId) {
+    public void recalculateInterest(final long loanId, final LocalDate penaltiesRunOnDate, final LocalDate penaltiesBrokenPeriodOnDate) {
         Loan loan = this.loanAssembler.assembleFrom(loanId);
         LocalDate recalculateFrom = loan.fetchInterestRecalculateFromDate();
         AppUser currentUser = getAppUserIfPresent();
@@ -3333,7 +3136,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         ScheduleGeneratorDTO generatorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
         
-       boolean isPenaltiesApplied = this.loanOverdueChargeService.applyOverdueChargesForLoan(loan, DateUtils.getLocalDateOfTenant());
+       boolean isPenaltiesApplied = this.loanOverdueChargeService.updateAndApplyOverdueChargesForLoan(loan, penaltiesRunOnDate, penaltiesBrokenPeriodOnDate);
 
         ChangedTransactionDetail changedTransactionDetail = loan.recalculateScheduleFromLastTransaction(generatorDTO,
                 existingTransactionIds, existingReversedTransactionIds, currentUser);

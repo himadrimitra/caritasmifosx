@@ -170,13 +170,11 @@ public class LoanUtilService {
                 calendarInstance, calendarHistoryDataWrapper);
         CalendarInstance restCalendarInstance = null;
         CalendarInstance compoundingCalendarInstance = null;
-        Long overdurPenaltyWaitPeriod = null;
         if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             restCalendarInstance = calendarInstanceRepository.findCalendarInstaneByEntityId(loan.loanInterestRecalculationDetailId(),
                     CalendarEntityType.LOAN_RECALCULATION_REST_DETAIL.getValue());
             compoundingCalendarInstance = calendarInstanceRepository.findCalendarInstaneByEntityId(
                     loan.loanInterestRecalculationDetailId(), CalendarEntityType.LOAN_RECALCULATION_COMPOUNDING_DETAIL.getValue());
-            overdurPenaltyWaitPeriod = this.configurationDomainService.retrievePenaltyWaitPeriod();
         }
         final Boolean isInterestChargedFromDateAsDisbursementDateEnabled = this.configurationDomainService.isInterestChargedFromDateSameAsDisbursementDate();
         FloatingRateDTO floatingRateDTO = constructFloatingRateDTO(loan);
@@ -191,9 +189,8 @@ public class LoanUtilService {
         
         ScheduleGeneratorDTO scheduleGeneratorDTO = new ScheduleGeneratorDTO(loanScheduleFactory, applicationCurrency,
                 calculatedRepaymentsStartingFromDate, holidayDetails, restCalendarInstance, compoundingCalendarInstance, recalculateFrom,
-                overdurPenaltyWaitPeriod, floatingRateDTO, calendar, calendarHistoryDataWrapper, isInterestChargedFromDateAsDisbursementDateEnabled,
-                numberOfDays, isSkipRepaymentOnFirstMonth, isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, considerFutureDisbursmentsInSchedule, 
-                considerAllDisbursmentsInSchedule);
+                floatingRateDTO, calendar, calendarHistoryDataWrapper, isInterestChargedFromDateAsDisbursementDateEnabled, numberOfDays,
+                isSkipRepaymentOnFirstMonth, isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
 
         return scheduleGeneratorDTO;
     }

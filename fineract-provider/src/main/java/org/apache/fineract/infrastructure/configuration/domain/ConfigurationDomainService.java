@@ -43,13 +43,9 @@ public interface ConfigurationDomainService {
 
     void updateCache(CacheType cacheType);
 
-    Long retrievePenaltyWaitPeriod();
-
     boolean isPasswordForcedResetEnable();
 
     Long retrievePasswordLiveTime();
-
-    Long retrieveGraceOnPenaltyPostingPeriod();
 
     Long retrieveOpeningBalancesContraAccount();
 
@@ -64,8 +60,6 @@ public interface ConfigurationDomainService {
     boolean isMeetingMandatoryForJLGLoans();
 
     int getRoundingMode();
-
-    boolean isBackdatePenaltiesEnabled();
 
     boolean isOrganisationstartDateEnabled();
 
