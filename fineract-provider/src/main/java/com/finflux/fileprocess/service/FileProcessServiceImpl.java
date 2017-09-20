@@ -76,7 +76,7 @@ public class FileProcessServiceImpl implements FileProcessService {
             final Integer totalFailureRecords = 0;
             final FileProcess fileProcess = FileProcess.create(fileName, fileType, documentCommand.getType(), filePath,
                     fileProcessTypeEnum.getValue(), totalRecords, totalPendingRecords, totalSuccessRecords, totalFailureRecords,
-                    FileStatus.UPLODED.getValue(), createdDate, appUser.getId(), createdDate);
+                    FileStatus.UPLOADED.getValue(), createdDate, appUser.getId(), createdDate);
             this.repository.save(fileProcess);
 
             this.helper.fileProcess(fileProcess.getId());

@@ -5,7 +5,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 public enum FileStatus {
 
     INVALID(0, "fileStatus.invalid", "invalid", "Invalid"), //
-    UPLODED(1, "fileStatus.uploded", "uploded", "Uploded"), //
+    UPLOADED(1, "fileStatus.uploaded", "uploaded", "Uploaded"), //
     IN_PROGRESS(2, "fileStatus.in.progress", "inprogress", "In progress"), //
     COMPLETED(3, "fileStatus.completed", "completed", "Completed");
 
@@ -42,7 +42,7 @@ public enum FileStatus {
         if (type != null) {
             switch (type) {
                 case 1:
-                    fileStatus = FileStatus.UPLODED;
+                    fileStatus = FileStatus.UPLOADED;
                 break;
                 case 2:
                     fileStatus = FileStatus.IN_PROGRESS;
