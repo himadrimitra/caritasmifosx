@@ -38,4 +38,8 @@ public class FileProcessRepositoryWrapper {
     public void delete(final FileProcess fileProcess) {
         this.repository.delete(fileProcess);
     }
+
+    public List<FileProcess> findByStatusIn(final List<Integer> statuses) {
+        return this.repository.findByStatusIn(statuses);
+    }
 }

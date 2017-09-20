@@ -1,5 +1,6 @@
 package com.finflux.fileprocess.helper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,11 +20,13 @@ import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMap
 import org.springframework.security.core.authority.mapping.NullAuthoritiesMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
+import com.finflux.fileprocess.data.FileStatus;
 import com.finflux.fileprocess.domain.FileProcess;
 import com.finflux.fileprocess.domain.FileProcessRepositoryWrapper;
 import com.finflux.fileprocess.service.ExtractFileRecordsService;
-import com.finflux.mandates.domain.MandateProcessStatusEnum;
+import com.finflux.fileprocess.service.FileRecordsProcessService;
 
 @Component
 public class FileAsyncProcessingHelper implements ApplicationListener<ContextRefreshedEvent> {
@@ -34,6 +37,7 @@ public class FileAsyncProcessingHelper implements ApplicationListener<ContextRef
     private final TenantDetailsService tenantDetailsService;
     private final ExtractFileRecordsService extractFileRecordsService;
     private final FileProcessRepositoryWrapper repository;
+    private final FileRecordsProcessService fileRecordsProcessService;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -41,26 +45,21 @@ public class FileAsyncProcessingHelper implements ApplicationListener<ContextRef
             isInitialisationEvent = false;
             ExecutorService executorService = Executors.newFixedThreadPool(5);
             final List<FineractPlatformTenant> tenants = this.tenantDetailsService.findAllTenants();
-            final Integer[] pendingStatuses = new Integer[] { MandateProcessStatusEnum.REQUESTED.getValue(),
-                    MandateProcessStatusEnum.INPROCESS.getValue() };
+            final List<Integer> pendingStatuses = new ArrayList<>();
+            pendingStatuses.add(FileStatus.UPLOADED.getValue());
+            pendingStatuses.add(FileStatus.IN_PROGRESS.getValue());
             for (final FineractPlatformTenant tenant : tenants) {
                 ThreadLocalContextUtil.setTenant(tenant);
                 AppUser user = this.userRepository.fetchSystemUser();
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(user, user.getPassword(),
                         this.authoritiesMapper.mapAuthorities(user.getAuthorities()));
                 SecurityContextHolder.getContext().setAuthentication(auth);
-
-                /*
-                 * Collection<MandatesProcessData> pendingMandateProcesses =
-                 * this.mandatesProcessingReadPlatformService
-                 * .retrieveMandatesWithStatus(pendingStatuses); if (null !=
-                 * pendingMandateProcesses && pendingMandateProcesses.size() >
-                 * 0) { for (MandatesProcessData data : pendingMandateProcesses)
-                 * { executorService.submit(new MandateProcessInvoker(tenant,
-                 * data.getId(), MandateProcessTypeEnum.from(data
-                 * .getMandateProcessType()))); } }
-                 */
-
+                final List<FileProcess> fileProcesses = this.repository.findByStatusIn(pendingStatuses);
+                if (!CollectionUtils.isEmpty(fileProcesses)) {
+                    for (final FileProcess fileProcess : fileProcesses) {
+                        this.fileRecordsProcessService.fileRecordsProcess(fileProcess);
+                    }
+                }
             }
             ThreadLocalContextUtil.clearTenant();
             executorService.shutdown();
@@ -69,11 +68,13 @@ public class FileAsyncProcessingHelper implements ApplicationListener<ContextRef
 
     @Autowired
     public FileAsyncProcessingHelper(final AppUserRepositoryWrapper userRepository, final TenantDetailsService tenantDetailsService,
-            final ExtractFileRecordsService extractFileRecordsService, final FileProcessRepositoryWrapper repository) {
+            final ExtractFileRecordsService extractFileRecordsService, final FileProcessRepositoryWrapper repository,
+            final FileRecordsProcessService fileRecordsProcessService) {
         this.userRepository = userRepository;
         this.tenantDetailsService = tenantDetailsService;
         this.extractFileRecordsService = extractFileRecordsService;
         this.repository = repository;
+        this.fileRecordsProcessService = fileRecordsProcessService;
     }
 
     public void fileProcess(final Long fileProcessId) {
