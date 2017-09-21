@@ -198,6 +198,30 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder activateOffice(final Long officeId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "OFFICE";
+        this.entityId = officeId;
+        this.href = "/offices/" + officeId;
+        return this;
+    }
+
+    public CommandWrapperBuilder rejectOffice(final Long officeId) {
+        this.actionName = "REJECT";
+        this.entityName = "OFFICE";
+        this.entityId = officeId;
+        this.href = "/offices/" + officeId;
+        return this;
+    }
+
+    public CommandWrapperBuilder intiateOfficeWorkflow(final Long officeId) {
+        this.actionName = "INITIATEWORKFLOW";
+        this.entityName = "OFFICE";
+        this.entityId = officeId;
+        this.href = "/offices/" + officeId + "?command=initiateWorkflow";
+        return this;
+    }
+
     public CommandWrapperBuilder createStaff() {
         this.actionName = "CREATE";
         this.entityName = "STAFF";
@@ -3074,7 +3098,15 @@ public class CommandWrapperBuilder {
         this.href = "/villages/" + villageId;
         return this;
     }
-    
+
+    public CommandWrapperBuilder rejectMultipleVillages() {
+        this.actionName = "REJECT";
+        this.entityName = "VILLAGE";
+        this.option = "MULTIPLE";
+        this.href = "/villages/bulk?command=reject";
+        return this;
+    }
+
     public CommandWrapperBuilder assignStaffToVillage(final Long villageId) {
         this.actionName = "ASSIGNSTAFF";
         this.entityName = "VILLAGE";
@@ -4145,4 +4177,45 @@ public class CommandWrapperBuilder {
         this.href = "/savingsaccounts/" + accountId + "?command=unblock";
         return this;
     }
+
+    public CommandWrapperBuilder createDistrict() {
+        this.actionName = "CREATE";
+        this.entityName = "DISTRICT";
+        this.entityId = null;
+        this.href = "/districts/template";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateDistrict(final Long districtId) {
+        this.actionName = "UPDATE";
+        this.entityName = "DISTRICT";
+        this.entityId = districtId;
+        this.href = "/districts/"+districtId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateDistrict(final Long districtId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "DISTRICT";
+        this.entityId = districtId;
+        this.href = "/offices/" + districtId;
+        return this;
+    }
+
+    public CommandWrapperBuilder rejectDistrict(final Long districtId) {
+        this.actionName = "REJECT";
+        this.entityName = "DISTRICT";
+        this.entityId = districtId;
+        this.href = "/offices/" + districtId;
+        return this;
+    }
+
+    public CommandWrapperBuilder intiateDistirctWorkflow(final Long districtId) {
+        this.actionName = "INITIATEWORKFLOW";
+        this.entityName = "DISTRICT";
+        this.entityId = districtId;
+        this.href = "/districts/" + districtId + "?command=initiateWorkflow";
+        return this;
+    }
+
 }

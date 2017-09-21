@@ -33,6 +33,7 @@ public class VillageTypeApiConstants {
     public final static String ASSIGN_STAFF_COMMAND = "assignstaff" ;
     public final static String UNASSIGN_STAFF_COMMAND = "unassignstaff" ;
     public static final String staffIdParamName = "staffId";
+    public final static String REJECT_COMMAND = "reject" ;
     
     public static final String idParamName = "id";
     public static final String externalIdParamName = "externalId";
@@ -70,4 +71,7 @@ public class VillageTypeApiConstants {
     
     public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, activationDateParamName));
+
+    public static final String villagesParamName = "villages";
+    public static final Set<String> BULK_REJECT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, villagesParamName));
 }

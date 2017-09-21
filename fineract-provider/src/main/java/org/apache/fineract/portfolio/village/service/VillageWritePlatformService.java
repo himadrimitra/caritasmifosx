@@ -31,4 +31,5 @@ public interface VillageWritePlatformService {
     CommandProcessingResult intiateVillageWorkflow(final Long villageId, final JsonCommand command) ;
     CommandProcessingResult assignVillageStaffWorkflow(final Long villageId, final JsonCommand command) ;
     CommandProcessingResult unassignVillageStaffWorkflow(final Long villageId, final JsonCommand command) ;
+    CommandProcessingResult rejectMultipleVillages(final JsonCommand command);
 }

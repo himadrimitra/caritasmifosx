@@ -60,6 +60,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import com.finflux.common.constant.CommonConstants;
+import com.finflux.task.configuration.service.TaskConfigurationUtils;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskEntityType;
 
 @Service
 public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
@@ -71,18 +74,18 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
     private final CenterReadPlatformService centerReadPlatformService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
 
-    private final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper();
     private final PaginationHelper<GroupGeneralData> paginationHelper = new PaginationHelper<>();
     private final PaginationParametersDataValidator paginationParametersDataValidator;
+    private final TaskConfigurationUtils taskConfigurationUtils;
 
     private final static Set<String> supportedOrderByValues = new HashSet<>(Arrays.asList("id", "name", "officeId", "officeName"));
 
     @Autowired
     public GroupReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final CenterReadPlatformService centerReadPlatformService,
-            final OfficeReadPlatformService officeReadPlatformService, final StaffReadPlatformService staffReadPlatformService,
-            final CodeValueReadPlatformService codeValueReadPlatformService,
-            final PaginationParametersDataValidator paginationParametersDataValidator) {
+            final CenterReadPlatformService centerReadPlatformService, final OfficeReadPlatformService officeReadPlatformService,
+            final StaffReadPlatformService staffReadPlatformService, final CodeValueReadPlatformService codeValueReadPlatformService,
+            final PaginationParametersDataValidator paginationParametersDataValidator,
+            final TaskConfigurationUtils taskConfigurationUtils) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.centerReadPlatformService = centerReadPlatformService;
@@ -90,6 +93,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         this.staffReadPlatformService = staffReadPlatformService;
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.paginationParametersDataValidator = paginationParametersDataValidator;
+        this.taskConfigurationUtils = taskConfigurationUtils;
     }
 
     @Override
@@ -126,9 +130,10 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         final Long staffId = null;
         final String staffName = null;
         final Collection<ClientData> clientOptions = null;
-        
+        final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.GROUPONBARDING);
+
         return GroupGeneralData.template(defaultOfficeId, centerId, accountNo, centerName, staffId, staffName, centerOptions, officeOptions,
-                staffOptions, clientOptions, availableRoles);
+                staffOptions, clientOptions, availableRoles, isWorkflowEnabled);
     }
 
     private Long defaultToUsersOfficeIfNull(final Long officeId) {
@@ -147,6 +152,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
+        final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper(this.taskConfigurationUtils);
         final StringBuilder sqlBuilder = new StringBuilder(200);
 		if (parameters.isOrderByRequested()) {
 			sqlBuilder.append("select SQL_CALC_FOUND_ROWS * from (select ");
@@ -154,7 +160,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
 			sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
 		}
         
-        sqlBuilder.append(this.allGroupTypesDataMapper.schema());
+        sqlBuilder.append(allGroupTypesDataMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
 
         final String extraCriteria = getGroupExtraCriteria(searchParameters);
@@ -176,7 +182,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
 
         final String sqlCountRows = "SELECT FOUND_ROWS()";
         return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(),
-                new Object[] { hierarchySearchString }, this.allGroupTypesDataMapper);
+                new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), hierarchySearchString }, allGroupTypesDataMapper);
     }
 
     @Override
@@ -185,9 +191,10 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
+        final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper(this.taskConfigurationUtils);
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select ");
-        sqlBuilder.append(this.allGroupTypesDataMapper.schema());
+        sqlBuilder.append(allGroupTypesDataMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
 
         final String extraCriteria = getGroupExtraCriteria(searchParameters);
@@ -204,7 +211,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
             sqlBuilder.append(parameters.limitSql());
         }
 
-        return this.jdbcTemplate.query(sqlBuilder.toString(), this.allGroupTypesDataMapper, new Object[] { hierarchySearchString });
+        return this.jdbcTemplate.query(sqlBuilder.toString(), allGroupTypesDataMapper, new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), hierarchySearchString });
     }
 
     // 'g.' preffix because of ERROR 1052 (23000): Column 'column_name' in where
@@ -273,8 +280,10 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
             final String hierarchy = currentUser.getOffice().getHierarchy();
             final String hierarchySearchString = hierarchy + "%";
 
-            final String sql = "select " + this.allGroupTypesDataMapper.schema() + " where g.id = ? and o.hierarchy like ?";
-            return this.jdbcTemplate.queryForObject(sql, this.allGroupTypesDataMapper, new Object[] { groupId, hierarchySearchString });
+            final AllGroupTypesDataMapper allGroupTypesDataMapper = new AllGroupTypesDataMapper(this.taskConfigurationUtils);
+            final String sql = "select " + allGroupTypesDataMapper.schema() + " where g.id = ? and o.hierarchy like ?";
+            return this.jdbcTemplate.queryForObject(sql, allGroupTypesDataMapper,
+                    new Object[] { TaskEntityType.GROUP_ONBOARDING.getValue(), groupId, hierarchySearchString });
         } catch (final EmptyResultDataAccessException e) {
             throw new GroupNotFoundException(groupId);
         }

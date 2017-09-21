@@ -36,11 +36,13 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
@@ -50,6 +52,9 @@ import org.apache.fineract.organisation.office.service.OfficeReadPlatformService
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import com.finflux.task.configuration.service.TaskConfigurationUtils;
+import com.finflux.task.data.TaskConfigEntityType;
 
 @Path("/offices")
 @Component
@@ -70,16 +75,19 @@ public class OfficesApiResource {
     private final DefaultToApiJsonSerializer<OfficeData> toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final TaskConfigurationUtils taskConfigurationUtils;
 
     @Autowired
     public OfficesApiResource(final PlatformSecurityContext context, final OfficeReadPlatformService readPlatformService,
             final DefaultToApiJsonSerializer<OfficeData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
-            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+            final TaskConfigurationUtils taskConfigurationUtils) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+        this.taskConfigurationUtils = taskConfigurationUtils;
     }
 
     @GET
@@ -110,7 +118,8 @@ public class OfficesApiResource {
         OfficeData office = this.readPlatformService.retrieveNewOfficeTemplate();
 
         final Collection<OfficeData> allowedParents = this.readPlatformService.retrieveAllOfficesForDropdown();
-        office = OfficeData.appendedTemplate(office, allowedParents);
+        final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.OFFICEONBOARDING);
+        office = OfficeData.appendedTemplate(office, allowedParents, isWorkflowEnabled);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, office, this.RESPONSE_DATA_PARAMETERS);
@@ -144,7 +153,8 @@ public class OfficesApiResource {
         OfficeData office = this.readPlatformService.retrieveOffice(officeId);
         if (settings.isTemplate()) {
             final Collection<OfficeData> allowedParents = this.readPlatformService.retrieveAllowedParents(officeId);
-            office = OfficeData.appendedTemplate(office, allowedParents);
+            final Boolean isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.OFFICEONBOARDING);
+            office = OfficeData.appendedTemplate(office, allowedParents, isWorkflowEnabled);
         }
 
         return this.toApiJsonSerializer.serialize(settings, office, this.RESPONSE_DATA_PARAMETERS);
@@ -164,5 +174,35 @@ public class OfficesApiResource {
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
+    }
+
+    @POST
+    @Path("{officeId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String activate(@PathParam("officeId") final Long officeId, @QueryParam("command") final String commandParam,
+            final String apiRequestBodyAsJson) {
+
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
+
+        CommandProcessingResult result = null;
+        if (is(commandParam, OfficeApiConstants.ACTIVATE_COMMAND)) {
+            final CommandWrapper commandRequest = builder.activateOffice(officeId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, OfficeApiConstants.REJECT_COMMAND)) {
+            final CommandWrapper commandRequest = builder.rejectOffice(officeId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, OfficeApiConstants.INITIATE_WORKFLOW_COMMAND)) {
+            final CommandWrapper commandRequest = builder.intiateOfficeWorkflow(officeId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else {
+            throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { OfficeApiConstants.ACTIVATE_COMMAND,
+                    OfficeApiConstants.REJECT_COMMAND, OfficeApiConstants.INITIATE_WORKFLOW_COMMAND });
+        }
+        return this.toApiJsonSerializer.serialize(result);
+    }
+
+    private boolean is(final String commandParam, final String commandValue) {
+        return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
     }
 }

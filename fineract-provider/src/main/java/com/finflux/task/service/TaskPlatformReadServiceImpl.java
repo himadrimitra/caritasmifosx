@@ -681,6 +681,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sqlBuilder.append(" ,CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
             sqlBuilder.append(" ,t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
             sqlBuilder.append(" ,c.id AS clientId,c.display_name AS clientName ");
+            sqlBuilder.append(" ,t.short_description AS shortDescription ");
             sqlBuilder.append(" ,o.id AS officeId,o.name AS officeName, t.created_date as createdOn ");
             sqlBuilder.append(" FROM f_task t ");
             sqlBuilder.append(" LEFT JOIN f_task pt ON pt.id = t.parent_id ");
@@ -705,15 +706,16 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final Integer entityTypeId = rs.getInt("entityTypeId");
             final String entityType = TaskEntityType.fromInt(entityTypeId).toString();
             final Long entityId = rs.getLong("entityId");
-            final Long clientId = rs.getLong("clientId");
+            final Long clientId = JdbcSupport.getLong(rs, "clientId");
             final String description = rs.getString("description");
+            final String shortDescription = rs.getString("shortDescription");
             final Date createdOn = rs.getTimestamp("createdOn");
             ClientData clientData = null;
             if (clientId != null) {
                 final String clientName = rs.getString("clientName");
                 clientData = ClientData.lookup(clientId, clientName, null, null);
             }
-            final Long officeId = rs.getLong("officeId");
+            final Long officeId = JdbcSupport.getLong(rs, "officeId");
             OfficeData officeData = null;
             if (officeId != null) {
                 final String officeName = rs.getString("officeName");
@@ -729,7 +731,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                 configValueMap = new Gson().fromJson(configValues, new TypeToken<HashMap<String, String>>() {}.getType());
             }
             return TaskInfoData.instance(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
-                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap, description, createdOn);
+                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap, description, createdOn, shortDescription);
         }
     }
 

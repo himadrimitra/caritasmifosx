@@ -7,15 +7,18 @@ public enum TaskConfigEntityType {
 
     INVALID(0, "taskConfigEntityType.invalid"), //
     LOANPRODUCT(1, "taskConfigEntityType.loanproduct"), //
-    ADHOC(2, "taskConfigEntityType.adhoc"),//
-    BANKTRANSACTION(3, "taskConfigEntityType.banktransaction"),
-    GROUPONBARDING(4, "taskConfigEntityType.grouponboarding"),
-    LOANPRODUCT_APPLICANT(5, "taskConfigEntityType.loanproductapplicant"),
-    LOANPRODUCT_COAPPLICANT(6, "taskConfigEntityType.loanproductcoapplicant"),//
-    CLIENTONBOARDING(7, "taskConfigEntityType.clientonboarding"), CLIENTBANKACCOUNT(8,
-            "taskConfigEntityType.clientbankaccount"),//
-    VILLAGEONBOARDING(9, "taskConfigEntityType.villageonboarding");
-    
+    ADHOC(2, "taskConfigEntityType.adhoc"), //
+    BANKTRANSACTION(3, "taskConfigEntityType.banktransaction"), //
+    GROUPONBARDING(4, "taskConfigEntityType.grouponboarding"), //
+    LOAN_APPLICANTION(5, "taskConfigEntityType.loanproductapplicant"), //
+    LOANPRODUCT_COAPPLICANT(6, "taskConfigEntityType.loanproductcoapplicant"), //
+    CLIENTONBOARDING(7, "taskConfigEntityType.clientonboarding"), //
+    CLIENTBANKACCOUNT(8, "taskConfigEntityType.clientbankaccount"), //
+    VILLAGEONBOARDING(9, "taskConfigEntityType.villageonboarding"), //
+    OFFICEONBOARDING(10, "taskConfigEntityType.officeonboarding"), //
+    CENTERONBOARDING(11, "taskConfigEntityType.centeronboarding"), //
+    DISTRICTONBOARDING(12, "taskConfigEntityType.districtonboarding");
+
     private final Integer value;
     private final String code;
 
