@@ -95,6 +95,10 @@ public class ClientRecurringCharge extends AbstractAuditableCustom<AppUser,Long>
 
 	@Column(name = "is_synch_meeting", nullable = false)
 	private boolean synchMeeting;
+	
+	@Temporal(TemporalType.DATE)
+	@Column(name = "client_charge_applies_on_date")
+	private Date clientChargeAppliensOndate;
 
 	public boolean isSynchMeeting() {
 		return synchMeeting;
