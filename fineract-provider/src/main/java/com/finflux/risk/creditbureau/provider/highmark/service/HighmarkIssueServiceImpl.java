@@ -354,7 +354,7 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
 
     private Double parseDouble(String amount) {
         if (amount == null) { return null; }
-        amount = amount.replaceAll("[^0-9]", "");
+        amount = amount.replaceAll("[^0-9.-]", "");
         return Double.parseDouble(amount);
     }
 
