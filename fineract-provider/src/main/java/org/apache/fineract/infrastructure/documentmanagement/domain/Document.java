@@ -63,6 +63,9 @@ public class Document extends AbstractPersistable<Long> {
     @Column(name = "tag_id")
     private Long tagIdentifier ;
     
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
+    
     public Document() {}
 
     public static Document createNew(final String parentEntityType, final Long parentEntityId, final String name, final String fileName,
@@ -182,5 +185,9 @@ public class Document extends AbstractPersistable<Long> {
     
     public void setTagIdentifier(final Long tagIdentifier) {
         this.tagIdentifier = tagIdentifier ;
+    }
+    
+    public boolean isLocked() {
+        return this.isLocked;
     }
 }

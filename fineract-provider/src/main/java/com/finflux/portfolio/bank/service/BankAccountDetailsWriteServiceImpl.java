@@ -1,19 +1,31 @@
 package com.finflux.portfolio.bank.service;
 
-import com.finflux.portfolio.bank.api.BankAccountDetailConstants;
-import com.finflux.portfolio.bank.data.BankAccountDetailDataValidator;
-import com.finflux.portfolio.bank.domain.*;
-import com.finflux.portfolio.bank.exception.BankAccountDetailAssociationExistsException;
-import com.google.gson.JsonElement;
+import java.util.Date;
+import java.util.Map;
+
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.Map;
+import com.finflux.common.util.FinfluxCollectionUtils;
+import com.finflux.portfolio.bank.api.BankAccountDetailConstants;
+import com.finflux.portfolio.bank.data.BankAccountDetailDataValidator;
+import com.finflux.portfolio.bank.domain.BankAccountAssociationDetailsRepositoryWrapper;
+import com.finflux.portfolio.bank.domain.BankAccountDetailAssociations;
+import com.finflux.portfolio.bank.domain.BankAccountDetailAssociationsRepository;
+import com.finflux.portfolio.bank.domain.BankAccountDetailEntityType;
+import com.finflux.portfolio.bank.domain.BankAccountDetailStatus;
+import com.finflux.portfolio.bank.domain.BankAccountDetails;
+import com.finflux.portfolio.bank.domain.BankAccountDetailsRepository;
+import com.finflux.portfolio.bank.domain.BankAccountDetailsRepositoryWrapper;
+import com.finflux.portfolio.bank.exception.BankAccountDetailAssociationExistsException;
+import com.google.gson.JsonElement;
 
 @Service
 public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWriteService {
@@ -24,19 +36,22 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
 	private final FromJsonHelper fromApiJsonHelper;
 	private final BankAccountDetailAssociationsRepository accountDetailAssociationsRepository;
 	private final BankAccountAssociationDetailsRepositoryWrapper bankAccountAssociationDetailsRepositoryWrapper;
+	private final BusinessEventNotifierService businessEventNotifierService;
 
 	@Autowired
 	public BankAccountDetailsWriteServiceImpl(BankAccountDetailsRepository repository,
 			BankAccountDetailsRepositoryWrapper repositoryWrapper,
 			BankAccountDetailDataValidator fromApiJsonDeserializer, final FromJsonHelper fromApiJsonHelper,
 			final BankAccountDetailAssociationsRepository accountDetailAssociationsRepository,
-			final BankAccountAssociationDetailsRepositoryWrapper bankAccountAssociationDetailsRepositoryWrapper) {
+			final BankAccountAssociationDetailsRepositoryWrapper bankAccountAssociationDetailsRepositoryWrapper,
+			final BusinessEventNotifierService businessEventNotifierService) {
 		this.repository = repository;
 		this.repositoryWrapper = repositoryWrapper;
 		this.fromApiJsonDeserializer = fromApiJsonDeserializer;
 		this.fromApiJsonHelper = fromApiJsonHelper;
 		this.accountDetailAssociationsRepository = accountDetailAssociationsRepository;
 		this.bankAccountAssociationDetailsRepositoryWrapper = bankAccountAssociationDetailsRepositoryWrapper;
+		this.businessEventNotifierService = businessEventNotifierService;
 	}
 
 	@Override
@@ -128,6 +143,8 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
 		BankAccountDetailAssociations accountDetailAssociations = this.bankAccountAssociationDetailsRepositoryWrapper
 				.findOneWithNotFoundDetection(entityId, entityType.getValue());
 		BankAccountDetails accountDetails = accountDetailAssociations.getBankAccountDetails();
+		this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.BANK_ACCOUNT_DETAILS_UPDATE,
+                        FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, accountDetails.isLocked()));
 		final JsonElement element = this.fromApiJsonHelper.parse(json);
 		boolean creaeNewAccountDetail = false;
 		if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.accountNumberParameterName, element)) {
@@ -160,6 +177,8 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
 	public CommandProcessingResult delete(Long bankAccountDetailId) {
 		final BankAccountDetails accountDetails = this.repositoryWrapper
 				.findOneWithNotFoundDetection(bankAccountDetailId);
+		this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.BANK_ACCOUNT_DETAILS_DELETE,
+	                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, accountDetails.isLocked()));
 		accountDetails.updateStatus(BankAccountDetailStatus.DELETED.getValue());
 		this.repository.save(accountDetails);
 		return new CommandProcessingResultBuilder().withEntityId(bankAccountDetailId).build();
@@ -169,6 +188,8 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
 	public Long deleteBankDetailAssociation(final BankAccountDetailEntityType entityType, final Long entityId) {
 		BankAccountDetailAssociations accountDetailAssociations = this.bankAccountAssociationDetailsRepositoryWrapper
 				.findOneWithNotFoundDetection(entityId, entityType.getValue());
+		this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.BANK_ACCOUNT_DETAILS_DELETE,
+                        FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, accountDetailAssociations.getBankAccountDetails().isLocked()));
 		Long id = accountDetailAssociations.getId();
 		this.accountDetailAssociationsRepository.delete(accountDetailAssociations);
 		return id;

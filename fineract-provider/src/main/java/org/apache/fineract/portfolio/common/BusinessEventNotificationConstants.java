@@ -35,9 +35,16 @@ public class BusinessEventNotificationConstants {
                 "loan_withdraw_transfer"), LOAN_REJECT_TRANSFER("loan_reject_transfer"), LOAN_REASSIGN_OFFICER("loan_reassign_officer"), LOAN_REMOVE_OFFICER(
                 "loan_remove_officer"), LOAN_APPLY_OVERDUE_CHARGE("loan_apply_overdue_charge"), LOAN_INTEREST_RECALCULATION(
                 "loan_interest_recalculation"), LOAN_REFUND("loan_refund"), LOAN_ADD_SUBSIDY("loan_add_subsidy_transaction"), LOAN_REVOKE_SUBSIDY(
-                "loan_revoke_subsidy_transaction"), LOAN_FORECLOSURE("loan_foreclosure"), CLIENT_CLOSE("client_close"), CLIENT_DISASSOCIATE(
-                "client_disassociate"), TRANSFER_CLIENT("transfer_client"), LOAN_CREATE("loan_create"), LOAN_MODIFY("loan_modify"), SAVING_WITHDRAWAL(
-                "saving_withdrawal"), SAVING_TRANSFER("saving_transfer"), GL_ACCOUNT_CLOSURE("gl_account_closure");
+                "loan_revoke_subsidy_transaction"), LOAN_FORECLOSURE("loan_foreclosure"), CLIENT_UPDATE("client_update"), CLIENT_DELETE(
+                "client_delete"), CLIENT_CLOSE("client_close"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT(
+                "transfer_client"), LOAN_CREATE("loan_create"), LOAN_MODIFY("loan_modify"), SAVING_WITHDRAWAL("saving_withdrawal"), SAVING_TRANSFER(
+                "saving_transfer"), GL_ACCOUNT_CLOSURE("gl_account_closure"), ADDRESS_ADD("address_add"), ADDRESS_UPDATE("address_update"), ADDRESS_DELETE(
+                "address_delete"), DOCUMENT_ADD("document_add"), DOCUMENT_UPDATE("document_update"), DOCUMENT_DELETE("document_delete"), FAMILY_DETAILS_ADD(
+                "family_details_add"), FAMILY_DETAILS_UPDATE("family_details_update"), FAMILY_DETAILS_DELETE("family_details_delete"), CLIENT_IDENTIFIER_ADD(
+                "client_identifier_add"), CLIENT_IDENTIFIER_UPDATE("client_identifier_update"), CLIENT_IDENTIFIER_DELETE(
+                "client_identifier_delete"), CLIENT_INCOME_EXPENSE_UPDATE("client_income_expense_update"), EXISTING_LOAN_UPDATE(
+                "existing_loan_update"), EXISTING_LOAN_DELETE("existing_loan_delete"), BANK_ACCOUNT_DETAILS_UPDATE(
+                "bank_account_details_update"), BANK_ACCOUNT_DETAILS_DELETE("bank_account_details_delete");
 
         private final String value;
 
@@ -69,7 +76,7 @@ public class BusinessEventNotificationConstants {
         LOAN("loan"), LOAN_TRANSACTION("loan_transaction"), LOAN_CHARGE("loan_charge"), LOAN_ADJUSTED_TRANSACTION(
                 "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT(
                 "transfer_client"), CHANGED_TRANSACTION_DETAIL("changed_transaction_detail"), JSON_COMMAND("json_command"), BUSINESS_EVENT(
-                "business_event"), SAVING("saving"), SAVING_TRANSACTION("saving_transaction"), GL_CLOSURE("gl_closure");
+                "business_event"), SAVING("saving"), SAVING_TRANSACTION("saving_transaction"), GL_CLOSURE("gl_closure"), ENTITY_LOCK_STATUS("is_locked");
 
         private final String value;
 

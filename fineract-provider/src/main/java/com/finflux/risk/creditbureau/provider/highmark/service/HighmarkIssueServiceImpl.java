@@ -2,8 +2,6 @@ package com.finflux.risk.creditbureau.provider.highmark.service;
 
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.math.BigDecimal;
-import java.math.MathContext;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -38,7 +36,10 @@ import com.finflux.risk.creditbureau.provider.highmark.xsd.issue.ObjectFactory;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.issue.REQUESTREQUESTFILE;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.response.INDVREPORTFILE;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.response.INDVRESPONSES;
+import com.finflux.risk.creditbureau.provider.highmark.xsd.response.LOANDETAILS;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.response.PRINTABLEREPORT;
+import com.finflux.risk.creditbureau.provider.highmark.xsd.response.RESPONSE;
+import com.finflux.risk.creditbureau.provider.highmark.xsd.response.RESPONSES;
 
 @Service
 public class HighmarkIssueServiceImpl implements HighmarkIssueService {
@@ -148,76 +149,14 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
         List<CreditBureauExistingLoan> loanList = null;
         CreditBureauReportFile reportFile = null;
         final String errorsJson = null ;
-        try {
-            Long activeLoanCount = 0l;
-            Long closedLoanCount = 0l;
-            Long delinquientLoanCount = 0l;
-            BigDecimal totalOutstanding = BigDecimal.ZERO;
-            BigDecimal totalOverdues = BigDecimal.ZERO;
-            BigDecimal totalInstallments = BigDecimal.ZERO;
-            BigDecimal delenquencyAmount = BigDecimal.ZERO;
-            MathContext mc = new MathContext(6);
+        try {            
             EnquiryResponse enquiryResponse = null;
             CreditBureauEnquiryStatus creditBureauEnquiryStatus = CreditBureauEnquiryStatus.INVALID;
             if (reportfile != null && reportfile.getINDVREPORTS() != null && reportfile.getINDVREPORTS().getINDVREPORT() != null) {
-                INDVRESPONSES individualResponses = reportfile.getINDVREPORTS().getINDVREPORT().getINDVRESPONSES();
-                if (individualResponses.getINDVRESPONSELIST() != null && individualResponses.getINDVRESPONSELIST().getINDVRESPONSE() != null
-                        && !individualResponses.getINDVRESPONSELIST().getINDVRESPONSE().isEmpty()) {
-                    loanList = new ArrayList<>();
-                    for (INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE loanItem : individualResponses.getINDVRESPONSELIST()
-                            .getINDVRESPONSE()) {
-
-                        if (loanItem.getMATCHEDTYPE() != null && loanItem.getMATCHEDTYPE().equalsIgnoreCase("PR")) {
-                            final CreditBureauExistingLoan existingLoan = new CreditBureauExistingLoan(
-                                    loanEnquiryReferenceData.getClientId(), loanEnquiryReferenceData.getLoanApplicationId(),
-                                    loanEnquiryReferenceData.getLoanId(), loanEnquiryReferenceData.getCbProductId(),
-                                    loanEnquiryReferenceData.getLoanEnquiryId());
-
-                            INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE.LOANDETAIL loanDetail = loanItem.getLOANDETAIL();
-                            existingLoan.setLoanType(loanDetail.getACCTTYPE());
-                            existingLoan.setLenderName(loanItem.getMFI());
-                            existingLoan.setAmountDisbursed(parseDouble(loanDetail.getDISBURSEDAMT()));
-                            existingLoan.setCurrentOutstanding(parseDouble(loanDetail.getCURRENTBAL()));
-                            existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
-                            existingLoan.setWrittenOffAmount(parseDouble(loanDetail.getWRITEOFFAMT()));
-                            existingLoan.setInstallmentAmount(parseDouble(loanDetail.getINSTALLMENTAMT()));
-                            try {
-                                if (loanDetail.getDISBURSEDDT() != null) {
-                                    existingLoan.setDisbursedDate(ddmmYYYYFormat.parse(loanDetail.getDISBURSEDDT()));
-                                }
-                                if (loanDetail.getCLOSEDDT() != null) {
-                                    existingLoan.setClosedDate(ddmmYYYYFormat.parse(loanDetail.getCLOSEDDT()));
-                                }
-                            } catch (ParseException e1) {
-                                e1.printStackTrace();
-                            }
-                            existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
-                            existingLoan.setLoanStatus(convertToLoanStatus(loanDetail.getSTATUS()));
-                            if (loanDetail.getFREQ() != null && "BIWEEKLY".equalsIgnoreCase(loanDetail.getFREQ())) {
-                                existingLoan.setRepaymentMultiple((int) 2);
-                            }
-
-                            existingLoan.setRepaymentFrequency(convertToLoanTenureType(loanDetail.getFREQ()));
-                            if (loanDetail.getCOMBINEDPAYMENTHISTORY() != null) {
-                                final String[] paymentsArray = loanDetail.getCOMBINEDPAYMENTHISTORY().split("\\|");
-                                for (final String paymentHistory : paymentsArray) {
-                                    if (paymentHistory != null && paymentHistory.trim().length() > 0) {
-                                        final String monthAndYear = paymentHistory.split(",")[0].trim();
-                                        final String dpdString = paymentHistory.split(",")[1];
-                                        final SimpleDateFormat formatter = new SimpleDateFormat("MMM:yyyy");
-                                        Date date = null;
-                                        date = formatter.parse(monthAndYear);
-                                        Integer dpd = 0;
-                                        dpd = calculateDpdDays(dpdString);
-                                        CreditBureauExistingLoanPaymentDetail creditBureauExistingLoanPaymentDetail = new CreditBureauExistingLoanPaymentDetail(
-                                                date, dpd);
-                                        existingLoan.addCreditBureauExistingLoanPaymentDetail(creditBureauExistingLoanPaymentDetail);
-                                    }
-                                }
-                            }
-                            loanList.add(existingLoan);
-                        }
-                    }
+                if(loanEnquiryReferenceData.getRefNumber().startsWith(HighmarkConstants.CONSUMER_KEY)){                    
+                    loanList = updateConsumerExistingLoans(reportfile, loanEnquiryReferenceData, loanList);
+                }else{
+                    loanList = updateMFIExistingLoans(reportfile, loanEnquiryReferenceData, loanList);                  
                 }
                 if (reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT() != null) {
                     PRINTABLEREPORT printableReport = reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT();
@@ -251,6 +190,139 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
         }
     }
 
+    private List<CreditBureauExistingLoan> updateMFIExistingLoans(INDVREPORTFILE reportfile,
+            LoanEnquiryReferenceData loanEnquiryReferenceData, List<CreditBureauExistingLoan> loanList) throws ParseException {
+        INDVRESPONSES individualResponses = reportfile.getINDVREPORTS().getINDVREPORT().getINDVRESPONSES();
+        if (individualResponses != null && individualResponses.getINDVRESPONSELIST() != null && individualResponses.getINDVRESPONSELIST().getINDVRESPONSE() != null
+                && !individualResponses.getINDVRESPONSELIST().getINDVRESPONSE().isEmpty()) {
+            loanList = new ArrayList<>();
+            for (INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE loanItem : individualResponses.getINDVRESPONSELIST()
+                    .getINDVRESPONSE()) {
+
+                if (loanItem.getMATCHEDTYPE() != null && loanItem.getMATCHEDTYPE().equalsIgnoreCase("PR")) {
+                    final CreditBureauExistingLoan existingLoan = new CreditBureauExistingLoan(
+                            loanEnquiryReferenceData.getClientId(), loanEnquiryReferenceData.getLoanApplicationId(),
+                            loanEnquiryReferenceData.getLoanId(), loanEnquiryReferenceData.getCbProductId(),
+                            loanEnquiryReferenceData.getLoanEnquiryId());
+
+                    INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE.LOANDETAIL loanDetail = loanItem.getLOANDETAIL();
+                    existingLoan.setLoanType(loanDetail.getACCTTYPE());
+                    existingLoan.setLenderName(loanItem.getMFI());
+                    existingLoan.setAmountDisbursed(parseDouble(loanDetail.getDISBURSEDAMT()));
+                    existingLoan.setCurrentOutstanding(parseDouble(loanDetail.getCURRENTBAL()));
+                    existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
+                    existingLoan.setWrittenOffAmount(parseDouble(loanDetail.getWRITEOFFAMT()));
+                    existingLoan.setInstallmentAmount(parseDouble(loanDetail.getINSTALLMENTAMT()));
+                    try {
+                        if (loanDetail.getDISBURSEDDT() != null) {
+                            existingLoan.setDisbursedDate(ddmmYYYYFormat.parse(loanDetail.getDISBURSEDDT()));
+                        }
+                        if (loanDetail.getCLOSEDDT() != null) {
+                            existingLoan.setClosedDate(ddmmYYYYFormat.parse(loanDetail.getCLOSEDDT()));
+                        }
+                    } catch (ParseException e1) {
+                        e1.printStackTrace();
+                    }
+                    existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
+                    existingLoan.setLoanStatus(convertToLoanStatus(loanDetail.getSTATUS()));
+                    if (loanDetail.getFREQ() != null && "BIWEEKLY".equalsIgnoreCase(loanDetail.getFREQ())) {
+                        existingLoan.setRepaymentMultiple(2);
+                    }
+
+                    existingLoan.setRepaymentFrequency(convertToLoanTenureType(loanDetail.getFREQ()));
+                    if (loanDetail.getCOMBINEDPAYMENTHISTORY() != null) {
+                        final String[] paymentsArray = loanDetail.getCOMBINEDPAYMENTHISTORY().split("\\|");
+                        for (final String paymentHistory : paymentsArray) {
+                            if (paymentHistory != null && paymentHistory.trim().length() > 0) {
+                                final String monthAndYear = paymentHistory.split(",")[0].trim();
+                                final String dpdString = paymentHistory.split(",")[1];
+                                final SimpleDateFormat formatter = new SimpleDateFormat("MMM:yyyy");
+                                Date date = null;
+                                date = formatter.parse(monthAndYear);
+                                Integer dpd = 0;
+                                dpd = calculateDpdDays(dpdString);
+                                CreditBureauExistingLoanPaymentDetail creditBureauExistingLoanPaymentDetail = new CreditBureauExistingLoanPaymentDetail(
+                                        date, dpd);
+                                existingLoan.addCreditBureauExistingLoanPaymentDetail(creditBureauExistingLoanPaymentDetail);
+                            }
+                        }
+                    }
+                    loanList.add(existingLoan);
+                }
+            }
+        }
+        return loanList;
+    }
+    
+    private List<CreditBureauExistingLoan> updateConsumerExistingLoans(INDVREPORTFILE reportfile,
+            LoanEnquiryReferenceData loanEnquiryReferenceData, List<CreditBureauExistingLoan> loanList) throws ParseException {
+        RESPONSES responses = reportfile.getINDVREPORTS().getINDVREPORT().getRESPONSES();
+        
+        if (responses != null && responses.getRESPONSE() != null && !responses.getRESPONSE().isEmpty()) {
+            loanList = new ArrayList<>();
+            for (RESPONSE  response: responses.getRESPONSE()) {
+                LOANDETAILS loanItem = response.getLOANDETAILS();
+                if (loanItem.getMATCHEDTYPE() != null && loanItem.getMATCHEDTYPE().equalsIgnoreCase("PRIMARY")) {
+                    final CreditBureauExistingLoan existingLoan = new CreditBureauExistingLoan(
+                            loanEnquiryReferenceData.getClientId(), loanEnquiryReferenceData.getLoanApplicationId(),
+                            loanEnquiryReferenceData.getLoanId(), loanEnquiryReferenceData.getCbProductId(),
+                            loanEnquiryReferenceData.getLoanEnquiryId());
+
+                    //INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE.LOANDETAIL loanDetail = loanItem.getLOANDETAIL();
+                    existingLoan.setLoanType(loanItem.getACCTTYPE());
+                    existingLoan.setLenderName(loanItem.getCREDITGUARANTOR());
+                    existingLoan.setAmountDisbursed(parseDouble(loanItem.getDISBURSEDAMT().replace(",","")));
+                    existingLoan.setCurrentOutstanding(parseDouble(loanItem.getCURRENTBAL()));
+                    existingLoan.setAmountOverdue(parseDouble(loanItem.getOVERDUEAMT()));
+                    existingLoan.setWrittenOffAmount(parseDouble(loanItem.getWRITEOFFAMT()));
+                    existingLoan.setInstallmentAmount(parseDouble(loanItem.getINSTALLMENTAMT()));
+                    try {
+                        if (loanItem.getDISBURSEDDATE() != null) {
+                            existingLoan.setDisbursedDate(ddmmYYYYFormat.parse(loanItem.getDISBURSEDDATE()));
+                        }
+                        if (loanItem.getCLOSEDDATE() != null) {
+                            existingLoan.setClosedDate(ddmmYYYYFormat.parse(loanItem.getCLOSEDDATE()));
+                        }
+                    } catch (ParseException e1) {
+                        e1.printStackTrace();
+                    }
+                    existingLoan.setAmountOverdue(parseDouble(loanItem.getOVERDUEAMT()));
+                    existingLoan.setLoanStatus(convertToLoanStatus(loanItem.getACCOUNTSTATUS()));
+                    if (loanItem.getFREQUENCY() != null && "BIWEEKLY".equalsIgnoreCase(loanItem.getFREQUENCY())) {
+                        existingLoan.setRepaymentMultiple(2);
+                    }
+
+                    existingLoan.setRepaymentFrequency(convertToLoanTenureType(loanItem.getFREQUENCY()));
+                    if (loanItem.getCOMBINEDPAYMENTHISTORY() != null) {
+                        final String[] paymentsArray = loanItem.getCOMBINEDPAYMENTHISTORY().split("\\|");
+                        for (final String paymentHistory : paymentsArray) {
+                            if (paymentHistory != null && paymentHistory.trim().length() > 0) {
+                                final String monthAndYear = paymentHistory.split(",")[0].trim();
+                                final String dpdString = paymentHistory.split(",")[1];
+                                final SimpleDateFormat formatter = new SimpleDateFormat("MMM:yyyy");
+                                Date date = null;
+                                date = formatter.parse(monthAndYear);
+                                Integer dpd = 0;
+                                dpd = calculateDpdDays(dpdString);
+                                CreditBureauExistingLoanPaymentDetail creditBureauExistingLoanPaymentDetail = new CreditBureauExistingLoanPaymentDetail(
+                                        date, dpd);
+                                existingLoan.addCreditBureauExistingLoanPaymentDetail(creditBureauExistingLoanPaymentDetail);
+                            }
+                        }
+                    }
+                    loanList.add(existingLoan);
+                }
+            }
+        }
+        return loanList;
+    }
+    
+    public String formatAmounts(String amount){
+        if(amount != null){
+            amount = amount.replaceAll(",", "");            
+        }
+        return amount;
+    }
     private Integer calculateDpdDays(String dpdString) {
         Integer dpd = 0;
         switch (dpdString) {
@@ -282,17 +354,18 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
 
     private Double parseDouble(String amount) {
         if (amount == null) { return null; }
+        amount = amount.replaceAll("[^0-9.-]", "");
         return Double.parseDouble(amount);
     }
 
     private LoanStatus convertToLoanStatus(String status) {
         if ("CLOSED".equalsIgnoreCase(status)) {
             return LoanStatus.CLOSED_OBLIGATIONS_MET;
-        } else if ("ACTIVE".equals(status)) {
+        } else if ("ACTIVE".equalsIgnoreCase(status)) {
             return LoanStatus.ACTIVE;
-        } else if ("CURRENT".equals(status)) {
+        } else if ("CURRENT".equalsIgnoreCase(status)) {
             return LoanStatus.APPROVED;
-        } else if ("WRITTEN-OFF".equals(status)) { return LoanStatus.CLOSED_WRITTEN_OFF; }
+        } else if ("WRITTEN-OFF".equalsIgnoreCase(status)) { return LoanStatus.CLOSED_WRITTEN_OFF; }
         return LoanStatus.INVALID;
     }
 

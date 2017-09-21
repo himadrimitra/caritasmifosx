@@ -401,7 +401,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final AppUser currentUser = getAppUserIfPresent();
 
-        this.loanEventApiJsonValidator.validateDisbursement(command.json(), isAccountTransfer);
+        this.loanEventApiJsonValidator.validateDisbursement(loanId, command.json(), isAccountTransfer);
 
         final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
@@ -950,8 +950,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         checkClientOrGroupActive(loan);
+        
+        final Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.LOAN, loan);
+        eventDetailMap.put(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, loan.isLocked());
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_UNDO_DISBURSAL,
-                constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
+                eventDetailMap);
+        
         removeLoanCycle(loan);
 
         final List<Long> existingTransactionIds = new ArrayList<>();

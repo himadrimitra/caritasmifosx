@@ -71,6 +71,9 @@ public class ClientIncomeExpense extends AbstractPersistable<Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "clientIncomeExpense", orphanRemoval = true)
     private List<ClientMonthWiseIncomeExpense> clientMonthWiseIncomeExpense = new ArrayList<ClientMonthWiseIncomeExpense>();
+    
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
 
     protected ClientIncomeExpense() {}
 
@@ -177,5 +180,9 @@ public class ClientIncomeExpense extends AbstractPersistable<Long> {
         if (clientMonthWiseIncomeExpense != null && clientMonthWiseIncomeExpense.size() > 0) {
             this.clientMonthWiseIncomeExpense.addAll(clientMonthWiseIncomeExpense);
         }
+    }
+    
+    public boolean isLocked() {
+        return this.isLocked;
     }
 }

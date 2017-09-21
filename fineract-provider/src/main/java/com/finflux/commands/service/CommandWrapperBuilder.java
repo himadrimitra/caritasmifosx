@@ -435,5 +435,24 @@ public class CommandWrapperBuilder {
         this.href = entityName+"/"+entityId+"/"+"images";
         return this;
     }
+    
+    public CommandWrapperBuilder lockEntity(final Long entityTypeId, final String entityType, final Long entityId, final String commandParam) {
+        this.actionName = "LOCK";
+        this.entityName = "ENTITY";
+        this.entityId = entityTypeId;
+        this.subentityId = entityId;
+        this.href = "/locks/" + entityType + "/" + entityId + "?command='" + commandParam + "'";
+        return this;
+    }
+
+    public CommandWrapperBuilder unlockEntity(final Long entityTypeId, final String entityType, final Long entityId,
+            final String commandParam) {
+        this.actionName = "UNLOCK";
+        this.entityName = "ENTITY";
+        this.entityId = entityTypeId;
+        this.subentityId = entityId;
+        this.href = "/locks/" + entityType + "/" + entityId + "?command='" + commandParam + "'";
+        return this;
+    }
 
 }

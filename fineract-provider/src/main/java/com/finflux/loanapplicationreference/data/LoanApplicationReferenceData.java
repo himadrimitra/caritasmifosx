@@ -39,6 +39,8 @@ public class LoanApplicationReferenceData {
     private final PaymentTypeData expectedRepaymentPaymentType;
     private final LoanEMIPackData loanEMIPackData;
     private final Boolean isCoApplicant;
+    private final Boolean isCreditBureauProduct;
+    private final Boolean isStalePeriodExceeded;
 
     private LoanApplicationReferenceData(final Long loanApplicationReferenceId, final String loanApplicationReferenceNo,
             final String externalIdOne, final String externalIdTwo, final Long loanId, final Long clientId, final Long loanOfficerId,
@@ -48,7 +50,8 @@ public class LoanApplicationReferenceData {
             final Integer repayEvery, final EnumOptionData termPeriodFrequency, final Integer termFrequency,
             final BigDecimal fixedEmiAmount, final Integer noOfTranche, final LocalDate submittedOnDate,
             final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType,
-            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant, final String clientName) {
+            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant, final String clientName, final Boolean isCreditBureauProduct,
+            final Boolean isStalePeriodExceeded) {
         this.loanApplicationReferenceId = loanApplicationReferenceId;
         this.loanApplicationReferenceNo = loanApplicationReferenceNo;
         this.externalIdOne = externalIdOne;
@@ -78,6 +81,8 @@ public class LoanApplicationReferenceData {
         this.loanEMIPackData = loanEMIPackData;
         this.isCoApplicant = isCoApplicant;
         this.clientName = clientName;
+        this.isCreditBureauProduct = isCreditBureauProduct;
+        this.isStalePeriodExceeded = isStalePeriodExceeded;
 
     }
 
@@ -89,18 +94,19 @@ public class LoanApplicationReferenceData {
             final Integer repayEvery, final EnumOptionData termPeriodFrequency, final Integer termFrequency,
             final BigDecimal fixedEmiAmount, final Integer noOfTranche, final LocalDate submittedOnDate,
             final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType,
-            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant, final String clientName) {
-
+            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant, final String clientName, final boolean isStalePeriodExceeded,
+            final boolean isCreditBureauProduct) {
         return new LoanApplicationReferenceData(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne, externalIdTwo,
                 loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId, loanProductName,
                 loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency, repayEvery,
                 termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, expectedDisbursalPaymentType,
-                expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName);
+                expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName, isCreditBureauProduct, isStalePeriodExceeded);
     }
     
     public static LoanApplicationReferenceData forLookUp(final Long loanApplicationReferenceId, final String loanApplicationReferenceNo,
             final String externalIdOne, final Long loanId, final EnumOptionData accountType, final EnumOptionData status,
-            final Long loanProductId, final String loanProductName, final BigDecimal loanAmountRequested, final Boolean isCoApplicant) {
+            final Long loanProductId, final String loanProductName, final BigDecimal loanAmountRequested, final Boolean isCoApplicant,
+            final Boolean isCreditBureauProduct) {
         final String externalIdTwo = null;
         final Long clientId = null;
         final Long loanOfficerId = null;
@@ -120,12 +126,12 @@ public class LoanApplicationReferenceData {
         final PaymentTypeData expectedRepaymentPaymentType = null;
         final LoanEMIPackData loanEMIPackData = null;
         final String clientName = null;
-
+        final boolean isStalePeriodExceeded = false;
         return new LoanApplicationReferenceData(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne, externalIdTwo,
                 loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId, loanProductName,
                 loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency, repayEvery,
                 termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, expectedDisbursalPaymentType,
-                expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName);
+                expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName, isCreditBureauProduct, isStalePeriodExceeded);
     }
 
     public Long getLoanApplicationReferenceId() {

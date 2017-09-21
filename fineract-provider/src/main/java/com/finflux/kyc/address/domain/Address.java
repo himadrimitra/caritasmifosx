@@ -83,6 +83,9 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     
     @Column(name = "document_id", nullable = true)
     private Long documentId;
+    
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
 
     protected Address() {}
 
@@ -318,5 +321,15 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     public void setIsVerified(Boolean isVerified) {
         this.isVerified = isVerified;
     }
+    
+    public boolean isLocked() {
+        return this.isLocked;
+    }
+
+    
+    public Boolean getIsVerified() {
+        return this.isVerified;
+    }
+    
 
 }

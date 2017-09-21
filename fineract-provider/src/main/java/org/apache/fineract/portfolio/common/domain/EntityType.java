@@ -7,23 +7,36 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public enum EntityType {
 
-    INVALID(0, "entityType.invalid", "invalid"), //
-    CLIENT(1, "entityType.client", "client"), //
-    GROUP(2, "entityType.group", "group"), //
-    CENTER(3, "entityType.center", "center"), //
-    OFFICE(4, "entityType.office", "office"), //
-    TASK(5, "entityType.tasks", "task"), //
-    STAFF(6, "entityType.STAFF", "staff"), // ;
-    LOAN(7, "entityType.loan", "loan"), //
-    SAVINGS(8, "entityType.savings", "savings");
+    INVALID(0, "entityType.invalid", "invalid", "invalid"), //
+    CLIENT(1, "entityType.client", "client", "client"), //
+    GROUP(2, "entityType.group", "group", "group"), //
+    CENTER(3, "entityType.center", "center", "center"), //
+    OFFICE(4, "entityType.office", "office", "office"), //
+    TASK(5, "entityType.tasks", "task", "task"), //
+    STAFF(6, "entityType.STAFF", "staff", "staff"), // ;
+    LOAN(7, "entityType.loan", "loan", "loan"), //
+    SAVINGS(8, "entityType.savings", "savings", "savings"), //
+
+    ADDRESS(51, "entityType.address", "address", "Address"), //
+    DOCUMENT(52, "entityType.document", "document", "Document"), //
+    FAMILY_DETAILS(53, "entityType.family.details", "familyDetails", "Family details"), //
+    BANK_ACCOUNT_DETAILS(54, "entityType.bank.account.details", "bankAccountDetails", "Bank account details"), //
+
+    CLIENT_IDENTIFIER(101, "entityType.client.identifier", "clientIdentifier", "Client identifier"), //
+    CLIENT_INCOME_EXPENSE(102, "entityType.client.income.expense", "clientIncomeExpense", "Client income expense"), //
+    EXISTING_LOAN(103, "entityType.existing.loan", "existingLoan", "Existing loan");
 
     private final Integer value;
     private final String code;
+    // Can not change the values...
+    // It is used for some conditions checking in code level
+    private final String systemName;
     private final String displayName;
 
-    private EntityType(final Integer value, final String code, final String displayName) {
+    private EntityType(final Integer value, final String code, final String systemName, final String displayName) {
         this.value = value;
         this.code = code;
+        this.systemName = systemName;
         this.displayName = displayName;
     }
 
@@ -33,6 +46,10 @@ public enum EntityType {
 
     public String getCode() {
         return this.code;
+    }
+
+    public String getSystemName() {
+        return this.systemName;
     }
 
     public static EnumOptionData type(final int id) {
@@ -88,19 +105,39 @@ public enum EntityType {
                 case 4:
                     entityType = EntityType.OFFICE;
                 break;
-                case 7:
-                    entityType = EntityType.LOAN;
-                break;
                 case 5:
                     entityType = EntityType.TASK;
                 break;
                 case 6:
                     entityType = EntityType.STAFF;
                 break;
+                case 7:
+                    entityType = EntityType.LOAN;
+                break;
                 case 8:
                     entityType = EntityType.SAVINGS;
                 break;
-
+                case 51:
+                    entityType = EntityType.ADDRESS;
+                break;
+                case 52:
+                    entityType = EntityType.DOCUMENT;
+                break;
+                case 53:
+                    entityType = EntityType.FAMILY_DETAILS;
+                break;
+                case 54:
+                    entityType = EntityType.BANK_ACCOUNT_DETAILS;
+                break;
+                case 101:
+                    entityType = EntityType.CLIENT_IDENTIFIER;
+                break;
+                case 102:
+                    entityType = EntityType.CLIENT_INCOME_EXPENSE;
+                break;
+                case 103:
+                    entityType = EntityType.EXISTING_LOAN;
+                break;
             }
         }
         return entityType;
@@ -129,7 +166,7 @@ public enum EntityType {
     public boolean isLoan() {
         return this.value.equals(EntityType.LOAN.getValue());
     }
-    
+
     public boolean isSavings() {
         return this.value.equals(EntityType.SAVINGS.getValue());
     }

@@ -11,7 +11,7 @@ public class CommonConstants {
 
     // Loan related SQL search query parameters
     public static final String LOAN_ACCOUNT_NO = "loanAccountNo";
-    public static final String LOAN_STATUS = "loan_status";
+    public static final String LOAN_STATUS = "loanStatus";
     public static final String LOAN_EXPECTED_DISBURSEDON_DATE = "loanExpectedDisbursedOnDate";
 
     // Saving account related SQL search query parameters
@@ -23,5 +23,13 @@ public class CommonConstants {
 
     // Code Value related SQL search query parameters
     public static final String CODE_VALUE_IS_ACTIVE = "codeValueIsActive";
+    
+    
+    //Query or Path Params
+    public static final String commandParam = "command";
+    public static final String entityTypeParam = "entityType";
+    public static final String entityIdParam = "entityId";
+    
+    public static final String ENTITY = "ENTITY";
 
 }
