@@ -1440,9 +1440,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 transaction.getFeeChargesPortion(currency), transaction.getPenaltyChargesPortion(currency), transaction
                         .getTransactionDate());
         accrualSuspenseTransaction.copyChargesPaidByFrom(transaction);
-        if(accrualSuspenseTransaction.getAmount(currency).isGreaterThanZero()){
-            loan.getLoanTransactions().add(accrualSuspenseTransaction);
-        }
 
         return accrualSuspenseTransaction.getAmount(currency).isGreaterThanZero() ? accrualSuspenseTransaction : null;
     }
