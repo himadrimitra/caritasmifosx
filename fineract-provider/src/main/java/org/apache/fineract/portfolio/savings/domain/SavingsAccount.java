@@ -84,13 +84,15 @@ import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.exception.SavingsAccountChargeNotFoundException;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.group.domain.Group;
-import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.interestratechart.domain.FloatingInterestRateChart;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
@@ -1110,10 +1112,14 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         return transactionBeforeLastInterestPosting;
     }
 
-    public void validateAccountBalanceDoesNotBecomeNegative(final BigDecimal transactionAmount, final boolean isException,
-            final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions) {
+    public void validateAccountBalanceDoesNotBecomeNegative(final SavingsAccountTransaction currentTransaction, final boolean isException,
+            final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions, final CalendarInstance calendarInstance) {
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
-        Money runningBalance = Money.zero(this.currency);
+        BigDecimal dpReductionAmount = BigDecimal.ZERO;
+        if (this.savingsAccountDpDetails != null) {
+            dpReductionAmount = getDPReductionAmount(calendarInstance, new LocalDate(currentTransaction.getDateOf()));
+        }
+        Money runningBalance = Money.of(this.currency, dpReductionAmount);
         Money overdraftInterest = Money.zero(this.currency);
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
         LocalDate lastSavingsDate = null;
@@ -1160,17 +1166,16 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             // enforceMinRequiredBalance
             if (!isException && transaction.canProcessBalanceCheck()) {
                 if (runningBalance.minus(minRequiredBalance).plus(overdraftInterest).isLessThanZero()) {
-                    insufficientBalanceException(transactionAmount, withdrawalFee);
+                    insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
                 }
             }
             lastSavingsDate = transaction.transactionLocalDate();
         }
         if (MathUtility.isGreaterThanZero(this.getSavingsHoldAmount())) {
             if (runningBalance.minus(this.getSavingsHoldAmount()).isLessThanZero()) {
-                insufficientBalanceException(transactionAmount, withdrawalFee);
+                insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
             }
         }
-
     }
     
     private void insufficientBalanceException(final BigDecimal transactionAmount, final BigDecimal withdrawalFee) {
@@ -1184,16 +1189,21 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
 
     public void validateAccountBalanceDoesNotBecomeNegative(final String transactionAction,
-            final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions) {
+            final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions, CalendarInstance calendarInstance,
+            Boolean isUndoDeposit, LocalDate transactionDate) {
 
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
-        Money runningBalance = Money.zero(this.currency);
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
         LocalDate lastSavingsDate = null;
+        BigDecimal dpReductionAmount = BigDecimal.ZERO;
+        if (isUndoDeposit) {
+            dpReductionAmount = getDPReductionAmount(calendarInstance, transactionDate);
+        }
+        Money runningBalance = Money.of(this.currency, dpReductionAmount);
         for (final SavingsAccountTransaction transaction : transactionsSortedByDate) {
-            if (transaction.isNotReversed() && transaction.isCredit()) {
+            if ((transaction.isNotReversed() && transaction.isCredit()) || transaction.isAmountRelease()) {
                 runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
-            } else if (transaction.isNotReversed() && transaction.isDebit()) {
+            } else if (transaction.isNotReversed() && transaction.isDebit() || transaction.isAmountOnHoldNotReleased()) {
                 runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
             }
 
@@ -3201,5 +3211,26 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     public Group getGroup() {
         return this.group;
     }
+    
+    public BigDecimal getDPReductionAmount(final CalendarInstance calendarInstance, final LocalDate transactionDate) {
 
+        final SavingsAccountDpDetails savingsAccountDpDetails = this.savingsAccountDpDetails;
+        final String recurringRule = calendarInstance.getCalendar().getRecurrence();
+        final LocalDate seedDate = calendarInstance.getCalendar().getStartDateLocalDate();
+        final LocalDate periodStartDate = new LocalDate(this.activatedOnDate);
+        final LocalDate periodEndDate = transactionDate;
+        final Integer duration = savingsAccountDpDetails.getDuration();
+        final boolean isSkippMeetingOnFirstDay = false;
+        final Integer numberOfDays = null;
+        final Collection<LocalDate> localDates = CalendarUtils.getRecurringDates(recurringRule, seedDate, periodStartDate, periodEndDate,
+                duration, isSkippMeetingOnFirstDay, numberOfDays);
+        final int periodNumber = localDates.size();
+        if (periodNumber > 0) {
+            if (periodNumber < duration.intValue()) {
+                BigDecimal amount = savingsAccountDpDetails.getAmount();
+                return BigDecimal.valueOf(periodNumber).multiply(amount);
+            }
+        }
+        return BigDecimal.ZERO;
+    }
 }
