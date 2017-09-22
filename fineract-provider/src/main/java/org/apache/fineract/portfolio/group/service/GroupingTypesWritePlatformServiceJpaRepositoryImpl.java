@@ -276,7 +276,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             this.groupRepository.saveAndFlush(newGroup);
 
             //Create Workflow
-            boolean isWorkflowCreated = createGroupWorkflow(newGroup);
+            boolean isWorkflowCreated = createWorkflow(newGroup);
             final Map<String, Object> changes = new LinkedHashMap<>(5);
 
             if(isWorkflowCreated) {
@@ -302,28 +302,34 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         }
     }
 
-    private boolean createGroupWorkflow(Group group) {
+    private boolean createWorkflow(Group group) {
 
         if (this.configurationDomainService.isWorkFlowEnabled()) {
-            /**
-             * Checking is loan product mapped with task configuration entity
-             * type LOAN_PRODUCT
-             */
-            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                    .findOneByEntityTypeAndEntityId(TaskConfigEntityType.GROUPONBARDING.getValue(), -1L);
-            if (taskConfigEntityTypeMapping != null) {
-                final Long groupId = group.getId();
-                final Map<TaskConfigKey, String> map = new HashMap<>();
+            final TaskConfigEntityType taskConfigEntityType;
+            final TaskEntityType taskEntityType;
+            final Map<TaskConfigKey, String> map = new HashMap<>();
+            final Long groupId = group.getId();
+            final String description, shortDescription;
+            if (group.isCenter()) {
+                taskConfigEntityType = TaskConfigEntityType.CENTERONBOARDING;
+                taskEntityType = TaskEntityType.CENTER;
+                map.put(TaskConfigKey.CENTER_ID, String.valueOf(groupId));
+                description = shortDescription = "On-boarding for center" + group.getName() + " (#" + groupId + ") ";
+            } else {
+                taskConfigEntityType = TaskConfigEntityType.GROUPONBARDING;
+                taskEntityType = TaskEntityType.GROUP_ONBOARDING;
                 map.put(TaskConfigKey.GROUP_ID, String.valueOf(groupId));
+                description = shortDescription = "On-boarding for group" + group.getName() + " (#" + groupId + ") ";
+            }
+            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                    .findOneByEntityTypeAndEntityId(taskConfigEntityType.getValue(), -1L);
+            if (taskConfigEntityTypeMapping != null) {
                 Client client = null;
                 AppUser assignedTo = null;
                 Date dueDate = null;
                 Date dueTime = null;
-                final String description, shortDescription;
-                description = shortDescription = "On-boarding for group" + group.getName() + " (#" + group.getId() + ") ";
-                this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-                        TaskEntityType.GROUP_ONBOARDING, group.getId(), client, assignedTo, dueDate, group.getOffice(), map, description,
-                        shortDescription, dueTime);
+                this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(), taskEntityType, groupId,
+                        client, assignedTo, dueDate, group.getOffice(), map, description, shortDescription, dueTime);
                 return true;
             }
         }
