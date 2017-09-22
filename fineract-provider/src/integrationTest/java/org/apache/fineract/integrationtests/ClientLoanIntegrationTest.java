@@ -4518,7 +4518,7 @@ public class ClientLoanIntegrationTest {
 
         verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
 
-        String JobName = SchedulerJobHelper.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT;
+        String JobName = SchedulerJobHelper.OVERDUE_CALCULATIONS_FOR_LOANS;
         this.schedulerJobHelper.executeJob(JobName);
 
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);

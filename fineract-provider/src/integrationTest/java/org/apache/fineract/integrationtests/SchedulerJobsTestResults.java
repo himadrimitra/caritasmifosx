@@ -758,7 +758,7 @@ public class SchedulerJobsTestResults {
         ArrayList<HashMap> repaymentScheduleDataBefore = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,
                 this.responseSpec, loanID);
 
-        String JobName = SchedulerJobHelper.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT;
+        String JobName = SchedulerJobHelper.OVERDUE_CALCULATIONS_FOR_LOANS;
         this.schedulerJobHelper.executeJob(JobName);
 
         final HashMap chargeData = ChargesHelper.getChargeById(this.requestSpec, this.responseSpec, overdueFeeChargeId);

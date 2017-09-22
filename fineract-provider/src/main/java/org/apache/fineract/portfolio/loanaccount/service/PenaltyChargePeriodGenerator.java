@@ -15,7 +15,7 @@ import org.joda.time.LocalDate;
 public abstract class PenaltyChargePeriodGenerator {
 
    abstract void createPeriods(LoanRecurringCharge recurringCharge, LoanOverdueCalculationDTO overdueCalculationDetail,
-            Map<LocalDate,PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate);
+            Map<LocalDate,PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate, LocalDate actualEndDate);
 
     public boolean occursOnDayFromAndUpToAndIncluding(final LocalDate fromNotInclusive, final LocalDate upToAndInclusive,
             final LocalDate target) {

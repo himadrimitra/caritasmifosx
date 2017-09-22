@@ -160,7 +160,7 @@ public interface LoanReadPlatformService {
 
     List<LoanTransaction> retrieveLoanTransactions(Long loanId, Integer... types);
 
-    List<LoanRecurringCharge> retrieveLoanOverdueRecurringCharge(Long loanId);
+    List<LoanRecurringCharge> retrieveLoanOverdueRecurringCharge(Long loanId, boolean fetchApplicableChargesByState);
     
     MonetaryCurrency retrieveLoanCurrency(Long loanId);
 

@@ -101,6 +101,8 @@ public class LoanChargeData {
     private Collection<LoanChargeTaxDetailsPaidByData> loanChargeTaxDetailsPaidByDatas = new ArrayList<>(1);
     
     private  List<ChargeSlabData> slabs;
+    
+    private LocalDate overdueAppliedTill;
 
     public static LoanChargeData template(final Collection<ChargeData> chargeOptions) {
         final boolean isCapitalized = false;
@@ -395,7 +397,8 @@ public class LoanChargeData {
     
     public static LoanChargeData newLoanOverdueCharge(final Long chargeId, final Long loanId, final LocalDate dueDate,
             final BigDecimal amount, final BigDecimal percentage, final EnumOptionData chargeTimeType,
-            final EnumOptionData chargeCalculationType, final EnumOptionData chargePaymentMode, final Long taxGroupId) {
+            final EnumOptionData chargeCalculationType, final EnumOptionData chargePaymentMode, final Long taxGroupId,
+            final LocalDate overdueAppliedTill) {
         final Long id = null;
         final String name = null;
         final CurrencyData currency = null;
@@ -411,9 +414,11 @@ public class LoanChargeData {
         final boolean isCapitalized = false;
         final boolean isMandatory = false;
 
-        return new LoanChargeData(id, chargeId, name, currency, amount, percentage, chargeTimeType, chargeCalculationType, chargeOptions,
+        LoanChargeData loanChargeData = new LoanChargeData(id, chargeId, name, currency, amount, percentage, chargeTimeType, chargeCalculationType, chargeOptions,
                 penalty, chargePaymentMode, paid, waived, loanId, minCap, maxCap, amountOrPercentage, installmentChargeData, isGlimCharge,
                 isCapitalized, taxGroupId, isMandatory,dueDate);
+        loanChargeData.setOverdueAppliedTill(overdueAppliedTill);
+        return loanChargeData;
     }
 
     public boolean isChargePayable() {
@@ -538,6 +543,16 @@ public class LoanChargeData {
     
     public ChargePaymentMode getChargePaymentMode() {
         return ChargePaymentMode.fromInt(this.chargePaymentMode.getId().intValue());
+    }
+
+    
+    public LocalDate getOverdueAppliedTill() {
+        return this.overdueAppliedTill;
+    }
+
+    
+    public void setOverdueAppliedTill(LocalDate overdueAppliedTill) {
+        this.overdueAppliedTill = overdueAppliedTill;
     }
     
 }

@@ -45,6 +45,9 @@ public class ChargeOverueDetail extends AbstractPersistable<Long> {
     @Column(name = "calculate_charge_on_current_overdue", nullable = false)
     private boolean calculateChargeOnCurrentOverdue;
     
+    @Column(name = "stop_charge_on_npa", nullable = false)
+    private boolean stopChargeOnNPA;
+    
     @Column(name = "min_overdue_amount_required")
     private BigDecimal minOverdueAmountRequired;
 
@@ -54,7 +57,7 @@ public class ChargeOverueDetail extends AbstractPersistable<Long> {
 
     private ChargeOverueDetail(final Integer gracePeriod, final Integer penaltyFreePeriod, final PenaltyGraceType penaltyGraceType,
             final boolean applyChargeForBrokenPeriod, final boolean isBasedOnOriginalSchedule, final boolean considerOnlyPostedInterest,
-            final boolean calculateChargeOnCurrentOverdue, final BigDecimal minOverdueAmountRequired) {
+            final boolean calculateChargeOnCurrentOverdue, final BigDecimal minOverdueAmountRequired, final boolean stopOverdueChargesOnNPA) {
         this.gracePeriod = gracePeriod;
         this.penaltyFreePeriod = penaltyFreePeriod;
         this.graceType = penaltyGraceType.getValue();
@@ -63,6 +66,7 @@ public class ChargeOverueDetail extends AbstractPersistable<Long> {
         this.considerOnlyPostedInterest = considerOnlyPostedInterest;
         this.calculateChargeOnCurrentOverdue = calculateChargeOnCurrentOverdue;
         this.minOverdueAmountRequired = minOverdueAmountRequired;
+        this.stopChargeOnNPA = stopOverdueChargesOnNPA;
     }
 
     public static ChargeOverueDetail fromJson(final JsonCommand command, final Locale locale) {
@@ -88,10 +92,13 @@ public class ChargeOverueDetail extends AbstractPersistable<Long> {
                 .booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.considerOnlyPostedInterestParamName);
         final boolean calculateChargeOnCurrentOverdue = command
                 .booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.calculateChargeOnCurrentOverdueParamName);
+        final boolean stopOverdueChargesOnNPA = command
+                .booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.stopChargeOnNPAParamName);
         final BigDecimal minOverdueAmountRequired = command.bigDecimalValueOfParameterNamed(ChargesApiConstants.minOverdueAmountRequiredParamName,locale);
 
         return new ChargeOverueDetail(gracePeriod, penaltyFreePeriod, penaltyGraceType, applyChargeForBrokenPeriod,
-                isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, minOverdueAmountRequired);
+                isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, minOverdueAmountRequired,
+                stopOverdueChargesOnNPA);
     }
 
     public void update(final JsonCommand command, final Map<String, Object> actualChanges, final Locale locale) {
@@ -143,6 +150,12 @@ public class ChargeOverueDetail extends AbstractPersistable<Long> {
             this.calculateChargeOnCurrentOverdue = newValue;
         }
         
+        if (command.isChangeInBooleanParameterNamed(ChargesApiConstants.stopChargeOnNPAParamName, this.stopChargeOnNPA)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.stopChargeOnNPAParamName);
+            actualChanges.put(ChargesApiConstants.stopChargeOnNPAParamName, newValue);
+            this.stopChargeOnNPA = newValue;
+        }
+        
         if (command.isChangeInBigDecimalParameterNamed(ChargesApiConstants.minOverdueAmountRequiredParamName, this.minOverdueAmountRequired,locale)) {
             final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(ChargesApiConstants.minOverdueAmountRequiredParamName,locale);
             actualChanges.put(ChargesApiConstants.minOverdueAmountRequiredParamName, newValue);
@@ -153,7 +166,8 @@ public class ChargeOverueDetail extends AbstractPersistable<Long> {
     public ChargeOverdueData toData() {
         EnumOptionData graceType = PenaltyGraceType.penaltyGraceType(this.graceType);
         return new ChargeOverdueData(getId(), gracePeriod, penaltyFreePeriod, graceType, applyChargeForBrokenPeriod,
-                isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, minOverdueAmountRequired);
+                isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, stopChargeOnNPA,
+                minOverdueAmountRequired);
     }
 
     public void setCharge(Charge charge) {

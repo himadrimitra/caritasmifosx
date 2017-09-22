@@ -110,25 +110,13 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     }
 
     @Override
-    @CronTarget(jobName = JobName.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT)
-    public void applyChargeForOverdueLoans() throws JobExecutionException {
-        boolean isRunForBrokenPeriod = false;
-        boolean isInterestRecalculationLoans = false;
-        List<Long> loanIds = this.loanReadPlatformService.fetchLoanIdsForOverdueCharge(isRunForBrokenPeriod, isInterestRecalculationLoans);
-        final LocalDate runOndate = DateUtils.getLocalDateOfTenant();
-        final LocalDate brokenPeriodOnDate = null;;
-        JobRunner<List<Long>> runner = new LoanOverdueChargeJobRunner(runOndate, brokenPeriodOnDate);
-        final String errors = this.jobExecuter.executeJob(loanIds, runner);
-        if (errors.length() > 0) { throw new JobExecutionException(errors); }
-    }
-    
-    @Override
-    @CronTarget(jobName = JobName.APPLY_PENALTY_CHARGE_FOR_BROKEN_PERIODS)
-    public void applyChargeForOverdueLoansWithBrokenPeriodDate() throws JobExecutionException {
+    @CronTarget(jobName = JobName.OVERDUE_CALCULATIONS_FOR_LOANS)
+    public void overdueCalculationForLoans() throws JobExecutionException {
         StringBuilder sb = new StringBuilder();
         try {
-            Thread nonInterestRecalculationThread = new Thread(new BrokenPeriodOverdueChargeRunnable(sb, false));
-            Thread interestRecalculationThread = new Thread(new BrokenPeriodOverdueChargeRunnable(sb, true));
+            boolean isBrokenPeriod = false; 
+            Thread nonInterestRecalculationThread = new Thread(new BrokenPeriodOverdueChargeRunnable(sb, false, isBrokenPeriod));
+            Thread interestRecalculationThread = new Thread(new BrokenPeriodOverdueChargeRunnable(sb, true, isBrokenPeriod));
             nonInterestRecalculationThread.start();
             interestRecalculationThread.start();
             nonInterestRecalculationThread.join();
@@ -140,7 +128,35 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
     }
     
+    @Override
+    @CronTarget(jobName = JobName.APPLY_PENALTY_CHARGE_FOR_BROKEN_PERIODS)
+    public void applyChargeForOverdueLoansWithBrokenPeriodDate() throws JobExecutionException {
+        StringBuilder sb = new StringBuilder();
+        try {
+            boolean isBrokenPeriod = true; 
+            Thread nonInterestRecalculationThread = new Thread(new BrokenPeriodOverdueChargeRunnable(sb, false, isBrokenPeriod));
+            Thread interestRecalculationThread = new Thread(new BrokenPeriodOverdueChargeRunnable(sb, true, isBrokenPeriod));
+            nonInterestRecalculationThread.start();
+            interestRecalculationThread.start();
+            nonInterestRecalculationThread.join();
+            interestRecalculationThread.join();
+        } catch (InterruptedException e) {
+            sb.append("Thread Interrupted for Apply penalty to broken periods : " + e.getMessage());
+        }
+
+        if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+    }
     
+    private void overdueCalculationForLoansWithoutInterestRecalculation(StringBuilder sb) {
+        boolean isRunForBrokenPeriod = false;
+        boolean isInterestRecalculationLoans = false;
+        List<Long> loanIds = this.loanReadPlatformService.fetchLoanIdsForOverdueCharge(isRunForBrokenPeriod, isInterestRecalculationLoans);
+        final LocalDate runOndate = DateUtils.getLocalDateOfTenant();
+        final LocalDate brokenPeriodOnDate = null;;
+        JobRunner<List<Long>> runner = new LoanOverdueChargeJobRunner(runOndate, brokenPeriodOnDate);
+        final String errors = this.jobExecuter.executeJob(loanIds, runner);
+        sb.append(errors);
+    }
     
     
     private class BrokenPeriodOverdueChargeRunnable implements Runnable {
@@ -149,9 +165,10 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         final StringBuilder sb;
         final Authentication auth;
         final boolean isForInterestRecalculatedLoan;
+        final boolean canApplyBrokenPeriodCharges;
         final Map<String, Object> jobParams;
 
-        public BrokenPeriodOverdueChargeRunnable(StringBuilder sb, boolean isForInterestRecalculatedLoan) {
+        public BrokenPeriodOverdueChargeRunnable(StringBuilder sb, boolean isForInterestRecalculatedLoan, boolean canApplyBrokenPeriodCharges) {
             this.tenant = ThreadLocalContextUtil.getTenant();
             if (SecurityContextHolder.getContext() == null) {
                 this.auth = null;
@@ -160,6 +177,7 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
             }
             this.sb = sb;
             this.isForInterestRecalculatedLoan = isForInterestRecalculatedLoan;
+            this.canApplyBrokenPeriodCharges = canApplyBrokenPeriodCharges;
             this.jobParams = ThreadLocalContextUtil.getJobParams();
         }
 
@@ -170,10 +188,18 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
             if (this.auth != null) {
                 SecurityContextHolder.getContext().setAuthentication(this.auth);
             }
-            if (this.isForInterestRecalculatedLoan) {
-                recalculatePenaltiesForInterestRecalculationLoans(sb);
+            if (canApplyBrokenPeriodCharges) {
+                if (this.isForInterestRecalculatedLoan) {
+                    recalculatePenaltiesForInterestRecalculationLoans(sb);
+                } else {
+                    recalculatePenaltiesForNonInterestRecalculationLoans(sb);
+                }
             } else {
-                recalculatePenaltiesForNonInterestRecalculationLoans(sb);
+                if (this.isForInterestRecalculatedLoan) {
+                    overdueCalculationForLoansWithInterestRecalculation(sb);
+                } else {
+                    overdueCalculationForLoansWithoutInterestRecalculation(sb);
+                }
             }
 
         }
@@ -208,7 +234,6 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         @Override
         public void runJob(final List<Long> loanIds, final StringBuilder sb) {
             applyChargeForOverdueLoans(loanIds, sb, runOndate, this.brokenPeriodOnDate);
-
         }
 
     }
@@ -225,9 +250,7 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         }
     }
 
-    @Override
-    @CronTarget(jobName = JobName.RECALCULATE_INTEREST_FOR_LOAN)
-    public void recalculateInterest() throws JobExecutionException {
+    private void overdueCalculationForLoansWithInterestRecalculation(StringBuilder sb) {
         List<Long> loanIds = this.loanReadPlatformService.fetchLoansForInterestRecalculation();
         LocalDate tillDate = (LocalDate) ThreadLocalContextUtil.getJobParams().get(SchedulerServiceConstants.EXECUTE_AS_ON_DATE);
         if (tillDate == null) {
@@ -236,7 +259,7 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         final LocalDate runOndate = tillDate;
         final LocalDate brokenPeriodOnDate = null;
         String errors = recalculateInterest(loanIds,  runOndate,brokenPeriodOnDate);
-        if (errors.length() > 0) { throw new JobExecutionException(errors); }
+        sb.append(errors);
     }
     
     private void recalculatePenaltiesForInterestRecalculationLoans(StringBuilder sb){

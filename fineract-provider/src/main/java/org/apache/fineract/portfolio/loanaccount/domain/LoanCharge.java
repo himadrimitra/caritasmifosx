@@ -157,6 +157,10 @@ public class LoanCharge extends AbstractPersistable<Long> {
     @Column(name = "is_capitalized", nullable = true)
     private boolean isCapitalized;
     
+    @Temporal(TemporalType.DATE)
+    @Column(name = "overdue_applied_till")
+    private Date overdueAppliedTill;
+    
     public static LoanCharge createNewFromJson(final Loan loan, final Charge chargeDefinition, final JsonCommand command) {
         final LocalDate dueDate = command.localDateValueOfParameterNamed("dueDate");
         return createNewFromJson(loan, chargeDefinition, command, dueDate);
@@ -380,6 +384,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
         this.maxCap = charge.maxCap;
         this.minCap = charge.minCap;
         this.taxGroup = charge.taxGroup;
+        this.overdueAppliedTill = charge.overdueAppliedTill;
         if (charge.loanTrancheDisbursementCharge != null) {
             this.loanTrancheDisbursementCharge = LoanTrancheDisbursementCharge.copyLoanTrancheDisbursementCharge(
                     charge.loanTrancheDisbursementCharge, this);
@@ -392,7 +397,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
     // this is used only for overdue charge. don't use for any other purpose 
     public LoanCharge(final Loan loan, final Charge chargeDefinition, final BigDecimal amount,final BigDecimal percentage,
             final ChargeTimeType chargeTime, final ChargeCalculationType chargeCalculation, final LocalDate dueDate,
-            final ChargePaymentMode chargePaymentMode, final boolean isPenalty) {
+            final ChargePaymentMode chargePaymentMode, final boolean isPenalty, LocalDate overdueAppliedTill) {
         this.loan = loan;
         this.charge = chargeDefinition;
         this.penaltyCharge = isPenalty;
@@ -453,7 +458,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
             createLoanChargeTaxDetails(loan.getDisbursementDate(), chargeAmount);
         }
         this.isCapitalized = this.charge == null ? false : this.charge.isCapitalized();
-
+        this.overdueAppliedTill = overdueAppliedTill.toDate();
     }
 
     private void copyLoanChargeTaxDetails(final List<LoanChargeTaxDetails> fromTaxDetails, final List<LoanChargeTaxDetails> toTaxDetails) {
@@ -1531,6 +1536,15 @@ public class LoanCharge extends AbstractPersistable<Long> {
     
     public Set<LoanInstallmentCharge> getLoanInstallmentCharge() {
         return this.loanInstallmentCharge;
+    }
+
+    
+    public LocalDate getOverdueAppliedTill() {
+        LocalDate overdueAppliedTill = null;
+        if (this.overdueAppliedTill != null) {
+            overdueAppliedTill = new LocalDate(this.overdueAppliedTill);
+        }
+        return overdueAppliedTill;
     }
     
 }

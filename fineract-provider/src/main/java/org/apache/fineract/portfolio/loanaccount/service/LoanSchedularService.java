@@ -31,10 +31,6 @@ import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 
 public interface LoanSchedularService {
 
-    void applyChargeForOverdueLoans() throws JobExecutionException;
-
-    void recalculateInterest() throws JobExecutionException;
-
     void applyHolidaysToLoans(final HolidayDetailDTO holidayDetailDTO, final Map<Long, List<Holiday>> officeIds,
             final Set<Long> failedForOffices, final StringBuilder sb) throws JobExecutionException;
 
@@ -45,5 +41,7 @@ public interface LoanSchedularService {
     void applyChargeForOverdueLoansWithBrokenPeriodDate() throws JobExecutionException;
 
     CommandProcessingResult executeJobForLoans(JsonCommand command, JobName jobName);
+
+    void overdueCalculationForLoans() throws JobExecutionException;
     
 }

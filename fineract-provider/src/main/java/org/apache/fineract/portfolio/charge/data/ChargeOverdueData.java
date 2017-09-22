@@ -16,10 +16,11 @@ public class ChargeOverdueData {
     private final boolean considerOnlyPostedInterest;
     private final boolean calculateChargeOnCurrentOverdue;
     private final BigDecimal minOverdueAmountRequired;
+    private final boolean stopChargeOnNPA;
 
     public ChargeOverdueData(final Long id, final Integer gracePeriod, final Integer penaltyFreePeriod, final EnumOptionData graceType,
             final boolean applyChargeForBrokenPeriod, final boolean isBasedOnOriginalSchedule, final boolean considerOnlyPostedInterest,
-            final boolean calculateChargeOnCurrentOverdue, final BigDecimal minOverdueAmountRequired) {
+            final boolean calculateChargeOnCurrentOverdue, final boolean stopChargeOnNPA, final BigDecimal minOverdueAmountRequired) {
         this.id = id;
         this.gracePeriod = gracePeriod;
         this.penaltyFreePeriod = penaltyFreePeriod;
@@ -28,6 +29,7 @@ public class ChargeOverdueData {
         this.isBasedOnOriginalSchedule = isBasedOnOriginalSchedule;
         this.considerOnlyPostedInterest = considerOnlyPostedInterest;
         this.calculateChargeOnCurrentOverdue = calculateChargeOnCurrentOverdue;
+        this.stopChargeOnNPA = stopChargeOnNPA;
         this.minOverdueAmountRequired = minOverdueAmountRequired;
     }
 
@@ -62,6 +64,10 @@ public class ChargeOverdueData {
     
     public BigDecimal getMinOverdueAmountRequired() {
         return this.minOverdueAmountRequired;
+    }
+
+    public boolean isStopChargeOnNPA() {
+        return stopChargeOnNPA;
     }
 
 }

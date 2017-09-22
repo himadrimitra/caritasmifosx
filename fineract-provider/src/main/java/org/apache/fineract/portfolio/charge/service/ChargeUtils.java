@@ -67,6 +67,42 @@ public class ChargeUtils {
         }
         return recurrerDates;
     }
+    
+    public static LocalDate retriveNextRecurrenceDate(LocalDate startDate, LocalDate date, LocalDate nextScheduleDate, int gracePeriod,
+            LoanPeriodFrequencyType feeFrequency, Integer feeInterval) {
+        LocalDate recurrerDates = date;
+        LocalDate seedDate = startDate.plusDays(gracePeriod);
+        switch (feeFrequency) {
+            case DAYS:
+                recurrerDates = date;
+            break;
+            case WEEKS:
+                String recurringRule = "FREQ=WEEKLY;INTERVAL=" + feeInterval;
+                if (!CalendarUtils.isValidRecurringDate(recurringRule, seedDate, seedDate)) {
+                    recurrerDates = CalendarUtils.getNextRecurringDate(recurringRule, seedDate, date);
+                }
+            break;
+            case MONTHS:
+                String recurringRuleMonthly = "FREQ=MONTHLY;INTERVAL=" + feeInterval;
+                if (!CalendarUtils.isValidRecurringDate(recurringRuleMonthly, seedDate, seedDate)) {
+                    recurrerDates = CalendarUtils.getNextRecurringDate(recurringRuleMonthly, seedDate, date);
+                }
+            break;
+            case YEARS:
+                String recurringRuleYearly = "FREQ=YEARLY;INTERVAL=" + feeInterval;
+                if (!CalendarUtils.isValidRecurringDate(recurringRuleYearly, seedDate, seedDate)) {
+                    recurrerDates = CalendarUtils.getNextRecurringDate(recurringRuleYearly, seedDate, date);
+                }
+            break;
+            case SAME_AS_REPAYMENT_PERIOD:
+                recurrerDates = nextScheduleDate;
+            break;
+
+            default:
+            break;
+        }
+        return recurrerDates;
+    }
 
     public static LocalDate retrivePreviosRecurringDate(LocalDate date, LoanPeriodFrequencyType feeFrequency, Integer feeInterval) {
         LocalDate previousDate = date;

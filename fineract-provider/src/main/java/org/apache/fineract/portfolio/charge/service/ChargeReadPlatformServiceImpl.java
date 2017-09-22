@@ -351,6 +351,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, "
                     + "cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,"
                     + "cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue,cod.min_overdue_amount_required as minOverdueAmountRequired,"
+                    + "cod.stop_charge_on_npa as stopChargeOnNPA,"
                     + "tg.id as taxGroupId, tg.name as taxGroupName " + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
@@ -374,6 +375,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, "
                     + "cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,"
                     + "cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue, cod.min_overdue_amount_required as minOverdueAmountRequired, "
+                    + "cod.stop_charge_on_npa as stopChargeOnNPA,"
                     + "tg.id as taxGroupId, tg.name as taxGroupName " + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
@@ -493,10 +495,12 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             final boolean isBasedOnOriginalSchedule = rs.getBoolean("penaltyBasedOnOriginalSchedule");
             final boolean considerOnlyPostedInterest = rs.getBoolean("penaltyOnPostedInterestOnly");
             final boolean calculateChargeOnCurrentOverdue = rs.getBoolean("penaltyOnCurrentOverdue");
+            final boolean stopChargeOnNPA = rs.getBoolean("stopChargeOnNPA");
             final BigDecimal minOverdueAmountRequired = rs.getBigDecimal("minOverdueAmountRequired");
 
             return new ChargeOverdueData(id, gracePeriod, penaltyFreePeriod, graceType, applyChargeForBrokenPeriod,
-                    isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, minOverdueAmountRequired);
+                    isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, stopChargeOnNPA,
+                    minOverdueAmountRequired);
         }
 
     }
