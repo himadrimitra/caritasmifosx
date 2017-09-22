@@ -33,6 +33,7 @@ import org.apache.fineract.portfolio.common.domain.ConditionalOperator;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.DaysInMonthType;
 import org.apache.fineract.portfolio.common.domain.DaysInYearType;
+import org.apache.fineract.portfolio.common.domain.LoanPeriodFrequencyType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.springframework.stereotype.Service;
@@ -96,6 +97,11 @@ public class DropdownReadPlatformServiceImpl implements DropdownReadPlatformServ
                 CommonEnumerations.dayOfWeekType(DayOfWeekType.THURSDAY, codePrefix),
                 CommonEnumerations.dayOfWeekType(DayOfWeekType.FRIDAY, codePrefix),
                 CommonEnumerations.dayOfWeekType(DayOfWeekType.SATURDAY, codePrefix));
+    }
+
+    @Override
+    public Collection<EnumOptionData> retrieveLoanPeriodFrequencyTypeOptions() {
+        return LoanPeriodFrequencyType.overduePeriodFrequencyTypeOptions();
     }
 
 }

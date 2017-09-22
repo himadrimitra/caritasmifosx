@@ -40,9 +40,13 @@ import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
+import org.apache.fineract.portfolio.charge.domain.ChargePercentagePeriodType;
+import org.apache.fineract.portfolio.charge.domain.ChargePercentageType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.PenaltyGraceType;
 import org.apache.fineract.portfolio.charge.exception.ChargeSlabNotFoundException;
+import org.apache.fineract.portfolio.common.domain.LoanPeriodFrequencyType;
 import org.joda.time.MonthDay;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -60,11 +64,18 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
     private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("name", "amount", "locale", "currencyCode",
             "currencyOptions", "chargeAppliesTo", "chargeTimeType", "chargeCalculationType", "chargeCalculationTypeOptions", "penalty",
             "active", "chargePaymentMode", "feeOnMonthDay", "feeInterval", "monthDayFormat", "minCap", "maxCap", "feeFrequency",
-            ChargesApiConstants.glAccountIdParamName, ChargesApiConstants.taxGroupIdParamName, ChargesApiConstants.emiRoundingGoalSeekParamName,
-            ChargesApiConstants.isGlimChargeParamName, ChargesApiConstants.glimChargeCalculation, ChargesApiConstants.slabsParamName, ChargesApiConstants.isCapitalizedParamName,
-            ChargesApiConstants.minValueParamName, ChargesApiConstants.maxValueParamName));
+            ChargesApiConstants.glAccountIdParamName, ChargesApiConstants.taxGroupIdParamName,
+            ChargesApiConstants.emiRoundingGoalSeekParamName, ChargesApiConstants.isGlimChargeParamName,
+            ChargesApiConstants.glimChargeCalculation, ChargesApiConstants.slabsParamName, ChargesApiConstants.isCapitalizedParamName,
+            ChargesApiConstants.minValueParamName, ChargesApiConstants.maxValueParamName, ChargesApiConstants.percentageTypeParamName,
+            ChargesApiConstants.percentagePeriodTypeParamName, ChargesApiConstants.overdueChargeDetailParamName));
 
-
+    private final Set<String> supportedParametersForOverdue = new HashSet<>(Arrays.asList(ChargesApiConstants.graceTypeParamName,
+            ChargesApiConstants.penaltyFreePeriodParamName, ChargesApiConstants.gracePeriodParamName,
+            ChargesApiConstants.considerOnlyPostedInterestParamName, ChargesApiConstants.calculateChargeOnCurrentOverdueParamName,
+            ChargesApiConstants.isBasedOnOriginalScheduleParamName, ChargesApiConstants.applyChargeForBrokenPeriodParamName,
+            ChargesApiConstants.minOverdueAmountRequiredParamName, ChargesApiConstants.stopChargeOnNPAParamName));
+            
     private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
@@ -96,9 +107,9 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
         baseDataValidator.reset().parameter("feeInterval").value(feeInterval).integerGreaterThanZero();
 
         final Integer feeFrequency = this.fromApiJsonHelper.extractIntegerNamed("feeFrequency", element, Locale.getDefault());
-        baseDataValidator.reset().parameter("feeFrequency").value(feeFrequency).inMinMaxRange(0, 3);
+        baseDataValidator.reset().parameter("feeFrequency").value(feeFrequency).inMinMaxRange(0, 5);
 
-        if (feeFrequency != null) {
+        if (feeFrequency != null && !LoanPeriodFrequencyType.fromInt(feeFrequency).isSameAsRepayment()) {
             baseDataValidator.reset().parameter("feeInterval").value(feeInterval).notNull();
         }
 
@@ -287,6 +298,9 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             final Long taxGroupId = this.fromApiJsonHelper.extractLongNamed(ChargesApiConstants.taxGroupIdParamName, element);
             baseDataValidator.reset().parameter(ChargesApiConstants.taxGroupIdParamName).value(taxGroupId).notNull().longGreaterThanZero();
         }
+        validatePercentageDetails(baseDataValidator, element);
+        
+        validateOverdueChargeDetails(baseDataValidator, element);
         
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -454,7 +468,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
         }
         if (this.fromApiJsonHelper.parameterExists("feeFrequency", element)) {
             final Integer feeFrequency = this.fromApiJsonHelper.extractIntegerNamed("feeFrequency", element, Locale.getDefault());
-            baseDataValidator.reset().parameter("feeFrequency").value(feeFrequency).inMinMaxRange(0, 3);
+            baseDataValidator.reset().parameter("feeFrequency").value(feeFrequency).inMinMaxRange(0, 5);
         }
 
         if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.glAccountIdParamName, element)) {
@@ -497,6 +511,9 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                 }
             }
         }
+        validatePercentageDetails(baseDataValidator, element);
+        
+        validateOverdueChargeDetails(baseDataValidator, element);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -525,6 +542,98 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
         } else if (!isGlimCharge) {
             baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
                     .isNotOneOfTheseValues(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue());
+        }
+    }
+    
+    private void validateOverdueChargeDetails(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.overdueChargeDetailParamName, element)) {
+            final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
+            final JsonElement overdueDetailsElement = element.getAsJsonObject().get(ChargesApiConstants.overdueChargeDetailParamName);
+            final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+            this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, this.fromApiJsonHelper.toJson(overdueDetailsElement), this.supportedParametersForOverdue);
+            Integer gracePeriod = null;
+            if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.gracePeriodParamName, overdueDetailsElement)) {
+                gracePeriod = this.fromApiJsonHelper.extractIntegerNamed(ChargesApiConstants.gracePeriodParamName,
+                        overdueDetailsElement, locale);
+                baseDataValidator.reset().parameter(ChargesApiConstants.gracePeriodParamName).value(gracePeriod).notBlank()
+                        .integerZeroOrGreater().notExceedingLengthOf(4);
+            }
+            if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.penaltyFreePeriodParamName, overdueDetailsElement)) {
+                final Integer penaltyFreePeriod = this.fromApiJsonHelper.extractIntegerNamed(
+                        ChargesApiConstants.penaltyFreePeriodParamName, overdueDetailsElement, locale);
+                baseDataValidator.reset().parameter(ChargesApiConstants.penaltyFreePeriodParamName).value(penaltyFreePeriod).notBlank()
+                        .integerZeroOrGreater().notExceedingLengthOf(4);
+                if(gracePeriod != null){
+                    baseDataValidator.reset().parameter(ChargesApiConstants.penaltyFreePeriodParamName).value(penaltyFreePeriod).notGreaterThanMax(gracePeriod);
+                }
+            }
+            if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.graceTypeParamName, overdueDetailsElement)) {
+                final Integer graceType = this.fromApiJsonHelper.extractIntegerNamed(ChargesApiConstants.graceTypeParamName,
+                        overdueDetailsElement, locale);
+                baseDataValidator
+                        .reset()
+                        .parameter(ChargesApiConstants.graceTypeParamName)
+                        .value(graceType)
+                        .notBlank()
+                        .isOneOfTheseValues(PenaltyGraceType.EACH_OVERDUE_INSTALLEMNT.getValue(),
+                                PenaltyGraceType.FIRST_OVERDUE_INSTALLEMNT.getValue());
+            }
+            
+            if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.minOverdueAmountRequiredParamName, overdueDetailsElement)) {
+                BigDecimal minOverdueAmountRequired = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.minOverdueAmountRequiredParamName,
+                        overdueDetailsElement, locale);
+                baseDataValidator.reset().parameter(ChargesApiConstants.minOverdueAmountRequiredParamName).value(minOverdueAmountRequired).ignoreIfNull()
+                        .zeroOrPositiveAmount();
+            }
+        }
+    }
+    
+    public void validateOverdueChargeDetails(final Charge charge) {
+        if (charge.isOverdueInstallment()) {
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("charge");
+            LoanPeriodFrequencyType frequencyType = LoanPeriodFrequencyType.fromInt(charge.feeFrequency());
+            if (charge.getChargeCalculationType().isFlat() || charge.getPercentageType().isFlat()) {
+                baseDataValidator.parameter(ChargesApiConstants.calculateChargeOnCurrentOverdueParamName).mustBeTrueValueRequired(
+                        charge.getChargeOverueDetail().isCalculateChargeOnCurrentOverdue());
+                if (frequencyType.isSameAsRepayment()) {
+                    baseDataValidator.parameter("feeFrequency").failWithCode("unsupported.type", charge.feeFrequency());
+                }
+            }
+            if (charge.getChargeOverueDetail().isCalculateChargeOnCurrentOverdue()) {
+                baseDataValidator.parameter(ChargesApiConstants.applyChargeForBrokenPeriodParamName).mustBeFalseValueRequired(
+                        charge.getChargeOverueDetail().isApplyChargeForBrokenPeriod());
+
+            }
+
+            if (frequencyType.isInvalid() && charge.getPercentageType().isYearlyPercentage()) {
+                baseDataValidator.parameter(ChargesApiConstants.percentageTypeParamName).failWithCode("unsupported.type");
+            }
+
+            if (frequencyType.isSameAsRepayment() || frequencyType.isDaily()) {
+                if (charge.getPercentagePeriodType().isSameAsFrequency()) {
+                    baseDataValidator.parameter(ChargesApiConstants.percentagePeriodTypeParamName).failWithCode("unsupported.type",
+                            charge.feeFrequency());
+                }
+            }
+            throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        }
+    }
+    
+    private void validatePercentageDetails(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+
+        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.percentageTypeParamName, element)) {
+            final Integer percentageType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
+                    ChargesApiConstants.percentageTypeParamName, element);
+            baseDataValidator.reset().parameter(ChargesApiConstants.percentageTypeParamName).value(percentageType).notBlank()
+                    .isOneOfTheseValues(ChargePercentageType.FLAT.getValue(), ChargePercentageType.YEARLY.getValue());
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.percentagePeriodTypeParamName, element)) {
+            final Integer percentagePeriodType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
+                    ChargesApiConstants.percentagePeriodTypeParamName, element);
+            baseDataValidator.reset().parameter(ChargesApiConstants.percentagePeriodTypeParamName).value(percentagePeriodType).notBlank()
+                    .isOneOfTheseValues(ChargePercentagePeriodType.DAILY.getValue(), ChargePercentagePeriodType.SAME_AS_FREQUENCY.getValue());
         }
     }
 

@@ -26,6 +26,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
+import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
@@ -108,5 +109,7 @@ public interface LoanAccountDomainService {
             String receiptNumber, String note);
 
     void handleWaiverForAccrualSuspense(Loan loan, LoanTransaction waiveInterestTransaction);
+
+    void createAndSaveLoanScheduleArchive(Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO);
 
 }

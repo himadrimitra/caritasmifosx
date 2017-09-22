@@ -34,5 +34,20 @@ public class ChargesApiConstants {
     public static final String isCapitalizedParamName = "isCapitalized";
     public static final String subSlabsParamName = "subSlabs";
     
+    public static final String percentageTypeParamName = "percentageType";
+    public static final String percentagePeriodTypeParamName = "percentagePeriodType";	
+    
+    //overdue charge related parameters 
+    
+    public static final String overdueChargeDetailParamName = "overdueChargeDetail";
+    public static final String gracePeriodParamName = "gracePeriod";
+    public static final String penaltyFreePeriodParamName = "penaltyFreePeriod";
+    public static final String graceTypeParamName = "graceType";
+    public static final String applyChargeForBrokenPeriodParamName = "applyChargeForBrokenPeriod";
+    public static final String isBasedOnOriginalScheduleParamName = "isBasedOnOriginalSchedule";
+    public static final String considerOnlyPostedInterestParamName = "considerOnlyPostedInterest";
+    public static final String calculateChargeOnCurrentOverdueParamName = "calculateChargeOnCurrentOverdue";   
+    public static final String stopChargeOnNPAParamName = "stopChargeOnNPA";
+    public static final String minOverdueAmountRequiredParamName = "minOverdueAmountRequired";    
 
 }

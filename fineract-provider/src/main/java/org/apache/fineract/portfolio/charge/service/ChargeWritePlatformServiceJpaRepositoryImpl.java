@@ -110,6 +110,7 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             }
 
             final Charge charge = Charge.fromJson(command, glAccount, taxGroup);
+            this.fromApiJsonDeserializer.validateOverdueChargeDetails(charge);
             this.chargeRepository.save(charge);
 
             // check if the office specific products are enabled. If yes, then
@@ -196,6 +197,8 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
                 Integer glimChargeCalculation = command.integerValueOfParameterNamed(ChargesApiConstants.glimChargeCalculation);
                 chargeForUpdate.setGlimChargeCalculation(glimChargeCalculation);
             }
+            
+            this.fromApiJsonDeserializer.validateOverdueChargeDetails(chargeForUpdate);
 
             if (!changes.isEmpty()) {
                 this.chargeRepository.save(chargeForUpdate);
@@ -207,6 +210,7 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             return CommandProcessingResult.empty();
         }
     }
+    
 
     @Transactional
     @Override

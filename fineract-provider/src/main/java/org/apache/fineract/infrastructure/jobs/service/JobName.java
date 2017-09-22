@@ -29,14 +29,14 @@ public enum JobName {
     TRANSFER_FEE_CHARGE_FOR_LOANS("Transfer Fee For Loans From Savings"), //
     ACCOUNTING_RUNNING_BALANCE_UPDATE("Update Accounting Running Balances"), //
     PAY_DUE_SAVINGS_CHARGES("Pay Due Savings Charges"), //
-    APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT("Apply penalty to overdue loans"), //
+    OVERDUE_CALCULATIONS_FOR_LOANS("Overdue Calculations For Loans"), //
+    APPLY_PENALTY_CHARGE_FOR_BROKEN_PERIODS("Apply Penalty For Broken Periods"), //
     EXECUTE_STANDING_INSTRUCTIONS("Execute Standing Instruction"), //
     ADD_DUE_DATE_ACCRUAL_ENTRIES("Add Due Date Accrual Transactions"), //
     UPDATE_NPA("Update Non Performing Assets"), //
     UPDATE_DEPOSITS_ACCOUNT_MATURITY_DETAILS("Update Deposit Accounts Maturity details"), //
     TRANSFER_INTEREST_TO_SAVINGS("Transfer Interest To Savings"), //
     ADD_PERIODIC_ACCRUAL_ENTRIES("Add Periodic Accrual Transactions"), //
-    RECALCULATE_INTEREST_FOR_LOAN("Recalculate Interest For Loans"), //
     GENERATE_RD_SCEHDULE("Generate Mandatory Savings Schedule"), //
     GENERATE_LOANLOSS_PROVISIONING("Generate Loan Loss Provisioning"), //
     POST_DIVIDENTS_FOR_SHARES("Post Dividends For Shares"), //

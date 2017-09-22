@@ -8,16 +8,32 @@ package org.apache.fineract.portfolio.loanaccount.data;
 
 import java.math.BigDecimal;
 
+import org.joda.time.LocalDate;
+
 public class LoanOverdueData {
 
     @SuppressWarnings("unused")
     private final BigDecimal totalOverDue;
     @SuppressWarnings("unused")
     private final BigDecimal overdueWithNextInstallment;
+    
+    private final LocalDate lastOverdueDate;
 
     public LoanOverdueData(final BigDecimal totalOverDue, final BigDecimal overdueWithNextInstallment) {
         this.totalOverDue = totalOverDue;
         this.overdueWithNextInstallment = overdueWithNextInstallment;
+        this.lastOverdueDate = null;
+    }
+    
+    public LoanOverdueData(final LocalDate lastOverdueDate){
+        this.totalOverDue = null;
+        this.overdueWithNextInstallment = null;
+        this.lastOverdueDate = lastOverdueDate;
+    }
+
+    
+    public LocalDate getLastOverdueDate() {
+        return this.lastOverdueDate;
     }
 
 }

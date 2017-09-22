@@ -37,19 +37,22 @@ import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAcc
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeOverdueData;
 import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
+import org.apache.fineract.portfolio.charge.domain.ChargePercentagePeriodType;
+import org.apache.fineract.portfolio.charge.domain.ChargePercentageType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.domain.PenaltyGraceType;
 import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
-import org.apache.fineract.portfolio.common.service.CommonEnumerations;
+import org.apache.fineract.portfolio.common.domain.LoanPeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.apache.fineract.portfolio.tax.service.TaxReadPlatformService;
 import org.joda.time.MonthDay;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -189,7 +192,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         final List<EnumOptionData> clientChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService
                 .retrieveClientCalculationTypes();
         final List<EnumOptionData> clientChargeTimeTypeOptions = this.chargeDropdownReadPlatformService.retrieveClientCollectionTimeTypes();
-        final List<EnumOptionData> feeFrequencyOptions = this.dropdownReadPlatformService.retrievePeriodFrequencyTypeOptions();
+        final Collection<EnumOptionData> feeFrequencyOptions = this.dropdownReadPlatformService.retrieveLoanPeriodFrequencyTypeOptions();
         final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions = this.accountingDropdownReadPlatformService
                 .retrieveAccountMappingOptionsForCharges();
         final List<EnumOptionData> shareChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService
@@ -198,11 +201,16 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         final Collection<TaxGroupData> taxGroupOptions = this.taxReadPlatformService.retrieveTaxGroupsForLookUp();
         final List<EnumOptionData> glimChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService
                 .retrieveGlimChargeCalculationTypes();
+        final Collection<EnumOptionData> percentageTypeOptions = this.chargeDropdownReadPlatformService.retriveChargePercentageTypes(); 
+        final Collection<EnumOptionData> percentagePeriodTypeOptions = this.chargeDropdownReadPlatformService.retriveChargePercentagePeriodTypes();
+        final Collection<EnumOptionData> penaltyGraceTypeOptions = this.chargeDropdownReadPlatformService.retrivePenaltyGraceTypes();
+        
         return ChargeData.template(currencyOptions, allowedChargeCalculationTypeOptions, allowedChargeAppliesToOptions,
                 allowedChargeTimeOptions, chargePaymentOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
                 savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
                 clientChargeTimeTypeOptions, feeFrequencyOptions, incomeOrLiabilityAccountOptions, taxGroupOptions,
-                shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, glimChargeCalculationTypeOptions, slabChargeTypeOptions);
+                shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, glimChargeCalculationTypeOptions, slabChargeTypeOptions,
+                percentageTypeOptions, percentagePeriodTypeOptions, penaltyGraceTypeOptions);
     }
 
     @Override
@@ -326,6 +334,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
     private static final class ChargeMapper implements RowMapper<ChargeData> {
 
+        private ChargeOverdueDetailMapper chargeOverdueDetailMapper = new ChargeOverdueDetailMapper(); 
         public String chargeSchemaWithChargeSlabs() {
             return "c.id as id, c.name as name, c.amount as amount, c.currency_code as currencyCode, "
                     + "c.charge_applies_to_enum as chargeAppliesTo, c.charge_time_enum as chargeTime, "
@@ -337,11 +346,18 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
                     + "c.fee_interval as feeInterval, c.fee_frequency as feeFrequency,c.min_cap as minCap,c.max_cap as maxCap, "
                     + "c.income_or_liability_account_id as glAccountId , acc.name as glAccountName, acc.gl_code as glCode, "
+                    + "c.charge_percentage_type as percentageType, c.charge_percentage_period_type as percentagePeriodType,"
+                    + "cod.id as overdueDetailId,cod.grace_period as penaltyGracePeriod, cod.penalty_free_period as penaltyFreePeriod, "
+                    + "cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, "
+                    + "cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,"
+                    + "cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue,cod.min_overdue_amount_required as minOverdueAmountRequired,"
+                    + "cod.stop_charge_on_npa as stopChargeOnNPA,"
                     + "tg.id as taxGroupId, tg.name as taxGroupName " + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
                     + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id "
-                    + " LEFT JOIN f_charge_slab cs on cs.charge_id = c.id ";
+                    + " LEFT JOIN f_charge_slab cs on cs.charge_id = c.id "
+                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id ";
         }
         
         public String chargeSchema() {
@@ -354,10 +370,17 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
                     + "c.fee_interval as feeInterval, c.fee_frequency as feeFrequency,c.min_cap as minCap,c.max_cap as maxCap, "
                     + "c.income_or_liability_account_id as glAccountId , acc.name as glAccountName, acc.gl_code as glCode, "
+                    + "c.charge_percentage_type as percentageType, c.charge_percentage_period_type as percentagePeriodType,"
+                    + "cod.id as overdueDetailId,cod.grace_period as penaltyGracePeriod, cod.penalty_free_period as penaltyFreePeriod, "
+                    + "cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, "
+                    + "cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,"
+                    + "cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue, cod.min_overdue_amount_required as minOverdueAmountRequired, "
+                    + "cod.stop_charge_on_npa as stopChargeOnNPA,"
                     + "tg.id as taxGroupId, tg.name as taxGroupName " + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
-                    + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id ";
+                    + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id "
+                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id ";
         }
 
         public String loanProductChargeSchema() {
@@ -373,7 +396,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         }
 
         @Override
-        public ChargeData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+        public ChargeData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
             final Long id = rs.getLong("id");
             final String name = rs.getString("name");
             final BigDecimal amount = rs.getBigDecimal("amount");
@@ -392,7 +415,8 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             final EnumOptionData chargeAppliesToType = ChargeEnumerations.chargeAppliesTo(chargeAppliesTo);
 
             final int chargeTime = rs.getInt("chargeTime");
-            final EnumOptionData chargeTimeType = ChargeEnumerations.chargeTimeType(chargeTime);
+            ChargeTimeType chargeTimeTypeEnum = ChargeTimeType.fromInt(chargeTime);
+            final EnumOptionData chargeTimeType = ChargeEnumerations.chargeTimeType(chargeTimeTypeEnum);
 
             final int chargeCalculation = rs.getInt("chargeCalculation");
             final EnumOptionData chargeCalculationType = ChargeEnumerations.chargeCalculationType(chargeCalculation);
@@ -407,7 +431,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             EnumOptionData feeFrequencyType = null;
             final Integer feeFrequency = JdbcSupport.getInteger(rs, "feeFrequency");
             if (feeFrequency != null) {
-                feeFrequencyType = CommonEnumerations.termFrequencyType(feeFrequency, "feeFrequency");
+                feeFrequencyType = LoanPeriodFrequencyType.overduePeriodFrequencyType(feeFrequency);
             }
             MonthDay feeOnMonthDay = null;
             final Integer feeOnMonth = JdbcSupport.getInteger(rs, "feeOnMonth");
@@ -438,11 +462,47 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             final int glimCalculation = rs.getInt("glimChargeCalculation");
             final EnumOptionData glimChargeCalculation = ChargeEnumerations.glimChargeCalculationType(glimCalculation);
             final boolean isCapitalized = rs.getBoolean("isCapitalized");
+            
+            final int percentageType = rs.getInt("percentageType");
+            final EnumOptionData percentageTypeOptionData = ChargePercentageType.chargePercentageType(percentageType);
+            
+            final int percentagePeriodType = rs.getInt("percentagePeriodType");
+            final EnumOptionData percentagePeriodTypeOptionData = ChargePercentagePeriodType.chargePercentagePeriodType(percentagePeriodType);
+            
+            ChargeOverdueData chargeOverdueData = null;
+            if(chargeTimeTypeEnum.isOverdueInstallment()){
+                chargeOverdueData = this.chargeOverdueDetailMapper.mapRow(rs, rowNum);
+            }
 
             return ChargeData.instance(id, name, amount, currency, chargeTimeType, chargeAppliesToType, chargeCalculationType,
                     chargePaymentMode, feeOnMonthDay, feeInterval, penalty, active, minCap, maxCap, feeFrequencyType, glAccountData,
-                    taxGroupData, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation, isCapitalized);
+                    taxGroupData, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation, isCapitalized, percentageTypeOptionData, 
+                    percentagePeriodTypeOptionData, chargeOverdueData);
         }
+    }
+    
+    private static final class ChargeOverdueDetailMapper implements RowMapper<ChargeOverdueData> {
+
+        @Override
+        public ChargeOverdueData mapRow(ResultSet rs,@SuppressWarnings("unused") int rowNum) throws SQLException {
+            
+            final Long id = JdbcSupport.getLong(rs, "overdueDetailId");
+            final Integer gracePeriod = JdbcSupport.getInteger(rs, "penaltyGracePeriod");
+            final Integer penaltyFreePeriod = JdbcSupport.getInteger(rs, "penaltyFreePeriod");
+            final Integer penaltyGraceType = JdbcSupport.getInteger(rs, "penaltyGraceType");
+            final EnumOptionData graceType = PenaltyGraceType.penaltyGraceType(penaltyGraceType);
+            final boolean applyChargeForBrokenPeriod = rs.getBoolean("applyPenaltyForBrokenPeriod");
+            final boolean isBasedOnOriginalSchedule = rs.getBoolean("penaltyBasedOnOriginalSchedule");
+            final boolean considerOnlyPostedInterest = rs.getBoolean("penaltyOnPostedInterestOnly");
+            final boolean calculateChargeOnCurrentOverdue = rs.getBoolean("penaltyOnCurrentOverdue");
+            final boolean stopChargeOnNPA = rs.getBoolean("stopChargeOnNPA");
+            final BigDecimal minOverdueAmountRequired = rs.getBigDecimal("minOverdueAmountRequired");
+
+            return new ChargeOverdueData(id, gracePeriod, penaltyFreePeriod, graceType, applyChargeForBrokenPeriod,
+                    isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, stopChargeOnNPA,
+                    minOverdueAmountRequired);
+        }
+
     }
     
     

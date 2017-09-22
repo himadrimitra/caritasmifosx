@@ -137,9 +137,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
     private boolean active = true;
 
     @OneToOne(mappedBy = "loancharge", cascade = CascadeType.ALL, optional = true, orphanRemoval = true, fetch = FetchType.LAZY)
-    private LoanOverdueInstallmentCharge overdueInstallmentCharge;
-
-    @OneToOne(mappedBy = "loancharge", cascade = CascadeType.ALL, optional = true, orphanRemoval = true, fetch = FetchType.LAZY)
     private LoanTrancheDisbursementCharge loanTrancheDisbursementCharge;
     
     @ManyToOne
@@ -159,6 +156,10 @@ public class LoanCharge extends AbstractPersistable<Long> {
     
     @Column(name = "is_capitalized", nullable = true)
     private boolean isCapitalized;
+    
+    @Temporal(TemporalType.DATE)
+    @Column(name = "overdue_applied_till")
+    private Date overdueAppliedTill;
     
     public static LoanCharge createNewFromJson(final Loan loan, final Charge chargeDefinition, final JsonCommand command) {
         final LocalDate dueDate = command.localDateValueOfParameterNamed("dueDate");
@@ -203,6 +204,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 } else {
                     amountPercentageAppliedTo = loan.getPrincpal().getAmount().add(loan.getTotalInterest()).add(loan.getSummary().getTotalFeeChargesCharged());
                 }
+            	break;
             default:
             break;
         }
@@ -382,16 +384,81 @@ public class LoanCharge extends AbstractPersistable<Long> {
         this.maxCap = charge.maxCap;
         this.minCap = charge.minCap;
         this.taxGroup = charge.taxGroup;
-        if (charge.overdueInstallmentCharge != null) {
-            this.overdueInstallmentCharge = LoanOverdueInstallmentCharge.copyLoanOverdueInstallmentCharge(charge.overdueInstallmentCharge,
-                    this);
-        }
+        this.overdueAppliedTill = charge.overdueAppliedTill;
         if (charge.loanTrancheDisbursementCharge != null) {
             this.loanTrancheDisbursementCharge = LoanTrancheDisbursementCharge.copyLoanTrancheDisbursementCharge(
                     charge.loanTrancheDisbursementCharge, this);
         }
         copyLoanInstallmentCharge(charge.loanInstallmentCharge, this.loanInstallmentCharge);
         copyLoanChargeTaxDetails(charge.taxDetails, this.taxDetails);
+    }
+    
+    
+    // this is used only for overdue charge. don't use for any other purpose 
+    public LoanCharge(final Loan loan, final Charge chargeDefinition, final BigDecimal amount,final BigDecimal percentage,
+            final ChargeTimeType chargeTime, final ChargeCalculationType chargeCalculation, final LocalDate dueDate,
+            final ChargePaymentMode chargePaymentMode, final boolean isPenalty, LocalDate overdueAppliedTill) {
+        this.loan = loan;
+        this.charge = chargeDefinition;
+        this.penaltyCharge = isPenalty;
+        this.minCap = chargeDefinition.getMinCap();
+        this.maxCap = chargeDefinition.getMaxCap();
+
+        this.chargeTime = chargeDefinition.getChargeTimeType();
+        if (chargeTime != null) {
+            this.chargeTime = chargeTime.getValue();
+        }
+
+        if (ChargeTimeType.fromInt(this.chargeTime).equals(ChargeTimeType.SPECIFIED_DUE_DATE)
+                || ChargeTimeType.fromInt(this.chargeTime).equals(ChargeTimeType.OVERDUE_INSTALLMENT)) {
+
+            if (dueDate == null) {
+                final String defaultUserMessage = "Loan charge is missing due date.";
+                throw new LoanChargeWithoutMandatoryFieldException("loanCharge", "dueDate", defaultUserMessage, chargeDefinition.getId(),
+                        chargeDefinition.getName());
+            }
+
+            this.dueDate = dueDate.toDate();
+        } else {
+            this.dueDate = null;
+        }
+
+        this.chargeCalculation = chargeDefinition.getChargeCalculation();
+        if (chargeCalculation != null) {
+            this.chargeCalculation = chargeCalculation.getValue();
+        }
+
+        BigDecimal chargeAmount = chargeDefinition.getAmount();
+        if (amount != null) {
+            chargeAmount = amount;
+        }
+
+        this.chargePaymentMode = chargeDefinition.getChargePaymentMode();
+        if (chargePaymentMode != null) {
+            this.chargePaymentMode = chargePaymentMode.getValue();
+        }
+        if (percentage == null) {
+            this.amountOrPercentage = amount;
+        } else {
+            this.amountOrPercentage = percentage;
+        }
+        this.percentage = percentage;
+        this.amountPercentageAppliedTo = null;
+        this.amountPaid = null;
+        this.amount = chargeAmount;
+        this.amountOutstanding = this.amount;
+        this.amountWaived = null;
+        this.amountWrittenOff = null;
+        this.paid = determineIfFullyPaid();
+
+        if (this.charge != null && this.charge.getTaxGroup() != null) {
+            this.taxGroup = this.charge.getTaxGroup();
+        }
+        if (loan != null && this.charge.getTaxGroup() != null) {
+            createLoanChargeTaxDetails(loan.getDisbursementDate(), chargeAmount);
+        }
+        this.isCapitalized = this.charge == null ? false : this.charge.isCapitalized();
+        this.overdueAppliedTill = overdueAppliedTill.toDate();
     }
 
     private void copyLoanChargeTaxDetails(final List<LoanChargeTaxDetails> fromTaxDetails, final List<LoanChargeTaxDetails> toTaxDetails) {
@@ -409,7 +476,9 @@ public class LoanCharge extends AbstractPersistable<Long> {
 
     private void populateDerivedFields(final BigDecimal amountPercentageAppliedTo, final BigDecimal chargeAmount,
             Integer numberOfRepayments, BigDecimal loanCharge) {
-
+        if(this.isOverdueInstallmentCharge()){
+            return;
+        }
         switch (ChargeCalculationType.fromInt(this.chargeCalculation)) {
             case INVALID:
                 this.percentage = null;
@@ -469,7 +538,9 @@ public class LoanCharge extends AbstractPersistable<Long> {
     private void populateDerivedFields(final BigDecimal amountPercentageAppliedTo, final BigDecimal chargeAmount,
             Integer numberOfRepayments, BigDecimal loanCharge, HashMap<Long, BigDecimal> clientMembers, List<GroupLoanIndividualMonitoringCharge> glimCharges,
             BigDecimal totalFee) {
-    	
+        if(this.isOverdueInstallmentCharge()){
+            return;
+        }
         switch (ChargeCalculationType.fromInt(this.chargeCalculation)) {
             case INVALID:
                 this.percentage = null;
@@ -600,6 +671,9 @@ public class LoanCharge extends AbstractPersistable<Long> {
             BigDecimal loanCharge) {
         if (dueDate != null) {
             this.dueDate = dueDate.toDate();
+        }
+        if(this.isOverdueInstallmentCharge()){
+            return;
         }
 
         if (amount != null) {
@@ -1154,7 +1228,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
     public void setActive(boolean active) {
         this.active = active;
         if (!active) {
-            this.overdueInstallmentCharge = null;
             this.loanTrancheDisbursementCharge = null;
             this.clearLoanInstallmentCharges();
         }
@@ -1176,10 +1249,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
             totalChargeAmount = totalChargeAmount.add(this.amountWrittenOff);
         }
         return totalChargeAmount;
-    }
-
-    public void updateOverdueInstallmentCharge(LoanOverdueInstallmentCharge overdueInstallmentCharge) {
-        this.overdueInstallmentCharge = overdueInstallmentCharge;
     }
 
     public void updateLoanTrancheDisbursementCharge(final LoanTrancheDisbursementCharge loanTrancheDisbursementCharge) {
@@ -1215,10 +1284,6 @@ public class LoanCharge extends AbstractPersistable<Long> {
             }
         }
 
-    }
-
-    public LoanOverdueInstallmentCharge getOverdueInstallmentCharge() {
-        return this.overdueInstallmentCharge;
     }
 
     public LoanTrancheDisbursementCharge getTrancheDisbursementCharge() {
@@ -1471,6 +1536,15 @@ public class LoanCharge extends AbstractPersistable<Long> {
     
     public Set<LoanInstallmentCharge> getLoanInstallmentCharge() {
         return this.loanInstallmentCharge;
+    }
+
+    
+    public LocalDate getOverdueAppliedTill() {
+        LocalDate overdueAppliedTill = null;
+        if (this.overdueAppliedTill != null) {
+            overdueAppliedTill = new LocalDate(this.overdueAppliedTill);
+        }
+        return overdueAppliedTill;
     }
     
 }

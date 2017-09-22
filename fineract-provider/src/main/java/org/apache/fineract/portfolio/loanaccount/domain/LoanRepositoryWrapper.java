@@ -63,7 +63,7 @@ public class LoanRepositoryWrapper {
         Hibernate.initialize(loan.getFund());
         Hibernate.initialize(loan.getCollateral());
     }
-
+    
     public Collection<Loan> findActiveLoansByLoanIdAndGroupId(Long clientId, Long groupId) {
         final Collection<Integer> loanStatuses = new ArrayList<>(Arrays.asList(LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(),
                 LoanStatus.APPROVED.getValue(), LoanStatus.ACTIVE.getValue(), LoanStatus.OVERPAID.getValue()));

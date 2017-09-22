@@ -22,14 +22,22 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
+import org.apache.fineract.portfolio.charge.domain.ChargePercentagePeriodType;
+import org.apache.fineract.portfolio.charge.domain.ChargePercentageType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.PenaltyGraceType;
 import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+
+
+
+
 
 
 
@@ -149,5 +157,20 @@ public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownRead
     @Override
     public List<EnumOptionData> retrieveSlabChargeTypes() {
         return Arrays.asList(SlabChargeType.fromInt(SlabChargeType.INSTALLMENT_AMOUNT.getValue()), SlabChargeType.fromInt(SlabChargeType.INSTALLMENT_NUMBER.getValue()));
+    }
+
+    @Override
+    public Collection<EnumOptionData> retriveChargePercentageTypes() {
+        return ChargePercentageType.chargePercentageTypeOptions();
+    }
+
+    @Override
+    public Collection<EnumOptionData> retriveChargePercentagePeriodTypes() {
+        return ChargePercentagePeriodType.chargePercentagePeriodTypeOptions();
+    }
+
+    @Override
+    public Collection<EnumOptionData> retrivePenaltyGraceTypes() {
+        return PenaltyGraceType.penaltyGraceTypeOptions();
     }
 }

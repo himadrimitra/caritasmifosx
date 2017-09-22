@@ -89,8 +89,8 @@ public class LoanTransactionData {
     private final LoanAccountData loanAccountData;
     private final Collection<FingerPrintData> fingerPrintData;
     private List<GroupLoanIndividualMonitoringTransactionData> glimTransactions;
-    @SuppressWarnings("unused")
-    private final LoanOverdueData loanOverdueData;
+    private LoanOverdueData loanOverdueData;
+    private LoanOverdueChargeData loanOverdueChargeData;
 
     public static LoanTransactionData templateOnTop(final LoanTransactionData loanTransactionData,
             final Collection<PaymentTypeData> paymentTypeOptions) {
@@ -407,7 +407,8 @@ public class LoanTransactionData {
         this.createdBy = loanTransactionData.createdBy;
         this.updatedBy = loanTransactionData.updatedBy;
         this.glimTransactions = loanTransactionData.glimTransactions;
-        this.loanOverdueData = null;
+        this.loanOverdueData = loanTransactionData.loanOverdueData;
+        this.loanOverdueChargeData = loanTransactionData.loanOverdueChargeData;
     }
     
     public static LoanTransactionData LoanTransactionRepaymentTemplate(final LoanTransactionData loanTransactionData, final LoanAccountData loanAccountData){
@@ -548,6 +549,26 @@ public class LoanTransactionData {
     
     public void setExpectedFirstRepaymentOnDate(LocalDate expectedFirstRepaymentOnDate) {
         this.expectedFirstRepaymentOnDate = expectedFirstRepaymentOnDate;
+    }
+
+    
+    public void setLoanOverdueData(LoanOverdueData loanOverdueData) {
+        this.loanOverdueData = loanOverdueData;
+    }
+
+    
+    public LoanOverdueData getLoanOverdueData() {
+        return this.loanOverdueData;
+    }
+
+    
+    public LoanOverdueChargeData getLoanOverdueChargeData() {
+        return this.loanOverdueChargeData;
+    }
+
+    
+    public void setLoanOverdueChargeData(LoanOverdueChargeData loanOverdueChargeData) {
+        this.loanOverdueChargeData = loanOverdueChargeData;
     }
 	
 }

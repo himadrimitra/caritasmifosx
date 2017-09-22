@@ -38,4 +38,6 @@ public interface DropdownReadPlatformService {
     Collection<EnumOptionData> retrieveNthDayTypeOptions(final String codePrefix);
 
     Collection<EnumOptionData> retrieveDayOfWeekTypeOptions(final String codePrefix);
+    
+    Collection<EnumOptionData> retrieveLoanPeriodFrequencyTypeOptions();
 }

@@ -184,6 +184,11 @@ public class SavingsAccountHelper {
     }
 
     public Object depositToSavingsAccount(final Integer savingsID, final String amount, String date, String jsonAttributeToGetback) {
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+
+        }
         System.out.println("--------------------------------- SAVINGS TRANSACTION DEPOSIT --------------------------------");
         return performSavingActions(createSavingsTransactionURL(DEPOSIT_SAVINGS_COMMAND, savingsID),
                 getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);

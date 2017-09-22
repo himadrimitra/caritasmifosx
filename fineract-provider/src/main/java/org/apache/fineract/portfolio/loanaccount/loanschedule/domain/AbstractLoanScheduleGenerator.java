@@ -2661,7 +2661,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     // repayment
                     // schedule
                     Money principalPortionCalculated = principalToBeScheduled.zero();
-                    if (!installment.isRecalculatedInterestComponent()) {
+                    if (!installment.isRecalculatedInterestComponent() && !loanApplicationTerms.isPrincipalGraceApplicableForThisPeriod(periodNumber-1)) {
                         principalPortionCalculated = calculateExpectedPrincipalPortion(installment.getInterestCharged(currency),
                                 loanApplicationTerms);
                     }

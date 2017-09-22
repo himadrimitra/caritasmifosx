@@ -62,6 +62,7 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarType;
 import org.apache.fineract.portfolio.calendar.exception.CalendarNotFoundException;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
+import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
@@ -70,6 +71,7 @@ import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoring
 import org.apache.fineract.portfolio.charge.exception.ChargeNotSupportedException;
 import org.apache.fineract.portfolio.charge.exception.GlimLoanCannotHaveMoreThanOneGoalRoundSeekCharge;
 import org.apache.fineract.portfolio.charge.exception.UpfrontChargeNotFoundException;
+import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
@@ -104,6 +106,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanGlimRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanGlimRepaymentScheduleInstallmentRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanLifecycleStateMachine;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRecurringCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallmentRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
@@ -201,7 +204,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
     private final LoanScheduleValidator loanScheduleValidator;
-    private final BulkLoansReadPlatformService bulkLoansReadPlatformService;
+    private final LoanCalculationReadService loanCalculationReadService;
+    private final ChargeReadPlatformService chargeReadPlatformService; 
 
     @Autowired
     public LoanApplicationWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final FromJsonHelper fromJsonHelper,
@@ -233,7 +237,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final PaymentTypeRepositoryWrapper paymentTypeRepository,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
             final LoanScheduleValidator loanScheduleValidator,
-            final BulkLoansReadPlatformService bulkLoansReadPlatformService) {
+            final LoanCalculationReadService loanCalculationReadService, final ChargeReadPlatformService chargeReadPlatformService) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -277,7 +281,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.paymentTypeRepository = paymentTypeRepository;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
         this.loanScheduleValidator = loanScheduleValidator;
-        this.bulkLoansReadPlatformService = bulkLoansReadPlatformService;
+        this.loanCalculationReadService = loanCalculationReadService;
+        this.chargeReadPlatformService = chargeReadPlatformService;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -348,7 +353,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                         +" should be after last transaction date of loan to be closed "+ lastUserTransactionOnLoanToClose);
                     }
                     boolean calcualteInterestTillDate = true;
-                    BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(
+                    BigDecimal loanOutstanding = this.loanCalculationReadService.retrieveLoanPrePaymentTemplate(
                             newLoanApplication.getDisbursementDate(), calcualteInterestTillDate, loanToClose).getAmount();
                     final BigDecimal firstDisbursalAmount = newLoanApplication.getFirstDisbursalAmount();
                     if(loanOutstanding.compareTo(firstDisbursalAmount) > 0){
@@ -991,7 +996,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                             +" should be after last transaction date of loan to be closed "+ lastUserTransactionOnLoanToClose);
                         }
                         boolean calcualteInterestTillDate = true;
-                        BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(
+                        BigDecimal loanOutstanding = this.loanCalculationReadService.retrieveLoanPrePaymentTemplate(
                                 existingLoanApplication.getDisbursementDate(), calcualteInterestTillDate, loanToClose).getAmount();
                         final BigDecimal firstDisbursalAmount = existingLoanApplication.getFirstDisbursalAmount();
                         if(loanOutstanding.compareTo(firstDisbursalAmount) > 0){
@@ -1507,7 +1512,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
                 calculatedRepaymentsStartingFromDate, expectedDisbursementDate, calendar, minimumDaysBetweenDisbursalAndFirstRepayment,
                 AccountType.fromInt(loan.getLoanType()), loan.isSyncDisbursementWithMeeting());
-        
+        copyOverdueChargeDetail(loan);
         final Map<String, Object> changes = loan.loanApplicationApproval(currentUser, command, disbursementDataArray,
                 defaultLoanLifecycleStateMachine());
 
@@ -1542,7 +1547,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                     +" should be after last transaction date of loan to be closed "+ lastUserTransactionOnLoanToClose);
                 }
                 boolean calcualteInterestTillDate = true;
-                BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(expectedDisbursementDate,
+                BigDecimal loanOutstanding = this.loanCalculationReadService.retrieveLoanPrePaymentTemplate(expectedDisbursementDate,
                         calcualteInterestTillDate, loanToClose).getAmount();
                 final BigDecimal firstDisbursalAmount = loan.getFirstDisbursalAmount();
                 if(loanOutstanding.compareTo(firstDisbursalAmount) > 0){
@@ -1588,6 +1593,14 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 loan.fetchNumberOfInstallmensAfterExceptions(), glimList);
         changes.put("clientMembers", clientMembers);
     }
+    
+    private void copyOverdueChargeDetail(final Loan loan){
+        final Collection<ChargeData> charges = this.chargeReadPlatformService.retrieveLoanProductCharges(loan.productId(), ChargeTimeType.OVERDUE_INSTALLMENT);
+        for(ChargeData chargeData : charges){
+            LoanRecurringCharge recurringCharge = new LoanRecurringCharge(chargeData);
+            loan.getLoanRecurringCharges().add(recurringCharge);
+        }
+    }
 
     @Transactional
     @Override
@@ -1616,7 +1629,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
                 loan.regenerateRepaymentSchedule(scheduleGeneratorDTO, currentUser);
             }
-
+            loan.getLoanRecurringCharges().clear();
             saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
 
             final String noteText = command.stringValueOfParameterNamed("note");

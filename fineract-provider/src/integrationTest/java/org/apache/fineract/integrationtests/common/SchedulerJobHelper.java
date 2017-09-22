@@ -40,14 +40,14 @@ public class SchedulerJobHelper {
     public static final String TRANSFER_FEE_CHARGE_FOR_LOANS = "Transfer Fee For Loans From Savings";
     public static final String ACCOUNTING_RUNNING_BALANCE_UPDATE = "Update Accounting Running Balances";
     public static final String PAY_DUE_SAVINGS_CHARGES = "Pay Due Savings Charges";
-    public static final String APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT = "Apply penalty to overdue loans";
+    public static final String APPLY_PENALTY_CHARGE_FOR_BROKEN_PERIODS = "Apply Penalty For Broken Periods";
     public static final String EXECUTE_STANDING_INSTRUCTIONS = "Execute Standing Instruction";
     public static final String ADD_DUE_DATE_ACCRUAL_ENTRIES = "Add Due Date Accrual Transactions";
     public static final String UPDATE_NPA = "Update Non Performing Assets";
     public static final String UPDATE_DEPOSITS_ACCOUNT_MATURITY_DETAILS = "Update Deposit Accounts Maturity details";
     public static final String TRANSFER_INTEREST_TO_SAVINGS = "Transfer Interest To Savings";
     public static final String ADD_PERIODIC_ACCRUAL_ENTRIES = "Add Periodic Accrual Transactions";
-    public static final String RECALCULATE_INTEREST_FOR_LOAN = "Recalculate Interest For Loans";
+    public static final String OVERDUE_CALCULATIONS_FOR_LOANS = "Overdue Calculations For Loans";
     public static final String GENERATE_RD_SCEHDULE = "Generate Mandatory Savings Schedule";
     public static final String GENERATE_LOANLOSS_PROVISIONING = "Generate Loan Loss Provisioning";
     public static final String POST_DIVIDENTS_FOR_SHARES = "Post Dividends For Shares";
