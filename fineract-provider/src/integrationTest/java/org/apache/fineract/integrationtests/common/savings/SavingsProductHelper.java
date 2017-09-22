@@ -62,7 +62,7 @@ public class SavingsProductHelper {
     private String nameOfSavingsProduct = Utils.randomNameGenerator("SAVINGS_PRODUCT_", 6);
     private String shortName = Utils.randomNameGenerator("", 4);
     private String description = Utils.randomNameGenerator("", 20);
-    private String interestCompoundingPeriodType = "2";
+    private String interestCompoundingPeriodType = "1";
     private String interestPostingPeriodType = "4";
     private String interestCalculationType = INTEREST_CALCULATION_USING_DAILY_BALANCE;
     private String nominalAnnualInterestRate = "10.0";
@@ -102,6 +102,13 @@ public class SavingsProductHelper {
     private String nominalAnnualInterestRateOverdraft = null ;
     
     private String digitsAfterDecimal = DIGITS_AFTER_DECIMAL ;
+    
+    //DP
+    private String allowDpLimit = null;
+    private String dpFrequencyType = null;
+    private String dpFrequencyInterval = null;
+    
+    
     public String build() {
         final HashMap<String, Object> map = new HashMap<>();
 
@@ -153,11 +160,19 @@ public class SavingsProductHelper {
         if(allowOverdraft != null &&  this.allowOverdraft.equals("true") && nominalAnnualInterestRateOverdraft != null) {
             map.put("nominalAnnualInterestRateOverdraft", nominalAnnualInterestRateOverdraft) ;
         }
+        
         if(this.floatingInterestRateChart != null){
             map.put("floatingInterestRateChart", this.floatingInterestRateChart);
         }
         map.put("locale", this.locale);
         map.put("dateFormat", this.dateFormat);
+        
+        if (this.allowDpLimit != null && this.allowOverdraft.equals("true")) {
+            map.put("allowDpLimit", this.allowDpLimit);
+            map.put("dpFrequencyType", this.dpFrequencyType);
+            map.put("dpFrequencyInterval", this.dpFrequencyInterval);
+        }
+        
         String savingsProductCreateJson = new Gson().toJson(map);
         System.out.println(savingsProductCreateJson);
         return savingsProductCreateJson;
@@ -333,5 +348,11 @@ public class SavingsProductHelper {
 
 		return this;
 	}
+
+    public void withAllowDpLimit() {
+        this.allowDpLimit = "true";
+        this.dpFrequencyType = "2";
+        this.dpFrequencyInterval = "1";
+    }
 
 }
