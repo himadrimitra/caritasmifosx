@@ -143,14 +143,23 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             depositAccountOnHoldTransactions = this.depositAccountOnHoldTransactionRepository
                     .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
         }
-        account.validateAccountBalanceDoesNotBecomeNegative(transactionAmount, transactionBooleanValues.isExceptionForBalanceCheck(),
-                depositAccountOnHoldTransactions);
+        
+        final CalendarInstance calendarInstance = getCalendarInstance(account);
+        
+        account.validateAccountBalanceDoesNotBecomeNegative(withdrawal, transactionBooleanValues.isExceptionForBalanceCheck(),
+                depositAccountOnHoldTransactions,calendarInstance);
         saveTransactionToGenerateTransactionId(account.getTransactions());
         this.savingsAccountRepository.save(account);
 
         postJournalEntries(account, existingTransactionIds, existingReversedTransactionIds, transactionBooleanValues.isAccountTransfer());
 
         return withdrawal;
+    }
+    
+    private CalendarInstance getCalendarInstance(final SavingsAccount account) {
+        return calendarInstanceRepository.findCalendarInstaneByEntityId(account.getSavingsAccountDpDetails().getId(),
+                CalendarEntityType.SAVINGS_DP_DETAILS.getValue());
+
     }
 
     private AppUser getAppUserIfPresent() {
@@ -331,9 +340,11 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
 
                     final SavingsAccountTransaction withdrawal = account.withdraw(transactionDTO,
                             transactionBooleanValues.isApplyWithdrawFee());
-
-                    account.validateAccountBalanceDoesNotBecomeNegative(transactionDTO.getTransactionAmount(),
-                            transactionBooleanValues.isExceptionForBalanceCheck(), depositAccountOnHoldTransactions);
+                    
+                    final CalendarInstance calendarInstance = getCalendarInstance(account);
+                    
+                    account.validateAccountBalanceDoesNotBecomeNegative(withdrawal, transactionBooleanValues.isExceptionForBalanceCheck(),
+                            depositAccountOnHoldTransactions, calendarInstance);
                     saveTransactionToGenerateTransactionId(account.getTransactions());
                     savingsTreansactionIds.add(withdrawal.getId());
                     final Boolean transactionStatus = true;
