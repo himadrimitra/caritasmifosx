@@ -129,8 +129,7 @@ public class AASchedulerJobDependencyIntegrationTest {
 
             String jobName = (String) scheduleDetail.get("displayName");
 
-            if (jobName.equals(SchedulerJobHelper.UPDATE_NPA) || jobName.equals(SchedulerJobHelper.RECALCULATE_INTEREST_FOR_LOAN)
-                    || jobName.equals(SchedulerJobHelper.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT)
+            if (jobName.equals(SchedulerJobHelper.UPDATE_NPA) || jobName.equals(SchedulerJobHelper.OVERDUE_CALCULATIONS_FOR_LOANS)
                     || jobName.equals(SchedulerJobHelper.ADD_PERIODIC_ACCRUAL_ENTRIES_FOR_LOANS_WITH_INCOME_POSTED_AS_TRANSACTIONS)
                     || jobName.equals(SchedulerJobHelper.ADD_PERIODIC_ACCRUAL_ENTRIES) || jobName.equals(SchedulerJobHelper.ADD_DUE_DATE_ACCRUAL_ENTRIES)) {
                 Integer jobId = (Integer) scheduleDetail.get("jobId");

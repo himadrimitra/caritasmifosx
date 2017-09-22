@@ -8,16 +8,17 @@ public class LoanOverdueChargeData {
 
     private BigDecimal penaltyPostedAsOnDate;
     private BigDecimal penaltyToBePostedAsOnDate;
+    private BigDecimal penaltyPostedTillDate;
     private LocalDate penaltyCalculatedOnDate;
     private LocalDate lastRunOnDate;
     private LocalDate lastChargeAppliedOnDate;
     private boolean canApplyBrokenPeriodChargeAsOnCurrentDate;
 
-    public LoanOverdueChargeData(BigDecimal penaltyPostedAsOnDate, final BigDecimal penaltyToBePostedAsOnDate,
-            final LocalDate penaltyCalculatedOnDate) {
+    public LoanOverdueChargeData(final LocalDate penaltyCalculatedOnDate) {
         this.penaltyCalculatedOnDate = penaltyCalculatedOnDate;
-        this.penaltyPostedAsOnDate = penaltyPostedAsOnDate;
-        this.penaltyToBePostedAsOnDate = penaltyToBePostedAsOnDate;
+        this.penaltyPostedAsOnDate = BigDecimal.ZERO;
+        this.penaltyToBePostedAsOnDate = BigDecimal.ZERO;
+        this.penaltyPostedTillDate = BigDecimal.ZERO;
     }
 
     public LoanOverdueChargeData(LocalDate lastRunOnDate, LocalDate lastChargeAppliedOnDate,
@@ -73,6 +74,16 @@ public class LoanOverdueChargeData {
 
     public void setCanApplyBrokenPeriodChargeAsOnCurrentDate(boolean canApplyBrokenPeriodChargeAsOnCurrentDate) {
         this.canApplyBrokenPeriodChargeAsOnCurrentDate = canApplyBrokenPeriodChargeAsOnCurrentDate;
+    }
+
+    
+    public BigDecimal getPenaltyPostedTillDate() {
+        return this.penaltyPostedTillDate;
+    }
+
+    
+    public void setPenaltyPostedTillDate(BigDecimal penaltyPostedTillDate) {
+        this.penaltyPostedTillDate = penaltyPostedTillDate;
     }
 
 }

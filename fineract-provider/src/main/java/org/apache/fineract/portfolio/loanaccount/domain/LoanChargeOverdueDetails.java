@@ -19,7 +19,7 @@ import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
-@Table(name = " f_loan_overdue_charge_detail")
+@Table(name = "f_loan_overdue_charge_detail")
 public class LoanChargeOverdueDetails extends AbstractPersistable<Long> {
 
     @OneToOne
@@ -46,6 +46,9 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long> {
 
     @Column(name = "calculate_charge_on_current_overdue", nullable = false)
     private boolean calculateChargeOnCurrentOverdue;
+    
+    @Column(name = "stop_charge_on_npa", nullable = false)
+    private boolean stopChargeOnNPA;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "last_applied_on_date")
@@ -72,12 +75,13 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long> {
         this.considerOnlyPostedInterest = chargeOverueDetail.isConsiderOnlyPostedInterest();
         this.calculateChargeOnCurrentOverdue = chargeOverueDetail.isCalculateChargeOnCurrentOverdue();
         this.minOverdueAmountRequired = chargeOverueDetail.getMinOverdueAmountRequired();
+        this.stopChargeOnNPA = chargeOverueDetail.isStopChargeOnNPA();
     }
 
     public LoanChargeOverdueDetails(final Integer gracePeriod, final Integer penaltyFreePeriod, final Integer graceType,
             final boolean applyChargeForBrokenPeriod, final boolean isBasedOnOriginalSchedule, final boolean considerOnlyPostedInterest,
-            final boolean calculateChargeOnCurrentOverdue, final BigDecimal minOverdueAmountRequired, final Date lastAppliedOnDate,
-            final Date lastRunOnDate) {
+            final boolean calculateChargeOnCurrentOverdue, boolean stopChargeOnNPA, final BigDecimal minOverdueAmountRequired,
+            final Date lastAppliedOnDate, final Date lastRunOnDate) {
         this.gracePeriod = gracePeriod;
         this.penaltyFreePeriod = penaltyFreePeriod;
         this.graceType = graceType;
@@ -85,6 +89,7 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long> {
         this.isBasedOnOriginalSchedule = isBasedOnOriginalSchedule;
         this.considerOnlyPostedInterest = considerOnlyPostedInterest;
         this.calculateChargeOnCurrentOverdue = calculateChargeOnCurrentOverdue;
+        this.stopChargeOnNPA = stopChargeOnNPA;
         this.minOverdueAmountRequired = minOverdueAmountRequired;
         this.lastAppliedOnDate = lastAppliedOnDate;
         this.lastRunOnDate = lastRunOnDate;
@@ -98,6 +103,7 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long> {
         this.isBasedOnOriginalSchedule = chargeOverdueDetails.isBasedOnOriginalSchedule;
         this.considerOnlyPostedInterest = chargeOverdueDetails.considerOnlyPostedInterest;
         this.calculateChargeOnCurrentOverdue = chargeOverdueDetails.calculateChargeOnCurrentOverdue;
+        this.stopChargeOnNPA = chargeOverdueDetails.stopChargeOnNPA;
         this.minOverdueAmountRequired = chargeOverdueDetails.minOverdueAmountRequired;
         this.lastAppliedOnDate = chargeOverdueDetails.lastAppliedOnDate;
         this.lastRunOnDate = chargeOverdueDetails.lastRunOnDate;
@@ -162,6 +168,11 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long> {
 
     public void setLastRunOnDate(Date lastRunOnDate) {
         this.lastRunOnDate = lastRunOnDate;
+    }
+
+    
+    public boolean isStopChargeOnNPA() {
+        return this.stopChargeOnNPA;
     }
 
 }

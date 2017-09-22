@@ -46,7 +46,8 @@ public class ChargesApiConstants {
     public static final String applyChargeForBrokenPeriodParamName = "applyChargeForBrokenPeriod";
     public static final String isBasedOnOriginalScheduleParamName = "isBasedOnOriginalSchedule";
     public static final String considerOnlyPostedInterestParamName = "considerOnlyPostedInterest";
-    public static final String calculateChargeOnCurrentOverdueParamName = "calculateChargeOnCurrentOverdue";    
+    public static final String calculateChargeOnCurrentOverdueParamName = "calculateChargeOnCurrentOverdue";   
+    public static final String stopChargeOnNPAParamName = "stopChargeOnNPA";
     public static final String minOverdueAmountRequiredParamName = "minOverdueAmountRequired";    
 
 }

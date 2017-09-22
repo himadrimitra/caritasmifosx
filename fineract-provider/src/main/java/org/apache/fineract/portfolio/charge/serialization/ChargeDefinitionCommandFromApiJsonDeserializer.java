@@ -74,7 +74,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             ChargesApiConstants.penaltyFreePeriodParamName, ChargesApiConstants.gracePeriodParamName,
             ChargesApiConstants.considerOnlyPostedInterestParamName, ChargesApiConstants.calculateChargeOnCurrentOverdueParamName,
             ChargesApiConstants.isBasedOnOriginalScheduleParamName, ChargesApiConstants.applyChargeForBrokenPeriodParamName,
-            ChargesApiConstants.minOverdueAmountRequiredParamName));
+            ChargesApiConstants.minOverdueAmountRequiredParamName, ChargesApiConstants.stopChargeOnNPAParamName));
             
     private final FromJsonHelper fromApiJsonHelper;
 

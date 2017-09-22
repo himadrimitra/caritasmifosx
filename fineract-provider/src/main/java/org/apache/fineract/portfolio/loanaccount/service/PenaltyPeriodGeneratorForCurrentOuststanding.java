@@ -12,19 +12,20 @@ public class PenaltyPeriodGeneratorForCurrentOuststanding extends PenaltyChargeP
 
     @Override
     public void createPeriods(LoanRecurringCharge recurringCharge, LoanOverdueCalculationDTO overdueCalculationDetail,
-            Map<LocalDate,PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate) {
+            Map<LocalDate, PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate,
+            LocalDate actualEndDate) {
         Money amountForChargeCalculation = findAmountBasedOnChargeCalculationType(recurringCharge.getChargeCalculation(),
                 overdueCalculationDetail.getPrincipalOutstingAsOnDate(), overdueCalculationDetail.getInterestOutstingAsOnDate(),
                 overdueCalculationDetail.getChargeOutstingAsOnDate());
         if (amountForChargeCalculation.isGreaterThanOrEqualTo(recurringCharge.getChargeOverueDetail().getMinOverdueAmountRequired(
                 overdueCalculationDetail.getCurrency()))) {
-            PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, endDate,
+            PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, actualEndDate,
                     amountForChargeCalculation, chargeApplicableFromDate, endDate, recurringCharge.getFeeFrequency());
             penaltyPeriods.put(endDate,penaltyPeriod);
         }
 
         for (LocalDate date : overdueCalculationDetail.getDatesForOverdueAmountChange()) {
-            if (occursOnDayFromAndUpToAndIncluding(recurrerDate, endDate, date)) {
+            if (occursOnDayFromAndUpToAndIncluding(chargeApplicableFromDate, endDate, date)) {
                 handleReversalOfTransactionForOverdueCalculation(overdueCalculationDetail, date);
                 handleReversalOfOverdueInstallment(overdueCalculationDetail, date);
             }

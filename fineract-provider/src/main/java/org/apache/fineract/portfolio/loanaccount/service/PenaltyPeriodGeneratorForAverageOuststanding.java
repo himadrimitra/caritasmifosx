@@ -14,15 +14,16 @@ public class PenaltyPeriodGeneratorForAverageOuststanding extends PenaltyChargeP
 
     @Override
     public void createPeriods(LoanRecurringCharge recurringCharge, LoanOverdueCalculationDTO overdueCalculationDetail,
-            Map<LocalDate,PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate) {
+            Map<LocalDate, PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate,
+            LocalDate actualEndDate) {
         LocalDate currentPeriodEndDate = endDate;
         for (LocalDate date : overdueCalculationDetail.getDatesForOverdueAmountChange()) {
-            if (occursOnDayFromAndUpToAndIncluding(recurrerDate, endDate, date)) {
+            if (occursOnDayFromAndUpToAndIncluding(chargeApplicableFromDate, endDate, date)) {
                 if(!date.isEqual(currentPeriodEndDate)){
                 Money amountForChargeCalculation = findAmountBasedOnChargeCalculationType(recurringCharge.getChargeCalculation(),
                         overdueCalculationDetail.getPrincipalOutstingAsOnDate(), overdueCalculationDetail.getInterestOutstingAsOnDate(),
                         overdueCalculationDetail.getChargeOutstingAsOnDate());
-                PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, endDate,
+                PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, actualEndDate,
                         amountForChargeCalculation, date, currentPeriodEndDate, recurringCharge.getFeeFrequency());
                 penaltyPeriods.put(currentPeriodEndDate,penaltyPeriod);
                 }
@@ -40,7 +41,7 @@ public class PenaltyPeriodGeneratorForAverageOuststanding extends PenaltyChargeP
                     overdueCalculationDetail.getChargeOutstingAsOnDate());
             if (amountForChargeCalculation.isGreaterThanOrEqualTo(recurringCharge.getChargeOverueDetail().getMinOverdueAmountRequired(
                     overdueCalculationDetail.getCurrency()))) {
-                PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, endDate,
+                PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, actualEndDate,
                         amountForChargeCalculation, chargeApplicableFromDate, currentPeriodEndDate, recurringCharge.getFeeFrequency());
                 penaltyPeriods.put(currentPeriodEndDate,penaltyPeriod);
             }

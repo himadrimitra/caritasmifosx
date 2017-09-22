@@ -482,23 +482,27 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
             if (loanOverdueData != null
                     && loanOverdueData.getLastOverdueDate().isBefore(DateUtils.getLocalDateOfTenant())) {
-                List<LoanRecurringCharge> recurringCharges = this.retrieveLoanOverdueRecurringCharge(loanId);
+                boolean fetchApplicableChargesByState = true;
+                List<LoanRecurringCharge> recurringCharges = this.retrieveLoanOverdueRecurringCharge(loanId, fetchApplicableChargesByState);
                 LocalDate lastRunOnDate = null;
                 LocalDate lastChargeAppliedOnDate = null;
                 boolean canApplyBrokenPeriodChargeAsOnCurrentDate = false;
                 if (!recurringCharges.isEmpty()) {
                     for (LoanRecurringCharge charge : recurringCharges) {
-                        if (lastRunOnDate == null || lastRunOnDate.isAfter(charge.getChargeOverueDetail().getLastRunOnDate())) {
+                        if (lastRunOnDate == null
+                                || (charge.getChargeOverueDetail().getLastRunOnDate() != null && lastRunOnDate.isAfter(charge
+                                        .getChargeOverueDetail().getLastRunOnDate()))) {
                             lastRunOnDate = charge.getChargeOverueDetail().getLastRunOnDate();
                         }
                         if (lastChargeAppliedOnDate == null
-                                || lastChargeAppliedOnDate.isAfter(charge.getChargeOverueDetail().getLastRunOnDate())) {
-                            lastChargeAppliedOnDate = charge.getChargeOverueDetail().getLastRunOnDate();
+                                || (charge.getChargeOverueDetail().getLastAppliedOnDate() != null && lastChargeAppliedOnDate.isAfter(charge
+                                        .getChargeOverueDetail().getLastAppliedOnDate()))) {
+                            lastChargeAppliedOnDate = charge.getChargeOverueDetail().getLastAppliedOnDate();
                         }
 
                         if (charge.getChargeOverueDetail().isApplyChargeForBrokenPeriod()
-                                && (lastChargeAppliedOnDate == null || DateUtils.getLocalDateOfTenant().isEqual(
-                                        charge.getChargeOverueDetail().getLastRunOnDate()))) {
+                                && (lastChargeAppliedOnDate == null || (charge.getChargeOverueDetail().getLastRunOnDate() != null && DateUtils
+                                        .getLocalDateOfTenant().isEqual(charge.getChargeOverueDetail().getLastRunOnDate())))) {
                             canApplyBrokenPeriodChargeAsOnCurrentDate = true;
                         }
 
@@ -3179,9 +3183,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
     
     @Override
-    public List<LoanRecurringCharge> retrieveLoanOverdueRecurringCharge(final Long loanId){
+    public List<LoanRecurringCharge> retrieveLoanOverdueRecurringCharge(final Long loanId, final boolean fetchApplicableChargesByState){
         RecurreringChargeMapper mapper = new RecurreringChargeMapper();
         String sql = "select " + mapper.schema() + " where c.loan_id = ? and c.charge_time_enum = ?";
+        if (fetchApplicableChargesByState) {
+            sql = sql +" and (cod.stop_charge_on_npa = 0 or ml.is_npa = 0)";
+        }
         return this.jdbcTemplate.query(sql, mapper, loanId,ChargeTimeType.OVERDUE_INSTALLMENT.getValue());
     }
     
@@ -3317,9 +3324,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     
     private static final class RecurreringChargeMapper implements RowMapper<LoanRecurringCharge> {
 
-        LoanChargeOverdueDetailMapper chargeOverdueDetailMapper = new LoanChargeOverdueDetailMapper();
+        final LoanChargeOverdueDetailMapper chargeOverdueDetailMapper = new LoanChargeOverdueDetailMapper();
+        final String schema;
+        
+        public RecurreringChargeMapper() {
 
-        public String schema() {
             StringBuilder sb = new StringBuilder();
             sb.append("c.charge_id as chargeId, c.amount as amount, ");
             sb.append("c.charge_time_enum as chargeTime, ");
@@ -3331,12 +3340,17 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append("cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, ");
             sb.append("cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,");
             sb.append("cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue, cod.min_overdue_amount_required as minOverdueAmountRequired, ");
-            sb.append("cod.last_applied_on_date as lastAppliedOnDate, cod.last_run_on_date as lastRunOnDate,");
+            sb.append("cod.last_applied_on_date as lastAppliedOnDate, cod.last_run_on_date as lastRunOnDate,cod.stop_charge_on_npa as stopChargeOnNPA,");
             sb.append("c.tax_group_id as taxGroupId ");
-            sb.append(" from f_loan_recurring_charge c ");
+            sb.append(" from m_loan ml");
+            sb.append(" JOIN f_loan_recurring_charge c on ml.id = c.loan_id");
             sb.append(" LEFT JOIN f_loan_overdue_charge_detail cod on cod.recurrence_charge_id = c.id ");
+            this.schema = sb.toString();
 
-            return sb.toString();
+        }
+
+        public String schema() {
+            return this.schema;
         }
 
         @Override
@@ -3377,13 +3391,14 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final boolean isBasedOnOriginalSchedule = rs.getBoolean("penaltyBasedOnOriginalSchedule");
             final boolean considerOnlyPostedInterest = rs.getBoolean("penaltyOnPostedInterestOnly");
             final boolean calculateChargeOnCurrentOverdue = rs.getBoolean("penaltyOnCurrentOverdue");
+            final boolean stopChargeOnNPA = rs.getBoolean("stopChargeOnNPA");
             final BigDecimal minOverdueAmountRequired = rs.getBigDecimal("minOverdueAmountRequired");
             final Date lastAppliedOnDate = rs.getDate("lastAppliedOnDate");
             final Date lastRunOnDate = rs.getDate("lastRunOnDate");
 
             return new LoanChargeOverdueDetails(gracePeriod, penaltyFreePeriod, penaltyGraceType, applyChargeForBrokenPeriod,
-                    isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, minOverdueAmountRequired,
-                    lastAppliedOnDate, lastRunOnDate);
+                    isBasedOnOriginalSchedule, considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, stopChargeOnNPA,
+                    minOverdueAmountRequired, lastAppliedOnDate, lastRunOnDate);
         }
 
     }

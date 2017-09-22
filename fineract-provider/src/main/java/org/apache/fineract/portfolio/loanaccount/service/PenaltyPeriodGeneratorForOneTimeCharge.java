@@ -15,7 +15,8 @@ public class PenaltyPeriodGeneratorForOneTimeCharge extends PenaltyChargePeriodG
 
     @Override
     public void createPeriods(LoanRecurringCharge recurringCharge, LoanOverdueCalculationDTO overdueCalculationDetail,
-            Map<LocalDate,PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate) {
+            Map<LocalDate, PenaltyPeriod> penaltyPeriods, LocalDate endDate, LocalDate recurrerDate, LocalDate chargeApplicableFromDate,
+            LocalDate actualEndDate) {
 
         MonetaryCurrency currency = overdueCalculationDetail.getCurrency();
         Money principalAmount = Money.zero(currency);
@@ -81,7 +82,7 @@ public class PenaltyPeriodGeneratorForOneTimeCharge extends PenaltyChargePeriodG
         if (amountForChargeCalculation.isGreaterThanOrEqualTo(recurringCharge.getChargeOverueDetail().getMinOverdueAmountRequired(
                 overdueCalculationDetail.getCurrency()))
                 && chargeApplicableFromDate.isEqual(recurrerDate)) {
-            PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, endDate,
+            PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, actualEndDate,
                     amountForChargeCalculation, chargeApplicableFromDate, endDate, recurringCharge.getFeeFrequency());
             penaltyPeriods.put(endDate,penaltyPeriod);
         }
