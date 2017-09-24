@@ -96,6 +96,25 @@ public class LoanRecurringCharge extends AbstractPersistable<Long> {
         this.percentagePeriodType = percentagePeriodType;
         this.chargeOverueDetail = chargeOverueDetail;
     }
+    
+    private LoanRecurringCharge(LoanRecurringCharge charge) {
+        this.chargeId = charge.chargeId;
+        this.amount = charge.amount;
+        this.chargeTimeType = charge.chargeTimeType;
+        this.chargeCalculation = charge.chargeCalculation;
+        this.penalty = charge.penalty;
+        this.taxGroupId = charge.taxGroupId;
+        this.chargePaymentMode = charge.chargePaymentMode;
+        this.feeInterval = charge.feeInterval;
+        this.feeFrequency = charge.feeFrequency;
+        this.percentageType = charge.percentageType;
+        this.percentagePeriodType = charge.percentagePeriodType;
+        this.chargeOverueDetail = LoanChargeOverdueDetails.copyFrom(charge.chargeOverueDetail);
+    }
+
+    public static LoanRecurringCharge copyFrom(final LoanRecurringCharge loanRecurringCharge) {
+        return new LoanRecurringCharge(loanRecurringCharge);
+    }
 
     public Long getChargeId() {
         return this.chargeId;
@@ -148,5 +167,5 @@ public class LoanRecurringCharge extends AbstractPersistable<Long> {
     public LoanChargeOverdueDetails getChargeOverueDetail() {
         return this.chargeOverueDetail;
     }
-
+    
 }

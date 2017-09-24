@@ -21,15 +21,27 @@ public class ChargeUtils {
         return percentage;
     }
 
-    public static List<LocalDate> retriveRecurrencePeriods(LocalDate startDate, LocalDate toDate,
-            List<LocalDate> repaymentScheduledates, int gracePeriod, LoanPeriodFrequencyType feeFrequency, Integer feeInterval, LocalDate fromDate) {
+    public static List<LocalDate> retriveRecurrencePeriods(LocalDate startDate, LocalDate toDate, List<LocalDate> repaymentScheduledates,
+            int gracePeriod, LoanPeriodFrequencyType feeFrequency, Integer feeInterval, LocalDate fromDate, boolean isFlat) {
         List<LocalDate> recurrerDates = new ArrayList<>();
         LocalDate seedDate = startDate.plusDays(gracePeriod);
         switch (feeFrequency) {
             case DAYS:
-                recurrerDates.add(fromDate);
-                recurrerDates.add(toDate);
-                break;
+                LocalDate date = fromDate;
+
+                while (date.isBefore(toDate)) {
+                    if (isFlat) {
+                        recurrerDates.add(date);
+                    }
+                    date = date.plusDays(feeInterval);
+                }
+                if (isFlat && date.isEqual(toDate)) {
+                    recurrerDates.add(date);
+                } else if (!isFlat) {
+                    recurrerDates.add(fromDate);
+                    recurrerDates.add(date);
+                }
+            break;
             case WEEKS:
                 String recurringRule = "FREQ=WEEKLY;INTERVAL=" + feeInterval;
                 recurrerDates.addAll(CalendarUtils.getRecurringDates(recurringRule, seedDate, seedDate, toDate));
@@ -43,9 +55,9 @@ public class ChargeUtils {
                 recurrerDates.addAll(CalendarUtils.getRecurringDates(recurringRuleYearly, seedDate, seedDate, toDate));
             break;
             case SAME_AS_REPAYMENT_PERIOD:
-                for (LocalDate date : repaymentScheduledates) {
-                    if(!date.isAfter(toDate)){
-                        recurrerDates.add(date);    
+                for (LocalDate scheduleDate : repaymentScheduledates) {
+                    if (!scheduleDate.isAfter(toDate)) {
+                        recurrerDates.add(scheduleDate);
                     }
                 }
             break;
@@ -55,19 +67,19 @@ public class ChargeUtils {
         }
         return recurrerDates;
     }
-    
-    
-    public static LocalDate retrivePreviosRecurringDate(LocalDate date,LoanPeriodFrequencyType feeFrequency, Integer feeInterval){
+
+    public static LocalDate retrivePreviosRecurringDate(LocalDate date, LoanPeriodFrequencyType feeFrequency, Integer feeInterval) {
         LocalDate previousDate = date;
         switch (feeFrequency) {
             case WEEKS:
-            previousDate = date.minusWeeks(feeInterval);
+                previousDate = date.minusWeeks(feeInterval);
             break;
             case MONTHS:
                 previousDate = date.minusMonths(feeInterval);
             break;
             case YEARS:
                 previousDate = date.minusYears(feeInterval);
+            break;
             default:
             break;
         }

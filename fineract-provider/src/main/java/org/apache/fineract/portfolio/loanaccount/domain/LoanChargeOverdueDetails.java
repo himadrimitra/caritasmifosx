@@ -20,7 +20,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = " f_loan_overdue_charge_detail")
-public class LoanChargeOverdueDetails extends AbstractPersistable<Long>{
+public class LoanChargeOverdueDetails extends AbstractPersistable<Long> {
 
     @OneToOne
     @JoinColumn(name = "recurrence_charge_id")
@@ -50,16 +50,16 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long>{
     @Temporal(TemporalType.DATE)
     @Column(name = "last_applied_on_date")
     private Date lastAppliedOnDate;
-    
+
     @Temporal(TemporalType.DATE)
     @Column(name = "last_run_on_date")
     private Date lastRunOnDate;
-    
+
     @Column(name = "min_overdue_amount_required")
     private BigDecimal minOverdueAmountRequired;
-    
-    protected LoanChargeOverdueDetails(){
-        
+
+    protected LoanChargeOverdueDetails() {
+
     }
 
     public LoanChargeOverdueDetails(final LoanRecurringCharge loanRecurringCharge, final ChargeOverdueData chargeOverueDetail) {
@@ -73,7 +73,7 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long>{
         this.calculateChargeOnCurrentOverdue = chargeOverueDetail.isCalculateChargeOnCurrentOverdue();
         this.minOverdueAmountRequired = chargeOverueDetail.getMinOverdueAmountRequired();
     }
-    
+
     public LoanChargeOverdueDetails(final Integer gracePeriod, final Integer penaltyFreePeriod, final Integer graceType,
             final boolean applyChargeForBrokenPeriod, final boolean isBasedOnOriginalSchedule, final boolean considerOnlyPostedInterest,
             final boolean calculateChargeOnCurrentOverdue, final BigDecimal minOverdueAmountRequired, final Date lastAppliedOnDate,
@@ -85,79 +85,83 @@ public class LoanChargeOverdueDetails extends AbstractPersistable<Long>{
         this.isBasedOnOriginalSchedule = isBasedOnOriginalSchedule;
         this.considerOnlyPostedInterest = considerOnlyPostedInterest;
         this.calculateChargeOnCurrentOverdue = calculateChargeOnCurrentOverdue;
-        this.minOverdueAmountRequired =minOverdueAmountRequired;
+        this.minOverdueAmountRequired = minOverdueAmountRequired;
         this.lastAppliedOnDate = lastAppliedOnDate;
         this.lastRunOnDate = lastRunOnDate;
     }
-
     
+    private LoanChargeOverdueDetails(LoanChargeOverdueDetails chargeOverdueDetails){
+        this.gracePeriod = chargeOverdueDetails.gracePeriod;
+        this.penaltyFreePeriod = chargeOverdueDetails.penaltyFreePeriod;
+        this.graceType = chargeOverdueDetails.graceType;
+        this.applyChargeForBrokenPeriod = chargeOverdueDetails.applyChargeForBrokenPeriod;
+        this.isBasedOnOriginalSchedule = chargeOverdueDetails.isBasedOnOriginalSchedule;
+        this.considerOnlyPostedInterest = chargeOverdueDetails.considerOnlyPostedInterest;
+        this.calculateChargeOnCurrentOverdue = chargeOverdueDetails.calculateChargeOnCurrentOverdue;
+        this.minOverdueAmountRequired = chargeOverdueDetails.minOverdueAmountRequired;
+        this.lastAppliedOnDate = chargeOverdueDetails.lastAppliedOnDate;
+        this.lastRunOnDate = chargeOverdueDetails.lastRunOnDate;
+    }
+    
+    public static LoanChargeOverdueDetails copyFrom(final LoanChargeOverdueDetails chargeOverdueDetails){
+     return new    LoanChargeOverdueDetails(chargeOverdueDetails);
+    }
+
     public LoanRecurringCharge getLoanRecurringCharge() {
         return this.loanRecurringCharge;
     }
 
-    
     public Integer getGracePeriod() {
         return this.gracePeriod;
     }
 
-    
     public Integer getPenaltyFreePeriod() {
         return this.penaltyFreePeriod;
     }
 
-    
     public PenaltyGraceType getGraceType() {
         return PenaltyGraceType.fromInt(this.graceType);
     }
 
-    
     public boolean isApplyChargeForBrokenPeriod() {
         return this.applyChargeForBrokenPeriod;
     }
 
-    
     public boolean isBasedOnOriginalSchedule() {
         return this.isBasedOnOriginalSchedule;
     }
 
-    
     public boolean isConsiderOnlyPostedInterest() {
         return this.considerOnlyPostedInterest;
     }
 
-    
     public boolean isCalculateChargeOnCurrentOverdue() {
         return this.calculateChargeOnCurrentOverdue;
     }
 
-    
     public LocalDate getLastAppliedOnDate() {
         return this.lastAppliedOnDate == null ? null : new LocalDate(this.lastAppliedOnDate);
     }
 
-    
     public Money getMinOverdueAmountRequired(final MonetaryCurrency currency) {
-        return Money.of(currency,this.minOverdueAmountRequired);
+        return Money.of(currency, this.minOverdueAmountRequired);
     }
 
-    
     public void setLastAppliedOnDate(Date lastAppliedOnDate) {
         this.lastAppliedOnDate = lastAppliedOnDate;
     }
-    
-   public void resetToOriginal(){
-       this.lastAppliedOnDate = null ;
-       this.lastRunOnDate = null;
-   }
 
+    public void resetToOriginal() {
+        this.lastAppliedOnDate = null;
+        this.lastRunOnDate = null;
+    }
 
-public Date getLastRunOnDate() {
-    return this.lastRunOnDate;
-}
+    public LocalDate getLastRunOnDate() {
+        return this.lastRunOnDate == null ? null : new LocalDate(this.lastRunOnDate);
+    }
 
-
-public void setLastRunOnDate(Date lastRunOnDate) {
-    this.lastRunOnDate = lastRunOnDate;
-}
+    public void setLastRunOnDate(Date lastRunOnDate) {
+        this.lastRunOnDate = lastRunOnDate;
+    }
 
 }
