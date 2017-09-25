@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,6 +45,7 @@ import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -53,6 +55,8 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.portfolio.interestratechart.InterestRateChartApiConstants;
 import org.apache.fineract.portfolio.interestratechart.InterestRateChartSlabApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
@@ -66,8 +70,10 @@ public class InterestRateChart extends AbstractPersistable<Long> {
     @Embedded
     private InterestRateChartFields chartFields;
 
-    @OneToMany(mappedBy = "interestRateChart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private Set<InterestRateChartSlab> chartSlabs = new HashSet<>();
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "interestRateChart", orphanRemoval = true)
+    @OrderBy(value = "id")
+    private Set<InterestRateChartSlab> chartSlabs = new LinkedHashSet<>();
 
     protected InterestRateChart() {
         //
@@ -75,7 +81,7 @@ public class InterestRateChart extends AbstractPersistable<Long> {
 
     public static InterestRateChart createNew(InterestRateChartFields chartFields, Collection<InterestRateChartSlab> interestRateChartSlabs) {
 
-        return new InterestRateChart(chartFields, new HashSet<>(interestRateChartSlabs));
+        return new InterestRateChart(chartFields, new LinkedHashSet<>(interestRateChartSlabs));
     }
 
     private InterestRateChart(InterestRateChartFields chartFields, Set<InterestRateChartSlab> interestRateChartSlabs) {
@@ -195,7 +201,7 @@ public class InterestRateChart extends AbstractPersistable<Long> {
 
     public Set<InterestRateChartSlab> setOfChartSlabs() {
         if (this.chartSlabs == null) {
-            this.chartSlabs = new HashSet<>();
+            this.chartSlabs = new LinkedHashSet<>();
         }
         return this.chartSlabs;
     }

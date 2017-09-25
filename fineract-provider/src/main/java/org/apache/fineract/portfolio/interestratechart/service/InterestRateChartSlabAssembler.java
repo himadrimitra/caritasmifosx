@@ -33,6 +33,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -126,7 +127,7 @@ public class InterestRateChartSlabAssembler {
     }
 
     public Collection<InterestRateChartSlab> assembleChartSlabsFrom(final JsonElement element, String currencyCode) {
-        final Collection<InterestRateChartSlab> interestRateChartSlabsSet = new HashSet<>();
+        final Collection<InterestRateChartSlab> interestRateChartSlabsSet = new LinkedHashSet<>();
 
         if (element.isJsonObject()) {
             final JsonObject topLevelJsonElement = element.getAsJsonObject();
