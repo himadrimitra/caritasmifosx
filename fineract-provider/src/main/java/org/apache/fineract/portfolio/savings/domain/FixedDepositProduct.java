@@ -90,7 +90,7 @@ public class FixedDepositProduct extends SavingsProduct {
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final Integer lockinPeriodFrequency,
             final SavingsPeriodFrequencyType lockinPeriodFrequencyType, final AccountingRuleType accountingRuleType,
             final Set<Charge> charges, final DepositProductTermAndPreClosure productTermAndPreClosure, final Set<InterestRateChart> charts,
-            BigDecimal minBalanceForInterestCalculation, boolean withHoldTax, TaxGroup taxGroup, final String externalId) {
+            BigDecimal minBalanceForInterestCalculation, boolean withHoldTax, TaxGroup taxGroup, final String externalId, final boolean isInterestCalculationFromProductChart) {
 
         final BigDecimal minRequiredOpeningBalance = null;
         final boolean withdrawalFeeApplicableForTransfer = false;
@@ -101,7 +101,7 @@ public class FixedDepositProduct extends SavingsProduct {
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
                 productTermAndPreClosure, charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation, withHoldTax,
-                taxGroup, externalId);
+                taxGroup, externalId, isInterestCalculationFromProductChart);
     }
 
     protected FixedDepositProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
@@ -112,12 +112,12 @@ public class FixedDepositProduct extends SavingsProduct {
             final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
             final DepositProductTermAndPreClosure productTermAndPreClosure, final Set<InterestRateChart> charts,
             final boolean allowOverdraft, final BigDecimal overdraftLimit, final BigDecimal minBalanceForInterestCalculation,
-            boolean withHoldTax, TaxGroup taxGroup,final String externalId) {
+            boolean withHoldTax, TaxGroup taxGroup,final String externalId, final boolean isInterestCalculationFromProductChart) {
 
         super(name, shortName, description, currency, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
                 lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges, allowOverdraft, overdraftLimit,
-                minBalanceForInterestCalculation, withHoldTax, taxGroup, externalId);
+                minBalanceForInterestCalculation, withHoldTax, taxGroup, externalId, isInterestCalculationFromProductChart);
 
         if (charts != null) {
             this.charts = charts;

@@ -772,7 +772,6 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             periodStartingBalance = Money.zero(this.currency);
 
         final SavingsInterestCalculationType interestCalculationType = SavingsInterestCalculationType.fromInt(this.interestCalculationType);
-        BigDecimal interestRateAsFraction = getEffectiveInterestRateAsFraction(mc, upToInterestCalculationDate);
         final BigDecimal overdraftInterestRateAsFraction = getEffectiveOverdraftInterestRateAsFraction(mc);
         final Collection<Long> interestPostTransactions = this.savingsHelper.fetchPostInterestTransactionIds(getId());
         final Money minBalanceForInterestCalculation = Money.of(getCurrency(), minBalanceForInterestCalculation());
@@ -780,6 +779,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
         for (final LocalDateInterval periodInterval : postingPeriodIntervals) {
             
+        	BigDecimal interestRateAsFraction = getEffectiveInterestRateAsFraction(mc, upToInterestCalculationDate, periodInterval.startDate(), periodInterval.endDate());
             boolean isUserPosting = false;
             if(postedAsOnDates.contains(periodInterval.endDate().plusDays(1))){
                 isUserPosting = true;
@@ -833,7 +833,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
 
     @SuppressWarnings("unused")
-    protected BigDecimal getEffectiveInterestRateAsFraction(final MathContext mc, final LocalDate upToInterestCalculationDate) {
+    protected BigDecimal getEffectiveInterestRateAsFraction(final MathContext mc, final LocalDate upToInterestCalculationDate,
+    		final LocalDate periodStartDate, final LocalDate periodEndDate) {
         return this.nominalAnnualInterestRate.divide(BigDecimal.valueOf(100l), mc);
     }
 

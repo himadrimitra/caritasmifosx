@@ -47,7 +47,7 @@ group = 'org.apache.fineract'
 repositories {
 	jcenter()
 	maven {
-		url "http://repository.pentaho.org/artifactory/repo/"
+		url "http://nexus.pentaho.org/content/repositories/omni/"
     }
 	// mavenLocal() // useful for local dev using MariaDB4j SNAPSHOTs (not needed for real-world non-SNAPHOT builds)
 }
