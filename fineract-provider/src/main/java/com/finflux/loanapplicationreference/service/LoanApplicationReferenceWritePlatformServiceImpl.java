@@ -178,7 +178,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     .build();
 
         } catch (final DataIntegrityViolationException dve) {
-            handleDataIntegrityIssues(dve);
+            handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
     }
@@ -223,7 +223,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     .build();
 
         } catch (final DataIntegrityViolationException dve) {
-            handleDataIntegrityIssues(dve);
+            handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
     }
@@ -247,7 +247,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             }
             return builder.build();
         } catch (final DataIntegrityViolationException dve) {
-            handleDataIntegrityIssues(dve);
+            handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
     }
@@ -271,7 +271,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             }
             return builder.build();
         } catch (final DataIntegrityViolationException dve) {
-            handleDataIntegrityIssues(dve);
+            handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
     }
@@ -432,7 +432,15 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         return this.loanWritePlatformService.disburseLoan(loanId, disburseCommand, isAccountTransfer);
     }
 
-    private void handleDataIntegrityIssues(final DataIntegrityViolationException dve) {
+    private void handleDataIntegrityIssues(final JsonCommand command, final DataIntegrityViolationException dve) {
+        final Throwable realCause = dve.getMostSpecificCause();
+        if (realCause.getMessage().contains("UQ_loan_app_ref_external_id_one")) {
+            throw new PlatformDataIntegrityException("error.msg.loan.application.reference.external.id.one.duplicated",
+                    "Loan application reference external id one duplicated");
+        } else if (realCause.getMessage().contains("UQ_loan_app_ref_external_id_two")) { 
+            throw new PlatformDataIntegrityException(
+                "error.msg.loan.application.reference.external.id.two.duplicated", "Loan application reference external id two duplicated"); 
+        }
         logAsErrorUnexpectedDataIntegrityException(dve);
         throw new PlatformDataIntegrityException("error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
     }
@@ -524,7 +532,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     .build();
 
         } catch (final DataIntegrityViolationException dve) {
-            handleDataIntegrityIssues(dve);
+            handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
 
