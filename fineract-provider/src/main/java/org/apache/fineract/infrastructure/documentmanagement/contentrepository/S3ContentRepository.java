@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
 import org.apache.fineract.infrastructure.documentmanagement.data.DocumentData;
@@ -52,10 +53,13 @@ public class S3ContentRepository implements ContentRepository {
 
     private final String s3BucketName;
     private final AmazonS3 s3Client;
+    private final ConfigurationDomainService configurationDomainService;
 
-    public S3ContentRepository(final String bucketName, final String secretKey, final String accessKey) {
+    public S3ContentRepository(final String bucketName, final String secretKey, final String accessKey,
+            final ConfigurationDomainService configurationDomainService) {
         this.s3BucketName = bucketName;
         this.s3Client = new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey));
+        this.configurationDomainService = configurationDomainService;
     }
 
     @Override
@@ -68,7 +72,8 @@ public class S3ContentRepository implements ContentRepository {
         final String fileName = documentCommand.getFileName();
 
         if(checkUploadSize){
-            ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+            final int maxAllowedFileSize = this.configurationDomainService.getMaxAllowedFileSizeToUpload();
+            ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName, maxAllowedFileSize);
         }
 
         final String uploadDocFolder = generateFileParentDirectory(documentCommand.getParentEntityType(),
@@ -87,7 +92,8 @@ public class S3ContentRepository implements ContentRepository {
 
     @Override
     public String saveImage(final InputStream toUploadInputStream, final Long resourceId, final String imageName, final Long fileSize,String entityName) {
-        ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(fileSize, imageName);
+        final int maxAllowedFileSize = this.configurationDomainService.getMaxAllowedFileSizeToUpload();
+        ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(fileSize, imageName, maxAllowedFileSize);
         final String uploadImageLocation = generateClientImageParentDirectory(resourceId,entityName);
         final String fileLocation = uploadImageLocation + File.separator + imageName;
 
