@@ -226,7 +226,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 sqlBuilder
                         .append("(select 'PLEDGE' as entityType, p.id as entityId, c.display_name as entityName, p.pledge_number as entityExternalId, p.seal_number as entityAccountNo "
                                 + " , c.id as parentId, o.name as parentName, p.status as status, p.system_value as systemValue, p.user_value as userValue, null as entityMobileNo, null as entityStatusEnum, null as parentType  ");
-                sqlBuilder.append(", null as groupName, null as centerName,null as officeName ");
+                sqlBuilder.append(", null as groupName, null as centerName,null as officeName, null AS reasonId ");
                 sqlBuilder
                         .append(" from m_pledge p left join m_client c on p.client_id = c.id left join m_office o on c.office_id = o.id where (p.seal_number like :search or p.pledge_number like :search or p.status like :search))");
                 scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
@@ -236,7 +236,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 sqlBuilder
                         .append(" (select 'VILLAGE' as entityType, v.id as entityId, v.village_name as entityName, v.external_id as entityExternalId, NULL as entityAccountNo "
                                 + ", v.office_id as parentId, o.name as parentName,null as entityMobileNo,null as parentType, v.status as entityStatusEnum ");
-                sqlBuilder.append(", null as groupName, null as centerName,null as officeName ");
+                sqlBuilder.append(", null as groupName, null as centerName,null as officeName ,null AS reasonId");
                 sqlBuilder
                         .append(" from chai_villages v join m_office o on o.id = v.office_id where o.hierarchy like :hierarchy and (v.village_name like :search or v.external_id like :search))");
                 scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
