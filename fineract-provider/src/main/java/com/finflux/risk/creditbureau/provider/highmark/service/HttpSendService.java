@@ -36,7 +36,7 @@ public class HttpSendService {
     @SuppressWarnings("deprecation")
     public HttpSendService() {
 
-        System.setProperty("jsse.enableSNIExtension", "false");
+        //System.setProperty("jsse.enableSNIExtension", "false");
         SSLConnectionSocketFactory socketFactory = null;
         try {
             socketFactory = new SSLConnectionSocketFactory(new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy())
