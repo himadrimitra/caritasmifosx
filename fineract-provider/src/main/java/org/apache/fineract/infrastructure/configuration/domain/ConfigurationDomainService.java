@@ -144,5 +144,6 @@ public interface ConfigurationDomainService {
     int getInstallmentAmountRoundingMode();
     
     boolean isAllowPaymentsOnClosedLoansEnabled();
-
+    
+    int getMaxAllowedFileSizeToUpload();
 }

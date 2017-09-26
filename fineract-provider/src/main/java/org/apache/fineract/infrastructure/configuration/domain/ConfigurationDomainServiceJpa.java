@@ -26,6 +26,7 @@ import org.apache.fineract.infrastructure.cache.domain.PlatformCache;
 import org.apache.fineract.infrastructure.cache.domain.PlatformCacheRepository;
 import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyConstant;
 import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
+import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
 import org.apache.fineract.useradministration.domain.Permission;
 import org.apache.fineract.useradministration.domain.PermissionRepository;
 import org.apache.fineract.useradministration.exception.PermissionNotFoundException;
@@ -478,6 +479,15 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public boolean isAllowPaymentsOnClosedLoansEnabled(){
         return getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.ALLOW_PAYMANTS_ON_CLOSED_LOANS)
                 .isEnabled();
+    }
+    
+    @Override
+    public int getMaxAllowedFileSizeToUpload() {
+        final String propertyName = "max_file_upload_size_in_mb";
+        int defaultValue = ContentRepository.MAX_FILE_UPLOAD_SIZE_IN_MB;
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        if (property.isEnabled()) { return integerValue(property.getValue()); }
+        return defaultValue;
     }
     
 }
