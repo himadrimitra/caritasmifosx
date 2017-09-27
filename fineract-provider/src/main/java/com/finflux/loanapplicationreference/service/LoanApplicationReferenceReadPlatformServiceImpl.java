@@ -180,14 +180,15 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     private static final class LoanApplicationReferenceDataMapper implements RowMapper<LoanApplicationReferenceData> {
 
         private final String schemaSql;
-        private final Boolean isWorkflowEnabled;
+        private boolean isWorkflowEnabled;
+        private final TaskConfigurationUtils taskConfigurationUtils;
 
         public String schema() {
             return this.schemaSql;
         }
 
         public LoanApplicationReferenceDataMapper(final TaskConfigurationUtils taskConfigurationUtils) {
-            this.isWorkflowEnabled = taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOAN_APPLICANTION);
+            this.taskConfigurationUtils = taskConfigurationUtils;
             final StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append("lar.id AS loanApplicationReferenceId ");
             sqlBuilder.append(",lar.loan_application_reference_no AS loanApplicationReferenceNo ");
@@ -335,7 +336,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
                 isStalePeriodExceeded = initiatedDate.plusDays(stalePeriod).isBefore(DateUtils.getLocalDateOfTenant());
             }      
             final Boolean isCreditBureauProduct = rs.getBoolean("isCreditBureauProduct");
-
+            this.isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOANPRODUCT, loanProductId);
             final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
             return LoanApplicationReferenceData.instance(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne,
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
@@ -365,12 +366,13 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("lar.account_type_enum AS accountTypeEnum, ");
             sqlBuilder.append("lar.loan_product_id AS loanProductId, ");
             sqlBuilder.append("lp.name AS loanProductName, ");
-            sqlBuilder.append("(select  (if(cblpom.loan_product_id is null, false , if(cblpm.is_active is null, false,cblpm.is_active))) from f_creditbureau_loanproduct_office_mapping cblpom  LEFT join f_creditbureau_loanproduct_mapping cblpm on cblpm.id=cblpom.credit_bureau_loan_product_mapping_id where cblpom.loan_product_id = lp.id and cblpom.id = case when cl.office_id = (select m.office_id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) then (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) else (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id is null) end )  as isCreditBureauProduct, ");
+            sqlBuilder.append("(select (if(cblpom.loan_product_id is null, false , if(cblpm.is_active is null, false,cblpm.is_active))) from f_creditbureau_loanproduct_office_mapping cblpom  LEFT join f_creditbureau_loanproduct_mapping cblpm on cblpm.id=cblpom.credit_bureau_loan_product_mapping_id where cblpom.loan_product_id = lp.id and cblpom.id = case when cl.office_id = (select m.office_id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) then (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) else (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id is null) end )  as isCreditBureauProduct, ");
             sqlBuilder.append("lar.loan_amount_requested AS loanAmountRequested ");
+            sqlBuilder.append(",task.id as workflowId ") ;
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
-            sqlBuilder.append(" LEFT JOIN m_client cl ON cl.id = lar.client_id ");
-          
+            sqlBuilder.append("LEFT JOIN m_client cl ON cl.id = lar.client_id ");
+            sqlBuilder.append("LEFT JOIN f_task task ON task.parent_id is null and task.entity_type = 1 and task.entity_id = lar.id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -391,9 +393,10 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final BigDecimal loanAmountRequested = rs.getBigDecimal("loanAmountRequested");
             final Boolean isCoApplicant = rs.getBoolean("isCoApplicant");
             final Boolean isCreditBureauProduct = rs.getBoolean("isCreditBureauProduct");
-            
-            return LoanApplicationReferenceData.forLookUp(loanApplicationReferenceId, loanApplicationReferenceNo, 
-                    externalIdOne, loanId, accountType, status, loanProductId, loanProductName, loanAmountRequested, isCoApplicant, isCreditBureauProduct);
+            final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
+            return LoanApplicationReferenceData.forLookUp(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne, loanId,
+                    accountType, status, loanProductId, loanProductName, loanAmountRequested, isCoApplicant, isCreditBureauProduct,
+                    workflowId);
         }
     
     }

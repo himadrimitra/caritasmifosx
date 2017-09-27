@@ -34,4 +34,16 @@ public class TaskConfigurationUtils {
         }
         return isEnabled;
     }
+    
+    public boolean isWorkflowEnabled(final TaskConfigEntityType taskConfigEntityType, final Long entityId) {
+        boolean isEnabled = false;
+        if (this.configurationDomainService.isWorkFlowEnabled() && taskConfigEntityType != null) {
+            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                    .findOneByEntityTypeAndEntityId(taskConfigEntityType.getValue(), entityId);
+            if (taskConfigEntityTypeMapping != null) {
+                isEnabled = true;
+            }
+        }
+        return isEnabled;
+    }
 }
