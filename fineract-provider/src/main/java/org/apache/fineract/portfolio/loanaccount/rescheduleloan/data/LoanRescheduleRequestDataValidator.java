@@ -214,18 +214,18 @@ public class LoanRescheduleRequestDataValidator {
         if(!isBulkCreateAndApprove){
             validateForOverdueCharges(dataValidatorBuilder, loan, installment);
         }
-        if(extraTerms != null){
-        List<LoanTermVariations> loanTermVariations = new ArrayList<>();
-        loanTermVariations = loan.getLoanTermVariations();
-        if(!loanTermVariations.isEmpty()){
-        	for(LoanTermVariations loanTermVariation :loanTermVariations){
-        		if(loanTermVariation.getTermType().getValue() == LoanTermVariationType.EMI_AMOUNT.getValue()){
-        			dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.extraTermsParamName).failWithCode(
-                            "cannot.be.extend.repayment.period.of.loan.having.fixed.emi",
-                            "Cannot be extend repayment period of loan having fixed emi");
-        		}
-        	}
-        }
+		if (extraTerms != null) {
+			List<LoanTermVariations> loanTermVariations = new ArrayList<>();
+			loanTermVariations = loan.getLoanTermVariations();
+			if (!loanTermVariations.isEmpty()) {
+				for (LoanTermVariations loanTermVariation : loanTermVariations) {
+					if (loanTermVariation.getTermType().getValue() == LoanTermVariationType.EMI_AMOUNT.getValue()) {
+						dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.extraTermsParamName)
+								.failWithCode("cannot.be.extend.repayment.period.of.loan.having.fixed.emi",
+										"Cannot be extend repayment period of loan having fixed emi");
+					}
+				}
+			}
         }
         
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
