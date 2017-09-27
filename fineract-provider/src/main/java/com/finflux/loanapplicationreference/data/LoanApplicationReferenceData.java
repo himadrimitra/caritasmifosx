@@ -108,7 +108,7 @@ public class LoanApplicationReferenceData {
     
     public static LoanApplicationReferenceData forLookUp(final Long loanApplicationReferenceId, final String loanApplicationReferenceNo,
             final String externalIdOne, final Long loanId, final EnumOptionData accountType, final EnumOptionData status,
-            final Long loanProductId, final String loanProductName, final BigDecimal loanAmountRequested, final Boolean isCoApplicant) {
+            final Long loanProductId, final String loanProductName, final BigDecimal loanAmountRequested, final Boolean isCoApplicant, final Long workflowId) {
         final String externalIdTwo = null;
         final Long clientId = null;
         final Long loanOfficerId = null;
@@ -128,7 +128,6 @@ public class LoanApplicationReferenceData {
         final PaymentTypeData expectedRepaymentPaymentType = null;
         final LoanEMIPackData loanEMIPackData = null;
         final String clientName = null;
-        final Long workflowId = null;
         final Boolean isWorkflowEnabled = null;
 
         return new LoanApplicationReferenceData(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne, externalIdTwo,
