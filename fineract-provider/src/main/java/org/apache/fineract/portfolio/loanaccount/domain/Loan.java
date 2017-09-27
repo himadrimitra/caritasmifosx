@@ -1412,6 +1412,7 @@ public class Loan extends AbstractPersistable<Long> {
             BigDecimal penalty = BigDecimal.ZERO;
                 for (LoanTransaction loanTransaction : transactionForProcess) {
                     if (!loanTransaction.getTransactionDate().isAfter(installment.getFromDate())) {
+                        reversedTransactions.add(loanTransaction);
                         i++;
                         continue;
                     }else if(loanTransaction.getTransactionDate().isAfter(installment.getDueDate()) &&  getConsiderFutureAccrualsBefore() != null && getConsiderFutureAccrualsBefore().isBefore(loanTransaction.getTransactionDate())){
@@ -1606,26 +1607,18 @@ public class Loan extends AbstractPersistable<Long> {
                     reversedPenality = MathUtility.add(reversedPenality, loanTransaction.getPenaltyChargesPortion());
                 } else if (firstSuspenceTransactionDate != null
                         && firstSuspenceTransactionDate.isBefore(loanTransaction.getTransactionDate())) {
-                    if (MathUtility.isGreaterThanZero(reversedInterest) || MathUtility.isGreaterThanZero(reversedFee)
-                            || MathUtility.isGreaterThanZero(reversedPenality)) {
-                        LoanTransaction accrualTransaction = LoanTransaction.accrualSuspenseReverse(this, this.getOffice(),
-                                Money.of(currency, MathUtility.add(reversedInterest, reversedFee, reversedPenality)),
-                                Money.of(currency, reversedInterest), Money.of(currency, reversedFee),
-                                Money.of(currency, reversedPenality), firstSuspenceTransactionDate);
-                        this.getLoanTransactions().add(accrualTransaction);
-                        reversedInterest = BigDecimal.ZERO;
-                        reversedFee = BigDecimal.ZERO;
-                        reversedPenality = BigDecimal.ZERO;
-                    }
-                        LoanTransaction accrualTransaction = LoanTransaction.accrualSuspenseReverse(
-                                this,
-                                this.getOffice(),
-                                Money.of(currency, MathUtility.add(loanTransaction.getInterestPortion(),
-                                        loanTransaction.getFeeChargesPortion(), loanTransaction.getPenaltyChargesPortion())),
-                                Money.of(currency, loanTransaction.getInterestPortion()),
-                                Money.of(currency, loanTransaction.getFeeChargesPortion()),
-                                Money.of(currency, loanTransaction.getPenaltyChargesPortion()), loanTransaction.getTransactionDate());
-                        this.getLoanTransactions().add(accrualTransaction);
+                    createAccrualSuspenseTransaction(firstSuspenceTransactionDate, reversedInterest, reversedFee, reversedPenality,
+                            currency);
+                    reversedInterest = BigDecimal.ZERO;
+                    reversedFee = BigDecimal.ZERO;
+                    reversedPenality = BigDecimal.ZERO;
+                    LoanTransaction accrualTransaction = LoanTransaction.accrualSuspenseReverse(this, this.getOffice(), Money.of(
+                            currency,
+                            MathUtility.add(loanTransaction.getInterestPortion(), loanTransaction.getFeeChargesPortion(),
+                                    loanTransaction.getPenaltyChargesPortion())), Money.of(currency, loanTransaction.getInterestPortion()),
+                            Money.of(currency, loanTransaction.getFeeChargesPortion()), Money.of(currency,
+                                    loanTransaction.getPenaltyChargesPortion()), loanTransaction.getTransactionDate());
+                    this.getLoanTransactions().add(accrualTransaction);
                 } else if (firstSuspenceTransactionDate != null
                         && firstSuspenceTransactionDate.isEqual(loanTransaction.getTransactionDate())) {
                     reversedInterest = MathUtility.add(reversedInterest, loanTransaction.getInterestPortion());
@@ -1642,6 +1635,19 @@ public class Loan extends AbstractPersistable<Long> {
 
                 }
             }
+            createAccrualSuspenseTransaction(firstSuspenceTransactionDate, reversedInterest, reversedFee, reversedPenality, currency);
+        }
+    }
+
+    private void createAccrualSuspenseTransaction(final LocalDate firstSuspenceTransactionDate, final BigDecimal reversedInterest,
+            final BigDecimal reversedFee, final BigDecimal reversedPenality, final MonetaryCurrency currency) {
+        if (MathUtility.isGreaterThanZero(reversedInterest) || MathUtility.isGreaterThanZero(reversedFee)
+                || MathUtility.isGreaterThanZero(reversedPenality)) {
+            LoanTransaction accrualTransaction = LoanTransaction.accrualSuspenseReverse(this, this.getOffice(),
+                    Money.of(currency, MathUtility.add(reversedInterest, reversedFee, reversedPenality)),
+                    Money.of(currency, reversedInterest), Money.of(currency, reversedFee),
+                    Money.of(currency, reversedPenality), firstSuspenceTransactionDate);
+            this.getLoanTransactions().add(accrualTransaction);
         }
     }
 
