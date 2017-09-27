@@ -41,6 +41,8 @@ import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariations;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.RescheduleLoansApiConstants;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
 import org.joda.time.LocalDate;
@@ -211,7 +213,21 @@ public class LoanRescheduleRequestDataValidator {
         }
         if(!isBulkCreateAndApprove){
             validateForOverdueCharges(dataValidatorBuilder, loan, installment);
-        }        
+        }
+		if (extraTerms != null) {
+			List<LoanTermVariations> loanTermVariations = new ArrayList<>();
+			loanTermVariations = loan.getLoanTermVariations();
+			if (!loanTermVariations.isEmpty()) {
+				for (LoanTermVariations loanTermVariation : loanTermVariations) {
+					if (loanTermVariation.getTermType().getValue() == LoanTermVariationType.EMI_AMOUNT.getValue()) {
+						dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.extraTermsParamName)
+								.failWithCode("cannot.be.extend.repayment.period.of.loan.having.fixed.emi",
+										"Cannot be extend repayment period of loan having fixed emi");
+					}
+				}
+			}
+        }
+        
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
     
