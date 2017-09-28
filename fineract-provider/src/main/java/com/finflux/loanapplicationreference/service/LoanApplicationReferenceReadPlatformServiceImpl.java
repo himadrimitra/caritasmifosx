@@ -179,14 +179,15 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     private static final class LoanApplicationReferenceDataMapper implements RowMapper<LoanApplicationReferenceData> {
 
         private final String schemaSql;
-        private final Boolean isWorkflowEnabled;
+        private boolean isWorkflowEnabled;
+        private final TaskConfigurationUtils taskConfigurationUtils;
 
         public String schema() {
             return this.schemaSql;
         }
 
         public LoanApplicationReferenceDataMapper(final TaskConfigurationUtils taskConfigurationUtils) {
-            this.isWorkflowEnabled = taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOAN_APPLICANTION);
+            this.taskConfigurationUtils = taskConfigurationUtils;
             final StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append("lar.id AS loanApplicationReferenceId ");
             sqlBuilder.append(",lar.loan_application_reference_no AS loanApplicationReferenceNo ");
@@ -321,6 +322,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             }
 
             final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
+            this.isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOANPRODUCT, loanProductId);
             return LoanApplicationReferenceData.instance(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne,
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
                     loanProductName, loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency,
@@ -350,9 +352,11 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("lar.loan_product_id AS loanProductId, ");
             sqlBuilder.append("lp.name AS loanProductName, ");
             sqlBuilder.append("lar.loan_amount_requested AS loanAmountRequested ");
+            sqlBuilder.append(",task.id as workflowId ") ;
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
-          
+            sqlBuilder.append("LEFT JOIN m_client cl ON cl.id = lar.client_id ");
+            sqlBuilder.append("LEFT JOIN f_task task ON task.parent_id is null and task.entity_type = 1 and task.entity_id = lar.id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -372,9 +376,9 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final String loanProductName = rs.getString("loanProductName");
             final BigDecimal loanAmountRequested = rs.getBigDecimal("loanAmountRequested");
             final Boolean isCoApplicant = rs.getBoolean("isCoApplicant");
-            
-            return LoanApplicationReferenceData.forLookUp(loanApplicationReferenceId, loanApplicationReferenceNo, 
-                    externalIdOne, loanId, accountType, status, loanProductId, loanProductName, loanAmountRequested, isCoApplicant);
+            final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
+            return LoanApplicationReferenceData.forLookUp(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne, loanId,
+                    accountType, status, loanProductId, loanProductName, loanAmountRequested, isCoApplicant, workflowId);
         }
     
     }
