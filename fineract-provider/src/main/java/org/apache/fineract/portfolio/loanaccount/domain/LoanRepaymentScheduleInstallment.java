@@ -924,4 +924,16 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
     public BigDecimal getPenaltyChargesCharged() {
         return MathUtility.zeroIfNull(this.penaltyCharges);
     }
+    
+    public BigDecimal getFeeChargesWaived() {
+        return MathUtility.zeroIfNull(this.feeChargesWaived).add(MathUtility.zeroIfNull(this.feeChargesWrittenOff));
+    }
+
+    public BigDecimal getInterestWaived() {
+        return MathUtility.zeroIfNull(this.interestWaived).add(MathUtility.zeroIfNull(this.interestWrittenOff));
+    }
+
+    public BigDecimal getPenaltyChargesWaived() {
+        return MathUtility.zeroIfNull(this.penaltyChargesWaived).add(MathUtility.zeroIfNull(this.penaltyChargesWrittenOff));
+    }
 }
