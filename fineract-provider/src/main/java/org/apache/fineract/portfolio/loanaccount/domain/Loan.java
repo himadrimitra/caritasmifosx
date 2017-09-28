@@ -1418,6 +1418,7 @@ public class Loan extends AbstractPersistable<Long> {
                         continue;
                     }else if (!loanTransaction.getTransactionDate().isAfter(installment.getFromDate())) {
                         reversedTransactions.add(loanTransaction);
+                        loanTransaction.reverse();
                         i++;
                         continue;
                     }else if(loanTransaction.getTransactionDate().isAfter(installment.getDueDate()) &&  getConsiderFutureAccrualsBefore() != null && getConsiderFutureAccrualsBefore().isBefore(loanTransaction.getTransactionDate())){
@@ -1476,7 +1477,7 @@ public class Loan extends AbstractPersistable<Long> {
                                         interestPortionUsed);
                                 fee = fee.subtract(MathUtility.zeroIfNull(loanTransaction.getFeeChargesPortion())).add(feePortionUsed);
                                 penalty = penalty.subtract(loanTransaction.getPenaltyChargesPortion()).add(penaltyPortionUsed);
-//                                loanTransaction.reverse();
+                                loanTransaction.reverse();
                                 reversedTransactions.add(loanTransaction);
                                 i++;
                                 if (latestReversedDate.isBefore(loanTransaction.getTransactionDate())) {
@@ -1543,7 +1544,7 @@ public class Loan extends AbstractPersistable<Long> {
                                     interestPortionUsed);
                             fee = fee.subtract(MathUtility.zeroIfNull(loanTransaction.getFeeChargesPortion())).add(feePortionUsed);
                             penalty = penalty.subtract(loanTransaction.getPenaltyChargesPortion()).add(penaltyPortionUsed);
-                            // loanTransaction.reverse();
+                            loanTransaction.reverse();
                             reversedTransactions.add(loanTransaction);
                             i++;
                             if (latestReversedDate.isBefore(loanTransaction.getTransactionDate())) {
@@ -1609,6 +1610,11 @@ public class Loan extends AbstractPersistable<Long> {
                 transactionForProcess.remove(--i);
             }
         }
+        
+        for (LoanTransaction loanTransaction : transactionForProcess) {
+            reversedTransactions.add(loanTransaction);
+            loanTransaction.reverse();
+        }
       
         if (this.isInAccrualSuspense() && !reversedTransactions.isEmpty()) {
             
@@ -1619,7 +1625,6 @@ public class Loan extends AbstractPersistable<Long> {
             BigDecimal reversedPenality = BigDecimal.ZERO;
             MonetaryCurrency currency = getCurrency();
             for (LoanTransaction loanTransaction : reversedTransactions) {
-                loanTransaction.reverse();
                 if (firstSuspenceTransactionDate != null && firstSuspenceTransactionDate.isAfter(loanTransaction.getTransactionDate())) {
                     reversedInterest = MathUtility.add(reversedInterest, loanTransaction.getInterestPortion());
                     reversedFee = MathUtility.add(reversedFee, loanTransaction.getFeeChargesPortion());
