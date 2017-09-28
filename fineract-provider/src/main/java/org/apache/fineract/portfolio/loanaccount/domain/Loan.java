@@ -1426,33 +1426,38 @@ public class Loan extends AbstractPersistable<Long> {
                     }
                     BigDecimal feeCharges = BigDecimal.ZERO;
                     BigDecimal penaltyCharges = BigDecimal.ZERO;
-                    if( loanTransaction.getTransactionDate().isAfter(installment.getDueDate())){
-                        
-                        Set<LoanChargePaidBy> chargesPaidBy = loanTransaction.getLoanChargesPaid();
-                        for (LoanChargePaidBy paidBy : chargesPaidBy) {
-                            LoanCharge loanCharge = paidBy.getLoanCharge();
-                            if (loanCharge.isDueDateCharge()
-                                    && loanCharge
-                                            .isDueForCollectionFromAndUpToAndIncluding(installment.getFromDate(), installment.getDueDate())) {
-                                if (loanCharge.isPenaltyCharge()) {
-                                    penaltyCharges = MathUtility.add(penaltyCharges, paidBy.getAmount());
-                                } else {
-                                    feeCharges = MathUtility.add(feeCharges, paidBy.getAmount());
-                                }
-                            } else if (paidBy.getInstallmentNumber() != null
-                                    && paidBy.getInstallmentNumber().equals(installment.getInstallmentNumber())) {
-                                if (loanCharge.isPenaltyCharge()) {
-                                    penaltyCharges = MathUtility.add(penaltyCharges, paidBy.getAmount());
-                                } else {
-                                    feeCharges = MathUtility.add(feeCharges, paidBy.getAmount());
-                                }
+                if (loanTransaction.getTransactionDate().isAfter(installment.getDueDate())) {
+                    if (MathUtility.isEqual(installment.getFeeChargesCharged().subtract(installment.getFeeChargesWaived()), fee)
+                            && MathUtility.isEqual(installment.getInterestCharged().subtract(installment.getInterestWaived()), interest)
+                            && MathUtility.isEqual(installment.getPenaltyChargesCharged().subtract(installment.getPenaltyChargesWaived()),
+                                    penalty)) {
+                        break;
+                    }
+                    Set<LoanChargePaidBy> chargesPaidBy = loanTransaction.getLoanChargesPaid();
+                    for (LoanChargePaidBy paidBy : chargesPaidBy) {
+                        LoanCharge loanCharge = paidBy.getLoanCharge();
+                        if (loanCharge.isDueDateCharge()
+                                && loanCharge
+                                        .isDueForCollectionFromAndUpToAndIncluding(installment.getFromDate(), installment.getDueDate())) {
+                            if (loanCharge.isPenaltyCharge()) {
+                                penaltyCharges = MathUtility.add(penaltyCharges, paidBy.getAmount());
+                            } else {
+                                feeCharges = MathUtility.add(feeCharges, paidBy.getAmount());
                             }
-
+                        } else if (paidBy.getInstallmentNumber() != null
+                                && paidBy.getInstallmentNumber().equals(installment.getInstallmentNumber())) {
+                            if (loanCharge.isPenaltyCharge()) {
+                                penaltyCharges = MathUtility.add(penaltyCharges, paidBy.getAmount());
+                            } else {
+                                feeCharges = MathUtility.add(feeCharges, paidBy.getAmount());
+                            }
                         }
-                        interest = interest.add(MathUtility.zeroIfNull(loanTransaction.getInterestPortion())).subtract(interestPortionUsed);
-                        fee = fee.add(MathUtility.zeroIfNull(feeCharges));
-                        penalty = penalty.add(penaltyCharges);
-                    } else {
+
+                    }
+                    interest = interest.add(MathUtility.zeroIfNull(loanTransaction.getInterestPortion())).subtract(interestPortionUsed);
+                    fee = fee.add(MathUtility.zeroIfNull(feeCharges));
+                    penalty = penalty.add(penaltyCharges);
+                } else {
                         interest = interest.add(MathUtility.zeroIfNull(loanTransaction.getInterestPortion())).subtract(interestPortionUsed);
                         fee = fee.add(MathUtility.zeroIfNull(loanTransaction.getFeeChargesPortion())).subtract(feePortionUsed);
                         penalty = penalty.add(loanTransaction.getPenaltyChargesPortion()).subtract(penaltyPortionUsed);
@@ -1463,12 +1468,12 @@ public class Loan extends AbstractPersistable<Long> {
                             || MathUtility.isLesser(installment.getPenaltyChargesCharged(), penalty)) {
 
                         if (loanTransaction.getTransactionDate().isAfter(installment.getDueDate())) {
-                            BigDecimal interestPaidExtra = MathUtility.subtract(interest, installment.getInterestCharged());
+                            BigDecimal interestPaidExtra = MathUtility.subtract(interest, installment.getInterestCharged().subtract(installment.getInterestWaived()));
                             BigDecimal feePaidExtra = MathUtility.subtract(fee, installment.getFeeChargesCharged());
                             BigDecimal penaltyPaidExtra = MathUtility.subtract(penalty, installment.getPenaltyChargesCharged());
                             if (MathUtility.isGreaterThanZero(interestPaidExtra)) {
                                 interestPortionUsed = MathUtility.subtract(loanTransaction.getInterestPortion(), interestPaidExtra);
-                                interest = installment.getInterestCharged();
+                                interest = installment.getInterestCharged().subtract(installment.getInterestWaived());
                             }
 
                             if (MathUtility.isGreaterThanZero(feePaidExtra) || MathUtility.isGreaterThanZero(penaltyPaidExtra)) {
