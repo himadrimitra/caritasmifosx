@@ -1402,8 +1402,10 @@ public class Loan extends AbstractPersistable<Long> {
         BigDecimal feePortionUsed = BigDecimal.ZERO;
         BigDecimal penaltyPortionUsed = BigDecimal.ZERO;
         LocalDate recalculateFromDate =  fetchLoanRecalculateFromDate();
+        LocalDate considerTransactionFromDate = recalculateFromDate;
         for (LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
             if(installment.getDueDate().isBefore(recalculateFromDate)){
+                considerTransactionFromDate = installment.getDueDate().plusDays(1);
                 continue;
             }
             int i = 0;
@@ -1411,7 +1413,10 @@ public class Loan extends AbstractPersistable<Long> {
             BigDecimal fee = BigDecimal.ZERO;
             BigDecimal penalty = BigDecimal.ZERO;
                 for (LoanTransaction loanTransaction : transactionForProcess) {
-                    if (!loanTransaction.getTransactionDate().isAfter(installment.getFromDate())) {
+                    if(loanTransaction.getTransactionDate().isBefore(considerTransactionFromDate)){
+                        i++;
+                        continue;
+                    }else if (!loanTransaction.getTransactionDate().isAfter(installment.getFromDate())) {
                         reversedTransactions.add(loanTransaction);
                         i++;
                         continue;
@@ -1520,12 +1525,25 @@ public class Loan extends AbstractPersistable<Long> {
                                 
                             }
 
+                    } else {
+                        if (getConsiderFutureAccrualsBefore() != null
+                                && !getConsiderFutureAccrualsBefore().isBefore(loanTransaction.getTransactionDate())) {
+                            if (MathUtility.isLesser(installment.getInterestCharged(), interest)) {
+                                interest = installment.getInterestCharged();
+                            }
+                            if (MathUtility.isLesser(installment.getFeeChargesCharged(), fee)) {
+                                fee = installment.getFeeChargesCharged();
+                            }
+                            if (MathUtility.isLesser(installment.getPenaltyChargesCharged(), penalty)) {
+                                penalty = installment.getPenaltyChargesCharged();
+                            }
+                            i++;
                         } else {
                             interest = interest.subtract(MathUtility.zeroIfNull(loanTransaction.getInterestPortion())).add(
                                     interestPortionUsed);
                             fee = fee.subtract(MathUtility.zeroIfNull(loanTransaction.getFeeChargesPortion())).add(feePortionUsed);
                             penalty = penalty.subtract(loanTransaction.getPenaltyChargesPortion()).add(penaltyPortionUsed);
-//                            loanTransaction.reverse();
+                            // loanTransaction.reverse();
                             reversedTransactions.add(loanTransaction);
                             i++;
                             if (latestReversedDate.isBefore(loanTransaction.getTransactionDate())) {
@@ -1572,6 +1590,7 @@ public class Loan extends AbstractPersistable<Long> {
                                 installmentNumber--;
                             }
                         }
+                    }
                     } else {
                         interestPortionUsed = BigDecimal.ZERO;
                         feePortionUsed = BigDecimal.ZERO;
