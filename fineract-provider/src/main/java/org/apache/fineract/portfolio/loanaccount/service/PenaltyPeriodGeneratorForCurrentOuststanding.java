@@ -19,9 +19,13 @@ public class PenaltyPeriodGeneratorForCurrentOuststanding extends PenaltyChargeP
                 overdueCalculationDetail.getChargeOutstingAsOnDate());
         if (amountForChargeCalculation.isGreaterThanOrEqualTo(recurringCharge.getChargeOverueDetail().getMinOverdueAmountRequired(
                 overdueCalculationDetail.getCurrency()))) {
-            PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, actualEndDate,
-                    amountForChargeCalculation, chargeApplicableFromDate, endDate, recurringCharge.getFeeFrequency());
-            penaltyPeriods.put(endDate,penaltyPeriod);
+            if(penaltyPeriods.containsKey(endDate)){
+                penaltyPeriods.get(endDate).setNumberofTimes(penaltyPeriods.get(endDate).getNumberofTimes() + 1);
+            } else {
+                PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, actualEndDate,
+                        amountForChargeCalculation, chargeApplicableFromDate, endDate, recurringCharge.getFeeFrequency());
+                penaltyPeriods.put(endDate, penaltyPeriod);
+            }
         }
 
         for (LocalDate date : overdueCalculationDetail.getDatesForOverdueAmountChange()) {

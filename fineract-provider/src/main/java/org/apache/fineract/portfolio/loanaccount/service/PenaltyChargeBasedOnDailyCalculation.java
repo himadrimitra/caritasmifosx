@@ -2,7 +2,6 @@ package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
 
-import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.charge.service.ChargeUtils;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultPaymentPeriodsInOneYearCalculator;
@@ -15,11 +14,12 @@ public class PenaltyChargeBasedOnDailyCalculation implements PenaltyChargeCalcul
     final PaymentPeriodsInOneYearCalculator paymentPeriodsInOneYearCalculator = new DefaultPaymentPeriodsInOneYearCalculator();
 
     @Override
-    public Money calculateCharge(PenaltyPeriod penaltyPeriod) {
-        double percentage = ChargeUtils.retriveChargePercentage(PeriodFrequencyType.DAYS.getValue(), penaltyPeriod.getPercentageOrAmount()) / PenaltyChargeCalculator.PERCENTAGE_DIVIDEND;
-        int numberOfDays = Days.daysBetween(penaltyPeriod.getStartDate(),penaltyPeriod.getPostingDate()).getDays();
+    public BigDecimal calculateCharge(PenaltyPeriod penaltyPeriod) {
+        double percentage = ChargeUtils.retriveChargePercentage(PeriodFrequencyType.DAYS.getValue(), penaltyPeriod.getPercentageOrAmount())
+                / PenaltyChargeCalculator.PERCENTAGE_DIVIDEND;
+        int numberOfDays = Days.daysBetween(penaltyPeriod.getStartDate(), penaltyPeriod.getPostingDate()).getDays();
         double amount = percentage * penaltyPeriod.getOutstanding().getAmount().doubleValue() * numberOfDays;
-        return Money.of(penaltyPeriod.getOutstanding().getCurrency(), new BigDecimal(amount));
+        return new BigDecimal(amount);
     }
 
 }
