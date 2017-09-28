@@ -7068,24 +7068,12 @@ public class Loan extends AbstractPersistable<Long> {
     
     public LocalDate fetchLoanRecalculateFromDate() {
         LocalDate loanRecalculatedOn = null;
-        final Boolean ignoreOverdue = ThreadLocalContextUtil.getIgnoreOverdue();
         if (this.loanRecalculatedOn == null) {
             loanRecalculatedOn = getDisbursementDate();
         } else {
             loanRecalculatedOn = new LocalDate(this.loanRecalculatedOn);
         }
         
-        // ignoring overdue check for interest recalculation job when picking up loans from delete me table
-        if (ignoreOverdue == null || !ignoreOverdue) {
-            //Fix to check in case the Overdue date is after the interest recalculatedOn Date then that needs to be taken
-            //as the interest recalculated Date 
-            LocalDate overdueSince = this.loanSummaryWrapper.determineOverdueSince(getRepaymentScheduleInstallments());
-            if(overdueSince != null && overdueSince.isAfter(loanRecalculatedOn)){
-                loanRecalculatedOn = overdueSince;
-            }
-        }
-        
-
         return loanRecalculatedOn;
     }
     
