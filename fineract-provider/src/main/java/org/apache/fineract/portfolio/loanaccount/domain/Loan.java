@@ -3523,6 +3523,10 @@ public class Loan extends AbstractPersistable<Long> {
 
         if (isTransactionChronologicallyLatest && adjustedTransaction == null && !isFullProcessingRequired(loanTransaction)
                 && (!reprocess || !this.repaymentScheduleDetail().isInterestRecalculationEnabled())) {
+            if(scheduleGeneratorDTO.isChargeProcessingRequired()){
+                final LoanRepaymentScheduleProcessingWrapper wrapper = new LoanRepaymentScheduleProcessingWrapper();
+                wrapper.reprocess(getCurrency(), getDisbursementDate(), this.repaymentScheduleInstallments, charges(), disbursementDetails);
+            }
             loanRepaymentScheduleTransactionProcessor.handleTransaction(loanTransaction, getCurrency(), this.repaymentScheduleInstallments,
                     charges());
             loanTransaction.adjustInterestComponent(currency);

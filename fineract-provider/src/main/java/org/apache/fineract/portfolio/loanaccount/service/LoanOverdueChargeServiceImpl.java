@@ -289,8 +289,8 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
             }
             if (isOverduePresent) {
                 for (LoanCharge loanCharge : charges) {
-                    if (loanCharge.isActive() && loanCharge.isOverdueInstallmentCharge() && loanCharge.isChargePending()) {
-                        if (loanCharge.getDueLocalDate().isAfter(reverseLoanChargesBefore)) {
+                    if (loanCharge.isActive() && loanCharge.isOverdueInstallmentCharge()) {
+                        if (loanCharge.getDueLocalDate().isAfter(reverseLoanChargesBefore)  && loanCharge.isChargePending()) {
                             loanCharge.setActive(false);
                             isChargeChanged = true;
                         } else if (loanCharge.getOverdueAppliedTill() != null
@@ -431,8 +431,8 @@ public class LoanOverdueChargeServiceImpl implements LoanOverdueChargeService {
 
         if (isOverduePresent) {
             for (LoanCharge loanCharge : charges) {
-                if (loanCharge.isActive() && loanCharge.isOverdueInstallmentCharge() && loanCharge.isChargePending()) {
-                    if (loanCharge.getDueLocalDate().isAfter(reverseLoanChargesBefore)) {
+                if (loanCharge.isActive() && loanCharge.isOverdueInstallmentCharge()) {
+                    if (loanCharge.getDueLocalDate().isAfter(reverseLoanChargesBefore) &&  loanCharge.isChargePending()) {
                         loanOverdueChargeData.setPenaltyPostedTillDate(MathUtility.add(loanOverdueChargeData.getPenaltyPostedTillDate(),
                                 loanCharge.amountOutstanding()));
                     } else {

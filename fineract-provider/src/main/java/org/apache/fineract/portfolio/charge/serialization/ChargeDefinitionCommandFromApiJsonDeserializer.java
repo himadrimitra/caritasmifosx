@@ -616,6 +616,11 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                             charge.feeFrequency());
                 }
             }
+
+            if (frequencyType.isDaily()) {
+                baseDataValidator.parameter(ChargesApiConstants.calculateChargeOnCurrentOverdueParamName).mustBeFalseValueRequired(
+                        charge.getChargeOverueDetail().isCalculateChargeOnCurrentOverdue());
+            }
             throwExceptionIfValidationWarningsExist(dataValidationErrors);
         }
     }
