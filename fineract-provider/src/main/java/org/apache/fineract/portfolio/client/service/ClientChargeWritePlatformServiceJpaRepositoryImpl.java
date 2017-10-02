@@ -709,7 +709,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                         insertSql.append(",crc.amount,crc.amount,0,0,crc.is_active,crc.inactivated_on_date,crc.id ");
                         insertSql.append("from m_client_recurring_charge crc  where crc.id = ");
                         insertSql.append(clientRecurringChargeId);
-                        insertSql.append(" and crc.charge_due_date <= '").append(fromDate).append("' ");
+                        insertSql.append(" and crc.charge_due_date <= '").append(chargeLocalStartDate).append("' ");
                         int result = this.jdbcTemplate.update(insertSql.toString());
                         logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by update: " + result);
                         
