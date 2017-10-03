@@ -18,7 +18,7 @@ public class PenaltyChargeBasedOnPeriodCalculation implements PenaltyChargeCalcu
         int numberOfDays = Days.daysBetween(penaltyPeriod.getStartDate(), penaltyPeriod.getPostingDate()).getDays();
         int actualDays = Days.daysBetween(penaltyPeriod.getActualStartDate(), penaltyPeriod.getActualEndDate()).getDays();
         double amount = percentage * penaltyPeriod.getOutstanding().getAmount().doubleValue();
-        amount = amount * numberOfDays / actualDays;
+        amount = actualDays == 0 ? 0:amount * numberOfDays / actualDays;
         return new BigDecimal(amount);
     }
 
