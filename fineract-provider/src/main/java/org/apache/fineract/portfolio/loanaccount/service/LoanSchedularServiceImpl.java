@@ -242,6 +242,9 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
             LocalDate brokenPeriodOnDate) {
         final String errorMessage = "Apply Charges due for overdue loans failed for account:";
         for (Long loanId : loanIds) {
+            if(loanId == 0){
+                continue;
+            }
             try {
                 this.loanOverdueChargeService.applyOverdueChargesForNonInterestRecalculationLoans(loanId, runOndate, brokenPeriodOnDate);
             } catch (Exception e) {
@@ -313,6 +316,9 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
             List<Long> loanIds,final LocalDate penaltiesRunOnDate, final LocalDate penaltiesBrokenPeriodOnDate) {
         final String errorMessage = "Interest recalculation for loans failed for account:";
         for (Long loanId : loanIds) {
+            if(loanId == 0){
+                continue;
+            }
             logger.info("Loan ID " + loanId);
             Integer numberOfRetries = 0;
             while (numberOfRetries <= maxNumberOfRetries) {

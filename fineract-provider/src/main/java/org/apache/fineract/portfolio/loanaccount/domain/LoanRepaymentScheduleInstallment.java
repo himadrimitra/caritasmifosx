@@ -633,10 +633,10 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.penaltyChargesWrittenOff = defaultToNullIfZero(penaltyChargesWrittenOff.getAmount());
     }
 
-    public void updateAccrualPortion(final Money interest, final Money feeCharges, final Money penalityCharges) {
-        this.interestAccrued = defaultToNullIfZero(interest.getAmount());
-        this.feeAccrued = defaultToNullIfZero(feeCharges.getAmount());
-        this.penaltyAccrued = defaultToNullIfZero(penalityCharges.getAmount());
+    public void updateAccrualPortion(final BigDecimal interest, final BigDecimal feeCharges, final BigDecimal penalityCharges) {
+        this.interestAccrued = defaultToNullIfZero(interest);
+        this.feeAccrued = defaultToNullIfZero(feeCharges);
+        this.penaltyAccrued = defaultToNullIfZero(penalityCharges);
     }
     
     public void setFeeAccrualPortion(final Money feeCharges) {
@@ -974,5 +974,17 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
 
     public BigDecimal getPenaltyChargesCharged() {
         return MathUtility.zeroIfNull(this.penaltyCharges);
+    }
+    
+    public BigDecimal getFeeChargesWaived() {
+        return MathUtility.zeroIfNull(this.feeChargesWaived).add(MathUtility.zeroIfNull(this.feeChargesWrittenOff));
+    }
+
+    public BigDecimal getInterestWaived() {
+        return MathUtility.zeroIfNull(this.interestWaived).add(MathUtility.zeroIfNull(this.interestWrittenOff));
+    }
+
+    public BigDecimal getPenaltyChargesWaived() {
+        return MathUtility.zeroIfNull(this.penaltyChargesWaived).add(MathUtility.zeroIfNull(this.penaltyChargesWrittenOff));
     }
 }

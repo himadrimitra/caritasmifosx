@@ -28,6 +28,9 @@ public class ChargeUtils {
         switch (feeFrequency) {
             case DAYS:
                 LocalDate date = fromDate;
+                if(isFlat){
+                    date = date.plusDays(1);
+                }
 
                 while (date.isBefore(toDate)) {
                     if (isFlat) {
