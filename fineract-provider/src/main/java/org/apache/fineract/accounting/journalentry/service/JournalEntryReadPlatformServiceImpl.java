@@ -415,6 +415,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                     + " je.entity_transaction_id in (select id from m_savings_account_transaction where savings_account_id = ?)");
             paramList.add(searchParameters.getSavingsId());
             whereClose = " and ";
+            sb.append(" ORDER BY je.entry_date,je.transaction_identifier ");
         }
 
         if (searchParameters.isLimited()) {

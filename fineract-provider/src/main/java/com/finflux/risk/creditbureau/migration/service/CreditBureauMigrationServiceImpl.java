@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
 
     @Override
     public void updateCreditBureauEnquiry() {
-        int limit = 1000;
+        int limit = 500;
         int offSet = 0 ;
         StringBuilder updateBuilder = new StringBuilder();
         updateBuilder.append("UPDATE f_creditbureau_enquiry enquiry SET enquiry.request_location=? , ");
@@ -63,7 +64,7 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
         CreditBureauEnquiryMapper mapper = new CreditBureauEnquiryMapper();
         builder.append("select SQL_CALC_FOUND_ROWS ");
         builder.append(mapper.query());
-        builder.append(" where enquiry.request_location is null");
+        builder.append(" where enquiry.request_location is null and enquiry.request is not null and enquiry.response is not null ");
         builder.append(" limit " + limit);
         builder.append(" offset " + offset);
         return this.creditBureauEnquiryDataPaginationHelper.fetchPage(jdbcTemplate, sqlCountRows, builder.toString(), params, mapper);
@@ -101,20 +102,24 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
 
     @Override
     public void updateLoanCreditBureauEnquiry() {
-        int limit = 1000;
-        int offSet = 0 ;
+        int limit = 500;
+        int offSet = 0;
+        Long startIndex = 88288L;
+        final Long endIndex = 187661L;
         StringBuilder updateBuilder = new StringBuilder();
         updateBuilder.append("UPDATE f_loan_creditbureau_enquiry enquiry SET enquiry.request_location=? , ");
         updateBuilder.append("enquiry.response_location=?, enquiry.report_location=? WHERE  enquiry.id=?");
-        while(true) {
-        	Page<LoanCreditBureauEnquiryData> pageItems = getLoanCreditBureauEnquiryData(offSet, limit);
-        	if(pageItems == null || pageItems.getPageItems() == null || pageItems.getPageItems().isEmpty()) break ;
-            List<LoanCreditBureauEnquiryData> enquiryDataList = pageItems.getPageItems();
-            moveLoanDataIntoFileSystem(enquiryDataList, updateBuilder.toString());
+        Long index = startIndex;
+        while (true) {
+            Collection<LoanCreditBureauEnquiryData> pageItems = getLoanCreditBureauEnquiryData(startIndex, startIndex + limit);
+            startIndex += limit;
+            if (pageItems == null || pageItems.isEmpty()) break;
+            moveLoanDataIntoFileSystem(pageItems, updateBuilder.toString());
+            if(startIndex > endIndex) break ;
         }
     }
 
-    private void moveLoanDataIntoFileSystem(List<LoanCreditBureauEnquiryData> list, final String query) {
+    private void moveLoanDataIntoFileSystem(Collection<LoanCreditBureauEnquiryData> list, final String query) {
         List<Object[]> args = new ArrayList<>();
         for (LoanCreditBureauEnquiryData enquiryData : list) {
             String requestLocation = null;
@@ -133,17 +138,18 @@ public class CreditBureauMigrationServiceImpl implements CreditBureauMigrationSe
         this.jdbcTemplate.batchUpdate(query, args);
     }
 
-    private Page<LoanCreditBureauEnquiryData> getLoanCreditBureauEnquiryData(final Integer offset, final Integer limit) {
-        final String sqlCountRows = "SELECT FOUND_ROWS()";
+    private Collection<LoanCreditBureauEnquiryData> getLoanCreditBureauEnquiryData(final Long startIndex, final Long endIndex) {
         final StringBuilder builder = new StringBuilder();
-        Object[] params = new Object[] {};
         LoanCreditBureauEnquiryMapper mapper = new LoanCreditBureauEnquiryMapper();
-        builder.append("select SQL_CALC_FOUND_ROWS ");
+        builder.append("select ") ;
         builder.append(mapper.query());
-        builder.append(" where enquiry.request_location is null");
-        builder.append(" limit " + limit);
-        builder.append(" offset " + offset);
-        return this.loanCreditBureauEnquiryDataPaginationHelper.fetchPage(jdbcTemplate, sqlCountRows, builder.toString(), params, mapper);
+        builder.append(" where enquiry.request_location is null and enquiry.request is not null and enquiry.response is not null ");
+        builder.append("and enquiry.id >= "+startIndex.toString()) ;
+        builder.append(" and ") ;
+        builder.append("enquiry.id <= "+endIndex.toString()) ;
+        //builder.append(" limit " + limit);
+        //builder.append(" offset " + offset);
+        return this.jdbcTemplate.query(builder.toString(), mapper) ;
     }
 
     private String saveContent(final byte[] data, final Long parentId) {

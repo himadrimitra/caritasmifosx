@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
@@ -32,6 +33,7 @@ import org.apache.fineract.infrastructure.documentmanagement.data.DocumentData;
 import org.apache.fineract.infrastructure.documentmanagement.data.DocumentTagData;
 import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
 import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentNotFoundException;
+import org.apache.fineract.infrastructure.documentmanagement.service.DocumentWritePlatformServiceJpaRepositoryImpl.DOCUMENT_MANAGEMENT_ENTITY;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -68,13 +70,32 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
         if(existingDocuments != null && existingDocuments.size() > 0) {
             documents.addAll(existingDocuments) ;
         }
+        final Long productId = getProductIdBasedOnEntityTypeAndId(entityType, entityId);
         final VirtualDocumentMapper virtualDocumentsMapper = new VirtualDocumentMapper(entityType, entityId) ;
-        final String virtualDocsSql = select + virtualDocumentsMapper.schema() + " and tags.entity_type=?";
-        List<DocumentData> virtualDocuments = this.jdbcTemplate.query(virtualDocsSql, virtualDocumentsMapper, new Object[] { entityType, entityId, entityType });
+        String virtualDocsSql = select + virtualDocumentsMapper.schema() + " and tags.entity_type=?";
+        Object[] params = new Object[] { entityType, entityId, entityType };
+        if (productId != null) {
+            virtualDocsSql = virtualDocsSql + " and (tags.product_id = ? OR tags.product_id IS NULL) ";
+            params = new Object[] { entityType, entityId, entityType, productId };
+        }
+        List<DocumentData> virtualDocuments = this.jdbcTemplate.query(virtualDocsSql, virtualDocumentsMapper, params);
         if(virtualDocuments != null && virtualDocuments.size() > 0) {
             documents.addAll(virtualDocuments) ;
         }
         return documents ;
+    }
+
+    private Long getProductIdBasedOnEntityTypeAndId(String entityType, Long entityId) {
+        String sql = null;
+        if (DOCUMENT_MANAGEMENT_ENTITY.LOANAPPLICATION.toString().equalsIgnoreCase(entityType)) {
+            sql = "SELECT loan_product_id FROM f_loan_application_reference WHERE id = ?";
+        } else if (DOCUMENT_MANAGEMENT_ENTITY.LOANS.toString().equalsIgnoreCase(entityType)) {
+            sql = "SELECT product_id FROM m_loan WHERE id = ?";
+        } else if (DOCUMENT_MANAGEMENT_ENTITY.SAVINGS.toString().equalsIgnoreCase(entityType)) {
+            sql = "SELECT product_id FROM m_savings_account WHERE id = ?";
+        }
+        if (StringUtils.isBlank(sql)) { return null; }
+        return this.jdbcTemplate.queryForObject(sql, Long.class, new Object[] { entityId });
     }
 
     @Override
@@ -185,7 +206,7 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
         }
 
         public String schema() {
-            return builder.toString() ;
+            return builder.toString();
         }
 
         @Override

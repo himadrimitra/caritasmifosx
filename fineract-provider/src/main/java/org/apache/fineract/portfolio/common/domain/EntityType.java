@@ -20,6 +20,7 @@ public enum EntityType {
     ADDRESS(51, "entityType.address", "address", "Address"), //
     DOCUMENT(52, "entityType.document", "document", "Document"), //
     FAMILY_DETAILS(53, "entityType.family.details", "familyDetails", "Family details"), //
+    BANK_ACCOUNT_DETAILS(54, "entityType.bank.account.details", "bankAccountDetails", "Bank account details"), //
 
     CLIENT_IDENTIFIER(101, "entityType.client.identifier", "clientIdentifier", "Client identifier"), //
     CLIENT_INCOME_EXPENSE(102, "entityType.client.income.expense", "clientIncomeExpense", "Client income expense"), //
@@ -124,6 +125,9 @@ public enum EntityType {
                 break;
                 case 53:
                     entityType = EntityType.FAMILY_DETAILS;
+                break;
+                case 54:
+                    entityType = EntityType.BANK_ACCOUNT_DETAILS;
                 break;
                 case 101:
                     entityType = EntityType.CLIENT_IDENTIFIER;

@@ -48,6 +48,7 @@ import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.account.data.AccountTransferData;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionEnumData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
@@ -633,6 +634,13 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         final MonetaryCurrency currency = principal.getCurrency();
         this.amount = getPrincipalPortion(currency).plus(getInterestPortion(currency)).plus(getFeeChargesPortion(currency))
                 .plus(getPenaltyChargesPortion(currency)).getAmount();
+    }
+    
+    public void updateComponentsAndTotalForAccruals(final BigDecimal interest, final BigDecimal feeCharges, final BigDecimal penaltyCharges) {
+        this.interestPortion = defaultToNullIfZero(MathUtility.add(getInterestPortion(),interest));
+        this.feeChargesPortion = defaultToNullIfZero(MathUtility.add(getFeeChargesPortion(),feeCharges));
+        this.penaltyChargesPortion = defaultToNullIfZero(MathUtility.add(getPenaltyChargesPortion(),penaltyCharges));
+        this.amount = MathUtility.add(this.interestPortion,this.feeChargesPortion,this.penaltyChargesPortion);
     }
     
     public void updateComponentsAndTotal(final Money principal, final Money interest, final Money feeCharges, final Money penaltyCharges,

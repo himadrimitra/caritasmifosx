@@ -15,6 +15,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
@@ -23,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.finflux.common.util.FinfluxCollectionUtils;
@@ -32,6 +35,7 @@ import com.finflux.kyc.address.data.AddressEntityTypeEnums;
 import com.finflux.kyc.address.domain.Address;
 import com.finflux.kyc.address.domain.AddressEntity;
 import com.finflux.kyc.address.domain.AddressRepositoryWrapper;
+import com.finflux.kyc.address.exception.AddressNotFoundException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -49,12 +53,15 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
     private final AddressRepositoryWrapper repository;
     private final CodeValueRepositoryWrapper codeValueRepository;
     private final BusinessEventNotifierService businessEventNotifierService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
-    public AddressWritePlatformServiceImpl(final PlatformSecurityContext context, final FromJsonHelper fromApiJsonHelper,
-            final AddressDataValidator validator, final AddressBusinessValidators addressBusinessValidators,
-            final AddressDataAssembler assembler, final AddressRepositoryWrapper repository,
-            final CodeValueRepositoryWrapper codeValueRepository, final BusinessEventNotifierService businessEventNotifierService) {
+    public AddressWritePlatformServiceImpl(final RoutingDataSource dataSource, final PlatformSecurityContext context,
+            final FromJsonHelper fromApiJsonHelper, final AddressDataValidator validator,
+            final AddressBusinessValidators addressBusinessValidators, final AddressDataAssembler assembler,
+            final AddressRepositoryWrapper repository, final CodeValueRepositoryWrapper codeValueRepository,
+            final BusinessEventNotifierService businessEventNotifierService) {
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.validator = validator;
@@ -74,6 +81,8 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
 
             this.addressBusinessValidators.validateAddressEntityIdAndEntityType(entityTypeEnum, entityId);
 
+            validateEntityLockedOrNot(entityTypeEnum,entityId);
+            
             this.validator.validateForCreate(entityTypeEnum, entityId, command.json());
 
             final List<Address> addresses = this.assembler.assembleCreateForm(entityTypeEnum, entityId, command);
@@ -97,6 +106,21 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
         }
     }
 
+    private void validateEntityLockedOrNot(final Integer entityType, final Long entityId) {
+        final AddressEntityTypeEnums addressEntityTypeEnum = AddressEntityTypeEnums.fromInt(entityType);
+        String sqlQueryForEntityLockedOrNot = null;
+        if (addressEntityTypeEnum.isClients()) {
+            sqlQueryForEntityLockedOrNot = "select c.is_locked from m_client c where c.id = ? ";
+        }
+        if (sqlQueryForEntityLockedOrNot != null) {
+            try {
+                final boolean isLocked = this.jdbcTemplate.queryForObject(sqlQueryForEntityLockedOrNot, Boolean.class, entityId);
+                this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.ADDRESS_ADD,
+                        FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, isLocked));
+            } catch (final EmptyResultDataAccessException e) {}
+        }
+    }
+
     @Transactional
     @Override
     public CommandProcessingResult update(final Long addressId, final Long entityId, final JsonCommand command) {
@@ -107,6 +131,10 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
              * Checking Address exists or not
              */
             final Address address = this.repository.findOneWithNotFoundDetection(addressId);
+            if(address.getIsVerified()) {
+                throw new PlatformDataIntegrityException("error.msg.address.type.verified",
+                        "Address is already verified. Updation not allowed.", "addressVerified", address.getId());
+            }
             this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.ADDRESS_UPDATE,
                     FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, address.isLocked()));
             final Set<AddressEntity> addressEntities = address.getAddressEntities();

@@ -267,6 +267,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         LocalDate recalculateFrom = null;
         if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             recalculateFrom = transactionDate;
+            loan.setConsiderFutureAccrualsBefore(recalculateFrom);
         }
         final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                 holidayDetailDto);
@@ -1057,6 +1058,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             recalculateFrom = transactionToAdjust.getTransactionDate().isAfter(transactionDate) ? transactionDate : transactionToAdjust
                     .getTransactionDate();
+            // To represses accruals
+            loan.setConsiderFutureAccrualsBefore(recalculateFrom);
         }
         final boolean considerFutureDisbursmentsInSchedule = loan.loanProduct().considerFutureDisbursementsInSchedule();
         final boolean considerAllDisbursmentsInSchedule =loan.loanProduct().considerAllDisbursementsInSchedule();
@@ -1332,10 +1335,13 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                             transaction.getFeeChargesPortion(currency))
                     && accrualSuspenceTransaction.getPenaltyChargesPortion(currency).isGreaterThanOrEqualTo(
                             transaction.getPenaltyChargesPortion(currency))) {
-                accrualSuspenseReverseTransaction = LoanTransaction.accrualSuspenseReverse(loan, loan.getOffice(),
-                        transaction.getAmount(currency).minus(transaction.getPrincipalPortion(currency)),
-                        transaction.getInterestPortion(currency), transaction.getFeeChargesPortion(currency),
-                        transaction.getPenaltyChargesPortion(currency), transaction.getTransactionDate());
+                accrualSuspenseReverseTransaction = LoanTransaction.accrualSuspenseReverse(
+                        loan,
+                        loan.getOffice(),
+                        transaction.getInterestPortion(currency).plus(transaction.getFeeChargesPortion(currency))
+                                .plus(transaction.getPenaltyChargesPortion(currency)), transaction.getInterestPortion(currency),
+                        transaction.getFeeChargesPortion(currency), transaction.getPenaltyChargesPortion(currency),
+                        transaction.getTransactionDate());
                 accrualSuspenseReverseTransaction.copyChargesPaidByFrom(transaction);
                 if (accrualSuspenseReverseTransaction.getAmount(currency).isGreaterThanZero()) {
                     loan.getLoanTransactions().add(accrualSuspenseReverseTransaction);
@@ -1467,9 +1473,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 transaction.getFeeChargesPortion(currency), transaction.getPenaltyChargesPortion(currency), transaction
                         .getTransactionDate());
         accrualSuspenseTransaction.copyChargesPaidByFrom(transaction);
-        if(accrualSuspenseTransaction.getAmount(currency).isGreaterThanZero()){
-            loan.getLoanTransactions().add(accrualSuspenseTransaction);
-        }
 
         return accrualSuspenseTransaction.getAmount(currency).isGreaterThanZero() ? accrualSuspenseTransaction : null;
     }

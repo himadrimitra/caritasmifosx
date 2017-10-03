@@ -17,6 +17,7 @@ import javax.xml.ws.BindingProvider;
 import org.apache.fineract.infrastructure.configuration.data.EquifaxCredentialsData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.finflux.risk.creditbureau.provider.data.CreditBureauResponse;
@@ -29,6 +30,7 @@ import com.finflux.risk.creditbureau.provider.data.LoanEnquiryData;
 import com.finflux.risk.creditbureau.provider.data.LoanEnquiryReferenceData;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
 import com.finflux.risk.creditbureau.provider.equifax.EquifaxConstants;
+import com.finflux.risk.creditbureau.provider.equifax.domain.EquifaxRequestValidator;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.AdditionalNameTypeDetails;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.FamilyInfo;
 import com.finflux.risk.creditbureau.provider.equifax.xsd.GenderTypeCode;
@@ -53,9 +55,11 @@ import com.finflux.risk.creditbureau.provider.equifax.xsd.StateCodeOptions;
 public class EquifaxRequestServiceImpl implements EquifaxRequestService {
 
     private final static Logger logger = LoggerFactory.getLogger(EquifaxRequestServiceImpl.class);
+    private final EquifaxRequestValidator requestValidator;
 
-    public EquifaxRequestServiceImpl() {
-
+    @Autowired
+    public EquifaxRequestServiceImpl(final EquifaxRequestValidator requestValidator) {
+        this.requestValidator = requestValidator;
     }
 
     @Override
@@ -80,6 +84,7 @@ public class EquifaxRequestServiceImpl implements EquifaxRequestService {
         populateHeaderProperties(requestHeader, equifaxCredentialsData);
         input.setRequestHeader(requestHeader);
         RequestBodyType requestBody = constructRetailRequest(enquiryReferenceData, equifaxCredentialsData);
+        this.requestValidator.validateEnquiryRequest(requestBody);
         input.setRequestBody(requestBody);
         InquiryResponseType responseType = inquiryPortType.getConsumerCreditReport(input);
         CreditBureauResponse response = null;
@@ -153,9 +158,11 @@ public class EquifaxRequestServiceImpl implements EquifaxRequestService {
         }
 
         // Setting the DOB
-        XMLGregorianCalendar dateOfBirth = getXMLGregorianCalendarDate(loanReference.getEnquiryData().getClientDOB());
-        if (dateOfBirth != null) {
-            requestBody.setDOB(dateOfBirth);
+        if (loanReference.getEnquiryData().getClientDOB() != null) {
+            XMLGregorianCalendar dateOfBirth = getXMLGregorianCalendarDate(loanReference.getEnquiryData().getClientDOB());
+            if (dateOfBirth != null) {
+                requestBody.setDOB(dateOfBirth);
+            }
         }
 
         // We are not capturing marital status. Do we need to check relations

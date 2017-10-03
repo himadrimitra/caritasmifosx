@@ -69,7 +69,7 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 		final CreditBureauEnquiry enquiry = this.creditBureauEnquiryRepository
 				.findOne(loanEnquiryReferenceData.getEnquiryId());
 		final String request = contentService.getContent(enquiry.getRequestLocation()) ;
-        final String response =  contentService.getContent(enquiry.getResponseLocation()) ;
+                final String response =  contentService.getContent(enquiry.getResponseLocation()) ;
 		System.setProperty("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true");
 		try {
 			return parseResponse(request, response, loanEnquiryReferenceData);
@@ -104,7 +104,7 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 		List<CreditBureauExistingLoan> loanList = new ArrayList<>();
 		CreditBureauEnquiryStatus status = CreditBureauEnquiryStatus.SUCCESS;
 		if (reportData.getError().size() > 0) {
-			status = CreditBureauEnquiryStatus.ERROR;
+			status = getStatusForErros(reportData.getError());
 			errorsJson = constructErrorJson(reportData.getError()) ;
 		} else {
 			CreditReportSummaryType reportSummary = reportData.getAccountSummary();
@@ -188,7 +188,7 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 			}
 		}
 		byte[] reportBytes = null;
-		if(status.isSuccess()) {
+		if(responseXml != null) {
 			reportBytes = generateReportFile(responseXml);	
 		}
 		enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requstXml,
@@ -199,6 +199,13 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 		return creditBureauResponse;
 
 	}
+	
+    public CreditBureauEnquiryStatus getStatusForErros(List<ErrorType> errors){
+	    if(errors.size()==1 && errors.get(0).getErrorCode().equalsIgnoreCase("00")){
+	        return CreditBureauEnquiryStatus.SUCCESS;
+	    }
+	    return CreditBureauEnquiryStatus.ERROR;
+    }
 
     private String constructErrorJson(final List<ErrorType> errors) {
         String errorsJson = null ;
@@ -230,8 +237,10 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 			parameterDto.setOutputfilename("REP");
 			parameterDto.setStrOutputPath(DIRECTORY);
 			Controller con = new Controller();
+			
 			con.generateIstsHtml(creditReport, parameterDto);
-			fileName = DIRECTORY + "Hit_" + creditReport.getInquiryResponseHeader().getReportOrderNO() + ".html" ;
+			String prefix = getPrefix(creditReport.getReportData().getError());
+			fileName = DIRECTORY + prefix + creditReport.getInquiryResponseHeader().getReportOrderNO() + ".html" ;						
 			return IOUtils.toByteArray(new FileInputStream(fileName));
 		} catch (JAXBException e) {
 			e.printStackTrace();
@@ -244,6 +253,11 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 		}
 		return null;
 	}
+	
+    private String getPrefix(List<com.creditReport.ists.ErrorType> errors) {
+        if (errors.size() == 1 && errors.get(0).getErrorCode().equalsIgnoreCase("00")) { return "NoHit_"; }
+        return "Hit_";
+    }
 
 	private CalendarFrequencyType convertToLoanTenureType(final String freq) {
 		if (freq == null) {

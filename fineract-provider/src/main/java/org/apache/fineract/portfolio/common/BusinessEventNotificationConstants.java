@@ -38,11 +38,13 @@ public class BusinessEventNotificationConstants {
                 "loan_revoke_subsidy_transaction"), LOAN_FORECLOSURE("loan_foreclosure"), CLIENT_UPDATE("client_update"), CLIENT_DELETE(
                 "client_delete"), CLIENT_CLOSE("client_close"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT(
                 "transfer_client"), LOAN_CREATE("loan_create"), LOAN_MODIFY("loan_modify"), SAVING_WITHDRAWAL("saving_withdrawal"), SAVING_TRANSFER(
-                "saving_transfer"), GL_ACCOUNT_CLOSURE("gl_account_closure"), ADDRESS_UPDATE("address_update"), ADDRESS_DELETE(
-                "address_delete"), DOCUMENT_UPDATE("document_update"), DOCUMENT_DELETE("document_delete"), FAMILY_DETAILS_UPDATE(
-                "family_details_update"), FAMILY_DETAILS_DELETE("family_details_delete"), CLIENT_IDENTIFIER_UPDATE(
-                "client_identifier_update"), CLIENT_IDENTIFIER_DELETE("client_identifier_delete"), CLIENT_INCOME_EXPENSE_UPDATE(
-                "client_income_expense_update"), EXISTING_LOAN_UPDATE("existing_loan_update"), EXISTING_LOAN_DELETE("existing_loan_delete");
+                "saving_transfer"), GL_ACCOUNT_CLOSURE("gl_account_closure"), ADDRESS_ADD("address_add"), ADDRESS_UPDATE("address_update"), ADDRESS_DELETE(
+                "address_delete"), DOCUMENT_ADD("document_add"), DOCUMENT_UPDATE("document_update"), DOCUMENT_DELETE("document_delete"), FAMILY_DETAILS_ADD(
+                "family_details_add"), FAMILY_DETAILS_UPDATE("family_details_update"), FAMILY_DETAILS_DELETE("family_details_delete"), CLIENT_IDENTIFIER_ADD(
+                "client_identifier_add"), CLIENT_IDENTIFIER_UPDATE("client_identifier_update"), CLIENT_IDENTIFIER_DELETE(
+                "client_identifier_delete"), CLIENT_INCOME_EXPENSE_UPDATE("client_income_expense_update"), EXISTING_LOAN_UPDATE(
+                "existing_loan_update"), EXISTING_LOAN_DELETE("existing_loan_delete"), BANK_ACCOUNT_DETAILS_UPDATE(
+                "bank_account_details_update"), BANK_ACCOUNT_DETAILS_DELETE("bank_account_details_delete");
 
         private final String value;
 

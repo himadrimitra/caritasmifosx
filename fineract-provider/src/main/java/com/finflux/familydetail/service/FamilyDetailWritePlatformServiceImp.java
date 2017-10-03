@@ -59,6 +59,8 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
         try {
             this.context.authenticatedUser();
             final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.FAMILY_DETAILS_ADD,
+                    FinfluxCollectionUtils.constructEntityMap(BUSINESS_ENTITY.ENTITY_LOCK_STATUS, client.isLocked()));
             this.validator.validateForCreate(command.json());
             final List<FamilyDetail> familyDetails = this.assembler.assembleCreateForm(client, command);
             this.familyDetailsRepository.save(familyDetails);
