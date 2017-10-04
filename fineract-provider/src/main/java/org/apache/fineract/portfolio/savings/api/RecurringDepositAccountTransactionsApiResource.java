@@ -47,6 +47,7 @@ import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionData;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.apache.fineract.portfolio.savings.service.DepositAccountReadPlatformService;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,19 +103,18 @@ public class RecurringDepositAccountTransactionsApiResource {
         if (!(is(commandParam, "deposit") || is(commandParam, "withdrawal"))) { throw new UnrecognizedQueryParamException("command",
                 commandParam, new Object[] { "deposit", "withdrawal" }); }
 
-        /***
-         * By default get the deposit template for deposits and withdrawal
-         * transactions
-         */
-        SavingsAccountTransactionData savingsAccount = this.depositAccountReadPlatformService
-                .retrieveRecurringAccountDepositTransactionTemplate(recurringDepositAccountId);
-
-        /***
-         * Update transaction date and transaction type if transaction type is
-         * withdrawal
-         */
+        
+        SavingsAccountTransactionData savingsAccount = null;
+        
         if (is(commandParam, "withdrawal")) {
-            savingsAccount = SavingsAccountTransactionData.withWithDrawalTransactionDetails(savingsAccount);
+            savingsAccount = this.depositAccountReadPlatformService
+                    .retrieveRecurringAccountWithdrawTransactionTemplate(recurringDepositAccountId);
+        } else {
+            /***
+             *Get the deposit template for deposits transactions
+             */
+            savingsAccount = this.depositAccountReadPlatformService
+                    .retrieveRecurringAccountDepositTransactionTemplate(recurringDepositAccountId);
         }
 
         final Collection<PaymentTypeData> paymentTypeOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
