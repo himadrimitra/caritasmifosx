@@ -131,7 +131,8 @@ public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownRead
         return Arrays.asList(chargeTimeType(ChargeTimeType.SPECIFIED_DUE_DATE),
 				chargeTimeType(ChargeTimeType.ANNUAL_FEE),
 				chargeTimeType(ChargeTimeType.MONTHLY_FEE),
-				chargeTimeType(ChargeTimeType.WEEKLY_FEE));
+				chargeTimeType(ChargeTimeType.WEEKLY_FEE),
+				chargeTimeType(ChargeTimeType.DAILY_FEE));
     }
     
     @Override
