@@ -199,7 +199,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 						+ " cannot be applied to a Client";
 				throw new ChargeCannotBeAppliedToException("client", errorMessage, charge.getId());
 			}
-			if (charge.isMonthlyFee() || charge.isAnnualFee() || charge.isWeeklyFee()) {
+			if (charge.isMonthlyFee() || charge.isAnnualFee() || charge.isWeeklyFee() || charge.isDailyFee()) {
 
 				CalendarInstance calendarInstance = null;
 				Calendar calendar = null;
