@@ -150,5 +150,7 @@ public interface ConfigurationDomainService {
     int getInstallmentAmountRoundingMode();
     
     boolean isAllowPaymentsOnClosedLoansEnabled();
+    
+    boolean isDisplayFirstNameLastLastNameFirstForClient();
 
 }

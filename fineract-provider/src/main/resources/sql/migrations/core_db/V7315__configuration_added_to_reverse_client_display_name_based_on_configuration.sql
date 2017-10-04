@@ -1,0 +1,2 @@
+INSERT INTO `c_configuration` (`name`, `description`) 
+	VALUES ('display-firstname-last-lastname-first-for-client', 'reverse the client display name last name and first name if the configuration is enabled else old functionality remains same');

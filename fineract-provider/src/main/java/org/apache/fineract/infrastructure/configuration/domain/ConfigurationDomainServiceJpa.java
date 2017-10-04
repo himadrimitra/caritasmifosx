@@ -500,5 +500,11 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         return getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.ALLOW_PAYMANTS_ON_CLOSED_LOANS)
                 .isEnabled();
     }
+
+    @Override
+    public boolean isDisplayFirstNameLastLastNameFirstForClient() {
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.DISPLAY_FIRSTNAME_LAST_LASTNAME_FIRST_FOR_CLIENT);
+        return property.isEnabled();
+    }
     
 }
