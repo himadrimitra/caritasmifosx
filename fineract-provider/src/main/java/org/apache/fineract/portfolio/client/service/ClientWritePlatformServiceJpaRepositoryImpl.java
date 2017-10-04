@@ -321,8 +321,9 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 }
             }
             
+            boolean isDisplayFirstNameLastLastNameFirstForClient = this.configurationDomainService.isDisplayFirstNameLastLastNameFirstForClient();
             final Client newClient = Client.createNew(currentUser, clientOffice, clientParentGroup, staff, savingsProduct, gender,
-                    clientType, clientClassification, legalFormValue, command);
+                    clientType, clientClassification, legalFormValue, command, isDisplayFirstNameLastLastNameFirstForClient);
             boolean rollbackTransaction = false;
             if (newClient.isActive()) {
                 validateParentGroupRulesBeforeClientActivation(newClient);
@@ -460,7 +461,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
 
             this.context.validateAccessRights(clientHierarchy);
 
-            final Map<String, Object> changes = clientForUpdate.update(command);
+            boolean isDisplayFirstNameLastLastNameFirstForClient = this.configurationDomainService.isDisplayFirstNameLastLastNameFirstForClient();
+            final Map<String, Object> changes = clientForUpdate.update(command, isDisplayFirstNameLastLastNameFirstForClient);
             Staff newStaff = null;
             final boolean isLoanOfficerToCenterHierarchyEnabled = configurationDomainService.isLoanOfficerToCenterHierarchyEnabled();
             if (changes.containsKey(ClientApiConstants.staffIdParamName)) {
