@@ -46,6 +46,7 @@ import org.apache.fineract.portfolio.account.data.AccountTransferData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.domain.ClientStatus;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
@@ -114,6 +115,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
     // pagination
     private final PaginationHelper<SavingsAccountData> paginationHelper = new PaginationHelper<>();
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private final PaginationHelper<Long> paginationHelperForLong = new PaginationHelper<>();
     
     @Autowired
     public SavingsAccountReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
@@ -1401,6 +1403,30 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         paramMap.put("status", status);
         paramMap.put("officeId", officeId);
         return this.namedParameterJdbcTemplate.queryForList(sql.toString(), paramMap, Long.class);
+    }
+    
+    @Override
+    public Page<Long> retrieveAllActiveSavingsIdsForActiveClients(final Integer limit, final Integer offset) {
+        SavingsIdMapper rowMapper = new SavingsIdMapper();
+        StringBuilder sqlBuilder = new StringBuilder("select SQL_CALC_FOUND_ROWS sa.id as id");
+        sqlBuilder.append(" from m_savings_account as sa ");
+        sqlBuilder.append(" join m_client mc on mc.id = sa.client_id and mc.status_enum = ?");
+        sqlBuilder.append(" where sa.status_enum = ? ");
+        sqlBuilder.append(" limit ").append(limit);
+        sqlBuilder.append(" offset ").append(offset);
+
+        final String sqlCountRows = "SELECT FOUND_ROWS()";
+        return this.paginationHelperForLong.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(),
+                new Object[] { ClientStatus.ACTIVE.getValue(), SavingsAccountStatusType.ACTIVE.getValue() }, rowMapper);
+    }
+    
+    class SavingsIdMapper implements RowMapper<Long> {
+
+        @Override
+        public Long mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return rs.getLong("id");
+        }
+
     }
     
     private void generateConditionBasedOnHoliday(final List<Holiday> holidays, final StringBuilder sql) {

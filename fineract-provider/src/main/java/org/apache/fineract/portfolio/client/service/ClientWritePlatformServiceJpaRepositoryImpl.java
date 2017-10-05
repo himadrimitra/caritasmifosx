@@ -76,6 +76,7 @@ import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountDataDTO;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
 import org.apache.fineract.portfolio.savings.domain.SavingsProductRepository;
 import org.apache.fineract.portfolio.savings.exception.SavingsAccountNotFoundException;
@@ -128,7 +129,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
     private final StaffRepositoryWrapper staffRepository;
     private final CodeValueRepositoryWrapper codeValueRepository;
     private final LoanRepository loanRepository;
-    private final SavingsAccountRepository savingsRepository;
+    private final SavingsAccountRepositoryWrapper savingsRepository;
     private final SavingsProductRepository savingsProductRepository;
     private final SavingsApplicationProcessWritePlatformService savingsApplicationProcessWritePlatformService;
     private final CommandProcessingService commandProcessingService;
@@ -152,7 +153,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final ClientDataValidator fromApiJsonDeserializer, final AccountNumberGenerator accountNumberGenerator,
             final GroupRepository groupRepository, final StaffRepositoryWrapper staffRepository,
             final CodeValueRepositoryWrapper codeValueRepository, final LoanRepository loanRepository,
-            final SavingsAccountRepository savingsRepository, final SavingsProductRepository savingsProductRepository,
+            final SavingsAccountRepositoryWrapper savingsRepository, final SavingsProductRepository savingsProductRepository,
             final SavingsApplicationProcessWritePlatformService savingsApplicationProcessWritePlatformService,
             final CommandProcessingService commandProcessingService, final ConfigurationDomainService configurationDomainService,
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final FromJsonHelper fromApiJsonHelper,

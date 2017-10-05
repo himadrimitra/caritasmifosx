@@ -30,6 +30,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestIncentives;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestRateChart;
@@ -164,7 +165,11 @@ public class DepositAccountInterestRateChart extends AbstractPersistable<Long> {
     	RecurringDepositProduct recurringDepositProduct = (RecurringDepositProduct) this.account.product;
     	Set<InterestRateChart> interestCharts = recurringDepositProduct.setOfCharts();
     	for(InterestRateChart charts : interestCharts) {
-    		if(periodStartDate.isAfter(charts.getFromDateAsLocalDate()) && periodEndDate.isBefore(charts.getEndDateAsLocalDate())){
+			LocalDate chartEndDate = charts.getEndDateAsLocalDate();
+			if (charts.getEndDateAsLocalDate() == null) {
+				chartEndDate = DateUtils.getLocalDateOfTenant();
+			}
+    		if(periodStartDate.isAfter(charts.getFromDateAsLocalDate()) && periodEndDate.isBefore(chartEndDate)){
     			Set<InterestRateChartSlab> chartSlab =  charts.setOfChartSlabs();
 	       		 for(InterestRateChartSlab slab : chartSlab) {
 	       			Integer depositPeriod = slab.slabFields().depositPeriod(charts.getFromDateAsLocalDate(), periodEndDate);

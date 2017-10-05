@@ -57,6 +57,7 @@ import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformServic
 import org.apache.fineract.portfolio.note.service.NoteWritePlatformService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountWritePlatformService;
 import org.apache.fineract.portfolio.transfer.api.TransferApiConstants;
 import org.apache.fineract.portfolio.transfer.data.TransfersDataValidator;
@@ -86,7 +87,6 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     private final LoanWritePlatformService loanWritePlatformService;
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
     private final LoanRepository loanRepository;
-    private final SavingsAccountRepository savingsAccountRepository;
     private final TransfersDataValidator transfersDataValidator;
     private final NoteWritePlatformService noteWritePlatformService;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
@@ -95,6 +95,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     private final LoanReadPlatformService loanReadPlatformService;
     private final LoanApplicationReferenceRepository loanApplicationReferenceRepository;
     private final LoanApplicationReferenceRepositoryWrapper loanApplicationRepository;
+    private final SavingsAccountRepositoryWrapper savingsAccountRepositoryWrapper;
 
     @Autowired
     public TransferWritePlatformServiceJpaRepositoryImpl(final ClientRepositoryWrapper clientRepository,
@@ -102,12 +103,11 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
             final LoanWritePlatformService loanWritePlatformService, final GroupRepositoryWrapper groupRepository,
             final LoanRepository loanRepository, final TransfersDataValidator transfersDataValidator,
             final NoteWritePlatformService noteWritePlatformService, final StaffRepositoryWrapper staffRepositoryWrapper,
-            final SavingsAccountRepository savingsAccountRepository,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
             final LoanRepositoryWrapper loanRepositoryWrapper, final BusinessEventNotifierService businessEventNotifierService,
             final LoanReadPlatformService loanReadPlatformService, 
             final LoanApplicationReferenceRepository loanApplicationReferenceRepository,
-            LoanApplicationReferenceRepositoryWrapper loanApplicationRepository) {
+            LoanApplicationReferenceRepositoryWrapper loanApplicationRepository, final SavingsAccountRepositoryWrapper savingsAccountRepositoryWrapper) {
         this.clientRepository = clientRepository;
         this.officeRepository = officeRepository;
         this.calendarInstanceRepository = calendarInstanceRepository;
@@ -117,13 +117,13 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         this.transfersDataValidator = transfersDataValidator;
         this.noteWritePlatformService = noteWritePlatformService;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
-        this.savingsAccountRepository = savingsAccountRepository;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
         this.loanRepositoryWrapper = loanRepositoryWrapper;
         this.businessEventNotifierService = businessEventNotifierService;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
         this.loanApplicationRepository = loanApplicationRepository;
+        this.savingsAccountRepositoryWrapper = savingsAccountRepositoryWrapper;
     }
 
     @Override
@@ -482,9 +482,9 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         }
 
         /*** Handle Active Savings (Currently throw and exception) ***/
-        if (this.savingsAccountRepository.doNonClosedSavingAccountsExistForClient(client.getId())) {
+        if (this.savingsAccountRepositoryWrapper.doNonClosedSavingAccountsExistForClient(client.getId())) {
             // get each individual saving account for the client
-            for (final SavingsAccount savingsAccount : this.savingsAccountRepository.findSavingAccountByClientId(client.getId())) {
+            for (final SavingsAccount savingsAccount : this.savingsAccountRepositoryWrapper.findSavingAccountByClientId(client.getId())) {
                 if (savingsAccount.isActivated() && !savingsAccount.isClosed()) {
                     switch (transferEventType) {
                         case ACCEPTANCE:

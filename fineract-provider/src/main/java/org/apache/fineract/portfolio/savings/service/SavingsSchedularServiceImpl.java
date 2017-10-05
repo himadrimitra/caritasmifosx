@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
@@ -31,13 +32,11 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -46,14 +45,14 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
 
     private final SavingsAccountAssembler savingAccountAssembler;
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
-    private final SavingsAccountRepository savingAccountRepository;
+    private final SavingsAccountRepositoryWrapper savingAccountRepository;
     private final SavingsAccountReadPlatformService savingAccountReadPlatformService;
     private final CalendarInstanceRepository calendarInstanceRepository;
 
     @Autowired
     public SavingsSchedularServiceImpl(final SavingsAccountAssembler savingAccountAssembler,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
-            final SavingsAccountRepository savingAccountRepository,
+            final SavingsAccountRepositoryWrapper savingAccountRepository,
             final SavingsAccountReadPlatformService savingAccountReadPlatformService,
             final CalendarInstanceRepository calendarInstanceRepository) {
         this.savingAccountAssembler = savingAccountAssembler;
@@ -67,32 +66,31 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
     @Override
     public void postInterestForAccounts() throws JobExecutionException {
         int offSet = 0;
-        Integer initialSize = 500;
-        Integer totalPageSize = 0;
+        Integer limt = 500;
+        Integer numberOfFilteredRecords = 0;
+        int numberOfRecordsProcessed = 0;
         StringBuffer sb = new StringBuffer();
 
         do {
-            PageRequest pageRequest = new PageRequest(offSet, initialSize);
-            Page<SavingsAccount> savingsAccounts = this.savingAccountRepository.findByStatus(SavingsAccountStatusType.ACTIVE.getValue(),
-                    pageRequest);
-            for (SavingsAccount savingsAccount : savingsAccounts.getContent()) {
+            Page<Long> savingsIds = this.savingAccountReadPlatformService.retrieveAllActiveSavingsIdsForActiveClients(limt, offSet);
+            for (Long savingsId : savingsIds.getPageItems()) {
                 try {
-                    this.savingAccountAssembler.assignSavingAccountHelpers(savingsAccount);
                     boolean postInterestAsOn = false;
                     LocalDate transactionDate = null;
-                    this.savingsAccountWritePlatformService.postInterest(savingsAccount, postInterestAsOn, transactionDate);
+                    this.savingsAccountWritePlatformService.postInterest(savingsId, postInterestAsOn, transactionDate);
                 } catch (Exception e) {
                     Throwable realCause = e;
                     if (e.getCause() != null) {
                         realCause = e.getCause();
                     }
-                    sb.append("failed to post interest for Savings with id " + savingsAccount.getId() + " with message "
-                            + realCause.getMessage());
+                    sb.append("failed to post interest for Savings with id " + savingsId + " with message " + realCause.getMessage());
                 }
+                numberOfRecordsProcessed++;
             }
+
             offSet++;
-            totalPageSize = savingsAccounts.getTotalPages();
-        } while (offSet < totalPageSize);
+            numberOfFilteredRecords = savingsIds.getTotalFilteredRecords();
+        } while (numberOfRecordsProcessed < numberOfFilteredRecords);
 
         if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
 
