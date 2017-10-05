@@ -125,12 +125,16 @@ public class EquifaxRequestServiceImpl implements EquifaxRequestService {
                                              // mapping between loan products
                                              // and actual inquiry purpose
         requestBody.setTransactionAmount(loanReference.getEnquiryData().getLoanAmount());
+        //This is required by Equifax as this is main entity to search data
+        if(loanReference.getEnquiryData().getClientName()!= null) {
+            requestBody.setFullName(loanReference.getEnquiryData().getClientName()); 
+        }
         requestBody.setFirstName(loanReference.getEnquiryData().getClientFirstName());
         requestBody.setLastName(loanReference.getEnquiryData().getClientLastName());
         if (loanReference.getEnquiryData().getClientMiddleName() != null) {
             requestBody.setMiddleName(loanReference.getEnquiryData().getClientMiddleName());
         }
-
+        
         // Setting the Gender value
         if (loanEnquiryData.getGenderId() != null) {
             if (equifaxCredentialsData.getGenderTypeFemale() != null
