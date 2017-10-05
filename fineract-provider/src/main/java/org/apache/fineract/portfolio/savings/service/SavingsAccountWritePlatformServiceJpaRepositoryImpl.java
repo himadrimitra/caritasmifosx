@@ -297,10 +297,9 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
                     .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
         }
         final CalendarInstance calendarInstance = null;
-        final Boolean isUndDepositTransaction = false;
-        LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
-        account.validateAccountBalanceDoesNotBecomeNegative(SavingsAccountTransactionType.PAY_CHARGE.name(),
-                depositAccountOnHoldTransactions, calendarInstance, isUndDepositTransaction, transactionDate);
+        final boolean isUndDepositOrWithdrawalTransaction = false;
+        account.validateAccountBalanceDoesNotBecomeNegative("." + SavingsAccountTransactionType.PAY_CHARGE.name(),
+                depositAccountOnHoldTransactions, calendarInstance, isUndDepositOrWithdrawalTransaction);
     }
 
     @Transactional
@@ -573,15 +572,16 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             depositAccountOnHoldTransactions = this.depositAccountOnHoldTransactionRepository
                     .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
         }
-        final Boolean isUndDepositTransaction = savingsAccountTransaction.isDeposit();
-        LocalDate transactionate = new LocalDate(savingsAccountTransaction.getDateOf());
+        final boolean isUndoDepositOrWithdrawlTransaction = savingsAccountTransaction.isDeposit() || savingsAccountTransaction.isWithdrawal();
         CalendarInstance calendarInstance = null;
-        if (isUndDepositTransaction) {
-            calendarInstance = this.calendarRepository.findCalendarInstaneByEntityId(account.getSavingsAccountDpDetails().getId(),
-                    CalendarEntityType.SAVINGS_DP_DETAILS.getValue());
+        if (isUndoDepositOrWithdrawlTransaction) {
+            if (account.getSavingsAccountDpDetails() != null) {
+                calendarInstance = this.calendarRepository.findCalendarInstaneByEntityId(account.getSavingsAccountDpDetails().getId(),
+                        CalendarEntityType.SAVINGS_DP_DETAILS.getValue());
+            }
         }
         account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.undoTransactionAction, depositAccountOnHoldTransactions,
-                calendarInstance, isUndDepositTransaction, transactionate);
+                calendarInstance, isUndoDepositOrWithdrawlTransaction);
         account.activateAccountBasedOnBalance();
         postJournalEntries(account, existingTransactionIds, existingReversedTransactionIds);
 
@@ -673,9 +673,9 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
                     .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
         }
         final CalendarInstance calendarInstance = null;
-        final Boolean isUndDepositTransaction = false;
+        final boolean isUndDepositOrWithdrawalTransaction = false;
         account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.adjustTransactionAction, depositAccountOnHoldTransactions,
-                calendarInstance, isUndDepositTransaction, transactionDate);
+                calendarInstance, isUndDepositOrWithdrawalTransaction);
         account.activateAccountBasedOnBalance();
         postJournalEntries(account, existingTransactionIds, existingReversedTransactionIds);
         return new CommandProcessingResultBuilder() //
@@ -1060,10 +1060,9 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         }
 
         final CalendarInstance calendarInstance = null;
-        final Boolean isUndDepositTransaction = false;
-        final LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
+        final boolean isUndDepositOrWithdrawalTransaction = false;
         account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.waiveChargeTransactionAction,
-                depositAccountOnHoldTransactions, calendarInstance, isUndDepositTransaction, transactionDate);
+                depositAccountOnHoldTransactions, calendarInstance, isUndDepositOrWithdrawalTransaction);
 
         this.savingAccountRepository.saveAndFlush(account);
 
@@ -1197,9 +1196,9 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         }
 
         final CalendarInstance calendarInstance = null;
-        final Boolean isUndDepositTransaction = false;
+        final boolean isUndDepositOrWithdrawalTransaction = false;
         account.validateAccountBalanceDoesNotBecomeNegative("." + SavingsAccountTransactionType.PAY_CHARGE.getCode(),
-                depositAccountOnHoldTransactions, calendarInstance, isUndDepositTransaction, transactionDate);
+                depositAccountOnHoldTransactions, calendarInstance, isUndDepositOrWithdrawalTransaction);
 
         this.savingAccountRepository.save(account);
 

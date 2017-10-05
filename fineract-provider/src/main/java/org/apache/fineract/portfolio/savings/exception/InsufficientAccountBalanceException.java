@@ -34,4 +34,8 @@ public class InsufficientAccountBalanceException extends AbstractPlatformDomainR
                 : "error.msg.savingsaccount.transaction.insufficient.account.balance", "Insufficient account balance.", paramName,
                 message,withdrawalFee, transactionAmount);
     }
+    
+    public InsufficientAccountBalanceException(final String message) {
+        super("error.msg." + message, "Insufficient account balance.");
+    }
 }

@@ -1118,7 +1118,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
         BigDecimal dpReductionAmount = BigDecimal.ZERO;
         if (this.savingsAccountDpDetails != null) {
-            dpReductionAmount = getDPReductionAmount(calendarInstance, new LocalDate(currentTransaction.getDateOf()));
+            dpReductionAmount = getDPReductionAmount(calendarInstance, new LocalDate(currentTransaction.createdDate()));
         }
         Money runningBalance = Money.of(this.currency, dpReductionAmount);
         Money overdraftInterest = Money.zero(this.currency);
@@ -1177,8 +1177,13 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                 insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
             }
         }
+        if (MathUtility.isGreaterThanZero(dpReductionAmount)) {
+            if (runningBalance.minus(minRequiredBalance).plus(overdraftInterest).minus(dpReductionAmount).isLessThanZero()) {
+                insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
+            }
+        }
     }
-    
+
     private void insufficientBalanceException(final BigDecimal transactionAmount, final BigDecimal withdrawalFee) {
         String errorMessage = product.shortName;
         if (client == null) {
@@ -1191,20 +1196,20 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
     public void validateAccountBalanceDoesNotBecomeNegative(final String transactionAction,
             final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions, CalendarInstance calendarInstance,
-            Boolean isUndoDeposit, LocalDate transactionDate) {
+            boolean isUndDepositOrWithdrawalTransaction) {
 
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
         LocalDate lastSavingsDate = null;
         BigDecimal dpReductionAmount = BigDecimal.ZERO;
-        if (isUndoDeposit) {
-            dpReductionAmount = getDPReductionAmount(calendarInstance, transactionDate);
+        if (this.savingsAccountDpDetails != null && isUndDepositOrWithdrawalTransaction) {
+            dpReductionAmount = getDPReductionAmount(calendarInstance, DateUtils.getLocalDateOfTenant());
         }
         Money runningBalance = Money.of(this.currency, dpReductionAmount);
         for (final SavingsAccountTransaction transaction : transactionsSortedByDate) {
-            if ((transaction.isNotReversed() && transaction.isCredit()) || transaction.isAmountRelease()) {
+            if (transaction.isNotReversed() && transaction.isCredit()) {
                 runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
-            } else if (transaction.isNotReversed() && transaction.isDebit() || transaction.isAmountOnHoldNotReleased()) {
+            } else if (transaction.isNotReversed() && transaction.isDebit()) {
                 runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
             }
 
@@ -1231,21 +1236,34 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             // enforceMinRequiredBalance
             if (transaction.canProcessBalanceCheck()) {
                 if (runningBalance.minus(minRequiredBalance).isLessThanZero()) {
-                    final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-                    final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                            .resource(depositAccountType().resourceName() + transactionAction);
-                    if (this.allowOverdraft) {
-                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("results.in.balance.exceeding.overdraft.limit");
-                    } else {
-                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("results.in.balance.going.negative");
-                    }
-                    if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+                    insufficientBalanceException(transactionAction);
                 }
-
             }
             lastSavingsDate = transaction.transactionLocalDate();
-
         }
+        
+        if (MathUtility.isGreaterThanZero(this.getSavingsHoldAmount())) {
+            if (runningBalance.minus(minRequiredBalance).minus(this.getSavingsHoldAmount()).isLessThanZero()) {
+                insufficientBalanceException(transactionAction);
+            }
+        }
+        
+        if (MathUtility.isGreaterThanZero(dpReductionAmount) && isUndDepositOrWithdrawalTransaction) {
+            if (runningBalance.minus(minRequiredBalance).minus(dpReductionAmount).isLessThanZero()) {
+                insufficientBalanceException(transactionAction);
+            }
+        }
+    }
+
+    private void insufficientBalanceException(final String transactionAction) {
+        StringBuilder errorMessage = new StringBuilder(depositAccountType().resourceName());
+        errorMessage.append(transactionAction);
+        if (this.allowOverdraft) {
+            errorMessage.append(".results.in.balance.exceeding.overdraft.limit");
+        } else {
+            errorMessage.append(".results.in.balance.going.negative");
+        }
+        throw new InsufficientAccountBalanceException(errorMessage.toString());
     }
 
     protected boolean isAccountLocked(final LocalDate transactionDate) {
