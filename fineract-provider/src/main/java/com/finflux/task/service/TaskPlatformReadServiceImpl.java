@@ -514,8 +514,8 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                 params.addValue("centerId", centerId);
             }
         }
-
-        sqlBuilder.append("GROUP BY taskId ");
+        //SQL_CALC_FOUND_ROWS function not working properly when select statement having GROUP BY clause and also taskId is unique 
+        //sqlBuilder.append("GROUP BY taskId ");
         sqlBuilder.append("ORDER BY taskId ");
         if (searchParameters.isLimited()) {
             sqlBuilder.append(" limit ").append(searchParameters.getLimit());
