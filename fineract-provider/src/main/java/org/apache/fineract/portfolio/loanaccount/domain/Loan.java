@@ -4361,6 +4361,7 @@ public class Loan extends AbstractPersistable<Long> {
                         interestToPost, feeToPost, penaltyToPost);
                 updateLoanChargesPaidBy(finalAccrual, feeDetails, null);
                 this.loanTransactions.add(finalAccrual);
+                createAccrualSuspenseTransaction(finalAccrual);
             }
         }
         updateLoanOutstandingBalaces();
@@ -4562,6 +4563,7 @@ public class Loan extends AbstractPersistable<Long> {
                 if (!CalendarUtils.isValidRecurringDate(calendar.getRecurrence(), calendar.getStartDateLocalDate(),transactionForAdjustment.getTransactionDate())) {
                     transactionTypeForReversal.add(LoanTransactionType.INCOME_POSTING.getValue());
                     transactionTypeForReversal.add(LoanTransactionType.ACCRUAL.getValue());
+                    
                 }
             }
             if (!transactionTypeForReversal.isEmpty()) {
@@ -4598,12 +4600,22 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     private void findAndReverseTransactionsOfType(ArrayList<Integer> transactionType, LocalDate transactionDate) {
+        LocalDate firstSuspenceTransactionDate = null;
+        List<LoanTransaction> transactions = new ArrayList<>();
+        if (isNpa()) {
+            firstSuspenceTransactionDate = fetchSuspenceDateAfter(transactionDate);
+        }
         for (LoanTransaction loanTransaction : this.getLoanTransactions()) {
             if (loanTransaction.isNotReversed() && loanTransaction.getTransactionDate().isEqual(transactionDate)
                     && transactionType.contains(loanTransaction.getTypeOf().getValue())) {
+                if (loanTransaction.isAccrual()) {
+                    createAccrualSuspenseReverseTransaction(loanTransaction, firstSuspenceTransactionDate, transactions);
+                }
                 loanTransaction.reverse();
+
             }
         }
+        this.getLoanTransactions().addAll(transactions);
     }
 
     private void validateModifiedGlimTransaction(final LoanTransaction newTransactionDetail, final LoanTransaction transactionForAdjustment) {
@@ -6622,18 +6634,21 @@ public class Loan extends AbstractPersistable<Long> {
 
     public void processIncomeTransactions(AppUser currentUser) {
         boolean isReverseOrder = false;
-        if (!this.isNpa() && this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) {
+        if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) {
             LocalDate lastCompoundingDate = this.getDisbursementDate();
             List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails = extractInterestRecalculationAdditionalDetails();
             List<LoanTransaction> incomeTransactions = retreiveListOfIncomePostingTransactions(isReverseOrder);
             List<LoanTransaction> accrualTransactions = retreiveListOfAccrualTransactions();
+            LocalDate firstSuspenceTransactionDate =  null;
             for (LoanInterestRecalcualtionAdditionalDetails compoundingDetail : compoundingDetails) {
                 if (!compoundingDetail.getEffectiveDate().isBefore(DateUtils.getLocalDateOfTenant())) {
                     break;
                 }
+                
                 LoanTransaction incomeTransaction = getTransactionForDate(incomeTransactions, compoundingDetail.getEffectiveDate());
-                LoanTransaction accrualTransaction = getTransactionForDate(accrualTransactions, compoundingDetail.getEffectiveDate());
-                addUpdateIncomeAndAccrualTransaction(compoundingDetail, lastCompoundingDate, incomeTransaction, accrualTransaction);
+                List<LoanTransaction> applicableAccrualTransactions = getTransactionsFor(accrualTransactions, lastCompoundingDate, compoundingDetail.getEffectiveDate());
+                firstSuspenceTransactionDate = addUpdateIncomeAndAccrualTransaction(compoundingDetail, lastCompoundingDate,
+                        incomeTransaction, applicableAccrualTransactions, firstSuspenceTransactionDate);
                 lastCompoundingDate = compoundingDetail.getEffectiveDate();
             }
             LoanRepaymentScheduleInstallment lastInstallment = this.repaymentScheduleInstallments.get(this.repaymentScheduleInstallments
@@ -6653,8 +6668,9 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
-    private void addUpdateIncomeAndAccrualTransaction(LoanInterestRecalcualtionAdditionalDetails compoundingDetail,
-            LocalDate lastCompoundingDate, LoanTransaction existingIncomeTransaction, LoanTransaction existingAccrualTransaction) {
+    private LocalDate addUpdateIncomeAndAccrualTransaction(LoanInterestRecalcualtionAdditionalDetails compoundingDetail,
+            LocalDate lastCompoundingDate, LoanTransaction existingIncomeTransaction, List<LoanTransaction> existingAccrualTransactions, 
+            LocalDate firstSuspenceTransactionDate) {
         BigDecimal interest = BigDecimal.ZERO;
         BigDecimal fee = BigDecimal.ZERO;
         BigDecimal penalties = BigDecimal.ZERO;
@@ -6688,20 +6704,57 @@ public class Loan extends AbstractPersistable<Long> {
         }
 
         if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
-            if (existingAccrualTransaction == null) {
+            if (existingAccrualTransactions.isEmpty()) {
                 LoanTransaction accrual = LoanTransaction.accrueTransaction(this, this.getOffice(), compoundingDetail.getEffectiveDate(),
                         compoundingDetail.getAmount(), interest, fee, penalties);
                 updateLoanChargesPaidBy(accrual, feeDetails, null);
                 this.loanTransactions.add(accrual);
-            } else if (existingAccrualTransaction.getAmount(getCurrency()).getAmount().compareTo(compoundingDetail.getAmount()) != 0) {
-                existingAccrualTransaction.reverse();
-                LoanTransaction accrual = LoanTransaction.accrueTransaction(this, this.getOffice(), compoundingDetail.getEffectiveDate(),
-                        compoundingDetail.getAmount(), interest, fee, penalties);
-                updateLoanChargesPaidBy(accrual, feeDetails, null);
-                this.loanTransactions.add(accrual);
+                createAccrualSuspenseTransaction(accrual);
+            } else {
+                BigDecimal interestAccrued = BigDecimal.ZERO;
+                BigDecimal feeAccrued = BigDecimal.ZERO;
+                BigDecimal penaltiesAccrued = BigDecimal.ZERO;
+                LocalDate lastAccrulaDate = lastCompoundingDate;
+                    for(LoanTransaction existingAccrualTransaction :existingAccrualTransactions){
+                        interestAccrued = MathUtility.add(interestAccrued,existingAccrualTransaction.getInterestPortion());
+                        feeAccrued = MathUtility.add(feeAccrued,existingAccrualTransaction.getFeeChargesPortion());
+                        penaltiesAccrued = MathUtility.add(penaltiesAccrued,existingAccrualTransaction.getPenaltyChargesPortion());
+                        if(lastAccrulaDate.isBefore(existingAccrualTransaction.getTransactionDate())){
+                            lastAccrulaDate = existingAccrualTransaction.getTransactionDate();
+                        }
+                    }
+                if (MathUtility.isGreater(feeAccrued, fee) || MathUtility.isGreater(interestAccrued, interest)
+                        || MathUtility.isGreater(penaltiesAccrued, penalties)) {
+                    for (LoanTransaction existingAccrualTransaction : existingAccrualTransactions) {
+                        existingAccrualTransaction.reverse();
+                        if (firstSuspenceTransactionDate == null) {
+                            firstSuspenceTransactionDate = fetchSuspenceDateAfter(existingAccrualTransaction.getTransactionDate());
+                        }
+                        createAccrualSuspenseReverseTransaction(existingAccrualTransaction, firstSuspenceTransactionDate);
+                    }
+                    LoanTransaction accrual = LoanTransaction.accrueTransaction(this, this.getOffice(),
+                            compoundingDetail.getEffectiveDate(), compoundingDetail.getAmount(), interest, fee, penalties);
+                    updateLoanChargesPaidBy(accrual, feeDetails, null);
+                    this.loanTransactions.add(accrual);
+                    createAccrualSuspenseTransaction(accrual);
+                }else if(!MathUtility.isEqual(feeAccrued, fee) || !MathUtility.isEqual(interestAccrued, interest)
+                        || !MathUtility.isEqual(penaltiesAccrued, penalties)) {
+                    interest = MathUtility.subtract(interest, interestAccrued);
+                    if (MathUtility.isGreaterThanZero(fee) || MathUtility.isGreaterThanZero(penalties)) {
+                        determineFeeDetails(lastAccrulaDate, compoundingDetail.getEffectiveDate(), feeDetails);
+                        fee = (BigDecimal) feeDetails.get("fee");
+                        penalties = (BigDecimal) feeDetails.get("penalties");
+                    }
+                    BigDecimal totalAccrual = MathUtility.add(interest,fee,penalties);
+                    LoanTransaction accrual = LoanTransaction.accrueTransaction(this, this.getOffice(),
+                            compoundingDetail.getEffectiveDate(), totalAccrual, interest, fee, penalties);
+                    updateLoanChargesPaidBy(accrual, feeDetails, null);
+                    this.loanTransactions.add(accrual);
+                }
             }
         }
         updateLoanOutstandingBalaces();
+        return firstSuspenceTransactionDate;
     }
 
     private void determineFeeDetails(LocalDate fromDate, LocalDate toDate, HashMap<String, Object> feeDetails) {
@@ -6748,6 +6801,18 @@ public class Loan extends AbstractPersistable<Long> {
             if (loanTransaction.getTransactionDate().isEqual(effectiveDate)) { return loanTransaction; }
         }
         return null;
+    }
+    
+    private List<LoanTransaction> getTransactionsFor(final List<LoanTransaction> transactions, final LocalDate effectiveFrom, final LocalDate effectiveTill) {
+        List<LoanTransaction> transactionsBetween = new ArrayList<>();
+        for (LoanTransaction loanTransaction : transactions) {
+            if (loanTransaction.isPaidFromAndUpToAndIncluding(effectiveFrom, effectiveTill)) {
+                transactionsBetween.add(loanTransaction);
+            }else if(loanTransaction.getTransactionDate().isAfter(effectiveTill)){
+                break;
+            }
+        }
+        return transactionsBetween;
     }
 
     private void reverseTransactionsPostEffectiveDate(List<LoanTransaction> transactions, LocalDate effectiveDate) {
@@ -8718,9 +8783,44 @@ public class Loan extends AbstractPersistable<Long> {
     public LocalDate getConsiderFutureAccrualsBefore() {
         return this.considerFutureAccrualsBefore;
     }
-
     
     public void setConsiderFutureAccrualsBefore(LocalDate considerFutureAccrualsBefore) {
         this.considerFutureAccrualsBefore = considerFutureAccrualsBefore;
+    }
+    
+    private void createAccrualSuspenseTransaction(final LoanTransaction transaction) {
+        if (!isNpa()) { return; }
+        MonetaryCurrency currency = getCurrency();
+        LoanTransaction accrualSuspenseTransaction = LoanTransaction.accrualSuspense(this, this.getOffice(), transaction
+                .getAmount(currency).minus(transaction.getPrincipalPortion(currency)), transaction.getInterestPortion(currency),
+                transaction.getFeeChargesPortion(currency), transaction.getPenaltyChargesPortion(currency), transaction
+                        .getTransactionDate());
+        accrualSuspenseTransaction.copyChargesPaidByFrom(transaction);
+        if (accrualSuspenseTransaction.getAmount(currency).isGreaterThanZero()) {
+            this.getLoanTransactions().add(accrualSuspenseTransaction);
+        }
+
+    }
+    
+    private void createAccrualSuspenseReverseTransaction(final LoanTransaction transaction, final LocalDate firstSuspenceTransactionDate) {
+        List<LoanTransaction> transactions = this.getLoanTransactions();
+        createAccrualSuspenseReverseTransaction(transaction, firstSuspenceTransactionDate, transactions);
+
+    }
+
+    private void createAccrualSuspenseReverseTransaction(final LoanTransaction transaction, final LocalDate firstSuspenceTransactionDate,
+            List<LoanTransaction> transactions) {
+        if (!isNpa()) { return; }
+        MonetaryCurrency currency = getCurrency();
+        LocalDate suspenseReversalDate = firstSuspenceTransactionDate == null
+                || firstSuspenceTransactionDate.isBefore(transaction.getTransactionDate()) ? transaction.getTransactionDate()
+                : firstSuspenceTransactionDate;
+        LoanTransaction accrualSuspenseReverseTransaction = LoanTransaction.accrualSuspenseReverse(this, this.getOffice(), transaction
+                .getAmount(currency).minus(transaction.getPrincipalPortion(currency)), transaction.getInterestPortion(currency),
+                transaction.getFeeChargesPortion(currency), transaction.getPenaltyChargesPortion(currency), suspenseReversalDate);
+        accrualSuspenseReverseTransaction.copyChargesPaidByFrom(transaction);
+        if (accrualSuspenseReverseTransaction.getAmount(currency).isGreaterThanZero()) {
+            transactions.add(accrualSuspenseReverseTransaction);
+        }
     }
 }

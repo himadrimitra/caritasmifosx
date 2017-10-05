@@ -617,7 +617,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                 }
             }
 
-            if (frequencyType.isDaily()) {
+            if (frequencyType.isDaily() && charge.getPercentageType().isYearlyPercentage()) {
                 baseDataValidator.parameter(ChargesApiConstants.calculateChargeOnCurrentOverdueParamName).mustBeFalseValueRequired(
                         charge.getChargeOverueDetail().isCalculateChargeOnCurrentOverdue());
             }
