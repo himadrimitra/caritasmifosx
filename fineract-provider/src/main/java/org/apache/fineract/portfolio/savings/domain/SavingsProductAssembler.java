@@ -209,7 +209,10 @@ public class SavingsProductAssembler {
         final Long daysToInactive = command.longValueOfParameterNamed(daysToInactiveParamName);
         final Long daysToDormancy = command.longValueOfParameterNamed(daysToDormancyParamName);
         final Long daysToEscheat = command.longValueOfParameterNamed(daysToEscheatParamName);
-        final Boolean isInterestCalculationFromProduct = command.booleanObjectValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
+        Boolean isInterestCalculationFromProduct = command.booleanObjectValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
+        if(isInterestCalculationFromProduct == null) {
+        	isInterestCalculationFromProduct = Boolean.FALSE;
+        }
 
         final SavingsProduct savingsProduct = SavingsProduct.createNew(name, shortName, description, currency, interestRate,
                 interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,

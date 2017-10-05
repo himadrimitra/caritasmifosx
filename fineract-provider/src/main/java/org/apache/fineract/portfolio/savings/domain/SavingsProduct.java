@@ -202,7 +202,7 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     @Column(name = "withhold_tax", nullable = false)
     private boolean withHoldTax;
     
-    @Column(name = "is_interest_calculation_from_product_chart", nullable = false)
+    @Column(name = "is_interest_calculation_from_product_chart", nullable = true)
     private boolean isInterestCalculationFromProductChart;
     
     @ManyToOne
