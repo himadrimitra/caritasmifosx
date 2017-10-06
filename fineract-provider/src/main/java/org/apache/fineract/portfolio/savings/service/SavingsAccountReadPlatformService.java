@@ -75,5 +75,5 @@ public interface SavingsAccountReadPlatformService {
 
     Long retrivePaymentDetailsIdWithSavingsAccountNumberAndTransactioId(final long transactionId, final String savingsAccountNumber);
     
-    Page<Long> retrieveAllActiveSavingsIdsForActiveClients(final Integer limit, final Integer offset);
+    List<Long> retrieveAllActiveSavingsIdsForActiveClients();
 }

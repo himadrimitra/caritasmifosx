@@ -22,77 +22,75 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
-import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
+import org.apache.fineract.infrastructure.jobs.service.JobExecuter;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
+import org.apache.fineract.infrastructure.jobs.service.JobRunner;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SavingsSchedularServiceImpl implements SavingsSchedularService {
 
-    private final SavingsAccountAssembler savingAccountAssembler;
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
-    private final SavingsAccountRepositoryWrapper savingAccountRepository;
     private final SavingsAccountReadPlatformService savingAccountReadPlatformService;
     private final CalendarInstanceRepository calendarInstanceRepository;
+    private final JobExecuter jobExecuter;
+    private final static Logger logger = LoggerFactory.getLogger(SavingsSchedularServiceImpl.class);
 
     @Autowired
-    public SavingsSchedularServiceImpl(final SavingsAccountAssembler savingAccountAssembler,
-            final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
-            final SavingsAccountRepositoryWrapper savingAccountRepository,
+    public SavingsSchedularServiceImpl(final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
             final SavingsAccountReadPlatformService savingAccountReadPlatformService,
-            final CalendarInstanceRepository calendarInstanceRepository) {
-        this.savingAccountAssembler = savingAccountAssembler;
+            final CalendarInstanceRepository calendarInstanceRepository, final JobExecuter jobExecuter) {
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
-        this.savingAccountRepository = savingAccountRepository;
         this.savingAccountReadPlatformService = savingAccountReadPlatformService;
         this.calendarInstanceRepository = calendarInstanceRepository;
+        this.jobExecuter = jobExecuter;
     }
 
     @CronTarget(jobName = JobName.POST_INTEREST_FOR_SAVINGS)
     @Override
     public void postInterestForAccounts() throws JobExecutionException {
-        int offSet = 0;
-        Integer limt = 500;
-        Integer numberOfFilteredRecords = 0;
-        int numberOfRecordsProcessed = 0;
-        StringBuffer sb = new StringBuffer();
+        List<Long> savingsIds = this.savingAccountReadPlatformService.retrieveAllActiveSavingsIdsForActiveClients();
+        logger.info("Post Interest to Savings job Start : "+savingsIds.size());
+        JobRunner<List<Long>> runner = new PostInterestForAccountsJobRunner();
+        final String errors = this.jobExecuter.executeJob(savingsIds, runner);
+        logger.info("Post Interest to Savings job End: "+savingsIds.size());
+        if (errors.length() > 0) { throw new JobExecutionException(errors); }
 
-        do {
-            Page<Long> savingsIds = this.savingAccountReadPlatformService.retrieveAllActiveSavingsIdsForActiveClients(limt, offSet);
-            for (Long savingsId : savingsIds.getPageItems()) {
-                try {
-                    boolean postInterestAsOn = false;
-                    LocalDate transactionDate = null;
-                    this.savingsAccountWritePlatformService.postInterest(savingsId, postInterestAsOn, transactionDate);
-                } catch (Exception e) {
-                    Throwable realCause = e;
-                    if (e.getCause() != null) {
-                        realCause = e.getCause();
-                    }
-                    sb.append("failed to post interest for Savings with id " + savingsId + " with message " + realCause.getMessage());
-                }
-                numberOfRecordsProcessed++;
+    }
+
+    private void postInterestForAccounts(StringBuilder sb, List<Long> savingsIds) {
+        final String errorMessage = "Post interest for Savings  failed for account:";
+        for (Long savingsId : savingsIds) {
+            try {
+                boolean postInterestAsOn = false;
+                LocalDate transactionDate = null;
+                this.savingsAccountWritePlatformService.postInterest(savingsId, postInterestAsOn, transactionDate);
+            } catch (Exception e) {
+                ExceptionHelper.handleExceptions(e, sb, errorMessage, savingsId, logger);
             }
+        }
+    }
+    
+    private class PostInterestForAccountsJobRunner implements JobRunner<List<Long>> {
 
-            offSet++;
-            numberOfFilteredRecords = savingsIds.getTotalFilteredRecords();
-        } while (numberOfRecordsProcessed < numberOfFilteredRecords);
+        @Override
+        public void runJob(final List<Long> savingIds, final StringBuilder sb) {
+            postInterestForAccounts(sb, savingIds);
 
-        if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+        }
 
     }
 

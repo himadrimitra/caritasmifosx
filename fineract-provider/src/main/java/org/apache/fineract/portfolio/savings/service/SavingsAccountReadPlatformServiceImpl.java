@@ -1406,18 +1406,14 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
     }
     
     @Override
-    public Page<Long> retrieveAllActiveSavingsIdsForActiveClients(final Integer limit, final Integer offset) {
-        SavingsIdMapper rowMapper = new SavingsIdMapper();
-        StringBuilder sqlBuilder = new StringBuilder("select SQL_CALC_FOUND_ROWS sa.id as id");
+    public List<Long> retrieveAllActiveSavingsIdsForActiveClients() {
+        StringBuilder sqlBuilder = new StringBuilder("select sa.id as id");
         sqlBuilder.append(" from m_savings_account as sa ");
         sqlBuilder.append(" join m_client mc on mc.id = sa.client_id and mc.status_enum = ?");
         sqlBuilder.append(" where sa.status_enum = ? ");
-        sqlBuilder.append(" limit ").append(limit);
-        sqlBuilder.append(" offset ").append(offset);
 
-        final String sqlCountRows = "SELECT FOUND_ROWS()";
-        return this.paginationHelperForLong.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(),
-                new Object[] { ClientStatus.ACTIVE.getValue(), SavingsAccountStatusType.ACTIVE.getValue() }, rowMapper);
+        return this.jdbcTemplate.queryForList(sqlBuilder.toString(), Long.class, ClientStatus.ACTIVE.getValue(),
+                SavingsAccountStatusType.ACTIVE.getValue());
     }
     
     class SavingsIdMapper implements RowMapper<Long> {
