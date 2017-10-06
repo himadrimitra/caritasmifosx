@@ -157,6 +157,9 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
     }
     
     private CalendarInstance getCalendarInstance(final SavingsAccount account) {
+        if (account.getSavingsAccountDpDetails() == null) {
+            return null;
+        }
         return calendarInstanceRepository.findCalendarInstaneByEntityId(account.getSavingsAccountDpDetails().getId(),
                 CalendarEntityType.SAVINGS_DP_DETAILS.getValue());
 
