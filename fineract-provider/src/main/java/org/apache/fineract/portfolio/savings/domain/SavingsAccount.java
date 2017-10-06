@@ -144,13 +144,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @Column(name = "external_id", nullable = true)
     protected String externalId;
 
-    @ManyToOne(optional = true)
-    @LazyCollection(LazyCollectionOption.TRUE)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = true)
     protected Client client;
 
-    @ManyToOne(optional = true)
-    @LazyCollection(LazyCollectionOption.TRUE)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "group_id", nullable = true)
     protected Group group;
 
@@ -158,8 +156,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @JoinColumn(name = "product_id", nullable = false)
     protected SavingsProduct product;
 
-    @ManyToOne
-    @LazyCollection(LazyCollectionOption.TRUE)
+    @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "field_officer_id", nullable = true)
     protected Staff savingsOfficer;
 
@@ -216,7 +213,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @Column(name = "closedon_date")
     protected Date closedOnDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "closedon_userid", nullable = true)
     protected AppUser closedBy;
     
@@ -338,8 +335,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @JoinColumn(name = "tax_group_id")
     private TaxGroup taxGroup;
     
-    @LazyCollection(LazyCollectionOption.TRUE)
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "savingsAccount", optional = true, orphanRemoval = true)
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "savingsAccount", optional = true, orphanRemoval = true,fetch = FetchType.LAZY)
     private SavingsAccountDpDetails savingsAccountDpDetails;
     
     @Column(name = "total_savings_amount_on_hold", scale = 6, precision = 19, nullable = true)
@@ -3241,4 +3237,9 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     public Set<SavingsOfficerAssignmentHistory> getSavingsOfficerHistory() {
 		return savingsOfficerHistory;
 	}
+
+    
+    public AppUser getClosedBy() {
+        return this.closedBy;
+    }
 }

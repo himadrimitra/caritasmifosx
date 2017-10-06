@@ -111,7 +111,7 @@ public class DepositProductAssembler {
         final String shortName = command.stringValueOfParameterNamed(shortNameParamName);
         final String description = command.stringValueOfParameterNamed(descriptionParamName);
         final String externalId = command.stringValueOfParameterNamed(externalIdParamName);
-        final Boolean isInterestCalculationFromProductChart = command.booleanObjectValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
+        final boolean isInterestCalculationFromProductChart = command.booleanPrimitiveValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
 
         final String currencyCode = command.stringValueOfParameterNamed(currencyCodeParamName);
         final Integer digitsAfterDecimal = command.integerValueOfParameterNamed(digitsAfterDecimalParamName);
@@ -205,7 +205,7 @@ public class DepositProductAssembler {
         final String shortName = command.stringValueOfParameterNamed(shortNameParamName);
         final String description = command.stringValueOfParameterNamed(descriptionParamName);
         final String externalId = command.stringValueOfParameterNamed(externalIdParamName);
-        final Boolean isInterestCalculationFromProduct = command.booleanObjectValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
+        final boolean isInterestCalculationFromProduct = command.booleanPrimitiveValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
 
         final String currencyCode = command.stringValueOfParameterNamed(currencyCodeParamName);
         final Integer digitsAfterDecimal = command.integerValueOfParameterNamed(digitsAfterDecimalParamName);
