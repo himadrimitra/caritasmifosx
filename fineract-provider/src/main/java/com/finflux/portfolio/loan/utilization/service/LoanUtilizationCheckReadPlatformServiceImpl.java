@@ -159,7 +159,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
 
         private LoanUtilizationCheckDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder(400);
-            sqlBuilder.append("luc.id AS lucId, luc.audit_done_by AS auditDoneById, staff.display_name AS auditDoneByName ");
+            sqlBuilder.append("luc.id AS lucId, luc.audit_done_by AS auditDoneById, CONCAT(appuser.firstname,' ',appuser.lastname) AS auditDoneByName ");
             sqlBuilder.append(",luc.audit_done_on AS auditDoneOn,lucd.id AS lucdId,luc.loan_id AS loanId ");
             sqlBuilder.append(",lucd.is_same_as_oroginal_purpose AS isSameAsOroginalPurpose ");
             sqlBuilder.append(",lucd.amount AS amount,lucd.comment AS comment ");
@@ -167,7 +167,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
             sqlBuilder.append(",gp.id AS groupId,gp.display_name AS groupName,c.id AS clientId,c.display_name AS clientName ");
             sqlBuilder.append(",l.loan_status_id AS loanStatusId, l.loan_type_enum AS loanTypeId,l.principal_amount AS principalAmount ");
             sqlBuilder.append("FROM f_loan_utilization_check luc ");
-            sqlBuilder.append("LEFT JOIN m_staff staff ON staff.id = luc.audit_done_by ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = luc.audit_done_by ");
             sqlBuilder.append("JOIN f_loan_utilization_check_detail lucd ON lucd.loan_utilization_check_id = luc.id  ");
             sqlBuilder.append("JOIN m_loan l ON l.id = luc.loan_id ");
             sqlBuilder.append("JOIN m_client c ON c.id = l.client_id ");
