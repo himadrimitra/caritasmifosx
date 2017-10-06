@@ -803,7 +803,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
         }
 
         public String schema() {
-            return "plc.id AS id, plc.product_loan_id AS productLoanId, plc.charge_id AS chargeId, plc.is_mandatory AS isMandatory FROM m_product_loan_charge plc";
+            return "plc.id AS id, plc.product_loan_id AS productLoanId, plc.charge_id AS chargeId, plc.is_mandatory AS isMandatory, plc.is_amount_non_editable as isAmountNonEditable FROM m_product_loan_charge plc";
         }
 
         @Override
@@ -819,7 +819,8 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                 }
             }
             final Boolean isMandatory = rs.getBoolean("isMandatory");
-            return ProductLoanChargeData.instance(id, productLoanId, chargeData, isMandatory);
+            final Boolean isAmountNonEditable = rs.getBoolean("isAmountNonEditable");
+            return ProductLoanChargeData.instance(id, productLoanId, chargeData, isMandatory, isAmountNonEditable);
         }
 
     }
