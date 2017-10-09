@@ -708,7 +708,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
         sql.append(" left join (select ltemp.id loanId, Max(temptv.applicable_date) as maxemidate  from m_loan ltemp join m_loan_term_variations temptv on temptv.loan_id = ltemp.id and temptv.is_active = 1 and temptv.is_specific_to_installment = 0 and temptv.term_type = :termtype where ltemp.id = :loanId  group by ltemp.id) y on y.loanId = l.id");
         sql.append(" left join m_loan_term_variations tv on tv.loan_id = l.id and tv.is_active = 1 and tv.is_specific_to_installment = 0 and tv.term_type = :termtype and tv.applicable_date = y.maxemidate");
-        sql.append(" join m_loan_repayment_schedule rs on rs.loan_id = l.id and rs.duedate >=  if(:changeEmi, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date),DATE_ADD(IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date), INTERVAL 1 DAY))");
+        sql.append(" join m_loan_repayment_schedule rs on rs.loan_id = l.id and rs.duedate >=  if(:changeEmi, IFNULL(l.expected_disbursedon_date,dd.expected_disburse_date),DATE_ADD(IFNULL(l.expected_disbursedon_date,dd.expected_disburse_date), INTERVAL 1 DAY))");
         sql.append(" WHERE l.id = :loanId group by l.id");
 
         final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService

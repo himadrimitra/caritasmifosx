@@ -111,5 +111,7 @@ public interface SavingsAccountWritePlatformService {
     CommandProcessingResult unblockDebits(Long savingsId);
 
     CommandProcessingResult releaseAmount(Long savingsId, Long transactionId);
+    
+    void postInterest(Long savingsId, final boolean postInterestAs, final LocalDate transactionDate);
    
 }

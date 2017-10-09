@@ -105,6 +105,7 @@ import org.apache.fineract.portfolio.savings.domain.SavingsAccountCharge;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransactionRepository;
@@ -124,7 +125,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements DepositAccountWritePlatformService {
 
     private final PlatformSecurityContext context;
-    private final SavingsAccountRepository savingAccountRepository;
+    private final SavingsAccountRepositoryWrapper savingAccountRepository;
     private final SavingsAccountTransactionRepository savingsAccountTransactionRepository;
     private final DepositAccountAssembler depositAccountAssembler;
     private final DepositAccountTransactionDataValidator depositAccountTransactionDataValidator;
@@ -149,7 +150,7 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
 
     @Autowired
     public DepositAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
-            final SavingsAccountRepository savingAccountRepository,
+            final SavingsAccountRepositoryWrapper savingAccountRepository,
             final SavingsAccountTransactionRepository savingsAccountTransactionRepository,
             final DepositAccountAssembler depositAccountAssembler,
             final DepositAccountTransactionDataValidator depositAccountTransactionDataValidator,
