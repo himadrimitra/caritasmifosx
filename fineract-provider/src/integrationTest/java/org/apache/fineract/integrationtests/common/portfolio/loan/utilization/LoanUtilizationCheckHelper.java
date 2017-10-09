@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.integrationtests.common.Utils;
-import org.apache.fineract.integrationtests.common.organisation.StaffHelper;
 
 import com.google.gson.Gson;
 import com.jayway.restassured.specification.RequestSpecification;
@@ -21,9 +20,9 @@ public class LoanUtilizationCheckHelper {
             final Integer loanId) {
         System.out.println("----------------------------Create Loan Utilization Check------------------------------------");
         System.out.println(createLoanUtilizationCheckOperationURL(loanId));
-        Integer staffId = StaffHelper.createStaff(requestSpec, responseSpec);
+        Integer auditDoneById = 1;
         final Integer loanUtilizationCheckId = Utils.performServerPost(requestSpec, responseSpec,
-                createLoanUtilizationCheckOperationURL(loanId), getCreateLoanUtilizationCheckRequestBodyAsJSON(loanId, staffId),
+                createLoanUtilizationCheckOperationURL(loanId), getCreateLoanUtilizationCheckRequestBodyAsJSON(loanId, auditDoneById),
                 "resourceId");
         return loanUtilizationCheckId;
     }
@@ -45,12 +44,12 @@ public class LoanUtilizationCheckHelper {
     }
 
     @SuppressWarnings("rawtypes")
-    public static String getCreateLoanUtilizationCheckRequestBodyAsJSON(final Integer loanId, final Integer staffId) {
+    public static String getCreateLoanUtilizationCheckRequestBodyAsJSON(final Integer loanId, final Integer auditDoneById) {
         final Map<String, Object> map = new LinkedHashMap<>();
         final List<Map> loanUtilizationChecks = new ArrayList<>();
         final Map<String, Object> loanUtilizationCheck = new LinkedHashMap<>();
         loanUtilizationCheck.put("loanId", loanId);
-        loanUtilizationCheck.put("auditDoneById", staffId);
+        loanUtilizationCheck.put("auditDoneById", auditDoneById);
         loanUtilizationCheck.put("auditDoneOn", "15 Dec 2014");
         final Map<String, Object> utilizationDetail = new LinkedHashMap<>();
         utilizationDetail.put("isSameAsOriginalPurpose", true);
