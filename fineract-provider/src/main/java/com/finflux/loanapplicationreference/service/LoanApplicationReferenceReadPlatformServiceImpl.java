@@ -338,6 +338,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final Boolean isCreditBureauProduct = rs.getBoolean("isCreditBureauProduct");
             this.isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOANPRODUCT, loanProductId);
             final Long workflowId = JdbcSupport.getLong(rs, "workflowId");
+            this.isWorkflowEnabled = this.taskConfigurationUtils.isWorkflowEnabled(TaskConfigEntityType.LOANPRODUCT, loanProductId);
             return LoanApplicationReferenceData.instance(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne,
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
                     loanProductName, loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency,

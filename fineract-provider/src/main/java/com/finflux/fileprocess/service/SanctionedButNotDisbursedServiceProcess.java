@@ -121,10 +121,11 @@ public class SanctionedButNotDisbursedServiceProcess {
 
         final StringBuilder sb = new StringBuilder(100);
         sb.append("select count(*) from m_client c ");
+        sb.append("join f_loan_application_reference lar on lar.client_id = c.id ");
         sb.append("join m_client_identifier ci on ci.client_id = c.id ");
         sb.append("join m_code_value cv on cv.system_identifier = 'UID' and cv.id = ci.document_type_id ");
         sb.append("where ");
-        sb.append("c.external_id = '").append(externalId).append("' ");
+        sb.append("lar.external_id_one = '").append(externalId).append("' ");
         sb.append("and c.display_name = '").append(customerName).append("' ");
         sb.append("and ci.document_key = '").append(documentKey).append("' ");
         final int count = this.jdbcTemplate.queryForObject(sb.toString(), Integer.class);
@@ -166,10 +167,10 @@ public class SanctionedButNotDisbursedServiceProcess {
         try {
             final String externalId = jsonObject.get("LAF Barcode No.").getAsString();
             final StringBuilder sb = new StringBuilder(100);
-            sb.append("select lar.id as loanAppId from f_loan_application_reference lar join m_client c on c.id = lar.client_id ");
+            sb.append("select lar.id as loanAppId from f_loan_application_reference ");
             sb.append("where (lar.status_enum = ").append(LoanApplicationReferenceStatus.APPLICATION_CREATED.getValue()).append(" ");
             sb.append("or lar.status_enum = ").append(LoanApplicationReferenceStatus.APPLICATION_IN_APPROVE_STAGE.getValue()).append(") ");
-            sb.append("and c.external_id = '").append(externalId).append("' ");
+            sb.append("and lar.external_id_one = '").append(externalId).append("' ");
             return this.jdbcTemplate.queryForObject(sb.toString(), Long.class);
         } catch (final EmptyResultDataAccessException e) {
             throw new GeneralPlatformDomainRuleException("error.msg.loan..application.not.found", "Loan application not found");
