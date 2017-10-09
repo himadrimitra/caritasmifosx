@@ -30,17 +30,21 @@ import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.interestratechart.domain.InterestIncentives;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestRateChart;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestRateChartFields;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestRateChartSlab;
 import org.apache.fineract.portfolio.interestratechart.incentive.AttributeIncentiveCalculation;
 import org.apache.fineract.portfolio.interestratechart.incentive.AttributeIncentiveCalculationFactory;
 import org.apache.fineract.portfolio.interestratechart.incentive.IncentiveDTO;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
+
 
 @Entity
 @Table(name = "m_savings_account_interest_rate_chart")
@@ -153,6 +157,65 @@ public class DepositAccountInterestRateChart extends AbstractPersistable<Long> {
         }
 
         return effectiveInterestRate;
+    }
+    
+    public BigDecimal getApplicableInterestRateFromProduct(final BigDecimal depositAmount, final LocalDate periodStartDate, 
+    		final LocalDate periodEndDate, final Client client) {
+    	BigDecimal effectiveInterestRate = BigDecimal.ZERO;
+    	RecurringDepositProduct recurringDepositProduct = (RecurringDepositProduct) this.account.product;
+    	Set<InterestRateChart> interestCharts = recurringDepositProduct.setOfCharts();
+    	for(InterestRateChart charts : interestCharts) {
+			LocalDate chartEndDate = charts.getEndDateAsLocalDate();
+			if (charts.getEndDateAsLocalDate() == null) {
+				chartEndDate = DateUtils.getLocalDateOfTenant();
+			}
+    		if(periodStartDate.isAfter(charts.getFromDateAsLocalDate()) && periodEndDate.isBefore(chartEndDate)){
+    			Set<InterestRateChartSlab> chartSlab =  charts.setOfChartSlabs();
+	       		 for(InterestRateChartSlab slab : chartSlab) {
+	       			Integer depositPeriod = slab.slabFields().depositPeriod(charts.getFromDateAsLocalDate(), periodEndDate);
+	       			if(slab.slabFields().fromPeriod() == 1 && depositPeriod.intValue() == 0) {
+	       				depositPeriod++;
+	       			}
+	       			 if(depositPeriod >= slab.slabFields().fromPeriod() && slab.slabFields().toPeriod() == null && slab.slabFields().isAmountBetween(depositAmount)) {
+	       	    			effectiveInterestRate = slab.slabFields().annualInterestRate();
+	       	    			
+	       	    			Set<InterestIncentives> interestIncentives = slab.setOfInterestIncentives();
+	       	    			for(InterestIncentives incentives : interestIncentives) {
+	       	    				AttributeIncentiveCalculation attributeIncentiveCalculation = AttributeIncentiveCalculationFactory
+	       	                            .findAttributeIncentiveCalculation(incentives.interestIncentivesFields().entiryType());
+	       	                    IncentiveDTO incentiveDTO = new IncentiveDTO(client, effectiveInterestRate, incentives.interestIncentivesFields());
+	       	                    effectiveInterestRate = attributeIncentiveCalculation.calculateIncentive(incentiveDTO);
+	       	    			}
+	       	    			
+	       	                // effectiveInterestRate is zero or null then reset to default
+	       	                // interest rate.
+	       	                if (effectiveInterestRate == null || MathUtility.isZero(effectiveInterestRate)) {
+	       	                    effectiveInterestRate = slab.slabFields().annualInterestRate();
+	       	                }
+	       	                break;
+	       	    		}else if(depositPeriod >= slab.slabFields().fromPeriod() && depositPeriod <= slab.slabFields().toPeriod() && slab.slabFields().isAmountBetween(depositAmount)) {
+	       	    			effectiveInterestRate = slab.slabFields().annualInterestRate();
+	       	    			
+	       	    			
+	       	    			Set<InterestIncentives> interestIncentives = slab.setOfInterestIncentives();
+	       	    			for(InterestIncentives incentives : interestIncentives) {
+	       	    				AttributeIncentiveCalculation attributeIncentiveCalculation = AttributeIncentiveCalculationFactory
+	       	                            .findAttributeIncentiveCalculation(incentives.interestIncentivesFields().entiryType());
+	       	                    IncentiveDTO incentiveDTO = new IncentiveDTO(client, effectiveInterestRate, incentives.interestIncentivesFields());
+	       	                    effectiveInterestRate = attributeIncentiveCalculation.calculateIncentive(incentiveDTO);
+	       	    			}
+	       	    			
+	       	                // effectiveInterestRate is zero or null then reset to default
+	       	                // interest rate.
+	       	                if (effectiveInterestRate == null || MathUtility.isZero(effectiveInterestRate)) {
+	       	                    effectiveInterestRate = slab.slabFields().annualInterestRate();
+	       	                }
+	       	                break;
+	       	    		}
+	       		 }
+    		}
+    	}
+    	return effectiveInterestRate;
     }
 
     public boolean isPrimaryGroupingByAmount() {

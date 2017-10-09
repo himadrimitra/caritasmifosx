@@ -277,6 +277,7 @@ public class DepositsApiConstants {
         recurringDepositRequestData.addAll(DEPOSIT_TERM_REQUEST_DATA_PARAMETERS);
         recurringDepositRequestData.addAll(RECURRING_DETAILS_REQUEST_DATA_PARAMETERS);
         recurringDepositRequestData.add(SavingsApiConstants.minBalanceForInterestCalculationParamName);
+        recurringDepositRequestData.add(SavingsApiConstants.isInterestCalculationFromProductChartParamName);
         return recurringDepositRequestData;
     }
 
@@ -287,6 +288,7 @@ public class DepositsApiConstants {
         recurringDepositRequestData.addAll(DEPOSIT_TERM_RESPONSE_DATA_PARAMETERS);
         recurringDepositRequestData.addAll(RECURRING_DETAILS_RESPONSE_DATA_PARAMETERS);
         recurringDepositRequestData.add(SavingsApiConstants.minBalanceForInterestCalculationParamName);
+        recurringDepositRequestData.add(SavingsApiConstants.isInterestCalculationFromProductChartParamName);
         return recurringDepositRequestData;
     }
 

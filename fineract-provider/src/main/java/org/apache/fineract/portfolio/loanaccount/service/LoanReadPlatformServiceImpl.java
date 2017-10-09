@@ -708,7 +708,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
         sql.append(" left join (select ltemp.id loanId, Max(temptv.applicable_date) as maxemidate  from m_loan ltemp join m_loan_term_variations temptv on temptv.loan_id = ltemp.id and temptv.is_active = 1 and temptv.is_specific_to_installment = 0 and temptv.term_type = :termtype where ltemp.id = :loanId  group by ltemp.id) y on y.loanId = l.id");
         sql.append(" left join m_loan_term_variations tv on tv.loan_id = l.id and tv.is_active = 1 and tv.is_specific_to_installment = 0 and tv.term_type = :termtype and tv.applicable_date = y.maxemidate");
-        sql.append(" join m_loan_repayment_schedule rs on rs.loan_id = l.id and rs.duedate >=  if(:changeEmi, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date),DATE_ADD(IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date), INTERVAL 1 DAY))");
+        sql.append(" join m_loan_repayment_schedule rs on rs.loan_id = l.id and rs.duedate >=  if(:changeEmi, IFNULL(l.expected_disbursedon_date,dd.expected_disburse_date),DATE_ADD(IFNULL(l.expected_disbursedon_date,dd.expected_disburse_date), INTERVAL 1 DAY))");
         sql.append(" WHERE l.id = :loanId group by l.id");
 
         final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService
@@ -2010,7 +2010,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 .append(" and (((ls.fee_charges_amount <> if(ls.accrual_fee_charges_derived is null,0, ls.accrual_fee_charges_derived))")
                 .append(" or ( ls.penalty_charges_amount <> if(ls.accrual_penalty_charges_derived is null,0,ls.accrual_penalty_charges_derived))")
                 .append(" or ( ls.interest_amount <> if(ls.accrual_interest_derived is null,0,ls.accrual_interest_derived)))")
-                .append(" and loan.loan_status_id=:active and mpl.accounting_type=:type and ls.duedate <= :currentdate) ");
+                .append(" and loan.loan_status_id=:active and mpl.accounting_type=:type and ls.duedate <= :currentdate ")
+                 .append(" and (loan.loan_recalcualated_on is null or ls.duedate >=  loan.loan_recalcualated_on))");
         if(organisationStartDate != null){
             sqlBuilder.append(" and ls.duedate > :organisationstartdate ");
         }
@@ -2038,7 +2039,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 .append(" or (ls.penalty_charges_amount <> if(ls.accrual_penalty_charges_derived is null,0,ls.accrual_penalty_charges_derived))")
                 .append(" or (ls.interest_amount <> if(ls.accrual_interest_derived is null,0,ls.accrual_interest_derived)))")
                 .append(" and loan.loan_status_id=:active and mpl.accounting_type=:type and (loan.closedon_date <= :tilldate or loan.closedon_date is null)")
-                .append(" and loan.is_npa=0 and (ls.duedate <= :tilldate or (ls.duedate > :tilldate and ls.fromdate < :tilldate))) ");
+                .append(" and (ls.duedate <= :tilldate or (ls.duedate > :tilldate and ls.fromdate < :tilldate)) ")
+                .append(" and (loan.loan_recalcualated_on is null or ls.duedate >=  loan.loan_recalcualated_on))");
         if(organisationStartDate != null){
             sqlBuilder.append(" and ls.duedate > :organisationstartdate ");
         }

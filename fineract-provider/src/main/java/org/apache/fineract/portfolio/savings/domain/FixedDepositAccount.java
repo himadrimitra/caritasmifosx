@@ -145,7 +145,8 @@ public class FixedDepositAccount extends SavingsAccount {
     }
 
     @Override
-    protected BigDecimal getEffectiveInterestRateAsFraction(final MathContext mc, final LocalDate interestPostingUpToDate) {
+    protected BigDecimal getEffectiveInterestRateAsFraction(final MathContext mc, final LocalDate interestPostingUpToDate,
+    		final LocalDate periodStartDate, final LocalDate periodEndDate) {
         boolean isPreMatureClosure = false;
         return getEffectiveInterestRateAsFraction(mc, interestPostingUpToDate, isPreMatureClosure);
     }

@@ -123,6 +123,7 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
     private final DepositsDropdownReadPlatformService depositsDropdownReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
     private final RecurringAccountDepositTransactionTemplateMapper rdTransactionTemplateMapper;
+    private final RecurringAccountWithdrawalTransactionTemplateMapper recurringAccountWithdrawalTransactionTemplateMapper;
     private final DropdownReadPlatformService dropdownReadPlatformService;
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
@@ -156,6 +157,7 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
         this.productChartReadPlatformService = productChartReadPlatformService;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
         this.rdTransactionTemplateMapper = new RecurringAccountDepositTransactionTemplateMapper();
+        this.recurringAccountWithdrawalTransactionTemplateMapper = new RecurringAccountWithdrawalTransactionTemplateMapper();
         this.dropdownReadPlatformService = dropdownReadPlatformService;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
@@ -1407,7 +1409,6 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
     private static final class RecurringAccountDepositTransactionTemplateMapper implements RowMapper<SavingsAccountTransactionData> {
 
         private final String schemaSql;
-
         public RecurringAccountDepositTransactionTemplateMapper() {
             final StringBuilder sqlBuilder = new StringBuilder(400);
             sqlBuilder.append("sa.id as id, sa.account_no as accountNo, ");
@@ -1565,4 +1566,65 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
                 });
         	return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
 	}
+	
+    @Override
+    public SavingsAccountTransactionData retrieveRecurringAccountWithdrawTransactionTemplate(Long accountId) {
+        try {
+            final String sql = "select " + this.recurringAccountWithdrawalTransactionTemplateMapper.schema()
+                    + " where sa.id = ? and sa.deposit_type_enum = ?";
+
+            return this.jdbcTemplate.queryForObject(sql, this.recurringAccountWithdrawalTransactionTemplateMapper,
+                    new Object[] { accountId, DepositAccountType.RECURRING_DEPOSIT.getValue() });
+        } catch (final EmptyResultDataAccessException e) {
+            throw new DepositAccountNotFoundException(DepositAccountType.RECURRING_DEPOSIT, accountId);
+        }
+    }
+
+    private static final class RecurringAccountWithdrawalTransactionTemplateMapper implements RowMapper<SavingsAccountTransactionData> {
+
+        private final String schemaSql;
+
+        public RecurringAccountWithdrawalTransactionTemplateMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder(400);
+            sqlBuilder.append("sa.id as id, sa.account_no as accountNo, ");
+            sqlBuilder.append(
+                    "sa.currency_code as currencyCode, sa.currency_digits as currencyDigits, sa.currency_multiplesof as inMultiplesOf, ");
+            sqlBuilder.append("curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ");
+            sqlBuilder.append("curr.display_symbol as currencyDisplaySymbol, ");
+            sqlBuilder.append("sa.account_balance_derived as runningBalance ");
+            sqlBuilder.append("from m_savings_account sa ");
+            sqlBuilder.append("join m_currency curr on curr.code = sa.currency_code ");
+
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @Override
+        public SavingsAccountTransactionData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long savingsId = rs.getLong("id");
+            final String accountNo = rs.getString("accountNo");
+            final String currencyCode = rs.getString("currencyCode");
+            final String currencyName = rs.getString("currencyName");
+            final String currencyNameCode = rs.getString("currencyNameCode");
+            final String currencyDisplaySymbol = rs.getString("currencyDisplaySymbol");
+            final Integer currencyDigits = JdbcSupport.getInteger(rs, "currencyDigits");
+            final Integer inMultiplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
+            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMultiplesOf, currencyDisplaySymbol,
+                    currencyNameCode);
+            final PaymentDetailData paymentDetailData = null;
+            final AccountTransferData transfer = null;
+            final BigDecimal runningBalance = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "runningBalance");
+            final boolean postInterestAsOn = false;
+            final LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+            final SavingsAccountTransactionEnumData transactionType = SavingsEnumerations
+                    .transactionType(SavingsAccountTransactionType.WITHDRAWAL.getValue());
+            final boolean reversed = false;
+            return SavingsAccountTransactionData.create(savingsId, transactionType, paymentDetailData, savingsId, accountNo, currentDate,
+                    currency, runningBalance, runningBalance, reversed, transfer, postInterestAsOn);
+        }
+    }
 }

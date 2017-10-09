@@ -18,18 +18,37 @@ public class PenaltyPeriodGeneratorForAverageOuststanding extends PenaltyChargeP
             LocalDate actualEndDate) {
         LocalDate currentPeriodEndDate = endDate;
         for (LocalDate date : overdueCalculationDetail.getDatesForOverdueAmountChange()) {
+            LocalDate applyAsOndate = date;
             if (occursOnDayFromAndUpToAndIncluding(chargeApplicableFromDate, endDate, date)) {
-                if(!date.isEqual(currentPeriodEndDate)){
-                Money amountForChargeCalculation = findAmountBasedOnChargeCalculationType(recurringCharge.getChargeCalculation(),
-                        overdueCalculationDetail.getPrincipalOutstingAsOnDate(), overdueCalculationDetail.getInterestOutstingAsOnDate(),
-                        overdueCalculationDetail.getChargeOutstingAsOnDate());
-                PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate, actualEndDate,
-                        amountForChargeCalculation, date, currentPeriodEndDate, recurringCharge.getFeeFrequency());
-                penaltyPeriods.put(currentPeriodEndDate,penaltyPeriod);
+                if (!date.isEqual(currentPeriodEndDate)) {
+                    Money amountForChargeCalculation = findAmountBasedOnChargeCalculationType(recurringCharge.getChargeCalculation(),
+                            overdueCalculationDetail.getPrincipalOutstingAsOnDate(),
+                            overdueCalculationDetail.getInterestOutstingAsOnDate(), overdueCalculationDetail.getChargeOutstingAsOnDate());
+                    if (overdueCalculationDetail.getPaymentTransactions().containsKey(date)) {
+                        if (amountForChargeCalculation.isGreaterThanOrEqualTo(recurringCharge.getChargeOverueDetail()
+                                .getMinOverdueAmountRequired(overdueCalculationDetail.getCurrency()))) {
+                            PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate,
+                                    actualEndDate, amountForChargeCalculation, date, currentPeriodEndDate,
+                                    recurringCharge.getFeeFrequency());
+                            penaltyPeriods.put(currentPeriodEndDate, penaltyPeriod);
+                        }
+                        handleReversalOfTransactionForOverdueCalculation(overdueCalculationDetail, date);
+                    }
+                    if (overdueCalculationDetail.getOverdueInstallments().containsKey(date)) {
+                        if (amountForChargeCalculation.isGreaterThanOrEqualTo(recurringCharge.getChargeOverueDetail()
+                                .getMinOverdueAmountRequired(overdueCalculationDetail.getCurrency()))) {
+                            PenaltyPeriod penaltyPeriod = new PenaltyPeriod(recurringCharge.getAmount().doubleValue(), recurrerDate,
+                                    actualEndDate, amountForChargeCalculation, date.minusDays(1), currentPeriodEndDate,
+                                    recurringCharge.getFeeFrequency());
+                            penaltyPeriods.put(currentPeriodEndDate, penaltyPeriod);
+                            applyAsOndate = date.minusDays(1);
+                        }
+                        handleReversalOfOverdueInstallment(overdueCalculationDetail, date);
+                    }
                 }
-                handleReversalOfTransactionForOverdueCalculation(overdueCalculationDetail, date);
-                handleReversalOfOverdueInstallment(overdueCalculationDetail, date);
-                currentPeriodEndDate = date;
+               
+                
+                currentPeriodEndDate = applyAsOndate;
             }
             if (!date.isAfter(chargeApplicableFromDate)) {
                 break;

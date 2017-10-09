@@ -292,6 +292,7 @@ public class DepositAccountAssembler {
         }
         
         boolean withHoldTax = product.withHoldTax();
+        boolean isInterestCalculationFromProductChart = product.isInterestCalculationFromProductChart();
         if (command.parameterExists(withHoldTaxParamName)) {
             withHoldTax = command.booleanPrimitiveValueOfParameterNamed(withHoldTaxParamName);
             if(withHoldTax && product.getTaxGroup()  == null){
@@ -327,7 +328,7 @@ public class DepositAccountAssembler {
                     fieldOfficer, accountNo, externalId, accountType, submittedOnDate, submittedBy, interestRate,
                     interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                     minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer,
-                    charges, accountTermAndPreClosure, accountRecurringDetail, accountChart, withHoldTax);
+                    charges, accountTermAndPreClosure, accountRecurringDetail, accountChart, withHoldTax, isInterestCalculationFromProductChart);
 
             accountTermAndPreClosure.updateAccountReference(rdAccount);
             accountRecurringDetail.updateAccountReference(rdAccount);

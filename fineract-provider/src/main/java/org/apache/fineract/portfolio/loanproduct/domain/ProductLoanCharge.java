@@ -24,15 +24,23 @@ public class ProductLoanCharge extends AbstractPersistable<Long> {
     @Column(name = "is_mandatory", nullable = false)
     private Boolean isMandatory;
 
+    
+    @Column(name = "is_amount_non_editable", nullable = false)
+    private Boolean isAmountNonEditable = false;
+    
     protected ProductLoanCharge() {}
 
-    private ProductLoanCharge(final LoanProduct loanProduct, final Charge charge, final Boolean isMandatory) {
+    private ProductLoanCharge(final LoanProduct loanProduct, final Charge charge, final Boolean isMandatory, final Boolean isAmountNonEditable) {
         this.loanProduct = loanProduct;
         this.chargeId = charge.getId();
         this.isMandatory = isMandatory;
+        if (isAmountNonEditable != null) {
+            this.isAmountNonEditable = isAmountNonEditable;
+        }
+       
     }
 
-    public static ProductLoanCharge create(final LoanProduct loanProduct, final Charge charge, final Boolean isMandatory) {
-        return new ProductLoanCharge(loanProduct, charge, isMandatory);
+    public static ProductLoanCharge create(final LoanProduct loanProduct, final Charge charge, final Boolean isMandatory, final Boolean isAmountNonEditable) {
+        return new ProductLoanCharge(loanProduct, charge, isMandatory, isAmountNonEditable);
     }
 }

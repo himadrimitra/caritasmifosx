@@ -32,6 +32,12 @@ public class AppUserRepositoryWrapper {
         this.appUserRepository = appUserRepository ;
     }
     
+    public AppUser findOneWithNotFoundDetection(final Long id) {
+        final AppUser appUser = this.appUserRepository.findOne(id);
+        if (appUser == null) { throw new UserNotFoundException(id); }
+        return appUser;
+    }
+    
     public AppUser fetchSystemUser() {
         String userName = "system" ;
         AppUser user = this.appUserRepository.findAppUserByName(userName);

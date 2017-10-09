@@ -146,4 +146,7 @@ public interface ConfigurationDomainService {
     boolean isAllowPaymentsOnClosedLoansEnabled();
     
     int getMaxAllowedFileSizeToUpload();
+
+    boolean isDisplayFirstNameLastLastNameFirstForClient();
+
 }

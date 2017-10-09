@@ -55,6 +55,7 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroup
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHoldTaxParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chartPeriodOverlapped;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isInterestCalculationFromProductChartParamName;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -208,13 +209,14 @@ public class SavingsProductAssembler {
         final Long daysToInactive = command.longValueOfParameterNamed(daysToInactiveParamName);
         final Long daysToDormancy = command.longValueOfParameterNamed(daysToDormancyParamName);
         final Long daysToEscheat = command.longValueOfParameterNamed(daysToEscheatParamName);
+        final boolean isInterestCalculationFromProduct = command.booleanPrimitiveValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
 
         final SavingsProduct savingsProduct = SavingsProduct.createNew(name, shortName, description, currency, interestRate,
                 interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                 minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer,
                 accountingRuleType, charges, allowOverdraft, overdraftLimit, enforceMinRequiredBalance, minRequiredBalance,
                 minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
-                taxGroup, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
+                taxGroup, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId, isInterestCalculationFromProduct);
         
         /**
          * Construct Savings Product Drawing Power Details

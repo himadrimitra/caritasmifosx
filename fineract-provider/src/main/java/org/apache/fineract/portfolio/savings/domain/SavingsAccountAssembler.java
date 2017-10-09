@@ -358,6 +358,12 @@ public class SavingsAccountAssembler {
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
         return account;
     }
+    
+    public SavingsAccount assembleFromWithoutLazyInitialize(final Long savingsId) {
+        final SavingsAccount account = this.savingsAccountRepository.findOneWithoutLazyInitializeWithNotFoundDetection(savingsId);
+        account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
+        return account;
+    }
 
     public void setHelpers(final SavingsAccount account) {
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);

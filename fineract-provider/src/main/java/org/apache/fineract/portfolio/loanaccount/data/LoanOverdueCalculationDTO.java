@@ -248,12 +248,12 @@ public class LoanOverdueCalculationDTO {
         return this.overdueInstallments;
     }
 
-    public void createDatesForOverdueChange(final boolean includeBrokenPeriodDate) {
-         this.datesForOverdueAmountChange.addAll(this.paymentTransactions.keySet());
-         this.datesForOverdueAmountChange.addAll(this.overdueInstallments.keySet());
-         if(includeBrokenPeriodDate){
-             this.datesForOverdueAmountChange.add(brokenPeriodOnDate);
-         }
+    public void createDatesForOverdueChange(final LocalDate brokenPeriodOnDate) {
+        this.datesForOverdueAmountChange.addAll(this.paymentTransactions.keySet());
+        this.datesForOverdueAmountChange.addAll(this.overdueInstallments.keySet());
+        if (brokenPeriodOnDate != null) {
+            this.datesForOverdueAmountChange.add(brokenPeriodOnDate);
+        }
     }
 
     

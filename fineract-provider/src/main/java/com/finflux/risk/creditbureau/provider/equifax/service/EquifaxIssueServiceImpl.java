@@ -176,7 +176,7 @@ public class EquifaxIssueServiceImpl implements EquifaxIssueService {
 					existingLoan.setDisbursedDate(account.getDateSanctioned().toGregorianCalendar().getTime());
 				}
 				if (account.getDateClosed() != null) {
-					existingLoan.setClosedDate(account.getDateSanctioned().toGregorianCalendar().getTime());
+					existingLoan.setClosedDate(account.getDateClosed().toGregorianCalendar().getTime());
 				}
 				if (account.getPastDueAmount() != null) {
 					existingLoan.setAmountOverdue(account.getPastDueAmount().doubleValue());

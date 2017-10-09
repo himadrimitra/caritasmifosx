@@ -622,6 +622,15 @@ public class LoanCharge extends AbstractPersistable<Long> {
             installmentCharge.resetToOriginal(currency);
         }
     }
+    
+    public void resetToOriginal() {
+        this.amountPaid = BigDecimal.ZERO;
+        this.amountWaived = BigDecimal.ZERO;
+        this.amountWrittenOff = BigDecimal.ZERO;
+        this.paid = false;
+        this.waived = false;
+        this.amountOutstanding = BigDecimal.ZERO;
+    }
 
     public void resetPaidAmount(final MonetaryCurrency currency) {
         this.amountPaid = BigDecimal.ZERO;
@@ -1230,6 +1239,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
         if (!active) {
             this.loanTrancheDisbursementCharge = null;
             this.clearLoanInstallmentCharges();
+            this.resetToOriginal();
         }
     }
 

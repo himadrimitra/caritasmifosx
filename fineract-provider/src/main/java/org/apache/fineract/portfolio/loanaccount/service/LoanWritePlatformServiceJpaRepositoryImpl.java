@@ -420,6 +420,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         LocalDate recalculateFrom = null;
         if (loan.isOpen() && loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             recalculateFrom = actualDisbursementDate;
+            loan.setConsiderFutureAccrualsBefore(recalculateFrom);
         }
         final boolean considerFutureDisbursmentsInSchedule = loan.loanProduct().considerFutureDisbursementsInSchedule();
         final boolean considerAllDisbursmentsInSchedule =loan.loanProduct().considerAllDisbursementsInSchedule();
@@ -3304,6 +3305,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final Map<String, Object> accountingBridgeData = loan.deriveAccountingBridgeData(applicationCurrency.toData(),
                     existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
             this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeData);
+            this.loanAccountDomainService.recalculateAccruals(loan);
             if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
                 this.loanAccountDomainService.createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
             }
