@@ -48,4 +48,9 @@ public interface LoanScheduleGenerator {
 
     BigDecimal calculateFirstInstallmentAmount(MathContext mc, LoanApplicationTerms loanApplicationTerms, Set<LoanCharge> loanCharges,
             HolidayDetailDTO holidayDetailDTO);
+
+    LoanScheduleDTO rescheduleNextInstallments(MathContext mc, LoanApplicationTerms loanApplicationTerms, Loan loan,
+            HolidayDetailDTO holidayDetailDTO, List<LoanTransaction> transactions,
+            LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor, LocalDate rescheduleFrom,
+            Set<LoanCharge> charges);
 }

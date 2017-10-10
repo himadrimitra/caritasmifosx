@@ -275,7 +275,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final boolean allowPaymentsOnClosedLoans = configurationDomainService.isAllowPaymentsOnClosedLoansEnabled();
         
         // to recompute overdue charges
-        boolean isOriginalScheduleNeedsUpdate = this.loanOverdueChargeService.updateOverdueChargesOnPayment(loan, transactionDate);
+        boolean isOriginalScheduleNeedsUpdate = this.loanOverdueChargeService.updateOverdueChargesAsOnDate(loan, transactionDate);
         scheduleGeneratorDTO.setChargeProcessingRequired(isOriginalScheduleNeedsUpdate);
         final ChangedTransactionDetail changedTransactionDetail = loan.makeRepayment(newRepaymentTransaction,
                 defaultLoanLifecycleStateMachine(), isRecoveryRepayment, scheduleGeneratorDTO, currentUser,
@@ -867,7 +867,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             throw new LoanForeclosureException("loan.with.undisbursed.tranche.cannot.be.foreclosured",
                     defaultUserMessage, foreClosureDate);
         }
-        boolean isOriginalScheduleNeedsUpdate = this.loanOverdueChargeService.updateOverdueChargesOnPayment(loan, foreClosureDate);
+        boolean isOriginalScheduleNeedsUpdate = this.loanOverdueChargeService.updateOverdueChargesAsOnDate(loan, foreClosureDate);
         if(isOriginalScheduleNeedsUpdate){
             final LoanRepaymentScheduleProcessingWrapper wrapper = new LoanRepaymentScheduleProcessingWrapper();
             wrapper.reprocess(loan.getCurrency(), loan.getDisbursementDate(), loan.fetchRepaymentScheduleInstallments(), loan.charges(), loan.getDisbursementDetails());
