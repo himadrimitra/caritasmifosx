@@ -1556,5 +1556,10 @@ public class LoanCharge extends AbstractPersistable<Long> {
         }
         return overdueAppliedTill;
     }
+
+    
+    public void setOverdueAppliedTill(Date overdueAppliedTill) {
+        this.overdueAppliedTill = overdueAppliedTill;
+    }
     
 }
