@@ -1086,10 +1086,21 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                                         break;
                                     }
                                 }
-                                LoanTransaction loanTransaction = LoanTransaction.repayment(null, unprocessed, null, scheduledDueDate,
-                                        null);
-                                RecalculationDetail recalculationDetail = new RecalculationDetail(scheduledDueDate, loanTransaction);
-                                unprocessedTransactions.add(recalculationDetail);
+                                if (detail.getTransaction().isRepayment()) {
+                                    LoanTransaction loanTransaction = LoanTransaction.repayment(null, unprocessed, null, scheduledDueDate,
+                                            null);
+                                    RecalculationDetail recalculationDetail = new RecalculationDetail(scheduledDueDate, loanTransaction);
+                                    unprocessedTransactions.add(recalculationDetail);
+                                }else{
+                                    LoanTransaction loanTransaction = LoanTransaction.copyTransactionProperties(detail.getTransaction());
+                                    RecalculationDetail recalculationDetail = new RecalculationDetail(loanTransaction.getTransactionDate(), loanTransaction);
+                                    unprocessedTransactions.add(recalculationDetail);
+                                    currentPeriodParams.minusEarlyPaidAmount(unprocessed);
+                                    updateMapWithAmount(scheduleParams.getPrincipalPortionMap(), unprocessed.negated(), applicableDate);
+                                }
+                                
+                                
+                              
                                 checkForOutstanding = false;
 
                                 scheduleParams.reduceOutstandingBalance(unprocessed);
@@ -2415,11 +2426,32 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 loanRepaymentScheduleTransactionProcessor, rescheduleFrom, scheduleTillDate);
 
     }
+    
+    @Override
+    public LoanScheduleDTO rescheduleNextInstallments(final MathContext mc, final LoanApplicationTerms loanApplicationTerms,
+            final Loan loan, final HolidayDetailDTO holidayDetailDTO, final List<LoanTransaction> transactions,
+            final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor, final LocalDate rescheduleFrom,
+            Set<LoanCharge> charges) {
+        // Fixed schedule End Date for generating schedule
+        final LocalDate scheduleTillDate = null;
+        return rescheduleNextInstallments(mc, loanApplicationTerms, loan, holidayDetailDTO, transactions,
+                loanRepaymentScheduleTransactionProcessor, rescheduleFrom, scheduleTillDate, charges);
+
+    }
 
     private LoanScheduleDTO rescheduleNextInstallments(final MathContext mc, final LoanApplicationTerms loanApplicationTerms,
             final Loan loan, final HolidayDetailDTO holidayDetailDTO, final List<LoanTransaction> transactions,
             final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor, final LocalDate rescheduleFrom,
             final LocalDate scheduleTillDate) {
+        Set<LoanCharge> charges = loan.chargesCopy();
+        return rescheduleNextInstallments(mc, loanApplicationTerms, loan, holidayDetailDTO, transactions,
+                loanRepaymentScheduleTransactionProcessor, rescheduleFrom, scheduleTillDate, charges);
+    }
+
+    private LoanScheduleDTO rescheduleNextInstallments(final MathContext mc, final LoanApplicationTerms loanApplicationTerms,
+            final Loan loan, final HolidayDetailDTO holidayDetailDTO, final List<LoanTransaction> transactions,
+            final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor, final LocalDate rescheduleFrom,
+            final LocalDate scheduleTillDate, Set<LoanCharge> charges) {
         // Loan transactions to process and find the variation on payments
         Collection<RecalculationDetail> recalculationDetails = new ArrayList<>();
         
@@ -2430,7 +2462,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             }
         }
         
-        Set<LoanCharge> charges = loan.chargesCopy();
+       
         
         final boolean applyInterestRecalculation = loanApplicationTerms.isInterestRecalculationEnabled();
 

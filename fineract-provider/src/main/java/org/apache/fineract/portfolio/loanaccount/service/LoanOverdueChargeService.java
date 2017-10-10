@@ -10,7 +10,7 @@ public interface LoanOverdueChargeService {
 
     boolean updateAndApplyOverdueChargesForLoan(Loan loan, LocalDate runOndate, LocalDate brokenPeriodOnDate);
 
-    boolean updateOverdueChargesOnPayment(Loan loan, LocalDate transactionDate);
+    boolean updateOverdueChargesAsOnDate(Loan loan, LocalDate transactionDate);
 
     void applyOverdueChargesForNonInterestRecalculationLoans(Long loanId, LocalDate runOndate, LocalDate brokenPeriodOnDate);
 
