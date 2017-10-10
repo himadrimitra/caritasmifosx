@@ -99,7 +99,8 @@ public class FundDataValidator {
 
             final LocalDate assignmentEndDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.assignmentEndDateParamName,
                     element);
-            baseDataValidator.reset().parameter(FundApiConstants.assignmentEndDateParamName).value(assignmentEndDate).notNull();
+            baseDataValidator.reset().parameter(FundApiConstants.assignmentEndDateParamName).value(assignmentEndDate).notNull()
+                    .validateDateAfter(assignmentStartDate);
 
             JsonElement fundLoanPurpose = element.getAsJsonObject().get(FundApiConstants.fundLoanPurposeParamName);
             baseDataValidator.reset().parameter(FundApiConstants.fundLoanPurposeParamName).value(fundLoanPurpose).notNull();
@@ -114,7 +115,8 @@ public class FundDataValidator {
 
             final LocalDate sanctionedDate = this.fromApiJsonHelper
                     .extractLocalDateNamed(FundApiConstants.sanctionedDateParamName, element);
-            baseDataValidator.reset().parameter(FundApiConstants.sanctionedDateParamName).value(sanctionedDate).notNull();
+            baseDataValidator.reset().parameter(FundApiConstants.sanctionedDateParamName).value(sanctionedDate).notNull()
+                    .validateDateAfter(assignmentStartDate);
 
             final BigDecimal sanctionedAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                     FundApiConstants.sanctionedAmountParamName, element);
@@ -122,15 +124,17 @@ public class FundDataValidator {
                     .positiveAmount();
 
             final LocalDate disbursedDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.disbursedDateParamName, element);
-            baseDataValidator.reset().parameter(FundApiConstants.disbursedDateParamName).value(disbursedDate).notNull();
+            baseDataValidator.reset().parameter(FundApiConstants.disbursedDateParamName).value(disbursedDate).notNull()
+                    .validateDateAfter(sanctionedDate);
 
             final BigDecimal disbursedAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                     FundApiConstants.disbursedAmountParamName, element);
             baseDataValidator.reset().parameter(FundApiConstants.disbursedAmountParamName).value(disbursedAmount).notNull()
-                    .positiveAmount();
+                    .positiveAmount().notGreaterThanMax(sanctionedAmount);
 
             final LocalDate maturityDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.maturityDateParamName, element);
-            baseDataValidator.reset().parameter(FundApiConstants.maturityDateParamName).value(maturityDate).notNull();
+            baseDataValidator.reset().parameter(FundApiConstants.maturityDateParamName).value(maturityDate).notNull()
+                    .validateDateAfter(disbursedDate);
 
             final BigDecimal interestRate = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(FundApiConstants.interestRateParamName,
                     element);
@@ -252,15 +256,17 @@ public class FundDataValidator {
                 baseDataValidator.reset().parameter(FundApiConstants.fundRepaymentFrequencyParamName).value(repaymentFrequencyType)
                         .notNull().integerGreaterThanZero();
             }
+            LocalDate assignmentStartDate = null;
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.assignmentStartDateParamName, element) || isChangedFromOwn) {
-                final LocalDate assignmentStartDate = this.fromApiJsonHelper.extractLocalDateNamed(
+                assignmentStartDate = this.fromApiJsonHelper.extractLocalDateNamed(
                         FundApiConstants.assignmentStartDateParamName, element);
                 baseDataValidator.reset().parameter(FundApiConstants.assignmentStartDateParamName).value(assignmentStartDate).notNull();
             }
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.assignmentEndDateParamName, element) || isChangedFromOwn) {
                 final LocalDate assignmentEndDate = this.fromApiJsonHelper.extractLocalDateNamed(
                         FundApiConstants.assignmentEndDateParamName, element);
-                baseDataValidator.reset().parameter(FundApiConstants.assignmentEndDateParamName).value(assignmentEndDate).notNull();
+                baseDataValidator.reset().parameter(FundApiConstants.assignmentEndDateParamName).value(assignmentEndDate).notNull()
+                        .validateDateAfter(assignmentStartDate);
             }
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.fundLoanPurposeParamName, element) || isChangedFromOwn) {
 
@@ -275,33 +281,38 @@ public class FundDataValidator {
                     baseDataValidator.reset().parameter("loanPurposeAmount").value(amount).notNull().integerGreaterThanZero();
                 }
             }
+            LocalDate sanctionedDate = null;
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.sanctionedDateParamName, element) || isChangedFromOwn) {
-                final LocalDate sanctionedDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.sanctionedDateParamName,
+                sanctionedDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.sanctionedDateParamName,
                         element);
-                baseDataValidator.reset().parameter(FundApiConstants.sanctionedDateParamName).value(sanctionedDate).notNull();
+                baseDataValidator.reset().parameter(FundApiConstants.sanctionedDateParamName).value(sanctionedDate).notNull()
+                        .validateDateAfter(assignmentStartDate);
             }
-
+            BigDecimal sanctionedAmount = null;
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.sanctionedAmountParamName, element) || isChangedFromOwn) {
-                final BigDecimal sanctionedAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                sanctionedAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.sanctionedAmountParamName, element);
                 baseDataValidator.reset().parameter(FundApiConstants.sanctionedAmountParamName).value(sanctionedAmount).notNull()
                         .positiveAmount();
             }
+            LocalDate disbursedDate = null;
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.disbursedDateParamName, element) || isChangedFromOwn) {
-                final LocalDate disbursedDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.disbursedDateParamName,
+                disbursedDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.disbursedDateParamName,
                         element);
-                baseDataValidator.reset().parameter(FundApiConstants.disbursedDateParamName).value(disbursedDate).notNull();
+                baseDataValidator.reset().parameter(FundApiConstants.disbursedDateParamName).value(disbursedDate).notNull()
+                        .validateDateAfter(sanctionedDate);
             }
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.disbursedAmountParamName, element) || isChangedFromOwn) {
                 final BigDecimal disbursedAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.disbursedAmountParamName, element);
                 baseDataValidator.reset().parameter(FundApiConstants.disbursedAmountParamName).value(disbursedAmount).notNull()
-                        .positiveAmount();
+                        .positiveAmount().notGreaterThanMax(sanctionedAmount);
             }
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.maturityDateParamName, element) || isChangedFromOwn) {
                 final LocalDate maturityDate = this.fromApiJsonHelper
                         .extractLocalDateNamed(FundApiConstants.maturityDateParamName, element);
-                baseDataValidator.reset().parameter(FundApiConstants.maturityDateParamName).value(maturityDate).notNull();
+                baseDataValidator.reset().parameter(FundApiConstants.maturityDateParamName).value(maturityDate).notNull()
+                        .validateDateAfter(disbursedDate);
             }
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.interestRateParamName, element) || isChangedFromOwn) {
                 final BigDecimal interestRate = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
