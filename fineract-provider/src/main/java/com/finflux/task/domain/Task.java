@@ -7,14 +7,18 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
+import org.apache.fineract.infrastructure.documentmanagement.domain.Image;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyToOne;
+import org.hibernate.annotations.LazyToOneOption;
 
 import com.finflux.ruleengine.configuration.domain.RuleModel;
 
@@ -111,6 +115,11 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name="due_time",nullable=true)
     @Temporal(TemporalType.TIME)
     private Date dueTime;
+    
+    @OneToOne(optional = true)
+    @LazyToOne(value = LazyToOneOption.PROXY)
+    @JoinColumn(name = "image_id", nullable = true)
+    private Image image;
     
     protected Task() {}
 
@@ -365,5 +374,13 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
     public void setDueTime(Date dueTime) {
         this.dueTime = dueTime;
     }
+
+	public Image getImage() {
+		return image;
+	}
+
+	public void setImage(Image image) {
+		this.image = image;
+	}
 
 }
