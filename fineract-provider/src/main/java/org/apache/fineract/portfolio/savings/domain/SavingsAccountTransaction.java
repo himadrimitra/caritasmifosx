@@ -72,8 +72,9 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     @Column(name = "office_id", nullable = false)
     private Long officeId;
 
-    @Column(name = "payment_detail_id", nullable = true)
-    private Long paymentDetailId;
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "payment_detail_id", nullable = true)
+    private PaymentDetail paymentDetail;
 
     @Column(name = "transaction_type_enum", nullable = false)
     private final Integer typeOf;
@@ -262,7 +263,7 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
 
     public static SavingsAccountTransaction copyTransaction(SavingsAccountTransaction accountTransaction) {
     	SavingsAccountTransaction savingsAccountTransaction =  new SavingsAccountTransaction(accountTransaction.savingsAccount, accountTransaction.officeId,
-                accountTransaction.paymentDetailId, accountTransaction.typeOf, accountTransaction.transactionLocalDate(),
+                accountTransaction.paymentDetail, accountTransaction.typeOf, accountTransaction.transactionLocalDate(),
                 accountTransaction.createdDate, accountTransaction.amount, accountTransaction.reversed, accountTransaction.appUserId,accountTransaction.isManualTransaction);
 		for (SavingsAccountChargePaidBy chargesPaidBy : accountTransaction.getSavingsAccountChargesPaid()) {
 			savingsAccountTransaction.getSavingsAccountChargesPaid().add(SavingsAccountChargePaidBy.instance(
@@ -282,7 +283,7 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     public static SavingsAccountTransaction releaseAmount(SavingsAccountTransaction accountTransaction,LocalDate transactionDate, Date createdDate,
             final AppUser appUser) {
         final Long appUserId = appUser == null ? null : appUser.getId();
-        return new SavingsAccountTransaction(accountTransaction.savingsAccount, accountTransaction.officeId, accountTransaction.paymentDetailId,
+        return new SavingsAccountTransaction(accountTransaction.savingsAccount, accountTransaction.officeId, accountTransaction.paymentDetail,
                 SavingsAccountTransactionType.AMOUNT_RELEASE.getValue(),transactionDate , createdDate,
                 accountTransaction.amount, accountTransaction.reversed, appUserId, accountTransaction.isManualTransaction);
     }
@@ -308,13 +309,13 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
         this.dateOf = transactionLocalDate.toDate();
         this.amount = amount;
         this.reversed = isReversed;
-        this.paymentDetailId = paymentDetail == null ? null : paymentDetail.getId();
+        this.paymentDetail = paymentDetail;
         this.createdDate = createdDate;
         this.appUserId = appUser == null ? null : appUser.getId();
         this.isManualTransaction = isManualTransaction;
     }
     
-    private SavingsAccountTransaction(final SavingsAccount savingsAccount, final Long officeId, final Long paymentDetailId,
+    private SavingsAccountTransaction(final SavingsAccount savingsAccount, final Long officeId, final PaymentDetail paymentDetail,
             final Integer typeOf, final LocalDate transactionLocalDate, final Date createdDate, final BigDecimal amount,
             final boolean isReversed, final Long appUserId, final boolean isManualTransaction) {
         this.savingsAccount = savingsAccount;
@@ -323,7 +324,7 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
         this.dateOf = transactionLocalDate.toDate();
         this.amount = amount;
         this.reversed = isReversed;
-        this.paymentDetailId = paymentDetailId;
+        this.paymentDetail = paymentDetail;
         this.createdDate = createdDate;
         this.appUserId = appUserId;
         this.isManualTransaction = isManualTransaction;
@@ -489,8 +490,8 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
         thisTransactionData.put("amount", this.amount);
         thisTransactionData.put("overdraftAmount", this.overdraftAmount);
 
-        if (this.paymentDetailId != null) {
-            thisTransactionData.put("paymentTypeId", this.paymentDetailId);
+        if (this.paymentDetail != null) {
+            thisTransactionData.put("paymentTypeId", this.paymentDetail.getPaymentType().getId());
         }
 
         /***
