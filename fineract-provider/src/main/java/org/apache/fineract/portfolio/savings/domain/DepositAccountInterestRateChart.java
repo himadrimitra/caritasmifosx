@@ -167,7 +167,7 @@ public class DepositAccountInterestRateChart extends AbstractPersistable<Long> {
     	for(InterestRateChart charts : interestCharts) {
 			LocalDate chartEndDate = charts.getEndDateAsLocalDate();
 			if (charts.getEndDateAsLocalDate() == null) {
-				chartEndDate = DateUtils.getLocalDateOfTenant();
+				chartEndDate = periodEndDate.plusDays(1);
 			}
     		if(periodStartDate.isAfter(charts.getFromDateAsLocalDate()) && periodEndDate.isBefore(chartEndDate)){
     			Set<InterestRateChartSlab> chartSlab =  charts.setOfChartSlabs();
