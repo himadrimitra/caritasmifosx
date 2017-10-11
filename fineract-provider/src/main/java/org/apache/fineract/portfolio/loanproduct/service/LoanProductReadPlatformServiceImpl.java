@@ -429,7 +429,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             sb.append("lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, ");
             sb.append("lp.can_use_for_topup as canUseForTopup ,lp.adjust_interest_for_rounding AS adjustInterestForRounding ,");
             sb.append("lp.allow_upfront_collection as allowUpfrontCollection, lp.percentage_of_disbursement_to_be_transferred as percentageOfDisbursementToBeTransferred");
-            sb.append(",lp.applicable_for_loan_type as applicableForLoanType ");
+            sb.append(",lp.applicable_for_loan_type as applicableForLoanType, lp.stop_loan_processing_on_npa as stopLoanProcessingOnNpa ");
             sb.append(" from m_product_loan lp ");
             sb.append(" left join m_fund f on f.id = lp.fund_id ");
             sb.append(" left join m_product_loan_recalculation_details lpr on lpr.product_id=lp.id ");
@@ -515,6 +515,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final BigDecimal defaultDifferentialLendingRate = rs.getBigDecimal("defaultDifferentialLendingRate");
             final BigDecimal maxDifferentialLendingRate = rs.getBigDecimal("maxDifferentialLendingRate");
             final boolean isFloatingInterestRateCalculationAllowed = rs.getBoolean("isFloatingInterestRateCalculationAllowed");
+            
 
             final boolean isVariableIntallmentsAllowed = rs.getBoolean("isVariableIntallmentsAllowed");
             final Integer minimumGap = rs.getInt("minimumGap");
@@ -676,6 +677,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
 
             final BigDecimal principalThresholdForLastInstallment = rs.getBigDecimal("principalThresholdForLastInstallment");
             final boolean accountMovesOutOfNPAOnlyOnArrearsCompletion = rs.getBoolean("accountMovesOutOfNPAOnlyOnArrearsCompletion");
+            final boolean stopLoanProcessingOnNpa = rs.getBoolean("stopLoanProcessingOnNpa");
             final Integer adjustedInstallmentInMultiplesOf = JdbcSupport.getInteger(rs,"adjustedInstallmentInMultiplesOf");
             final boolean adjustFirstEMIAmount = rs.getBoolean("adjustFirstEMIAmount");
             final boolean adjustInterestForRounding = rs.getBoolean("adjustInterestForRounding");
@@ -721,7 +723,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType,
                     isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule,
                     considerAllDisbursementsInSchedule, allowUpfrontCollection, percentageOfDisbursementToBeTransferred,
-                    interestRatesListPerPeriod, loanProductTemplateData, applicableForLoanType);
+                    interestRatesListPerPeriod, loanProductTemplateData, applicableForLoanType, stopLoanProcessingOnNpa);
         }
     }
 
