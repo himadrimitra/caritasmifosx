@@ -30,4 +30,6 @@ public interface PortfolioCommandSourceWritePlatformService {
     Long rejectEntry(Long id);
 
     Long deleteEntry(Long makerCheckerId);
+
+    CommandProcessingResult logCommandSource(CommandWrapper wrapper, boolean isTransactionalScopeRequiredInprocessAndLogCommand);
 }

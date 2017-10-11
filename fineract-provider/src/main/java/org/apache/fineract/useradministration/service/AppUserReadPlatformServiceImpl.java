@@ -22,6 +22,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -31,14 +33,16 @@ import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.data.AppUserData;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppUserClientMapping;
 import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -73,7 +77,8 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
     }
 
     @Override
-    @Cacheable(value = "users", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy())")
+    // @Cacheable(value = "users", key =
+    // "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy())")
     public Collection<AppUserData> retrieveAllUsers() {
 
         final AppUser currentUser = this.context.authenticatedUser();
@@ -132,9 +137,22 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
             linkedStaff = null;
         }
 
-        return AppUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(),
+        final AppUserData retUser = AppUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(),
                 user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, selectedUserRoles, linkedStaff,
-                user.getPasswordNeverExpires());
+                user.getPasswordNeverExpires(), user.isSelfServiceUser(), user.getLastLoginDate(), user.isAccountNonLocked(),
+                user.isSystemUser());
+
+        if (retUser.isSelfServiceUser()) {
+            final Set<ClientData> clients = new HashSet<>();
+            for (final AppUserClientMapping clientMap : user.getAppUserClientMappings()) {
+                final Client client = clientMap.getClient();
+                clients.add(ClientData.lookup(client.getId(), client.getDisplayName(), client.getOffice().getId(),
+                        client.getOffice().getName(), client.getExternalId()));
+            }
+            retUser.setClients(clients);
+        }
+
+        return retUser;
     }
 
     private static final class AppUserMapper implements RowMapper<AppUserData> {
@@ -142,7 +160,8 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
         private final RoleReadPlatformService roleReadPlatformService;
         private final StaffReadPlatformService staffReadPlatformService;
 
-        public AppUserMapper(final RoleReadPlatformService roleReadPlatformService, final StaffReadPlatformService staffReadPlatformService) {
+        public AppUserMapper(final RoleReadPlatformService roleReadPlatformService,
+                final StaffReadPlatformService staffReadPlatformService) {
             this.roleReadPlatformService = roleReadPlatformService;
             this.staffReadPlatformService = staffReadPlatformService;
         }
@@ -159,7 +178,11 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
             final String officeName = rs.getString("officeName");
             final Long staffId = JdbcSupport.getLong(rs, "staffId");
             final Boolean passwordNeverExpire = rs.getBoolean("passwordNeverExpires");
+            final Boolean isSelfServiceUser = rs.getBoolean("isSelfServiceUser");
+            final Date lastLoginDate = rs.getTimestamp("lastLoginDate");
+            final Boolean accountNonLocked = rs.getBoolean("nonlocked");
             final Collection<RoleData> selectedRoles = this.roleReadPlatformService.retrieveAppUserRoles(id);
+            final Boolean systemUser = rs.getBoolean("systemUser");
 
             final StaffData linkedStaff;
             if (staffId != null) {
@@ -168,12 +191,12 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
                 linkedStaff = null;
             }
             return AppUserData.instance(id, username, email, officeId, officeName, firstname, lastname, null, selectedRoles, linkedStaff,
-                    passwordNeverExpire);
+                    passwordNeverExpire, isSelfServiceUser, lastLoginDate, accountNonLocked, systemUser);
         }
 
         public String schema() {
-            return " u.id as id, u.username as username, u.firstname as firstname, u.lastname as lastname, u.email as email, u.password_never_expires as passwordNeverExpires, "
-                    + " u.office_id as officeId, o.name as officeName, u.staff_id as staffId from m_appuser u "
+            return " u.id as id, u.username as username, u.firstname as firstname, u.lastname as lastname, u.email as email, u.password_never_expires as passwordNeverExpires, u.nonlocked as nonlocked,"
+                    + " u.latest_successful_login as lastLoginDate ,u.office_id as officeId, o.name as officeName, u.staff_id as staffId, u.is_self_service_user as isSelfServiceUser,u.system_user as systemUser from m_appuser u "
                     + " join m_office o on o.id = u.office_id where o.hierarchy like ? and u.is_deleted=0 order by u.username";
         }
 

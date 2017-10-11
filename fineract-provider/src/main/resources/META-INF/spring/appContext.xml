@@ -19,16 +19,7 @@
     under the License.
 
 -->
-<!--
 
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this file,
-    You can obtain one at http://mozilla.org/MPL/2.0/.
-
--->
-<!-- This Source Code Form is subject to the terms of the Mozilla Public 
-	License, v. 2.0. If a copy of the MPL was not distributed with this file, 
-	You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:jpa="http://www.springframework.org/schema/data/jpa" xmlns:sec="http://www.springframework.org/schema/security"
@@ -46,27 +37,31 @@
 	<tx:annotation-driven />
 
 	<context:component-scan
-		base-package="org.mifosplatform.accounting.*,
-									      org.mifosplatform.commands.handler.*,
-										  org.mifosplatform.commands.service.*,
-										  org.mifosplatform.commands.*,
-										  org.mifosplatform.audit.*,
-										  org.mifosplatform.infrastructure.*,
-										  org.mifosplatform.infrastructure.dataqueries.*,
-										  org.mifosplatform.scheduledjobs.*,
-										  org.mifosplatform.organisation.*,
-										  org.mifosplatform.portfolio.loanaccount.*,
-										  org.mifosplatform.portfolio.savingsaccount.*,
-										  org.mifosplatform.portfolio.*,
-										  org.mifosplatform.useradministration.*,
-										  org.mifosplatform.mix.*,
-										  org.mifosplatform.template.*,
-										  org.mifosplatform.template.service.*,
-										  org.mifosplatform.useradministration.*,
-										  org.mifosplatform.batch.*,
+		base-package="org.apache.fineract.accounting.*,
+									      org.apache.fineract.commands.provider.*,
+									      org.apache.fineract.commands.handler.*,
+										  org.apache.fineract.commands.service.*,
+										  org.apache.fineract.commands.*,
+										  org.apache.fineract.audit.*,
+										  org.apache.fineract.infrastructure.*,
+										  org.apache.fineract.scheduledjobs.*,
+										  org.apache.fineract.organisation.*,
+										  org.apache.fineract.portfolio.loanaccount.*,
+										  org.apache.fineract.portfolio.savingsaccount.*,
+										  org.apache.fineract.portfolio.*,
+										  org.apache.fineract.useradministration.*,
+										  org.apache.fineract.mix.*,
+										  org.apache.fineract.template.*,
+										  org.apache.fineract.template.service.*,
+										  org.apache.fineract.useradministration.*,
+										  org.apache.fineract.batch,
+										  org.apache.fineract.infrastructure.report.service,
+										  org.apache.fineract.portfolio.collectionsheet.*,
+										  com.finflux.*,
 										  com.conflux.mifosplatform.infrastructure.notifications.*,
 										  com.conflux.mifosplatform.mpesa.reconcilation.upload.*,
 										  com.conflux.mifosplatform.portfolio.loanaccount.*">
+
 		<context:exclude-filter expression="org.springframework.stereotype.Controller"
 			type="annotation" />
 
@@ -79,36 +74,36 @@
 	</context:component-scan>
 
 	<bean id="auditorAware"
-		class="org.mifosplatform.infrastructure.core.domain.AuditorAwareImpl" />
+		class="org.apache.fineract.infrastructure.core.domain.AuditorAwareImpl" />
 	<jpa:auditing auditor-aware-ref="auditorAware" />
 
-	<jpa:repositories base-package="org.mifosplatform.commands.domain" />
-	<jpa:repositories base-package="org.mifosplatform.infrastructure.*.domain" />
-	<jpa:repositories base-package="org.mifosplatform.accounting.*.domain" />
-	<jpa:repositories base-package="org.mifosplatform.useradministration.domain" />
-	<jpa:repositories base-package="org.mifosplatform.organisation.*.domain" />
-	<jpa:repositories base-package="org.mifosplatform.portfolio.*" />
-	<jpa:repositories base-package="org.mifosplatform.mix.domain" />
-	<jpa:repositories base-package="org.mifosplatform.scheduledjobs.domain" />
-	<jpa:repositories base-package="org.mifosplatform.template.domain" />
+	<jpa:repositories base-package="org.apache.fineract.commands.domain" />
+	<jpa:repositories base-package="org.apache.fineract.infrastructure.*.domain" />
+	<jpa:repositories base-package="org.apache.fineract.accounting.*.domain" />
+	<jpa:repositories base-package="org.apache.fineract.useradministration.domain" />
+	<jpa:repositories base-package="org.apache.fineract.organisation.*.domain" />
+	<jpa:repositories base-package="org.apache.fineract.portfolio.*" />
+	<jpa:repositories base-package="org.apache.fineract.mix.domain" />
+	<jpa:repositories base-package="org.apache.fineract.scheduledjobs.domain" />
+	<jpa:repositories base-package="org.apache.fineract.template.domain" />
+	<jpa:repositories base-package="com.finflux.*.domain" />
+	<jpa:repositories base-package="com.finflux.*.*.domain" />
+	<jpa:repositories base-package="com.finflux.*.*.*.domain" />
+	<jpa:repositories base-package="com.finflux.*.*.*.*.domain" />
 	<jpa:repositories base-package="com.conflux.mifosplatform.infrastructure.notifications.domain" />
 	<jpa:repositories base-package="com.conflux.mifosplatform.infrastructure.notifications.repository" />
-	
-	
-	<import resource="infrastructure.xml" />
 
-	<!-- do NOT <import resource="jndi.xml" />  here anymore;
-	     we'll manually import jndi.xml where we still need it (MifosServletWebApplicationInitializerConfiguration)
-	-->
+	<import resource="infrastructure.xml" />
 
 	<import resource="securityContext.xml" />
 
 	<import resource="cache.xml" />
 
-	<bean id="applicationEventMulticaster" class="org.springframework.context.event.SimpleApplicationEventMulticaster">
+	<bean id="applicationEventMulticaster" class="org.apache.fineract.infrastructure.security.service.FinfluxApplicationEventMulticaster">
 		<property name="taskExecutor">
 			<bean class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
 		</property>
 	</bean>
 
+	<import resource="spmContext.xml"/>
 </beans>

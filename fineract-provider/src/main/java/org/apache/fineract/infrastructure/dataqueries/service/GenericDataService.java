@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnHeaderData;
+import org.apache.fineract.infrastructure.dataqueries.data.ScopeCriteriaData;
+import org.apache.fineract.infrastructure.dataqueries.data.SectionData;
 
 public interface GenericDataService {
 
@@ -34,4 +36,8 @@ public interface GenericDataService {
     String wrapSQL(String sql);
 
     List<ResultsetColumnHeaderData> fillResultsetColumnHeaders(String datatable);
+
+    List<ScopeCriteriaData> fetchDatatableScopesByIdAndScopingCriteria(Integer id, Long scopingCriteriaEnum);
+    
+    List<SectionData> fetchSections(Integer dataTableId);
 }

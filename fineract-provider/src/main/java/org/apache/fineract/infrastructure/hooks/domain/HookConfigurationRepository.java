@@ -18,28 +18,24 @@
  */
 package org.apache.fineract.infrastructure.hooks.domain;
 
+import java.util.ArrayList;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
-public interface HookConfigurationRepository extends
-		JpaRepository<HookConfiguration, Long>,
-		JpaSpecificationExecutor<HookConfiguration> {
+public interface HookConfigurationRepository extends JpaRepository<HookConfiguration, Long>, JpaSpecificationExecutor<HookConfiguration> {
 
-	@Query("select config.fieldValue from HookConfiguration config where config.hook.id = :hookId and config.fieldName = :fieldName")
-	String findOneByHookIdAndFieldName(@Param("hookId") Long hookId,
-			@Param("fieldName") String fieldName);
-	
-	@Query(" from HookConfiguration config where config.hook.id in " +
-	                               "(select hr.hook from HookResource hr where hr.entityName='SCHEDULER' and hr.actionName='EXECUTEJOB')")
-	              ArrayList<HookConfiguration> retriveDetail();
-	               
-	               @Query("select config.fieldName,config.fieldValue from HookConfiguration config where config.hook.id in " +
-	                               "(select hr.hook from HookResource hr where hr.entityName='SCHEDULER' and hr.actionName='EXECUTEJOB')")
-	               HookConfiguration  retriveDetail1();
+    @Query("select config.fieldValue from HookConfiguration config where config.hook.id = :hookId and config.fieldName = :fieldName")
+    String findOneByHookIdAndFieldName(@Param("hookId") Long hookId, @Param("fieldName") String fieldName);
+
+    @Query(" from HookConfiguration config where config.hook.id in "
+            + "(select hr.hook from HookResource hr where hr.entityName='SCHEDULER' and hr.actionName='EXECUTEJOB')")
+    ArrayList<HookConfiguration> retriveDetail();
+
+    @Query("select config.fieldName,config.fieldValue from HookConfiguration config where config.hook.id in "
+            + "(select hr.hook from HookResource hr where hr.entityName='SCHEDULER' and hr.actionName='EXECUTEJOB')")
+    HookConfiguration retriveDetail1();
 
 }

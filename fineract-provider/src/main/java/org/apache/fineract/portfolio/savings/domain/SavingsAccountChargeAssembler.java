@@ -88,15 +88,15 @@ public class SavingsAccountChargeAssembler {
                     final Long id = this.fromApiJsonHelper.extractLongNamed(idParamName, savingsChargeElement);
                     final Long chargeId = this.fromApiJsonHelper.extractLongNamed(chargeIdParamName, savingsChargeElement);
                     final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed(amountParamName, savingsChargeElement, locale);
-                    final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerNamed(chargeTimeTypeParamName,
-                            savingsChargeElement, locale);
+                    final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerNamed(chargeTimeTypeParamName, savingsChargeElement,
+                            locale);
                     final Integer chargeCalculationType = this.fromApiJsonHelper.extractIntegerNamed(chargeCalculationTypeParamName,
                             savingsChargeElement, locale);
                     final LocalDate dueDate = this.fromApiJsonHelper.extractLocalDateNamed(dueAsOfDateParamName, savingsChargeElement,
                             dateFormat, locale);
 
-                    final MonthDay feeOnMonthDay = this.fromApiJsonHelper.extractMonthDayNamed(feeOnMonthDayParamName,
-                            savingsChargeElement, monthDayFormat, locale);
+                    final MonthDay feeOnMonthDay = this.fromApiJsonHelper.extractMonthDayNamed(feeOnMonthDayParamName, savingsChargeElement,
+                            monthDayFormat, locale);
                     final Integer feeInterval = this.fromApiJsonHelper.extractIntegerNamed(feeIntervalParamName, savingsChargeElement,
                             locale);
 
@@ -137,24 +137,22 @@ public class SavingsAccountChargeAssembler {
             }
         }
 
-        this.validateSavingsCharges(savingsAccountCharges, productCurrencyCode);
+        validateSavingsCharges(savingsAccountCharges, productCurrencyCode);
         return savingsAccountCharges;
     }
 
     public Set<SavingsAccountCharge> fromSavingsProduct(final SavingsProduct savingsProduct) {
 
         final Set<SavingsAccountCharge> savingsAccountCharges = new HashSet<>();
-        Set<Charge> productCharges = savingsProduct.charges();
-        for (Charge charge : productCharges) {
+        final Set<Charge> productCharges = savingsProduct.charges();
+        for (final Charge charge : productCharges) {
             ChargeTimeType chargeTime = null;
-            if (charge.getChargeTime() != null) {
-                chargeTime = ChargeTimeType.fromInt(charge.getChargeTime());
+            if (charge.getChargeTimeType() != null) {
+                chargeTime = ChargeTimeType.fromInt(charge.getChargeTimeType());
             }
             if (chargeTime != null && (chargeTime.isOnSpecifiedDueDate() || chargeTime.isLateDepositeFee())) {
                 continue;
             }
-            
-           
 
             ChargeCalculationType chargeCalculation = null;
             if (charge.getChargeCalculation() != null) {
@@ -174,7 +172,7 @@ public class SavingsAccountChargeAssembler {
                 .resource(SAVINGS_ACCOUNT_RESOURCE_NAME);
         boolean isOneWithdrawalPresent = false;
         boolean isOneAnnualPresent = false;
-        for (SavingsAccountCharge charge : charges) {
+        for (final SavingsAccountCharge charge : charges) {
             if (!charge.hasCurrencyCodeOf(productCurrencyCode)) {
                 baseDataValidator.reset().parameter("currency").value(charge.getCharge().getId())
                         .failWithCodeNoParameterAddedToErrorCode("currency.and.charge.currency.not.same");

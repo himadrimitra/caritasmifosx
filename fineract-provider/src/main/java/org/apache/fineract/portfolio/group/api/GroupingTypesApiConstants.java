@@ -41,6 +41,7 @@ public class GroupingTypesApiConstants {
     public static final String groupIdParamName = "groupId";
     public static final String clientIdParamName = "clientId";
     public static final String groupRolesParamName = "groupRoles";
+    public static final String accountNoParamName = "accountNo";
 
     // general
     public static final String localeParamName = "locale";
@@ -74,7 +75,16 @@ public class GroupingTypesApiConstants {
     public static final String collectionMeetingCalendar = "collectionMeetingCalendar";
     public static final String timeLine = "timeline";
     public static final String closureReasons = "closureReasons";
+    public static final String villageIdParamName = "villageId";
+    public static final String centerMembersParamName = "centerMembers";
+    public static final String villageOptionsParamName = "villageOptions";
+    public static final String villageCounterParamName = "villageCounter";
+    public static final String villageData = "villageData";
 
+    public static final String totalCollected = "totalCollected";
+    public static final String totalOverdue = "totalOverdue";
+    public static final String totaldue = "totaldue";
+    public static final String installmentDue = "installmentDue";
     // group close parameters
     public static final String closureDateParamName = "closureDate";
     public static final String closureReasonIdParamName = "closureReasonId";
@@ -84,7 +94,7 @@ public class GroupingTypesApiConstants {
 
     public static final Set<String> CENTER_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, idParamName, nameParamName, externalIdParamName, officeIdParamName, staffIdParamName, activeParamName,
-            activationDateParamName, groupMembersParamName, submittedOnDateParamName));
+            activationDateParamName, groupMembersParamName, villageIdParamName, submittedOnDateParamName));
 
     public static final Set<String> GROUP_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
             idParamName, nameParamName, externalIdParamName, centerIdParamName, officeIdParamName, staffIdParamName, activeParamName,
@@ -101,7 +111,7 @@ public class GroupingTypesApiConstants {
     public static final Set<String> CENTER_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, nameParamName,
             externalIdParamName, officeIdParamName, officeNameParamName, staffIdParamName, staffNameParamName, hierarchyParamName,
             officeOptionsParamName, staffOptionsParamName, statusParamName, activeParamName, activationDateParamName, timeLine,
-            groupMembersParamName, collectionMeetingCalendar, closureReasons));
+            groupMembersParamName, collectionMeetingCalendar, villageOptionsParamName, villageCounterParamName, closureReasons));
 
     public static final Set<String> CENTER_GROUP_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, nameParamName,
             externalIdParamName, officeIdParamName, officeNameParamName, staffIdParamName, staffNameParamName, hierarchyParamName,
@@ -110,17 +120,17 @@ public class GroupingTypesApiConstants {
     public static final Set<String> GROUP_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, nameParamName,
             externalIdParamName, officeIdParamName, officeNameParamName, "parentId", "parentName", staffIdParamName, staffNameParamName,
             hierarchyParamName, officeOptionsParamName, statusParamName, activeParamName, activationDateParamName, staffOptionsParamName,
-            clientOptionsParamName, timeLine));
+            clientOptionsParamName, timeLine, villageData));
 
     public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, activationDateParamName));
 
     public static final Set<String> COLLECTIONSHEET_DATA_PARAMETERS = new HashSet<>(
-            Arrays.asList("dueDate", "loanProducts", "groups"));
+            Arrays.asList("dueDate", "loanProducts", "groups", "isWithDrawForSavingsIncludedInCollectionSheet"));
 
     public static final Set<String> GROUP_CLOSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, closureDateParamName, closureReasonIdParamName));
 
     public static final Set<String> STAFF_CENTER_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(staffIdParamName,
-            staffNameParamName, meetingFallCenters));
+            staffNameParamName, meetingFallCenters, totalCollected, totalOverdue, totaldue, installmentDue));
 }

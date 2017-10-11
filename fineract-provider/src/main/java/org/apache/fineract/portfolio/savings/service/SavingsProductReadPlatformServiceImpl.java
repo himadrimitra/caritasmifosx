@@ -27,13 +27,20 @@ import org.apache.fineract.accounting.common.AccountingEnumerations;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
-import org.apache.fineract.infrastructure.entityaccess.domain.MifosEntityType;
-import org.apache.fineract.infrastructure.entityaccess.service.MifosEntityAccessUtil;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
+import org.apache.fineract.portfolio.common.domain.NthDayType;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.common.service.CommonEnumerations;
+import org.apache.fineract.portfolio.interestratechart.service.FloatingInterestRateChartReadPlatformService;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
+import org.apache.fineract.portfolio.savings.data.SavingsProductDrawingPowerDetailsData;
 import org.apache.fineract.portfolio.savings.exception.SavingsProductNotFoundException;
+import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,14 +54,17 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
     private final JdbcTemplate jdbcTemplate;
     private final SavingProductMapper savingsProductRowMapper = new SavingProductMapper();
     private final SavingProductLookupMapper savingsProductLookupsRowMapper = new SavingProductLookupMapper();
-    private final MifosEntityAccessUtil mifosEntityAccessUtil;
+    private final FineractEntityAccessUtil fineractEntityAccessUtil;
+    private final FloatingInterestRateChartReadPlatformService floatingInterestRateChartReadPlatformService;
 
     @Autowired
     public SavingsProductReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final MifosEntityAccessUtil mifosEntityAccessUtil) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil,
+            final FloatingInterestRateChartReadPlatformService floatingInterestRateChartReadPlatformService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.mifosEntityAccessUtil = mifosEntityAccessUtil;
+        this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.floatingInterestRateChartReadPlatformService = floatingInterestRateChartReadPlatformService;
     }
 
     @Override
@@ -66,8 +76,8 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
 
         // Check if branch specific products are enabled. If yes, fetch only
         // products mapped to current user's office
-        String inClause = mifosEntityAccessUtil
-                .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(MifosEntityType.SAVINGS_PRODUCT);
+        final String inClause = this.fineractEntityAccessUtil
+                .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.SAVINGS_PRODUCT);
         if ((inClause != null) && (!(inClause.trim().isEmpty()))) {
             sql += " and sp.id in ( " + inClause + " ) ";
         }
@@ -82,8 +92,8 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
 
         // Check if branch specific products are enabled. If yes, fetch only
         // products mapped to current user's office
-        String inClause = mifosEntityAccessUtil
-                .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(MifosEntityType.SAVINGS_PRODUCT);
+        final String inClause = this.fineractEntityAccessUtil
+                .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.SAVINGS_PRODUCT);
         if ((inClause != null) && (!(inClause.trim().isEmpty()))) {
             sql += " and id in ( " + inClause + " ) ";
         }
@@ -97,8 +107,11 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
         try {
             this.context.authenticatedUser();
             final String sql = "select " + this.savingsProductRowMapper.schema() + " where sp.id = ? and sp.deposit_type_enum = ?";
-            return this.jdbcTemplate.queryForObject(sql, this.savingsProductRowMapper, new Object[] { savingProductId,
-                    DepositAccountType.SAVINGS_DEPOSIT.getValue() });
+            final SavingsProductData savingsProductData = this.jdbcTemplate.queryForObject(sql, this.savingsProductRowMapper,
+                    new Object[] { savingProductId, DepositAccountType.SAVINGS_DEPOSIT.getValue() });
+            savingsProductData.updateFloatingInterestRateChartData(
+                    this.floatingInterestRateChartReadPlatformService.retrieveByProductId(savingProductId));
+            return savingsProductData;
         } catch (final EmptyResultDataAccessException e) {
             throw new SavingsProductNotFoundException(savingProductId);
         }
@@ -110,9 +123,10 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
 
         public SavingProductMapper() {
             final StringBuilder sqlBuilder = new StringBuilder(400);
-            sqlBuilder.append("sp.id as id, sp.name as name, sp.short_name as shortName, sp.description as description, ");
-            sqlBuilder
-                    .append("sp.currency_code as currencyCode, sp.currency_digits as currencyDigits, sp.currency_multiplesof as inMultiplesOf, ");
+            sqlBuilder.append(
+                    "sp.id as id, sp.name as name, sp.short_name as shortName, sp.description as description, sp.external_id as externalId, ");
+            sqlBuilder.append(
+                    "sp.currency_code as currencyCode, sp.currency_digits as currencyDigits, sp.currency_multiplesof as inMultiplesOf, ");
             sqlBuilder.append("curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ");
             sqlBuilder.append("curr.display_symbol as currencyDisplaySymbol, ");
             sqlBuilder.append("sp.nominal_annual_interest_rate as nominalAnnualInterestRate, ");
@@ -126,13 +140,28 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             sqlBuilder.append("sp.withdrawal_fee_for_transfer as withdrawalFeeForTransfers, ");
             sqlBuilder.append("sp.allow_overdraft as allowOverdraft, ");
             sqlBuilder.append("sp.overdraft_limit as overdraftLimit, ");
+            sqlBuilder.append("sp.nominal_annual_interest_rate_overdraft as nominalAnnualInterestRateOverdraft, ");
+            sqlBuilder.append("sp.min_overdraft_for_interest_calculation as minOverdraftForInterestCalculation, ");
             sqlBuilder.append("sp.min_required_balance as minRequiredBalance, ");
             sqlBuilder.append("sp.enforce_min_required_balance as enforceMinRequiredBalance, ");
             sqlBuilder.append(" sp.release_guarantor as releaseguarantor, ");
             sqlBuilder.append("sp.min_balance_for_interest_calculation as minBalanceForInterestCalculation,");
-            sqlBuilder.append("sp.accounting_type as accountingType ");
+            sqlBuilder.append("sp.accounting_type as accountingType, ");
+            sqlBuilder.append("sp.withhold_tax as withHoldTax,");
+            sqlBuilder.append("tg.id as taxGroupId, tg.name as taxGroupName, ");
+            sqlBuilder.append("sp.is_dormancy_tracking_active as isDormancyTrackingActive,");
+            sqlBuilder.append("sp.days_to_inactive as daysToInactive,");
+            sqlBuilder.append("sp.days_to_dormancy as daysToDormancy,");
+            sqlBuilder.append("sp.days_to_escheat as daysToEscheat ");
+            sqlBuilder.append(",spdpd.frequency_type_enum as frequencyType ");
+            sqlBuilder.append(",spdpd.frequency_interval as frequencyInterval ");
+            sqlBuilder.append(",spdpd.frequency_nth_day_enum as frequencyNthDay ");
+            sqlBuilder.append(",spdpd.frequency_day_of_week_type_enum as frequencyDayOfWeekType ");
+            sqlBuilder.append(",spdpd.frequency_on_day as frequencyOnDay ");
             sqlBuilder.append("from m_savings_product sp ");
+            sqlBuilder.append("left join f_savings_product_drawing_power_details spdpd on spdpd.product_id = sp.id ");
             sqlBuilder.append("join m_currency curr on curr.code = sp.currency_code ");
+            sqlBuilder.append("left join m_tax_group tg on tg.id = sp.tax_group_id  ");
 
             this.schemaSql = sqlBuilder.toString();
         }
@@ -148,6 +177,7 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             final String name = rs.getString("name");
             final String shortName = rs.getString("shortName");
             final String description = rs.getString("description");
+            final String externalId = rs.getString("externalId");
 
             final String currencyCode = rs.getString("currencyCode");
             final String currencyName = rs.getString("currencyName");
@@ -155,8 +185,8 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             final String currencyDisplaySymbol = rs.getString("currencyDisplaySymbol");
             final Integer currencyDigits = JdbcSupport.getInteger(rs, "currencyDigits");
             final Integer inMultiplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
-            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMultiplesOf,
-                    currencyDisplaySymbol, currencyNameCode);
+            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMultiplesOf, currencyDisplaySymbol,
+                    currencyNameCode);
             final BigDecimal nominalAnnualInterestRate = rs.getBigDecimal("nominalAnnualInterestRate");
 
             final Integer compoundingInterestPeriodTypeValue = JdbcSupport.getInteger(rs, "compoundingInterestPeriodType");
@@ -192,15 +222,60 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             final boolean allowOverdraft = rs.getBoolean("allowOverdraft");
             final BigDecimal overdraftLimit = rs.getBigDecimal("overdraftLimit");
             final boolean releaseguarantor = rs.getBoolean("releaseguarantor");
+            final BigDecimal nominalAnnualInterestRateOverdraft = rs.getBigDecimal("nominalAnnualInterestRateOverdraft");
+            final BigDecimal minOverdraftForInterestCalculation = rs.getBigDecimal("minOverdraftForInterestCalculation");
+
             final BigDecimal minRequiredBalance = rs.getBigDecimal("minRequiredBalance");
             final boolean enforceMinRequiredBalance = rs.getBoolean("enforceMinRequiredBalance");
             final BigDecimal minBalanceForInterestCalculation = rs.getBigDecimal("minBalanceForInterestCalculation");
+
+            final boolean withHoldTax = rs.getBoolean("withHoldTax");
+            final Long taxGroupId = JdbcSupport.getLong(rs, "taxGroupId");
+            final String taxGroupName = rs.getString("taxGroupName");
+            TaxGroupData taxGroupData = null;
+            if (taxGroupId != null) {
+                taxGroupData = TaxGroupData.lookup(taxGroupId, taxGroupName);
+            }
+
+            final Boolean isDormancyTrackingActive = rs.getBoolean("isDormancyTrackingActive");
+            final Long daysToInactive = JdbcSupport.getLong(rs, "daysToInactive");
+            final Long daysToDormancy = JdbcSupport.getLong(rs, "daysToDormancy");
+            final Long daysToEscheat = JdbcSupport.getLong(rs, "daysToEscheat");
+
+            final String codePrefix = "savingsproductdrawingpower.";
+
+            final Integer frequencyTypeValue = JdbcSupport.getInteger(rs, "frequencyType");
+            EnumOptionData frequencyType = null;
+            if (frequencyTypeValue != null) {
+                frequencyType = PeriodFrequencyType.periodFrequencyType(frequencyTypeValue);
+            }
+
+            final Integer frequencyInterval = JdbcSupport.getInteger(rs, "frequencyInterval");
+
+            final Integer frequencyNthDayValue = JdbcSupport.getInteger(rs, "frequencyNthDay");
+            EnumOptionData frequencyNthDay = null;
+            if (frequencyNthDayValue != null) {
+                frequencyNthDay = CommonEnumerations.nthDayType(NthDayType.fromInt(frequencyNthDayValue), codePrefix);
+            }
+
+            final Integer frequencyDayOfWeekTypeValue = JdbcSupport.getInteger(rs, "frequencyDayOfWeekType");
+            EnumOptionData frequencyDayOfWeekType = null;
+            if (frequencyDayOfWeekTypeValue != null) {
+                frequencyDayOfWeekType = CommonEnumerations.dayOfWeekType(DayOfWeekType.fromInt(frequencyDayOfWeekTypeValue), codePrefix);
+            }
+
+            final Integer frequencyOnDay = JdbcSupport.getInteger(rs, "frequencyOnDay");
+
+            final SavingsProductDrawingPowerDetailsData savingsProductDrawingPowerDetailsData = SavingsProductDrawingPowerDetailsData
+                    .createNew(frequencyType, frequencyInterval, frequencyNthDay, frequencyDayOfWeekType, frequencyOnDay);
 
             return SavingsProductData.instance(id, name, shortName, description, currency, nominalAnnualInterestRate,
                     compoundingInterestPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                     minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeForTransfers,
                     accountingRuleType, allowOverdraft, overdraftLimit, minRequiredBalance, enforceMinRequiredBalance,
-                    minBalanceForInterestCalculation, releaseguarantor);
+                    minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
+                    taxGroupData, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId,
+                    savingsProductDrawingPowerDetailsData, releaseguarantor);
         }
     }
 
@@ -221,15 +296,15 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
     }
 
     @Override
-    public Collection<SavingsProductData> retrieveAllForLookupByType(Boolean isOverdraftType) {
+    public Collection<SavingsProductData> retrieveAllForLookupByType(final Boolean isOverdraftType) {
         String sql = "select " + this.savingsProductLookupsRowMapper.schema();
 
         boolean inClauseAdded = false;
 
         // Check if branch specific products are enabled. If yes, fetch only
         // products mapped to current user's office
-        String inClause = mifosEntityAccessUtil
-                .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(MifosEntityType.SAVINGS_PRODUCT);
+        final String inClause = this.fineractEntityAccessUtil
+                .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.SAVINGS_PRODUCT);
         if ((inClause != null) && (!(inClause.trim().isEmpty()))) {
             sql += " where id in ( " + inClause + " ) ";
             inClauseAdded = true;
@@ -249,7 +324,7 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
     }
 
     @Override
-    public Collection<SavingsProductData> retrieveAllForCurrency(String currencyCode) {
+    public Collection<SavingsProductData> retrieveAllForCurrency(final String currencyCode) {
 
         this.context.authenticatedUser();
 
@@ -257,8 +332,8 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
 
         // Check if branch specific products are enabled. If yes, fetch only
         // products mapped to current user's office
-        String inClause = mifosEntityAccessUtil
-                .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(MifosEntityType.SAVINGS_PRODUCT);
+        final String inClause = this.fineractEntityAccessUtil
+                .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.SAVINGS_PRODUCT);
         if ((inClause != null) && (!(inClause.trim().isEmpty()))) {
             sql += " and id in ( " + inClause + " ) ";
         }

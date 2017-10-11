@@ -19,13 +19,19 @@
 package org.apache.fineract.portfolio.loanaccount.data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
+import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanChargeTaxDetailsPaidByData;
+import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.joda.time.LocalDate;
 
 /**
@@ -81,22 +87,46 @@ public class LoanChargeData {
     private BigDecimal amountAccrued;
 
     private BigDecimal amountUnrecognized;
+    
+    private boolean isGlimCharge;
+    
+    private final boolean isCapitalized;
+    
+    private final Long taxGroupId;
+    
+    private TaxGroupData taxGroupData;
+    
+    private final boolean isMandatory;
+    
+    private Collection<LoanChargeTaxDetailsPaidByData> loanChargeTaxDetailsPaidByDatas = new ArrayList<>(1);
+    
+    private  List<ChargeSlabData> slabs;
+    
+    private LocalDate overdueAppliedTill;
 
     public static LoanChargeData template(final Collection<ChargeData> chargeOptions) {
+        final boolean isCapitalized = false;
+        final Long taxGroupId = null;
+        final boolean isMandatory = false;
+        final LocalDate dueDate = null;
         return new LoanChargeData(null, null, null, null, null, null, null, null, chargeOptions, false, null, false, false, null, null,
-                null, null, null);
+                null, null, null, false, isCapitalized, taxGroupId, isMandatory, dueDate);
     }
 
     /**
      * used when populating with details from charge definition (for crud on
      * charges)
+     * @param isGlimCharge 
+     * @param isCapitalized 
+     * @param isMandatory TODO
      */
     public static LoanChargeData newLoanChargeDetails(final Long chargeId, final String name, final CurrencyData currency,
             final BigDecimal amount, final BigDecimal percentage, final EnumOptionData chargeTimeType,
             final EnumOptionData chargeCalculationType, final boolean penalty, final EnumOptionData chargePaymentMode,
-            final BigDecimal minCap, final BigDecimal maxCap) {
+            final BigDecimal minCap, final BigDecimal maxCap, boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId, final boolean isMandatory) {
+        final LocalDate dueDate = null;
         return new LoanChargeData(null, chargeId, name, currency, amount, percentage, chargeTimeType, chargeCalculationType, null, penalty,
-                chargePaymentMode, false, false, null, minCap, maxCap, null, null);
+                chargePaymentMode, false, false, null, minCap, maxCap, null, null, isGlimCharge, isCapitalized, taxGroupId, isMandatory, dueDate);
     }
 
     public LoanChargeData(final Long id, final Long chargeId, final String name, final CurrencyData currency, final BigDecimal amount,
@@ -105,7 +135,7 @@ public class LoanChargeData {
             final EnumOptionData chargeCalculationType, final BigDecimal percentage, final BigDecimal amountPercentageAppliedTo,
             final boolean penalty, final EnumOptionData chargePaymentMode, final boolean paid, final boolean waived, final Long loanId,
             final BigDecimal minCap, final BigDecimal maxCap, final BigDecimal amountOrPercentage,
-            Collection<LoanInstallmentChargeData> installmentChargeData) {
+            Collection<LoanInstallmentChargeData> installmentChargeData, boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId,final boolean isMandatory) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = name;
@@ -142,13 +172,18 @@ public class LoanChargeData {
         this.installmentChargeData = installmentChargeData;
         this.amountAccrued = null;
         this.amountUnrecognized = null;
+        this.isGlimCharge = isGlimCharge;
+        this.isCapitalized = isCapitalized;
+        this.taxGroupId = taxGroupId;
+        this.isMandatory=isMandatory;
     }
 
     private LoanChargeData(final Long id, final Long chargeId, final String name, final CurrencyData currency, final BigDecimal amount,
             final BigDecimal percentage, final EnumOptionData chargeTimeType, final EnumOptionData chargeCalculationType,
             final Collection<ChargeData> chargeOptions, final boolean penalty, final EnumOptionData chargePaymentMode, final boolean paid,
             final boolean waived, final Long loanId, final BigDecimal minCap, final BigDecimal maxCap, final BigDecimal amountOrPercentage,
-            Collection<LoanInstallmentChargeData> installmentChargeData) {
+            Collection<LoanInstallmentChargeData> installmentChargeData, final boolean isGlimCharge, final boolean isCapitalized,
+            final Long taxGroupId, final boolean isMandatory, final LocalDate dueDate) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = name;
@@ -159,7 +194,7 @@ public class LoanChargeData {
         this.amountWrittenOff = BigDecimal.ZERO;
         this.amountOutstanding = amount;
         this.chargeTimeType = chargeTimeType;
-        this.dueDate = null;
+        this.dueDate = dueDate;
         this.chargeCalculationType = chargeCalculationType;
         this.percentage = percentage;
         this.amountPercentageAppliedTo = null;
@@ -186,6 +221,10 @@ public class LoanChargeData {
         this.installmentChargeData = installmentChargeData;
         this.amountAccrued = null;
         this.amountUnrecognized = null;
+        this.isGlimCharge  = isGlimCharge;
+        this.isCapitalized = isCapitalized;
+        this.taxGroupId = taxGroupId;
+        this.isMandatory=isMandatory;
     }
 
     public LoanChargeData(final Long id, final LocalDate dueAsOfDate, final BigDecimal amountOutstanding, EnumOptionData chargeTimeType,
@@ -217,10 +256,14 @@ public class LoanChargeData {
         this.installmentChargeData = installmentChargeData;
         this.amountAccrued = null;
         this.amountUnrecognized = null;
+        this.isCapitalized = false;
+        this.taxGroupId = null;
+        this.isMandatory=false;
     }
 
     public LoanChargeData(final Long id, final Long chargeId, final LocalDate dueAsOfDate, EnumOptionData chargeTimeType,
-            final BigDecimal amount, final BigDecimal amountAccrued, final BigDecimal amountWaived, final boolean penalty) {
+            final BigDecimal amount, final BigDecimal amountAccrued, final BigDecimal amountWaived, final boolean penalty,
+            final boolean isCapitalized, final Long taxGroupId, final boolean isMandatory) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = null;
@@ -248,6 +291,9 @@ public class LoanChargeData {
         this.installmentChargeData = null;
         this.amountAccrued = amountAccrued;
         this.amountUnrecognized = null;
+        this.isCapitalized = isCapitalized;
+        this.taxGroupId = taxGroupId;
+        this.isMandatory=isMandatory;
     }
 
     public LoanChargeData(final BigDecimal amountUnrecognized, final LoanChargeData chargeData) {
@@ -278,9 +324,12 @@ public class LoanChargeData {
         this.installmentChargeData = null;
         this.amountAccrued = chargeData.amountAccrued;
         this.amountUnrecognized = amountUnrecognized;
+        this.isCapitalized = chargeData.isCapitalized;
+        this.taxGroupId = chargeData.taxGroupId;
+        this.isMandatory=chargeData.isMandatory;
     }
 
-    public LoanChargeData(LoanChargeData chargeData, Collection<LoanInstallmentChargeData> installmentChargeData) {
+    public LoanChargeData(final LoanChargeData chargeData, final Collection<LoanInstallmentChargeData> installmentChargeData) {
         this.id = chargeData.id;
         this.chargeId = chargeData.chargeId;
         this.name = chargeData.name;
@@ -308,6 +357,9 @@ public class LoanChargeData {
         this.installmentChargeData = installmentChargeData;
         this.amountAccrued = chargeData.amountAccrued;
         this.amountUnrecognized = chargeData.amountUnrecognized;
+        this.isCapitalized = chargeData.isCapitalized;
+        this.taxGroupId = chargeData.taxGroupId;
+        this.isMandatory=chargeData.isMandatory;
     }
 
     public LoanChargeData(final Long id, final LocalDate dueAsOfDate, final BigDecimal amountOrPercentage) {
@@ -338,6 +390,35 @@ public class LoanChargeData {
         this.installmentChargeData = null;
         this.amountAccrued = null;
         this.amountUnrecognized = null;
+        this.isCapitalized = false;
+        this.taxGroupId = null;
+        this.isMandatory=false;
+    }
+    
+    public static LoanChargeData newLoanOverdueCharge(final Long chargeId, final Long loanId, final LocalDate dueDate,
+            final BigDecimal amount, final BigDecimal percentage, final EnumOptionData chargeTimeType,
+            final EnumOptionData chargeCalculationType, final EnumOptionData chargePaymentMode, final Long taxGroupId,
+            final LocalDate overdueAppliedTill) {
+        final Long id = null;
+        final String name = null;
+        final CurrencyData currency = null;
+        final BigDecimal amountOrPercentage = null;
+        final Collection<ChargeData> chargeOptions = null;
+        final boolean penalty = true;
+        final boolean paid = false;
+        final boolean waived = false;
+        final BigDecimal minCap = null;
+        final BigDecimal maxCap = null;
+        final Collection<LoanInstallmentChargeData> installmentChargeData = null;
+        boolean isGlimCharge = false;
+        final boolean isCapitalized = false;
+        final boolean isMandatory = false;
+
+        LoanChargeData loanChargeData = new LoanChargeData(id, chargeId, name, currency, amount, percentage, chargeTimeType, chargeCalculationType, chargeOptions,
+                penalty, chargePaymentMode, paid, waived, loanId, minCap, maxCap, amountOrPercentage, installmentChargeData, isGlimCharge,
+                isCapitalized, taxGroupId, isMandatory,dueDate);
+        loanChargeData.setOverdueAppliedTill(overdueAppliedTill);
+        return loanChargeData;
     }
 
     public boolean isChargePayable() {
@@ -407,4 +488,71 @@ public class LoanChargeData {
     public BigDecimal getAmountUnrecognized() {
         return this.amountUnrecognized;
     }
+    
+    public boolean isCapitalized() {
+        return this.isCapitalized;
+    }
+
+    public TaxGroupData getTaxGroupData() {
+        return this.taxGroupData;
+    }
+
+    public void setTaxGroupData(final TaxGroupData taxGroupData) {
+        this.taxGroupData = taxGroupData;
+    }
+
+    public Long getTaxGroupId() {
+        return this.taxGroupId;
+    }
+
+    public Collection<LoanChargeTaxDetailsPaidByData> getLoanChargeTaxDetailsPaidByDatas() {
+        return this.loanChargeTaxDetailsPaidByDatas;
+    }
+
+    public void setLoanChargeTaxDetailsPaidByDatas(final Collection<LoanChargeTaxDetailsPaidByData> loanChargeTaxDetailsPaidByDatas) {
+        this.loanChargeTaxDetailsPaidByDatas = loanChargeTaxDetailsPaidByDatas;
+    }
+
+    
+    public List<ChargeSlabData> getSlabs() {
+        return this.slabs;
+    }
+
+    public void addChargeSlabData(final ChargeSlabData chargeSlabData) {
+        if(slabs == null) {
+            this.slabs = new ArrayList<>();
+        }
+        this.slabs.add(chargeSlabData);       
+    }
+
+    
+    public BigDecimal getPercentage() {
+        return this.percentage;
+    }
+
+    
+    public ChargeTimeType getChargeTimeType() {
+        return ChargeTimeType.fromInt(this.chargeTimeType.getId().intValue());
+    }
+
+    
+    public ChargeCalculationType getChargeCalculationType() {
+        return ChargeCalculationType.fromInt(this.chargeCalculationType.getId().intValue());
+    }
+
+    
+    public ChargePaymentMode getChargePaymentMode() {
+        return ChargePaymentMode.fromInt(this.chargePaymentMode.getId().intValue());
+    }
+
+    
+    public LocalDate getOverdueAppliedTill() {
+        return this.overdueAppliedTill;
+    }
+
+    
+    public void setOverdueAppliedTill(LocalDate overdueAppliedTill) {
+        this.overdueAppliedTill = overdueAppliedTill;
+    }
+    
 }

@@ -26,34 +26,58 @@ public class SearchConditions {
     private final String searchResource;
     private final Boolean clientSearch;
     private final Boolean groupSearch;
+    private final Boolean villageSearch;
     private final Boolean loanSeach;
     private final Boolean savingSeach;
     private final Boolean clientIdentifierSearch;
+    private final Boolean pledgeSearch;
+    private final Boolean exactMatch;
+    private final Long officeId;
+    private final Boolean staffSearch;
+    private final Boolean bankStatementSearch;
 
-    public SearchConditions(final String searchQueryParam, final String searchResource) {
+    public SearchConditions(final String searchQueryParam, final String searchResource, final Boolean exactMatch, final Long officeId) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
-        this.clientSearch = (null == searchResource || searchResource.toLowerCase().contains(
-                SEARCH_SUPPORTED_RESOURCES.CLIENTS.name().toLowerCase())) ? true : false;
-        this.groupSearch = (null == searchResource || searchResource.toLowerCase().contains(
-                SEARCH_SUPPORTED_RESOURCES.GROUPS.name().toLowerCase())) ? true : false;
-        this.loanSeach = (null == searchResource || searchResource.toLowerCase().contains(
-                SEARCH_SUPPORTED_RESOURCES.LOANS.name().toLowerCase())) ? true : false;
-        this.savingSeach = (null == searchResource || searchResource.toLowerCase().contains(
-                SEARCH_SUPPORTED_RESOURCES.SAVINGS.name().toLowerCase())) ? true : false;
-        this.clientIdentifierSearch = (null == searchResource || searchResource.toLowerCase().contains(
-                SEARCH_SUPPORTED_RESOURCES.CLIENTIDENTIFIERS.name().toLowerCase())) ? true : false;
+        this.exactMatch = exactMatch;
+        this.officeId = officeId;
+        this.clientSearch = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.CLIENTS.name().toLowerCase())) ? true : false;
+        this.groupSearch = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.GROUPS.name().toLowerCase())) ? true : false;
+        this.villageSearch = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.VILLAGES.name().toLowerCase())) ? true : false;
+        this.loanSeach = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.LOANS.name().toLowerCase())) ? true : false;
+        this.savingSeach = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.SAVINGS.name().toLowerCase())) ? true : false;
+        this.clientIdentifierSearch = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.CLIENTIDENTIFIERS.name().toLowerCase())) ? true : false;
+        this.pledgeSearch = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.PLEDGES.name().toLowerCase())) ? true : false;
+        this.staffSearch = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.STAFF.name().toLowerCase())) ? true : false;
+        this.bankStatementSearch = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.BANKSTATEMENT.name().toLowerCase())) ? true : false;
     }
 
     public SearchConditions(final String searchQueryParam, final String searchResource, final Boolean clientSearch,
-            final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch) {
+            final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch,
+            final Boolean pledgeSearch, final Boolean villageSearch, final Boolean exactMatch, final Long officeId,
+            final Boolean staffSearch, final Boolean bankStatementSearch) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
         this.clientSearch = clientSearch;
         this.groupSearch = groupSearch;
+        this.villageSearch = villageSearch;
         this.loanSeach = loanSeach;
         this.savingSeach = savingSeach;
         this.clientIdentifierSearch = clientIdentifierSearch;
+        this.pledgeSearch = pledgeSearch;
+        this.exactMatch = exactMatch;
+        this.officeId = officeId;
+        this.staffSearch = staffSearch;
+        this.bankStatementSearch = bankStatementSearch;
     }
 
     public String getSearchQuery() {
@@ -64,12 +88,20 @@ public class SearchConditions {
         return this.searchResource;
     }
 
+    public Boolean getExactMatch() {
+        return this.exactMatch;
+    }
+
     public Boolean isClientSearch() {
         return this.clientSearch;
     }
 
     public Boolean isGroupSearch() {
         return this.groupSearch;
+    }
+
+    public Boolean isVillageSearch() {
+        return this.villageSearch;
     }
 
     public Boolean isLoanSeach() {
@@ -82,6 +114,22 @@ public class SearchConditions {
 
     public Boolean isClientIdentifierSearch() {
         return this.clientIdentifierSearch;
+    }
+
+    public Boolean isPledgeSearch() {
+        return this.pledgeSearch;
+    }
+
+    public Long getofficeId() {
+        return this.officeId;
+    }
+
+    public Boolean isStaffSearch() {
+        return this.staffSearch;
+    }
+
+    public Boolean getBankStatementSearch() {
+        return this.bankStatementSearch;
     }
 
 }

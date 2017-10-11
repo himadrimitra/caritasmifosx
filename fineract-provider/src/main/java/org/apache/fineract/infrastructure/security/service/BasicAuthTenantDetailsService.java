@@ -18,9 +18,9 @@
  */
 package org.apache.fineract.infrastructure.security.service;
 
-import org.apache.fineract.infrastructure.core.domain.MifosPlatformTenant;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 
 public interface BasicAuthTenantDetailsService {
 
-    MifosPlatformTenant loadTenantById(String tenantId);
+    FineractPlatformTenant loadTenantById(String tenantId, boolean isReport);
 }

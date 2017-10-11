@@ -32,6 +32,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.organisation.office.api.OfficeApiConstants;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -48,8 +49,8 @@ public final class OfficeCommandFromApiJsonDeserializer {
     /**
      * The parameters supported for this command.
      */
-    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("name", "parentId", "openingDate", "externalId",
-            "locale", "dateFormat"));
+    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("name", "parentId", "openingDate", "externalId", "locale",
+            "dateFormat", OfficeApiConstants.officeCodeIdParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -83,6 +84,11 @@ public final class OfficeCommandFromApiJsonDeserializer {
         if (this.fromApiJsonHelper.parameterExists("parentId", element)) {
             final Long parentId = this.fromApiJsonHelper.extractLongNamed("parentId", element);
             baseDataValidator.reset().parameter("parentId").value(parentId).notNull().integerGreaterThanZero();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(OfficeApiConstants.officeCodeIdParamName, element)) {
+            final String officeCodeId = this.fromApiJsonHelper.extractStringNamed("OfficesApiConstants.officeCodeIdParamName", element);
+            baseDataValidator.reset().parameter(OfficeApiConstants.officeCodeIdParamName).value(officeCodeId).notExceedingLengthOf(5);
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
@@ -124,6 +130,10 @@ public final class OfficeCommandFromApiJsonDeserializer {
             baseDataValidator.reset().parameter("parentId").value(parentId).notNull().integerGreaterThanZero();
         }
 
+        if (this.fromApiJsonHelper.parameterExists(OfficeApiConstants.officeCodeIdParamName, element)) {
+            final String officeCodeId = this.fromApiJsonHelper.extractStringNamed(OfficeApiConstants.officeCodeIdParamName, element);
+            baseDataValidator.reset().parameter(OfficeApiConstants.officeCodeIdParamName).value(officeCodeId).notExceedingLengthOf(5);
+        }
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 }

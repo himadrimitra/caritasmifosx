@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -37,6 +36,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformServiceUnavailableException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
@@ -51,19 +51,19 @@ import org.apache.fineract.portfolio.account.domain.AccountTransferDetailReposit
 import org.apache.fineract.portfolio.account.domain.AccountTransferDetails;
 import org.apache.fineract.portfolio.account.domain.AccountTransferRecurrenceType;
 import org.apache.fineract.portfolio.account.domain.AccountTransferStandingInstruction;
-import org.apache.fineract.portfolio.account.domain.AccountTransferTransaction;
 import org.apache.fineract.portfolio.account.domain.StandingInstructionAssembler;
 import org.apache.fineract.portfolio.account.domain.StandingInstructionRepository;
 import org.apache.fineract.portfolio.account.domain.StandingInstructionStatus;
 import org.apache.fineract.portfolio.account.domain.StandingInstructionType;
 import org.apache.fineract.portfolio.account.exception.StandingInstructionNotFoundException;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanceException;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +84,7 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
     private final StandingInstructionReadPlatformService standingInstructionReadPlatformService;
     private final AccountTransfersWritePlatformService accountTransfersWritePlatformService;
     private final JdbcTemplate jdbcTemplate;
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     public StandingInstructionWritePlatformServiceImpl(final StandingInstructionDataValidator standingInstructionDataValidator,
@@ -147,8 +148,8 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
         final Throwable realCause = dve.getMostSpecificCause();
         if (realCause.getMessage().contains("name")) {
             final String name = command.stringValueOfParameterNamed(StandingInstructionApiConstants.nameParamName);
-            throw new PlatformDataIntegrityException("error.msg.standinginstruction.duplicate.name", "Standinginstruction with name `"
-                    + name + "` already exists", "name", name);
+            throw new PlatformDataIntegrityException("error.msg.standinginstruction.duplicate.name",
+                    "Standinginstruction with name `" + name + "` already exists", "name", name);
         }
         logger.error(dve.getMessage(), dve);
         throw new PlatformDataIntegrityException("error.msg.client.unknown.data.integrity.issue",
@@ -163,14 +164,15 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
         return fromAccountType.isSavingsAccount() && toAccountType.isLoanAccount();
     }
 
-    private boolean isSavingsToSavingsAccountTransfer(final PortfolioAccountType fromAccountType, final PortfolioAccountType toAccountType) {
+    private boolean isSavingsToSavingsAccountTransfer(final PortfolioAccountType fromAccountType,
+            final PortfolioAccountType toAccountType) {
         return fromAccountType.isSavingsAccount() && toAccountType.isSavingsAccount();
     }
 
     @Override
     public CommandProcessingResult update(final Long id, final JsonCommand command) {
         this.standingInstructionDataValidator.validateForUpdate(command);
-        AccountTransferStandingInstruction standingInstructionsForUpdate = this.standingInstructionRepository.findOne(id);
+        final AccountTransferStandingInstruction standingInstructionsForUpdate = this.standingInstructionRepository.findOne(id);
         if (standingInstructionsForUpdate == null) { throw new StandingInstructionNotFoundException(id); }
         final Map<String, Object> actualChanges = standingInstructionsForUpdate.update(command);
         return new CommandProcessingResultBuilder() //
@@ -182,7 +184,7 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
 
     @Override
     public CommandProcessingResult delete(final Long id) {
-        AccountTransferStandingInstruction standingInstructionsForUpdate = this.standingInstructionRepository.findOne(id);
+        final AccountTransferStandingInstruction standingInstructionsForUpdate = this.standingInstructionRepository.findOne(id);
         standingInstructionsForUpdate.delete();
         final Map<String, Object> actualChanges = new HashMap<>();
         actualChanges.put(statusParamName, StandingInstructionStatus.DELETED.getValue());
@@ -195,17 +197,17 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
     @Override
     @CronTarget(jobName = JobName.EXECUTE_STANDING_INSTRUCTIONS)
     public void executeStandingInstructions() throws JobExecutionException {
-        Collection<StandingInstructionData> instructionDatas = this.standingInstructionReadPlatformService
+        final Collection<StandingInstructionData> instructionDatas = this.standingInstructionReadPlatformService
                 .retrieveAll(StandingInstructionStatus.ACTIVE.getValue());
         final StringBuilder sb = new StringBuilder();
-        for (StandingInstructionData data : instructionDatas) {
+        for (final StandingInstructionData data : instructionDatas) {
             boolean isDueForTransfer = false;
-            AccountTransferRecurrenceType recurrenceType = data.recurrenceType();
-            StandingInstructionType instructionType = data.instructionType();
-            LocalDate transactionDate = new LocalDate();
+            final AccountTransferRecurrenceType recurrenceType = data.recurrenceType();
+            final StandingInstructionType instructionType = data.instructionType();
+            final LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
             if (recurrenceType.isPeriodicRecurrence()) {
                 final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
-                PeriodFrequencyType frequencyType = data.recurrenceFrequency();
+                final PeriodFrequencyType frequencyType = data.recurrenceFrequency();
                 LocalDate startDate = data.validFrom();
                 if (frequencyType.isMonthly()) {
                     startDate = startDate.withDayOfMonth(data.recurrenceOnDay());
@@ -225,28 +227,32 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
             BigDecimal transactionAmount = data.amount();
             if (data.toAccountType().isLoanAccount()
                     && (recurrenceType.isDuesRecurrence() || (isDueForTransfer && instructionType.isDuesAmoutTransfer()))) {
-                StandingInstructionDuesData standingInstructionDuesData = this.standingInstructionReadPlatformService
+                final StandingInstructionDuesData standingInstructionDuesData = this.standingInstructionReadPlatformService
                         .retriveLoanDuesData(data.toAccount().accountId());
                 if (data.instructionType().isDuesAmoutTransfer()) {
                     transactionAmount = standingInstructionDuesData.totalDueAmount();
                 }
                 if (recurrenceType.isDuesRecurrence()) {
-                    isDueForTransfer = new LocalDate().equals(standingInstructionDuesData.dueDate());
+                    isDueForTransfer = DateUtils.getLocalDateOfTenant().equals(standingInstructionDuesData.dueDate());
                 }
             }
 
             if (isDueForTransfer && transactionAmount != null && transactionAmount.compareTo(BigDecimal.ZERO) > 0) {
-                final AccountTransferDetails accountTransferDetails = this.accountTransferDetailRepository.findOne(data.accountDetailId());
                 final SavingsAccount fromSavingsAccount = null;
                 final boolean isRegularTransaction = true;
                 final boolean isExceptionForBalanceCheck = false;
-                accountTransferDetails.accountTransferStandingInstruction().updateLatsRunDate(transactionDate.toDate());
-                AccountTransferDTO accountTransferDTO = new AccountTransferDTO(transactionDate, transactionAmount, data.fromAccountType(),
-                        data.toAccountType(), data.fromAccount().accountId(), data.toAccount().accountId(), data.name()
-                                + " Standing instruction trasfer ", null, null, null, null, data.toTransferType(), null, null, data
-                                .transferType().getValue(), accountTransferDetails, null, null, null, null, fromSavingsAccount,
-                        isRegularTransaction, isExceptionForBalanceCheck);
-                transferAmount(sb, accountTransferDTO, data.getId());
+                final AccountTransferDTO accountTransferDTO = new AccountTransferDTO(transactionDate, transactionAmount,
+                        data.fromAccountType(), data.toAccountType(), data.fromAccount().accountId(), data.toAccount().accountId(),
+                        data.name() + " Standing instruction trasfer ", null, null, null, null, data.toTransferType(), null, null,
+                        data.transferType().getValue(), null, null, null, null, null, fromSavingsAccount, isRegularTransaction,
+                        isExceptionForBalanceCheck);
+                final boolean transferCompleted = transferAmount(sb, accountTransferDTO, data.getId());
+
+                if (transferCompleted) {
+                    final String updateQuery = "UPDATE m_account_transfer_standing_instructions SET last_run_date = ? where id = ?";
+                    this.jdbcTemplate.update(updateQuery, transactionDate.toDate(), data.getId());
+                }
+
             }
         }
         if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
@@ -257,9 +263,11 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
      * @param sb
      * @param accountTransferDTO
      */
-    private void transferAmount(final StringBuilder sb, final AccountTransferDTO accountTransferDTO, final Long instructionId) {
-        StringBuffer errorLog = new StringBuffer();
-        StringBuffer updateQuery = new StringBuffer(
+    private boolean transferAmount(final StringBuilder sb, final AccountTransferDTO accountTransferDTO, final Long instructionId) {
+        final String currentdate = this.formatter.print(DateUtils.getLocalDateOfTenant());
+        boolean transferCompleted = true;
+        final StringBuffer errorLog = new StringBuffer();
+        final StringBuffer updateQuery = new StringBuffer(
                 "INSERT INTO `m_account_transfer_standing_instructions_history` (`standing_instruction_id`, `status`, `amount`,`execution_time`, `error_log`) VALUES (");
         try {
             this.accountTransfersWritePlatformService.transferFunds(accountTransferDTO);
@@ -278,7 +286,7 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
                     .append(accountTransferDTO.getFromAccountId()).append(" to ").append(accountTransferDTO.getToAccountId())
                     .append("--------");
             errorLog.append("Platform exception while trasfering funds " + e.getDefaultUserMessage());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             sb.append("Exception while trasfering funds for standing Instruction id").append(instructionId).append(" from ")
                     .append(accountTransferDTO.getFromAccountId()).append(" to ").append(accountTransferDTO.getToAccountId())
                     .append("--------");
@@ -287,37 +295,34 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
         }
         updateQuery.append(instructionId).append(",");
         if (errorLog.length() > 0) {
+            transferCompleted = false;
             updateQuery.append("'failed'").append(",");
         } else {
             updateQuery.append("'success'").append(",");
         }
         updateQuery.append(accountTransferDTO.getTransactionAmount().doubleValue());
-        updateQuery.append(", now(),");
+        updateQuery.append(", ?,");
         updateQuery.append("'").append(errorLog.toString()).append("')");
-        this.jdbcTemplate.update(updateQuery.toString());
-
+        this.jdbcTemplate.update(updateQuery.toString(), currentdate);
+        return transferCompleted;
     }
 
-	
-	@Override
-	public Collection<Long> delete(Long loanId, PortfolioAccountType type) {
-		List<AccountTransferStandingInstruction> standingInstructions = null;
-		final List<Long> deletedStandingInstructionIds = new ArrayList<>();
+    @Override
+    public Collection<Long> delete(final Long accountId, final PortfolioAccountType type) {
+        Collection<AccountTransferStandingInstruction> instructionlist = null;
+        final List<Long> deletedInstructionIds = new ArrayList<>();
+        if (type.isLoanAccount()) {
+            instructionlist = this.standingInstructionRepository.findAllByLoanId(accountId, StandingInstructionStatus.ACTIVE.getValue());
+        }
+        if (instructionlist != null) {
+            for (final AccountTransferStandingInstruction instruction : instructionlist) {
+                instruction.delete();
+                deletedInstructionIds.add(instruction.getId());
+            }
+            this.standingInstructionRepository.save(instructionlist);
+        }
 
-		if (type.isLoanAccount()) {
-			standingInstructions = this.standingInstructionRepository.findAllByLoanId(loanId,
-					StandingInstructionStatus.ACTIVE.getValue());
-		}
+        return deletedInstructionIds;
 
-		if (standingInstructions != null) {
-			for (AccountTransferStandingInstruction instruction : standingInstructions) {
-				instruction.delete();
-				deletedStandingInstructionIds.add(instruction.getId());
-			}
-			this.standingInstructionRepository.save(standingInstructions);
-		}
-		
-		return deletedStandingInstructionIds;
-	}
- }
-	
+    }
+}

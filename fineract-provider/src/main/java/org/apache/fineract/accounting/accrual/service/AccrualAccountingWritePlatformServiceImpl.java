@@ -18,20 +18,20 @@
  */
 package org.apache.fineract.accounting.accrual.service;
 
-import static org.apache.fineract.accounting.accrual.api.AccrualAccountingConstants.PERIODIC_ACCRUAL_ACCOUNTING_EXECUTION_ERROR_CODE;
-import static org.apache.fineract.accounting.accrual.api.AccrualAccountingConstants.PERIODIC_ACCRUAL_ACCOUNTING_RESOURCE_NAME;
 import static org.apache.fineract.accounting.accrual.api.AccrualAccountingConstants.accrueTillParamName;
+import static org.apache.fineract.accounting.accrual.api.AccrualAccountingConstants.loanListParamName;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.accounting.accrual.serialization.AccrualAccountingDataValidator;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
-import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
-import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
-import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
-import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualWritePlatformService;
+import org.apache.fineract.infrastructure.jobs.service.JobName;
+import org.apache.fineract.infrastructure.jobs.service.JobRegisterService;
+import org.apache.fineract.infrastructure.jobs.service.SchedulerServiceConstants;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,28 +39,31 @@ import org.springframework.stereotype.Service;
 @Service
 public class AccrualAccountingWritePlatformServiceImpl implements AccrualAccountingWritePlatformService {
 
-    private final LoanAccrualWritePlatformService loanAccrualWritePlatformService;
     private final AccrualAccountingDataValidator accountingDataValidator;
+    private final JobRegisterService jobRegisterService;
 
     @Autowired
-    public AccrualAccountingWritePlatformServiceImpl(final LoanAccrualWritePlatformService loanAccrualWritePlatformService,
-            final AccrualAccountingDataValidator accountingDataValidator) {
-        this.loanAccrualWritePlatformService = loanAccrualWritePlatformService;
+    public AccrualAccountingWritePlatformServiceImpl(final AccrualAccountingDataValidator accountingDataValidator,
+            final JobRegisterService jobRegisterService) {
         this.accountingDataValidator = accountingDataValidator;
+        this.jobRegisterService = jobRegisterService;
     }
 
     @Override
-    public CommandProcessingResult executeLoansPeriodicAccrual(JsonCommand command) {
+    public CommandProcessingResult executeLoansPeriodicAccrual(final JsonCommand command) {
         this.accountingDataValidator.validateLoanPeriodicAccrualData(command.json());
-        LocalDate tilldate = command.localDateValueOfParameterNamed(accrueTillParamName);
-        String errorlog = this.loanAccrualWritePlatformService.addPeriodicAccruals(tilldate);
-        if (errorlog.length() > 0) {
-            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                    .resource(PERIODIC_ACCRUAL_ACCOUNTING_RESOURCE_NAME);
-            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(PERIODIC_ACCRUAL_ACCOUNTING_EXECUTION_ERROR_CODE, errorlog);
-            throw new PlatformApiDataValidationException(dataValidationErrors);
+        final LocalDate tilldate = command.localDateValueOfParameterNamed(accrueTillParamName);
+        final String[] loanList = command.arrayValueOfParameterNamed(loanListParamName);
+        final List<Long> list = new ArrayList<>();
+        if (loanList != null) {
+            for (int i = 0; i < loanList.length; i++) {
+                list.add(new Long(loanList[i]));
+            }
         }
+        final Map<String, Object> jobParams = new HashMap<>(2);
+        jobParams.put("loanList", list);
+        jobParams.put(SchedulerServiceConstants.EXECUTE_AS_ON_DATE, tilldate);
+        this.jobRegisterService.executeJob(JobName.ADD_PERIODIC_ACCRUAL_ENTRIES.toString(), jobParams);
         return CommandProcessingResult.empty();
     }
 

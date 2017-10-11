@@ -38,4 +38,7 @@ public interface GroupReadPlatformService {
     Collection<GroupGeneralData> retrieveGroupsForLookup(Long officeId);
 
     GroupGeneralData retrieveGroupWithClosureReasons();
+
+    GroupGeneralData retrieveCenterDetailsWithGroup(GroupGeneralData groupGeneralData);
+
 }

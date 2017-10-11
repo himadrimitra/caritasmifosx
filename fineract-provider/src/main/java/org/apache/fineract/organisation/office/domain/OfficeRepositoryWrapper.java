@@ -39,8 +39,17 @@ public class OfficeRepositoryWrapper {
     }
 
     public Office findOneWithNotFoundDetection(final Long id) {
+        final boolean loadLazyEntities = false;
+        return findOneWithNotFoundDetection(id, loadLazyEntities);
+    }
+
+    public Office findOneWithNotFoundDetection(final Long id, final boolean loadLazyEntities) {
         final Office office = this.repository.findOne(id);
         if (office == null) { throw new OfficeNotFoundException(id); }
+        if (loadLazyEntities) {
+            org.hibernate.Hibernate.initialize(office.getChildren());
+            org.hibernate.Hibernate.initialize(office.getParent());
+        }
         return office;
     }
 

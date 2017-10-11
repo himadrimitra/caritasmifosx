@@ -18,13 +18,17 @@
  */
 package org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.joda.time.LocalDate;
@@ -35,10 +39,12 @@ public interface LoanRepaymentScheduleTransactionProcessor {
             Set<LoanCharge> charges);
 
     ChangedTransactionDetail handleTransaction(LocalDate disbursementDate, List<LoanTransaction> repaymentsOrWaivers,
-            MonetaryCurrency currency, List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, Set<LoanCharge> charges);
+            MonetaryCurrency currency, List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, Set<LoanCharge> charges,
+            List<LoanDisbursementDetails> disbursementDetails, boolean isPeriodicAccrualEnabled);
 
     void handleWriteOff(LoanTransaction loanTransaction, MonetaryCurrency loanCurrency,
-            List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments);
+            List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, Money[] receivableIncomes, final Set<LoanCharge> charges,
+            List<LoanTransaction> accrualTransactions);
 
     Money handleRepaymentSchedule(List<LoanTransaction> transactionsPostDisbursement, MonetaryCurrency currency,
             List<LoanRepaymentScheduleInstallment> installments);
@@ -48,12 +54,19 @@ public interface LoanRepaymentScheduleTransactionProcessor {
      * installment.
      */
     boolean isInterestFirstRepaymentScheduleTransactionProcessor();
+
     boolean isFullPeriodInterestToBeCollectedForLatePaymentsAfterLastInstallment();
-    ChangedTransactionDetail populateDerivedFeildsWithoutReprocess(LocalDate disbursementDate,
-            List<LoanTransaction> transactionsPostDisbursement, MonetaryCurrency currency,
-            List<LoanRepaymentScheduleInstallment> installments, Set<LoanCharge> charges);
 
     void handleRefund(LoanTransaction loanTransaction, MonetaryCurrency currency, List<LoanRepaymentScheduleInstallment> installments,
             final Set<LoanCharge> charges);
+
+    void processTransactionsFromDerivedFields(List<LoanTransaction> transactionsPostDisbursement, MonetaryCurrency currency,
+            List<LoanRepaymentScheduleInstallment> installments, Set<LoanCharge> charges);
+
+    void handleGLIMRepayment(GroupLoanIndividualMonitoringTransaction groupLoanIndividualMonitoringTransaction,
+            BigDecimal individualTransactionAmount);
+
+    void handleWriteOffForGlimLoan(LoanTransaction loanTransaction, MonetaryCurrency loanCurrency,
+            List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, GroupLoanIndividualMonitoring glimMember);
 
 }

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -29,85 +30,131 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.data.AuthenticatedUserData;
+import org.apache.fineract.infrastructure.security.data.AuthenticationDataValidator;
 import org.apache.fineract.infrastructure.security.service.SpringSecurityPlatformSecurityContext;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.domain.Role;
+import org.apache.fineract.useradministration.service.AppUserWritePlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import com.finflux.infrastructure.cryptography.api.CryptographyApiConstants;
+import com.finflux.infrastructure.cryptography.service.CryptographyReadPlatformService;
+import com.google.gson.JsonElement;
 import com.sun.jersey.core.util.Base64;
 
 @Path("/authentication")
 @Component
+@Profile("basicauth")
 @Scope("singleton")
 public class AuthenticationApiResource {
 
     private final DaoAuthenticationProvider customAuthenticationProvider;
     private final ToApiJsonSerializer<AuthenticatedUserData> apiJsonSerializerService;
     private final SpringSecurityPlatformSecurityContext springSecurityPlatformSecurityContext;
+    private final AppUserWritePlatformService appUserWritePlatformService;
+    private final FromJsonHelper fromApiJsonHelper;
+    private final CryptographyReadPlatformService cryptographyReadPlatformService;
+    private final AuthenticationDataValidator fromApiJsonDeserializer;
 
     @Autowired
     public AuthenticationApiResource(
             @Qualifier("customAuthenticationProvider") final DaoAuthenticationProvider customAuthenticationProvider,
             final ToApiJsonSerializer<AuthenticatedUserData> apiJsonSerializerService,
-            final SpringSecurityPlatformSecurityContext springSecurityPlatformSecurityContext) {
+            final SpringSecurityPlatformSecurityContext springSecurityPlatformSecurityContext,
+            final AppUserWritePlatformService appUserWritePlatformService, final FromJsonHelper fromApiJsonHelper,
+            final CryptographyReadPlatformService cryptographyReadPlatformService,
+            final AuthenticationDataValidator fromApiJsonDeserializer) {
         this.customAuthenticationProvider = customAuthenticationProvider;
         this.apiJsonSerializerService = apiJsonSerializerService;
         this.springSecurityPlatformSecurityContext = springSecurityPlatformSecurityContext;
+        this.appUserWritePlatformService = appUserWritePlatformService;
+        this.fromApiJsonHelper = fromApiJsonHelper;
+        this.cryptographyReadPlatformService = cryptographyReadPlatformService;
+        this.fromApiJsonDeserializer = fromApiJsonDeserializer;
     }
 
     @POST
     @Produces({ MediaType.APPLICATION_JSON })
-    public String authenticate(@QueryParam("username") final String username, @QueryParam("password") final String password) {
-
-        final Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
-        final Authentication authenticationCheck = this.customAuthenticationProvider.authenticate(authentication);
-
-        final Collection<String> permissions = new ArrayList<>();
-        AuthenticatedUserData authenticatedUserData = new AuthenticatedUserData(username, permissions);
-
-        if (authenticationCheck.isAuthenticated()) {
-            final Collection<GrantedAuthority> authorities = new ArrayList<>(authenticationCheck.getAuthorities());
-            for (final GrantedAuthority grantedAuthority : authorities) {
-                permissions.add(grantedAuthority.getAuthority());
-            }
-
-            final byte[] base64EncodedAuthenticationKey = Base64.encode(username + ":" + password);
-
-            final AppUser principal = (AppUser) authenticationCheck.getPrincipal();
-            final Collection<RoleData> roles = new ArrayList<>();
-            final Set<Role> userRoles = principal.getRoles();
-            for (final Role role : userRoles) {
-                roles.add(role.toData());
-            }
-
-            final Long officeId = principal.getOffice().getId();
-            final String officeName = principal.getOffice().getName();
-
-            final Long staffId = principal.getStaffId();
-            final String staffDisplayName = principal.getStaffDisplayName();
-
-            final EnumOptionData organisationalRole = principal.organisationalRoleData();
-
-            if (this.springSecurityPlatformSecurityContext.doesPasswordHasToBeRenewed(principal)) {
-                authenticatedUserData = new AuthenticatedUserData(username, principal.getId(), new String(base64EncodedAuthenticationKey));
-            } else {
-
-                authenticatedUserData = new AuthenticatedUserData(username, officeId, officeName, staffId, staffDisplayName,
-                        organisationalRole, roles, permissions, principal.getId(), new String(base64EncodedAuthenticationKey));
-            }
-
+    public String authenticate(final String apiRequestBodyAsJson,
+            @DefaultValue("false") @QueryParam("isPasswordEncrypted") final boolean isPasswordEncrypted) {
+        final JsonElement element = this.fromApiJsonHelper.parse(apiRequestBodyAsJson);
+        this.fromApiJsonDeserializer.validateForAuthentication(element);
+        final String username = this.fromApiJsonHelper.extractStringNamed("username", element);
+        final String password;
+        if (isPasswordEncrypted) {
+            final boolean isBase64Encoded = true;
+            password = this.cryptographyReadPlatformService.decryptEncryptedTextUsingRSAPrivateKey(
+                    this.fromApiJsonHelper.extractStringNamed("password", element), CryptographyApiConstants.entityTypeLogin, username,
+                    isBase64Encoded);
+        } else {
+            password = this.fromApiJsonHelper.extractStringNamed("password", element);
         }
+        return authenticate(username, password);
+    }
 
+    public String authenticate(final String username, final String password) {
+        AuthenticatedUserData authenticatedUserData = null;
+        try {
+            final Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
+            final Authentication authenticationCheck = this.customAuthenticationProvider.authenticate(authentication);
+
+            final Collection<String> permissions = new ArrayList<>();
+            authenticatedUserData = new AuthenticatedUserData(username, permissions);
+
+            if (authenticationCheck.isAuthenticated()) {
+                final Collection<GrantedAuthority> authorities = new ArrayList<>(authenticationCheck.getAuthorities());
+                for (final GrantedAuthority grantedAuthority : authorities) {
+                    permissions.add(grantedAuthority.getAuthority());
+                }
+
+                final byte[] base64EncodedAuthenticationKey = Base64.encode(username + ":" + password);
+
+                final AppUser principal = (AppUser) authenticationCheck.getPrincipal();
+                this.appUserWritePlatformService.updateSuccessLoginStatus(principal);
+                final Collection<RoleData> roles = new ArrayList<>();
+                final Set<Role> userRoles = principal.getRoles();
+                for (final Role role : userRoles) {
+                    roles.add(role.toData());
+                }
+
+                final Long officeId = principal.getOffice().getId();
+                final String officeName = principal.getOffice().getName();
+
+                final Long staffId = principal.getStaffId();
+                final String staffDisplayName = principal.getStaffDisplayName();
+
+                final EnumOptionData organisationalRole = principal.organisationalRoleData();
+
+                if (this.springSecurityPlatformSecurityContext.doesPasswordHasToBeRenewed(principal)) {
+                    authenticatedUserData = new AuthenticatedUserData(username, principal.getId(),
+                            new String(base64EncodedAuthenticationKey));
+                } else {
+                    authenticatedUserData = new AuthenticatedUserData(username, officeId, officeName, staffId, staffDisplayName,
+                            organisationalRole, roles, permissions, principal.getId(), new String(base64EncodedAuthenticationKey));
+                    this.appUserWritePlatformService.updatePasswordWithNewSalt(principal, password);
+                }
+
+            }
+        } catch (final AuthenticationException e) {
+            if (e instanceof BadCredentialsException) {
+                this.appUserWritePlatformService.updateFailedLoginStatus(username);
+            }
+            throw e;
+        }
         return this.apiJsonSerializerService.serialize(authenticatedUserData);
     }
 }

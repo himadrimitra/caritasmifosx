@@ -18,12 +18,14 @@
  */
 package org.apache.fineract.infrastructure.security.service;
 
+import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
-import org.apache.fineract.infrastructure.core.domain.MifosPlatformTenant;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenantConnection;
 import org.apache.fineract.infrastructure.security.exception.InvalidTenantIdentiferException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,6 +35,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.common.security.service.PlatformCryptoService;
+import com.finflux.infrastructure.cryptography.api.CryptographyApiConstants;
+
 /**
  * A JDBC implementation of {@link BasicAuthTenantDetailsService} for loading a
  * tenants details by a <code>tenantIdentifier</code>.
@@ -41,42 +46,81 @@ import org.springframework.stereotype.Service;
 public class BasicAuthTenantDetailsServiceJdbc implements BasicAuthTenantDetailsService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final PlatformCryptoService platformCryptoService;
 
     @Autowired
-    public BasicAuthTenantDetailsServiceJdbc(@Qualifier("tenantDataSourceJndi") final DataSource dataSource) {
+    public BasicAuthTenantDetailsServiceJdbc(@Qualifier("tenantDataSourceJndi") final DataSource dataSource,
+            final PlatformCryptoService platformCryptoService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.platformCryptoService = platformCryptoService;
     }
 
-    private static final class TenantMapper implements RowMapper<MifosPlatformTenant> {
+    private final class TenantMapper implements RowMapper<FineractPlatformTenant> {
 
-        private final StringBuilder sqlBuilder = new StringBuilder(
-                "id, name,identifier, schema_name as schemaName, schema_server as schemaServer, schema_server_port as schemaServerPort, auto_update as autoUpdate, ")//
-                .append(" schema_username as schemaUsername, schema_password as schemaPassword , timezone_id as timezoneId , pool_initial_size as initialSize, ") //
-                .append(" pool_validation_interval as validationInterval, pool_remove_abandoned as removeAbandoned, pool_remove_abandoned_timeout as removeAbandonedTimeout, ")//
-                .append(" pool_log_abandoned as logAbandoned, pool_abandon_when_percentage_full as abandonedWhenPercentageFull, pool_test_on_borrow as testOnBorrow,  ")//
-                .append(" pool_max_active as poolMaxActive, pool_min_idle as poolMinIdle, pool_max_idle as poolMaxIdle, ")//
-                .append(" pool_suspect_timeout as poolSuspectTimeout, pool_time_between_eviction_runs_millis as poolTimeBetweenEvictionRunsMillis, ")//
-                .append(" pool_min_evictable_idle_time_millis as poolMinEvictableIdleTimeMillis, ")//
-                .append(" deadlock_max_retries as maxRetriesOnDeadlock, ")//
-                .append(" deadlock_max_retry_interval as maxIntervalBetweenRetries ")//
-                .append(" from tenants t");//
+        private final boolean isReport;
+        private final StringBuilder sqlBuilder = new StringBuilder(" t.id, ts.id as connectionId , ")//
+                .append(" t.timezone_id as timezoneId , t.name,t.identifier, ts.schema_name as schemaName, AES_DECRYPT(ts.schema_server,'"
+                        + CryptographyApiConstants.dBConnectionEncDecKey + "') as schemaServer,")//
+                .append(" ts.schema_server_port as schemaServerPort, ts.auto_update as autoUpdate,")//
+                .append(" AES_DECRYPT(ts.schema_username,'" + CryptographyApiConstants.dBConnectionEncDecKey
+                        + "') as schemaUsername, AES_DECRYPT(ts.schema_password,'" + CryptographyApiConstants.dBConnectionEncDecKey
+                        + "') as schemaPassword , ts.pool_initial_size as initialSize,")//
+                .append(" ts.pool_validation_interval as validationInterval, ts.pool_remove_abandoned as removeAbandoned, ts.pool_remove_abandoned_timeout as removeAbandonedTimeout,")//
+                .append(" ts.pool_log_abandoned as logAbandoned, ts.pool_abandon_when_percentage_full as abandonedWhenPercentageFull, ts.pool_test_on_borrow as testOnBorrow,")//
+                .append(" ts.pool_max_active as poolMaxActive, ts.pool_min_idle as poolMinIdle, ts.pool_max_idle as poolMaxIdle,")//
+                .append(" ts.pool_suspect_timeout as poolSuspectTimeout, ts.pool_time_between_eviction_runs_millis as poolTimeBetweenEvictionRunsMillis,")//
+                .append(" ts.pool_min_evictable_idle_time_millis as poolMinEvictableIdleTimeMillis,")//
+                .append(" ts.deadlock_max_retries as maxRetriesOnDeadlock,")//
+                .append(" ts.deadlock_max_retry_interval as maxIntervalBetweenRetries, ")//
+                .append(" AES_DECRYPT(t.tenant_key,'" + CryptographyApiConstants.dBConnectionEncDecKey + "') as tenantKey,")
+                .append(" ts.server_connection_details_for_encryption as serverConnectionDetails ")
+                .append(" from tenants t left join tenant_server_connections ts ");
+
+        public TenantMapper(final boolean isReport) {
+            this.isReport = isReport;
+        }
 
         public String schema() {
+            if (this.isReport) {
+                this.sqlBuilder.append(" on t.report_Id = ts.id");
+            } else {
+                this.sqlBuilder.append(" on t.oltp_Id = ts.id");
+            }
             return this.sqlBuilder.toString();
         }
 
         @Override
-        public MifosPlatformTenant mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
-
+        public FineractPlatformTenant mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
             final Long id = rs.getLong("id");
             final String tenantIdentifier = rs.getString("identifier");
             final String name = rs.getString("name");
-            final String schemaName = rs.getString("schemaName");
-            final String schemaServer = rs.getString("schemaServer");
-            final String schemaServerPort = rs.getString("schemaServerPort");
-            final String schemaUsername = rs.getString("schemaUsername");
-            final String schemaPassword = rs.getString("schemaPassword");
             final String timezoneId = rs.getString("timezoneId");
+            final String encriptedTenantKey = convertBlobToString(rs.getBlob("tenantKey"));
+            final String tenantKey = BasicAuthTenantDetailsServiceJdbc.this.platformCryptoService.decrypt(encriptedTenantKey, name, id,
+                    tenantIdentifier);
+            FineractPlatformTenantConnection connection = null;
+            final FineractPlatformTenant partialTenantInfo = new FineractPlatformTenant(id, tenantIdentifier, name, timezoneId, connection,
+                    tenantKey);
+            connection = getDBConnection(rs, partialTenantInfo);
+            return new FineractPlatformTenant(id, tenantIdentifier, name, timezoneId, connection, tenantKey);
+        }
+
+        // gets the DB connection
+        private FineractPlatformTenantConnection getDBConnection(final ResultSet rs, final FineractPlatformTenant tenant)
+                throws SQLException {
+
+            final Long connectionId = rs.getLong("connectionId");
+            final String schemaName = rs.getString("schemaName");
+            final String encriptedSchemaServer = convertBlobToString(rs.getBlob("schemaServer"));
+            final String schemaServer = BasicAuthTenantDetailsServiceJdbc.this.platformCryptoService.decrypt(encriptedSchemaServer,
+                    tenant.getName(), tenant.getId(), tenant.getTenantKey(), tenant.getTenantIdentifier());
+            final String schemaServerPort = rs.getString("schemaServerPort");
+            final String encriptedSchemaUsername = convertBlobToString(rs.getBlob("schemaUsername"));
+            final String schemaUsername = BasicAuthTenantDetailsServiceJdbc.this.platformCryptoService.decrypt(encriptedSchemaUsername,
+                    tenant.getName(), tenant.getId(), tenant.getTenantKey(), tenant.getTenantIdentifier());
+            final String encriptedSchemaPassword = convertBlobToString(rs.getBlob("schemaPassword"));
+            final String schemaPassword = BasicAuthTenantDetailsServiceJdbc.this.platformCryptoService.decrypt(encriptedSchemaPassword,
+                    tenant.getName(), tenant.getId(), tenant.getTenantKey(), tenant.getTenantIdentifier());
             final boolean autoUpdateEnabled = rs.getBoolean("autoUpdate");
             final int initialSize = rs.getInt("initialSize");
             final boolean testOnBorrow = rs.getBoolean("testOnBorrow");
@@ -93,17 +137,28 @@ public class BasicAuthTenantDetailsServiceJdbc implements BasicAuthTenantDetails
             final int minEvictableIdleTimeMillis = rs.getInt("poolMinEvictableIdleTimeMillis");
             int maxRetriesOnDeadlock = rs.getInt("maxRetriesOnDeadlock");
             int maxIntervalBetweenRetries = rs.getInt("maxIntervalBetweenRetries");
-
+            final String serverConnectionDetails = rs.getString("serverConnectionDetails");
             maxRetriesOnDeadlock = bindValueInMinMaxRange(maxRetriesOnDeadlock, 0, 15);
             maxIntervalBetweenRetries = bindValueInMinMaxRange(maxIntervalBetweenRetries, 1, 15);
 
-            return new MifosPlatformTenant(id, tenantIdentifier, name, schemaName, schemaServer, schemaServerPort, schemaUsername,
-                    schemaPassword, timezoneId, autoUpdateEnabled, initialSize, testOnBorrow, validationInterval, removeAbandoned,
-                    removeAbandonedTimeout, logAbandoned, abandonWhenPercentageFull, maxActive, minIdle, maxIdle, suspectTimeout,
-                    timeBetweenEvictionRunsMillis, minEvictableIdleTimeMillis, maxRetriesOnDeadlock, maxIntervalBetweenRetries);
+            return new FineractPlatformTenantConnection(connectionId, schemaName, schemaServer, schemaServerPort, schemaUsername,
+                    schemaPassword, autoUpdateEnabled, initialSize, validationInterval, removeAbandoned, removeAbandonedTimeout,
+                    logAbandoned, abandonWhenPercentageFull, maxActive, minIdle, maxIdle, suspectTimeout, timeBetweenEvictionRunsMillis,
+                    minEvictableIdleTimeMillis, maxRetriesOnDeadlock, maxIntervalBetweenRetries, testOnBorrow, serverConnectionDetails);
         }
 
-        private int bindValueInMinMaxRange(final int value, int min, int max) {
+        private String convertBlobToString(final Blob blob) {
+            try {
+                final byte[] bdata = blob.getBytes(1, (int) blob.length());
+                return new String(bdata);
+                // return Base64.encodeBase64String(blob.getBytes(1, (int)
+                // blob.length()));
+            } catch (SQLException | NullPointerException e) {
+                return null;
+            }
+        }
+
+        private int bindValueInMinMaxRange(final int value, final int min, final int max) {
             if (value < min) {
                 return min;
             } else if (value > max) { return max; }
@@ -113,10 +168,10 @@ public class BasicAuthTenantDetailsServiceJdbc implements BasicAuthTenantDetails
 
     @Override
     @Cacheable(value = "tenantsById")
-    public MifosPlatformTenant loadTenantById(final String tenantIdentifier) {
+    public FineractPlatformTenant loadTenantById(final String tenantIdentifier, final boolean isReport) {
 
         try {
-            final TenantMapper rm = new TenantMapper();
+            final TenantMapper rm = new TenantMapper(isReport);
             final String sql = "select  " + rm.schema() + " where t.identifier like ?";
 
             return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { tenantIdentifier });

@@ -18,29 +18,30 @@
  */
 package org.apache.fineract.infrastructure.entityaccess.handler;
 
-import javax.transaction.Transactional;
-
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
-import org.apache.fineract.infrastructure.entityaccess.service.MifosEntityAccessWriteService;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessWriteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@CommandType(entity = "ENTITYMAPPING", action = "DELETE")
 public class DeleteEntityToEntityMappingCommandHandler implements NewCommandSourceHandler {
 
-    private final MifosEntityAccessWriteService mifosEntityAccessWriteService;
+    private final FineractEntityAccessWriteService fineractEntityAccessWriteService;
 
     @Autowired
-    public DeleteEntityToEntityMappingCommandHandler(final MifosEntityAccessWriteService mifosEntityAccessWriteService) {
-        this.mifosEntityAccessWriteService = mifosEntityAccessWriteService;
+    public DeleteEntityToEntityMappingCommandHandler(final FineractEntityAccessWriteService fineractEntityAccessWriteService) {
+        this.fineractEntityAccessWriteService = fineractEntityAccessWriteService;
     }
 
     @Override
     @Transactional
-    public CommandProcessingResult processCommand(JsonCommand command) {
-        return this.mifosEntityAccessWriteService.deleteEntityToEntityMapping(command.entityId());
+    public CommandProcessingResult processCommand(final JsonCommand command) {
+        return this.fineractEntityAccessWriteService.deleteEntityToEntityMapping(command.entityId());
     }
 
 }

@@ -22,7 +22,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +32,8 @@ import javax.annotation.PostConstruct;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.data.AccountTransferDTO;
 import org.apache.fineract.portfolio.account.domain.AccountTransferDetails;
@@ -43,10 +44,10 @@ import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.B
 import org.apache.fineract.portfolio.common.service.BusinessEventListner;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.guarantor.GuarantorConstants;
 import org.apache.fineract.portfolio.loanaccount.guarantor.domain.Guarantor;
+import org.apache.fineract.portfolio.loanaccount.guarantor.domain.GuarantorFundStatusType;
 import org.apache.fineract.portfolio.loanaccount.guarantor.domain.GuarantorFundingDetails;
 import org.apache.fineract.portfolio.loanaccount.guarantor.domain.GuarantorFundingRepository;
 import org.apache.fineract.portfolio.loanaccount.guarantor.domain.GuarantorFundingTransaction;
@@ -66,7 +67,6 @@ import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanc
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -114,43 +114,46 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_UNDO_WRITTEN_OFF,
                 new ReverseFundsOnBusinessEvent());
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_UNDO_TRANSACTION,
-        		        		new UndoReleaseFundIfUndoDeposit());
+                new UndoReleaseFundIfUndoDeposit());
     }
 
     @Override
-    public void validateGuarantorBusinessRules(Loan loan) {
-        LoanProduct loanProduct = loan.loanProduct();
-        BigDecimal principal = loan.getPrincpal().getAmount();
-		BigDecimal outstanding = principal;
-		if(loan.isDisbursed()) {
-			outstanding = loan.getSummary().getTotalPrincipalOutstanding();		
-		}
-		    	
+    public void validateGuarantorBusinessRules(final Loan loan) {
+        final LoanProduct loanProduct = loan.loanProduct();
+        final BigDecimal principal = loan.getPrincpal().getAmount();
+        BigDecimal outstanding = principal;
+        if (loan.isDisbursed()) {
+            outstanding = loan.getSummary().getTotalPrincipalOutstanding();
+        }
+
         if (loanProduct.isHoldGuaranteeFundsEnabled()) {
-            LoanProductGuaranteeDetails guaranteeData = loanProduct.getLoanProductGuaranteeDetails();
+            final LoanProductGuaranteeDetails guaranteeData = loanProduct.getLoanProductGuaranteeDetails();
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
-            BigDecimal mandatoryAmount = principal.multiply(guaranteeData.getMandatoryGuarantee()).divide(BigDecimal.valueOf(100));
-            BigDecimal minSelfAmount = principal.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromOwnFunds())).divide(BigDecimal.valueOf(100));
-			BigDecimal minExtGuarantee = principal.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromGuarantor()))
-					.divide(BigDecimal.valueOf(100));
-			BigDecimal mandatoryAmountAsofDate = outstanding.multiply(guaranteeData.getMandatoryGuarantee()).divide(BigDecimal.valueOf(100));
-			BigDecimal minSelfAmountAsofDate = outstanding.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromOwnFunds())).divide(BigDecimal.valueOf(100));
-			BigDecimal minExtGuaranteeAsofDate = outstanding.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromGuarantor()))
-					.divide(BigDecimal.valueOf(100));
+            final BigDecimal mandatoryAmount = principal.multiply(guaranteeData.getMandatoryGuarantee()).divide(BigDecimal.valueOf(100));
+            final BigDecimal minSelfAmount = principal.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromOwnFunds()))
+                    .divide(BigDecimal.valueOf(100));
+            final BigDecimal minExtGuarantee = principal.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromGuarantor()))
+                    .divide(BigDecimal.valueOf(100));
+            final BigDecimal mandatoryAmountAsofDate = outstanding.multiply(guaranteeData.getMandatoryGuarantee())
+                    .divide(BigDecimal.valueOf(100));
+            final BigDecimal minSelfAmountAsofDate = outstanding.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromOwnFunds()))
+                    .divide(BigDecimal.valueOf(100));
+            final BigDecimal minExtGuaranteeAsofDate = outstanding
+                    .multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromGuarantor())).divide(BigDecimal.valueOf(100));
             BigDecimal actualAmount = BigDecimal.ZERO;
             BigDecimal actualSelfAmount = BigDecimal.ZERO;
             BigDecimal actualExtGuarantee = BigDecimal.ZERO;
-            for (Guarantor guarantor : existGuarantorList) {
-                List<GuarantorFundingDetails> fundingDetails = guarantor.getGuarantorFundDetails();
-                for (GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
+            for (final Guarantor guarantor : existGuarantorList) {
+                final List<GuarantorFundingDetails> fundingDetails = guarantor.getGuarantorFundDetails();
+                for (final GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
                     if (guarantorFundingDetails.getStatus().isActive() || guarantorFundingDetails.getStatus().isWithdrawn()
                             || guarantorFundingDetails.getStatus().isCompleted()) {
                         if (guarantor.isSelfGuarantee()) {
-                            actualSelfAmount = actualSelfAmount.add(guarantorFundingDetails.getAmount()).subtract(
-                                    guarantorFundingDetails.getAmountTransfered());
+                            actualSelfAmount = actualSelfAmount.add(guarantorFundingDetails.getAmount())
+                                    .subtract(guarantorFundingDetails.getAmountTransfered());
                         } else {
-                            actualExtGuarantee = actualExtGuarantee.add(guarantorFundingDetails.getAmount()).subtract(
-                                    guarantorFundingDetails.getAmountTransfered());
+                            actualExtGuarantee = actualExtGuarantee.add(guarantorFundingDetails.getAmount())
+                                    .subtract(guarantorFundingDetails.getAmountTransfered());
                         }
                     }
                 }
@@ -160,17 +163,17 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
             final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan.guarantor");
             if (actualSelfAmount.compareTo(minSelfAmount) == -1) {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_SELF_GUARANTEE_ERROR,
-                		minSelfAmountAsofDate);
+                        minSelfAmountAsofDate);
             }
 
             if (actualExtGuarantee.compareTo(minExtGuarantee) == -1) {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_EXTERNAL_GUARANTEE_ERROR,
-                		minExtGuaranteeAsofDate);
+                        minExtGuaranteeAsofDate);
             }
             actualAmount = actualAmount.add(actualExtGuarantee).add(actualSelfAmount);
             if (actualAmount.compareTo(mandatoryAmount) == -1) {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_MANDATORY_GUARANTEE_ERROR,
-                		mandatoryAmountAsofDate);
+                        mandatoryAmountAsofDate);
             }
 
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
@@ -178,10 +181,10 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
         }
 
     }
-    
-	private BigDecimal retrunZeroIfNull(BigDecimal amount) {
-		return (amount == null) ? BigDecimal.ZERO : amount;
-	}
+
+    private BigDecimal retrunZeroIfNull(final BigDecimal amount) {
+        return (amount == null) ? BigDecimal.ZERO : amount;
+    }
 
     /**
      * Method assigns a guarantor to loan and blocks the funds on guarantor's
@@ -190,7 +193,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
     @Override
     public void assignGuarantor(final GuarantorFundingDetails guarantorFundingDetails, final LocalDate transactionDate) {
         if (guarantorFundingDetails.getStatus().isActive()) {
-            SavingsAccount savingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
+            final SavingsAccount savingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
             savingsAccount.holdFunds(guarantorFundingDetails.getAmount());
             if (savingsAccount.getWithdrawableBalance().compareTo(BigDecimal.ZERO) == -1) {
                 final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -200,10 +203,10 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
                 throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist", "Validation errors exist.",
                         dataValidationErrors);
             }
-            DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.hold(savingsAccount,
+            final DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.hold(savingsAccount,
                     guarantorFundingDetails.getAmount(), transactionDate);
-            GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails, null,
-                    onHoldTransaction,null);
+            final GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails, null,
+                    onHoldTransaction, null);
             guarantorFundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
             this.depositAccountOnHoldTransactionRepository.save(onHoldTransaction);
         }
@@ -215,14 +218,14 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
      */
     @Override
     public void releaseGuarantor(final GuarantorFundingDetails guarantorFundingDetails, final LocalDate transactionDate) {
-        BigDecimal amoutForWithdraw = guarantorFundingDetails.getAmountRemaining();
+        final BigDecimal amoutForWithdraw = guarantorFundingDetails.getAmountRemaining();
         if (amoutForWithdraw.compareTo(BigDecimal.ZERO) == 1 && (guarantorFundingDetails.getStatus().isActive())) {
-            SavingsAccount savingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
+            final SavingsAccount savingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
             savingsAccount.releaseFunds(amoutForWithdraw);
-            DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.release(savingsAccount, amoutForWithdraw,
-                    transactionDate);
-            GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails, null,
-                    onHoldTransaction,null);
+            final DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.release(savingsAccount,
+                    amoutForWithdraw, transactionDate);
+            final GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails, null,
+                    onHoldTransaction, null);
             guarantorFundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
             guarantorFundingDetails.releaseFunds(amoutForWithdraw);
             guarantorFundingDetails.withdrawFunds(amoutForWithdraw);
@@ -238,14 +241,14 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
      * releases guarantor)
      */
     @Override
-    public void transaferFundsFromGuarantor(final Loan loan,final LocalDate guarantorRecoveryDate) {
+    public void transaferFundsFromGuarantor(final Loan loan, final LocalDate guarantorRecoveryDate) {
         if (loan.getGuaranteeAmount().compareTo(BigDecimal.ZERO) != 1) { return; }
         final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
         final boolean isRegularTransaction = true;
         final boolean isExceptionForBalanceCheck = true;
-        LocalDate transactionDate;
-        PortfolioAccountType fromAccountType = PortfolioAccountType.SAVINGS;
-        PortfolioAccountType toAccountType = PortfolioAccountType.LOAN;
+        LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
+        final PortfolioAccountType fromAccountType = PortfolioAccountType.SAVINGS;
+        final PortfolioAccountType toAccountType = PortfolioAccountType.LOAN;
         final Long toAccountId = loan.getId();
         final String description = "Payment from guarantor savings";
         final Locale locale = null;
@@ -261,41 +264,45 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
 
         final String txnExternalId = null;
         final SavingsAccount toSavingsAccount = null;
-        if(guarantorRecoveryDate!=null){
-            transactionDate=guarantorRecoveryDate;
-        }else{
-            transactionDate=new LocalDate();
-        }
+        if (guarantorRecoveryDate != null) {
+            transactionDate = guarantorRecoveryDate;
 
-        Long loanId = loan.getId();
+            final Long loanId = loan.getId();
 
-        for (Guarantor guarantor : existGuarantorList) {
-            final List<GuarantorFundingDetails> fundingDetails = guarantor.getGuarantorFundDetails();
-            for (GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
-                if (guarantorFundingDetails.getStatus().isActive()) {
-                    final SavingsAccount fromSavingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
-                    final Long fromAccountId = fromSavingsAccount.getId();
-                    releaseLoanIds.put(loanId, guarantorFundingDetails.getId());
-                    try {
-                        BigDecimal remainingAmount = guarantorFundingDetails.getAmountRemaining();
-                        //caritas specific change, they expected to recover all guaranteed amount even 
-                        //principal equals to the guaranteed amount so following if condition not required
-                        /*if (loan.getGuaranteeAmount().compareTo(loan.getPrincpal().getAmount()) == 1) {
-                            remainingAmount = remainingAmount.multiply(loan.getPrincpal().getAmount()).divide(loan.getGuaranteeAmount(),
-                                    roundingMode);
-                        }*/
-                        AccountTransferDTO accountTransferDTO = new AccountTransferDTO(transactionDate, remainingAmount, fromAccountType,
-                                toAccountType, fromAccountId, toAccountId, description, locale, fmt, paymentDetail, fromTransferType,
-                                toTransferType, chargeId, loanInstallmentNumber, transferType, accountTransferDetails, noteText,
-                                txnExternalId, loan, toSavingsAccount, fromSavingsAccount, isRegularTransaction, isExceptionForBalanceCheck);
-                        transferAmount(accountTransferDTO);
-                    } finally {
-                        releaseLoanIds.remove(loanId);
+            for (final Guarantor guarantor : existGuarantorList) {
+                final List<GuarantorFundingDetails> fundingDetails = guarantor.getGuarantorFundDetails();
+                for (final GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
+                    if (guarantorFundingDetails.getStatus().isActive()) {
+                        final SavingsAccount fromSavingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
+                        final Long fromAccountId = fromSavingsAccount.getId();
+                        this.releaseLoanIds.put(loanId, guarantorFundingDetails.getId());
+                        try {
+                            final BigDecimal remainingAmount = guarantorFundingDetails.getAmountRemaining();
+                            // caritas specific change, they expected to recover
+                            // all guaranteed amount even
+                            // principal equals to the guaranteed amount so
+                            // following if condition not required
+                            /*
+                             * if (loan.getGuaranteeAmount().compareTo(loan.
+                             * getPrincpal().getAmount()) == 1) {
+                             * remainingAmount =
+                             * remainingAmount.multiply(loan.getPrincpal().
+                             * getAmount()).divide(loan.getGuaranteeAmount(),
+                             * roundingMode); }
+                             */
+                            final AccountTransferDTO accountTransferDTO = new AccountTransferDTO(transactionDate, remainingAmount,
+                                    fromAccountType, toAccountType, fromAccountId, toAccountId, description, locale, fmt, paymentDetail,
+                                    fromTransferType, toTransferType, chargeId, loanInstallmentNumber, transferType, accountTransferDetails,
+                                    noteText, txnExternalId, loan, toSavingsAccount, fromSavingsAccount, isRegularTransaction,
+                                    isExceptionForBalanceCheck);
+                            transferAmount(accountTransferDTO);
+                        } finally {
+                            this.releaseLoanIds.remove(loanId);
+                        }
                     }
                 }
             }
         }
-
     }
 
     /**
@@ -318,26 +325,25 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
     /**
      * Method reverses all blocked fund(both hold and release) transactions.
      * example: reverses all transactions on undo approval of loan account.
-     * 
+     *
      */
     private void reverseAllFundTransaction(final Loan loan) {
 
-    	Long loanId = loan.getId();
-    	 final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-    	  final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("Guarantor");
-    	
+        final Long loanId = loan.getId();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("Guarantor");
+
         if (loan.getGuaranteeAmount().compareTo(BigDecimal.ZERO) == 1) {
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
-            List<GuarantorFundingDetails> guarantorFundingDetailList = new ArrayList<>();
-            for (Guarantor guarantor : existGuarantorList) {
-            	
+            final List<GuarantorFundingDetails> guarantorFundingDetailList = new ArrayList<>();
+            for (final Guarantor guarantor : existGuarantorList) {
+
                 final List<GuarantorFundingDetails> fundingDetails = guarantor.getGuarantorFundDetails();
-                for (GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
-                
-                
-                	deleteGuarantorOnUndoApproved(guarantor,baseDataValidator,guarantorFundingDetails,loanId);
-                	
-                	guarantorFundingDetails.undoAllTransactions();
+                for (final GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
+
+                    deleteGuarantorOnUndoApproved(guarantor, baseDataValidator, guarantorFundingDetails, loanId);
+
+                    guarantorFundingDetails.undoAllTransactions();
                     guarantorFundingDetailList.add(guarantorFundingDetails);
                 }
             }
@@ -349,60 +355,66 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
         }
     }
 
-    
     /**
-     * Following method for deleting the guarantor after undo the loan approved*/
-    
+     * Following method for deleting the guarantor after undo the loan approved
+     */
+
     private void deleteGuarantorOnUndoApproved(final Guarantor guarantorForDelete, final DataValidatorBuilder baseDataValidator,
-            GuarantorFundingDetails guarantorFundingDetails, Long loanId){
-    	
-    	  final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-    	  Long guarantorFundingId = guarantorFundingDetails.getId();
-        
-          GuarantorWritePlatformServiceJpaRepositoryIImpl guarantorWritePlatformServiceImpl = new GuarantorWritePlatformServiceJpaRepositoryIImpl();
-    	
-    	      if (guarantorFundingId == null) {
-                 if (!guarantorForDelete.isActive()) {
-                    baseDataValidator.failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_NOT_ACTIVE_ERROR);
-                 }
-                 guarantorForDelete.updateStatus(false);
-               } else {
-        
-             if (guarantorFundingDetails == null) { throw new GuarantorNotFoundException(loanId, guarantorForDelete.getId(),
-                     guarantorFundingId); }
-             guarantorWritePlatformServiceImpl.removeguarantorFundDetails(guarantorForDelete, baseDataValidator, guarantorFundingDetails);
-         }
-         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
-                 "Validation errors exist.", dataValidationErrors); }
-         this.guarantorRepository.saveAndFlush(guarantorForDelete); 	
+            final GuarantorFundingDetails guarantorFundingDetails, final Long loanId) {
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final Long guarantorFundingId = guarantorFundingDetails == null ? null : guarantorFundingDetails.getId();
+
+        if (guarantorFundingId == null) {
+            if (!guarantorForDelete.isActive()) {
+                baseDataValidator.failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_NOT_ACTIVE_ERROR);
+            }
+            guarantorForDelete.updateStatus(false);
+        } else {
+
+            if (guarantorFundingDetails == null) { throw new GuarantorNotFoundException(loanId, guarantorForDelete.getId(),
+                    guarantorFundingId); }
+
+            if (!guarantorFundingDetails.getStatus().isActive()) {
+                baseDataValidator.failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_NOT_ACTIVE_ERROR);
+            }
+            GuarantorFundStatusType fundStatusType = GuarantorFundStatusType.DELETED;
+            if (guarantorForDelete.getLoan().isDisbursed() || guarantorForDelete.getLoan().isApproved()) {
+                fundStatusType = GuarantorFundStatusType.WITHDRAWN;
+                releaseGuarantor(guarantorFundingDetails, DateUtils.getLocalDateOfTenant());
+            }
+            guarantorForDelete.updateStatus(guarantorFundingDetails, fundStatusType);
+
+        }
+        if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
+                "Validation errors exist.", dataValidationErrors); }
+        this.guarantorRepository.saveAndFlush(guarantorForDelete);
     }
-    
-    
-    
+
     /**
      * Method holds all guarantor's guarantee amount for a loan account.
      * example: hold funds on approval of loan account.
-     * 
+     *
      */
     private void holdGuarantorFunds(final Loan loan) {
         if (loan.loanProduct().isHoldGuaranteeFundsEnabled()) {
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
-            List<GuarantorFundingDetails> guarantorFundingDetailList = new ArrayList<>();
-            List<DepositAccountOnHoldTransaction> onHoldTransactions = new ArrayList<>();
+            final List<GuarantorFundingDetails> guarantorFundingDetailList = new ArrayList<>();
+            final List<DepositAccountOnHoldTransaction> onHoldTransactions = new ArrayList<>();
             BigDecimal totalGuarantee = BigDecimal.ZERO;
-            List<Long> insufficientBalanceIds = new ArrayList<>();
-            for (Guarantor guarantor : existGuarantorList) {
+            final List<Long> insufficientBalanceIds = new ArrayList<>();
+            for (final Guarantor guarantor : existGuarantorList) {
                 final List<GuarantorFundingDetails> fundingDetails = guarantor.getGuarantorFundDetails();
-                for (GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
+                for (final GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
                     if (guarantorFundingDetails.getStatus().isActive()) {
-                        SavingsAccount savingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
+                        final SavingsAccount savingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
                         savingsAccount.holdFunds(guarantorFundingDetails.getAmount());
                         totalGuarantee = totalGuarantee.add(guarantorFundingDetails.getAmount());
-                        DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.hold(savingsAccount,
+                        final DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.hold(savingsAccount,
                                 guarantorFundingDetails.getAmount(), loan.getApprovedOnDate());
                         onHoldTransactions.add(onHoldTransaction);
-                        GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails,
-                                null, onHoldTransaction,null);
+                        final GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(
+                                guarantorFundingDetails, null, onHoldTransaction, null);
                         guarantorFundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
                         guarantorFundingDetailList.add(guarantorFundingDetails);
                         if (savingsAccount.getWithdrawableBalance().compareTo(BigDecimal.ZERO) == -1) {
@@ -433,20 +445,19 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
      * and then self guarantee) for a loan account in the portion of guarantee
      * percentage on a paid principal. example: releases funds on repayments of
      * loan account.
-     * 
+     *
      */
     private void releaseGuarantorFunds(final LoanTransaction loanTransaction) {
         final Loan loan = loanTransaction.getLoan();
-        
         if (loan.getGuaranteeAmount().compareTo(BigDecimal.ZERO) == 1) {
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
-            List<GuarantorFundingDetails> externalGuarantorList = new ArrayList<>();
-            List<GuarantorFundingDetails> selfGuarantorList = new ArrayList<>();
+            final List<GuarantorFundingDetails> externalGuarantorList = new ArrayList<>();
+            final List<GuarantorFundingDetails> selfGuarantorList = new ArrayList<>();
             BigDecimal selfGuarantee = BigDecimal.ZERO;
             BigDecimal guarantorGuarantee = BigDecimal.ZERO;
-            for (Guarantor guarantor : existGuarantorList) {
+            for (final Guarantor guarantor : existGuarantorList) {
                 final List<GuarantorFundingDetails> fundingDetails = guarantor.getGuarantorFundDetails();
-                for (GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
+                for (final GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
                     if (guarantorFundingDetails.getStatus().isActive()) {
                         if (guarantor.isSelfGuarantee()) {
                             selfGuarantorList.add(guarantorFundingDetails);
@@ -460,23 +471,24 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
             }
 
             BigDecimal amountForRelease = loanTransaction.getPrincipalPortion();
-            BigDecimal totalGuaranteeAmount = loan.getGuaranteeAmount();
-            BigDecimal principal = loan.getPrincpal().getAmount();
-			if ((amountForRelease != null) && (totalGuaranteeAmount != null)) {
-				amountForRelease = amountForRelease.multiply(totalGuaranteeAmount).divide(principal, this.roundingMode);
+            final BigDecimal totalGuaranteeAmount = loan.getGuaranteeAmount();
+            final BigDecimal principal = loan.getPrincpal().getAmount();
+            if ((amountForRelease != null) && (totalGuaranteeAmount != null)) {
+                amountForRelease = amountForRelease.multiply(totalGuaranteeAmount).divide(principal, this.roundingMode);
 
-				// caritas specific code change
+                // caritas specific code change
 
-				if (loan.status().isOverpaid() || loan.status().isClosedObligationsMet()) {
-					amountForRelease = selfGuarantee.add(guarantorGuarantee);
-				}
-                List<DepositAccountOnHoldTransaction> accountOnHoldTransactions = new ArrayList<>();
+                if (loan.status().isOverpaid() || loan.status().isClosedObligationsMet()) {
+                    amountForRelease = selfGuarantee.add(guarantorGuarantee);
+                }
+                final List<DepositAccountOnHoldTransaction> accountOnHoldTransactions = new ArrayList<>();
 
-                BigDecimal amountLeft = calculateAndRelaseGuarantorFunds(externalGuarantorList, guarantorGuarantee, amountForRelease,
-                    loanTransaction, accountOnHoldTransactions);
+                final BigDecimal amountLeft = calculateAndRelaseGuarantorFunds(externalGuarantorList, guarantorGuarantee, amountForRelease,
+                        loanTransaction, accountOnHoldTransactions);
 
                 if (amountLeft.compareTo(BigDecimal.ZERO) == 1) {
-                    calculateAndRelaseGuarantorFunds(selfGuarantorList, selfGuarantee, amountLeft, loanTransaction, accountOnHoldTransactions);
+                    calculateAndRelaseGuarantorFunds(selfGuarantorList, selfGuarantee, amountLeft, loanTransaction,
+                            accountOnHoldTransactions);
                     externalGuarantorList.addAll(selfGuarantorList);
                 }
 
@@ -492,26 +504,26 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
     /**
      * Method releases all guarantor's guarantee amount. example: releases funds
      * on write-off of a loan account.
-     * 
+     *
      */
     private void releaseAllGuarantors(final LoanTransaction loanTransaction) {
-        Loan loan = loanTransaction.getLoan();
+        final Loan loan = loanTransaction.getLoan();
         if (loan.getGuaranteeAmount().compareTo(BigDecimal.ZERO) == 1) {
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
-            List<GuarantorFundingDetails> saveGuarantorFundingDetails = new ArrayList<>();
-            List<DepositAccountOnHoldTransaction> onHoldTransactions = new ArrayList<>();
-            for (Guarantor guarantor : existGuarantorList) {
+            final List<GuarantorFundingDetails> saveGuarantorFundingDetails = new ArrayList<>();
+            final List<DepositAccountOnHoldTransaction> onHoldTransactions = new ArrayList<>();
+            for (final Guarantor guarantor : existGuarantorList) {
                 final List<GuarantorFundingDetails> fundingDetails = guarantor.getGuarantorFundDetails();
-                for (GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
-                    BigDecimal amoutForRelease = guarantorFundingDetails.getAmountRemaining();
+                for (final GuarantorFundingDetails guarantorFundingDetails : fundingDetails) {
+                    final BigDecimal amoutForRelease = guarantorFundingDetails.getAmountRemaining();
                     if (amoutForRelease.compareTo(BigDecimal.ZERO) == 1 && (guarantorFundingDetails.getStatus().isActive())) {
-                        SavingsAccount savingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
+                        final SavingsAccount savingsAccount = guarantorFundingDetails.getLinkedSavingsAccount();
                         savingsAccount.releaseFunds(amoutForRelease);
-                        DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.release(savingsAccount,
+                        final DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.release(savingsAccount,
                                 amoutForRelease, loanTransaction.getTransactionDate());
                         onHoldTransactions.add(onHoldTransaction);
-                        GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails,
-                                loanTransaction, onHoldTransaction,null);
+                        final GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(
+                                guarantorFundingDetails, loanTransaction, onHoldTransaction, null);
                         guarantorFundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
                         guarantorFundingDetails.releaseFunds(amoutForRelease);
                         saveGuarantorFundingDetails.add(guarantorFundingDetails);
@@ -534,12 +546,13 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
      * guarantor's.
      */
     private void completeGuarantorFund(final LoanTransaction loanTransaction) {
-        Loan loan = loanTransaction.getLoan();
-        GuarantorFundingDetails guarantorFundingDetails = this.guarantorFundingRepository.findOne(releaseLoanIds.get(loan.getId()));
+        final Loan loan = loanTransaction.getLoan();
+        final GuarantorFundingDetails guarantorFundingDetails = this.guarantorFundingRepository
+                .findOne(this.releaseLoanIds.get(loan.getId()));
         if (guarantorFundingDetails != null) {
-            BigDecimal amountForRelease = loanTransaction.getAmount(loan.getCurrency()).getAmount();
-            BigDecimal guarantorGuarantee = amountForRelease;
-            List<GuarantorFundingDetails> guarantorList = Arrays.asList(guarantorFundingDetails);
+            final BigDecimal amountForRelease = loanTransaction.getAmount(loan.getCurrency()).getAmount();
+            final BigDecimal guarantorGuarantee = amountForRelease;
+            final List<GuarantorFundingDetails> guarantorList = Arrays.asList(guarantorFundingDetails);
             final List<DepositAccountOnHoldTransaction> accountOnHoldTransactions = new ArrayList<>();
             calculateAndRelaseGuarantorFunds(guarantorList, guarantorGuarantee, amountForRelease, loanTransaction,
                     accountOnHoldTransactions);
@@ -548,24 +561,24 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
         }
     }
 
-    private BigDecimal calculateAndRelaseGuarantorFunds(List<GuarantorFundingDetails> guarantorList, BigDecimal totalGuaranteeAmount,
-            BigDecimal amountForRelease, LoanTransaction loanTransaction,
+    private BigDecimal calculateAndRelaseGuarantorFunds(final List<GuarantorFundingDetails> guarantorList,
+            final BigDecimal totalGuaranteeAmount, final BigDecimal amountForRelease, final LoanTransaction loanTransaction,
             final List<DepositAccountOnHoldTransaction> accountOnHoldTransactions) {
         BigDecimal amountLeft = amountForRelease;
-        for (GuarantorFundingDetails fundingDetails : guarantorList) {
+        for (final GuarantorFundingDetails fundingDetails : guarantorList) {
             BigDecimal guarantorAmount = amountForRelease.multiply(fundingDetails.getAmountRemaining()).divide(totalGuaranteeAmount,
-                    roundingMode);
+                    MoneyHelper.getRoundingMode());
             if (fundingDetails.getAmountRemaining().compareTo(guarantorAmount) < 1) {
                 guarantorAmount = fundingDetails.getAmountRemaining();
             }
             fundingDetails.releaseFunds(guarantorAmount);
-            SavingsAccount savingsAccount = fundingDetails.getLinkedSavingsAccount();
+            final SavingsAccount savingsAccount = fundingDetails.getLinkedSavingsAccount();
             savingsAccount.releaseFunds(guarantorAmount);
-            DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.release(savingsAccount, guarantorAmount,
-                    loanTransaction.getTransactionDate());
+            final DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.release(savingsAccount,
+                    guarantorAmount, loanTransaction.getTransactionDate());
             accountOnHoldTransactions.add(onHoldTransaction);
-            GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(fundingDetails, loanTransaction,
-                    onHoldTransaction,null);
+            final GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(fundingDetails, loanTransaction,
+                    onHoldTransaction, null);
             fundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
             amountLeft = amountLeft.subtract(guarantorAmount);
         }
@@ -578,9 +591,9 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
      */
     private void reverseTransaction(final List<Long> loanTransactionIds) {
 
-        List<GuarantorFundingTransaction> fundingTransactions = this.guarantorFundingTransactionRepository
+        final List<GuarantorFundingTransaction> fundingTransactions = this.guarantorFundingTransactionRepository
                 .fetchGuarantorFundingTransactions(loanTransactionIds);
-        for (GuarantorFundingTransaction fundingTransaction : fundingTransactions) {
+        for (final GuarantorFundingTransaction fundingTransaction : fundingTransactions) {
             fundingTransaction.reverseTransaction();
         }
         if (!fundingTransactions.isEmpty()) {
@@ -591,309 +604,198 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
     private class ValidateOnBusinessEvent implements BusinessEventListner {
 
         @Override
-        public void businessEventToBeExecuted(@SuppressWarnings("unused") Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
+        public void businessEventToBeExecuted(@SuppressWarnings("unused") final Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
 
         @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            final Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
             if (entity instanceof Loan) {
-                Loan loan = (Loan) entity;
+                final Loan loan = (Loan) entity;
                 validateGuarantorBusinessRules(loan);
             }
-        }
-
-        @Override
-        public void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
         }
     }
 
     private class HoldFundsOnBusinessEvent implements BusinessEventListner {
 
         @Override
-        public void businessEventToBeExecuted(@SuppressWarnings("unused") Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
+        public void businessEventToBeExecuted(@SuppressWarnings("unused") final Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
 
         @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            final Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
             if (entity instanceof Loan) {
-                Loan loan = (Loan) entity;
+                final Loan loan = (Loan) entity;
                 holdGuarantorFunds(loan);
             }
-        }
-
-        @Override
-        public void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
         }
     }
 
     private class ReleaseFundsOnBusinessEvent implements BusinessEventListner {
 
         @Override
-        public void businessEventToBeExecuted(@SuppressWarnings("unused") Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
+        public void businessEventToBeExecuted(@SuppressWarnings("unused") final Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
 
         @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            final Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
             if (entity instanceof LoanTransaction) {
-                LoanTransaction loanTransaction = (LoanTransaction) entity;
-                if (releaseLoanIds.containsKey(loanTransaction.getLoan().getId())) {
+                final LoanTransaction loanTransaction = (LoanTransaction) entity;
+                if (GuarantorDomainServiceImpl.this.releaseLoanIds.containsKey(loanTransaction.getLoan().getId())) {
                     completeGuarantorFund(loanTransaction);
                 } else {
                     releaseGuarantorFunds(loanTransaction);
                 }
             }
         }
-
-        @Override
-        public void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
     }
 
     private class ReverseFundsOnBusinessEvent implements BusinessEventListner {
 
         @Override
-        public void businessEventToBeExecuted(@SuppressWarnings("unused") Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
+        public void businessEventToBeExecuted(@SuppressWarnings("unused") final Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
 
         @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            final Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
             if (entity instanceof LoanTransaction) {
-                LoanTransaction loanTransaction = (LoanTransaction) entity;
-                List<Long> reersedTransactions = new ArrayList<>(1);
+                final LoanTransaction loanTransaction = (LoanTransaction) entity;
+                final List<Long> reersedTransactions = new ArrayList<>(1);
                 reersedTransactions.add(loanTransaction.getId());
                 reverseTransaction(reersedTransactions);
             }
-        }
-
-        @Override
-        public void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
         }
     }
 
     private class AdjustFundsOnBusinessEvent implements BusinessEventListner {
 
         @Override
-        public void businessEventToBeExecuted(@SuppressWarnings("unused") Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
+        public void businessEventToBeExecuted(@SuppressWarnings("unused") final Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
 
         @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_ADJUSTED_TRANSACTION);
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            final Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_ADJUSTED_TRANSACTION);
             if (entity instanceof LoanTransaction) {
-                LoanTransaction loanTransaction = (LoanTransaction) entity;
-                List<Long> reersedTransactions = new ArrayList<>(1);
+                final LoanTransaction loanTransaction = (LoanTransaction) entity;
+                final List<Long> reersedTransactions = new ArrayList<>(1);
                 reersedTransactions.add(loanTransaction.getId());
                 reverseTransaction(reersedTransactions);
             }
-            Object transactionentity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
+            final Object transactionentity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
             if (transactionentity != null && transactionentity instanceof LoanTransaction) {
-                LoanTransaction loanTransaction = (LoanTransaction) transactionentity;
+                final LoanTransaction loanTransaction = (LoanTransaction) transactionentity;
                 releaseGuarantorFunds(loanTransaction);
             }
-        }
-
-        @Override
-        public void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
         }
     }
 
     private class ReverseAllFundsOnBusinessEvent implements BusinessEventListner {
 
         @Override
-        public void businessEventToBeExecuted(@SuppressWarnings("unused") Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
+        public void businessEventToBeExecuted(@SuppressWarnings("unused") final Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
 
         @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            final Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
             if (entity instanceof Loan) {
-                Loan loan = (Loan) entity;
-                List<Long> reersedTransactions = new ArrayList<>(1);
+                final Loan loan = (Loan) entity;
+                final List<Long> reersedTransactions = new ArrayList<>(1);
                 reersedTransactions.addAll(loan.findExistingTransactionIds());
                 reverseTransaction(reersedTransactions);
             }
-        }
-
-        @Override
-        public void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
         }
     }
 
     private class UndoAllFundTransactions implements BusinessEventListner {
 
         @Override
-        public void businessEventToBeExecuted(@SuppressWarnings("unused") Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
+        public void businessEventToBeExecuted(@SuppressWarnings("unused") final Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
 
         @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            final Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
             if (entity instanceof Loan) {
-                Loan loan = (Loan) entity;
+                final Loan loan = (Loan) entity;
                 reverseAllFundTransaction(loan);
             }
-        }
-
-        @Override
-        public void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
         }
     }
 
     private class ReleaseAllFunds implements BusinessEventListner {
 
         @Override
-        public void businessEventToBeExecuted(@SuppressWarnings("unused") Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
+        public void businessEventToBeExecuted(@SuppressWarnings("unused") final Map<BUSINESS_ENTITY, Object> businessEventEntity) {}
 
         @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            final Object entity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
             if (entity instanceof LoanTransaction) {
-                LoanTransaction loanTransaction = (LoanTransaction) entity;
+                final LoanTransaction loanTransaction = (LoanTransaction) entity;
                 releaseAllGuarantors(loanTransaction);
             }
         }
-
-        @Override
-        public void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity) {
-            // TODO Auto-generated method stub
-            
-        }
     }
-    
+
     /**
-       * 
-       * Following method reverse the fund release transactions in case of deposit transaction revered
-       *
-       */
-    
-    private void reverseTransactionIfDepositUndoTxn(final List<Long> savingsTransactionIds, SavingsAccountTransaction transaction){
-    	    	List<GuarantorFundingTransaction> fundingTransactions = this.guarantorFundingTransactionRepository
-    	    			.fetchGuarantorFundingTransactionsForSavingsTxnId(savingsTransactionIds);
-    	    	
-    	    	Long savingTransactionSavingAccId = transaction.getSavingsAccount().getId();
-    	    	for(GuarantorFundingTransaction fundingTransaction : fundingTransactions){
-    	    	  Long fundingTxnSavingAccountId = fundingTransaction.getDepositAccountOnHoldTransaction().getSavingsAccount().getId();
-    	    	  Loan guarantorLoanAccount = fundingTransaction.getGuarantorFundingDetails().getAccountAssociations().getLoanAccount();
-    	    	  SavingsAccount savingsAccount = this.savingsAccountRepositoy.findOne(fundingTxnSavingAccountId);
-      	    	  BigDecimal savingAccountBalance = savingsAccount.getSummary().getAccountBalance();
-    	    	  BigDecimal undoTxnAmount = fundingTransaction.getDepositAccountOnHoldTransaction().getAmount();
-    	    	  if((savingAccountBalance.longValue() > undoTxnAmount.longValue()) && (guarantorLoanAccount.isOpen())){
-    	    		  if(savingTransactionSavingAccId == fundingTxnSavingAccountId){
-      	    			fundingTransaction.undoDepositSavingAccTxnThenUndoOnhold(undoTxnAmount);
-      	    		}else{
-      	    			fundingTransaction.reverseTransactionIfDepositUndoTxn();
-      	    		}  
-    	    	  }else{
-    	    		  throw new UndoReleasedGuarantorNotAllowed(guarantorLoanAccount.getId());
-    	    	  }
-    	    	}
-    	    	
-    	    	if(!fundingTransactions.isEmpty()){
-    	    		this.guarantorFundingTransactionRepository.save(fundingTransactions);
-    	    	}
-    	    
-    	    }
-    
-    
-    //following change for undo deposit transaction need to undo release guarantor
-        
-        private class UndoReleaseFundIfUndoDeposit implements BusinessEventListner{
-    
-    		@Override
-    		public void businessEventToBeExecuted(
-    				Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-    			// TODO Auto-generated method stub
-    			
-    		}
-    
-    		@Override
-    		public void businessEventWasExecuted(
-    				Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-    			// TODO Auto-generated method stub
-    			
-    			  Object savingTransactionEntity = businessEventEntity.get(BUSINESS_ENTITY.SAVINGS_TRANSACTION);
-    	            if(savingTransactionEntity != null && savingTransactionEntity instanceof SavingsAccountTransaction){
-    	            	SavingsAccountTransaction savingTransaction = (SavingsAccountTransaction) savingTransactionEntity; 
-    	            	List<Long> reversedTransactions = new ArrayList<>(1);
-    	            	reversedTransactions.add(savingTransaction.getId());
-    	            	reverseTransactionIfDepositUndoTxn(reversedTransactions,savingTransaction);
-    	            }
-    	            
-    		}
-    
-    		@Override
-    		public void businessEventToBeExecuted(
-    				AbstractPersistable<Long> businessEventEntity) {
-    			// TODO Auto-generated method stub
-    			
-    		}
-   
-    		@Override
-    		public void businessEventWasExecuted(
-    				AbstractPersistable<Long> businessEventEntity) {
-    			// TODO Auto-generated method stub
-    			
-    		}
-        	
+     *
+     * Following method reverse the fund release transactions in case of deposit
+     * transaction revered
+     *
+     */
+
+    private void reverseTransactionIfDepositUndoTxn(final List<Long> savingsTransactionIds, final SavingsAccountTransaction transaction) {
+        final List<GuarantorFundingTransaction> fundingTransactions = this.guarantorFundingTransactionRepository
+                .fetchGuarantorFundingTransactionsForSavingsTxnId(savingsTransactionIds);
+
+        final Long savingTransactionSavingAccId = transaction.getSavingsAccount().getId();
+        for (final GuarantorFundingTransaction fundingTransaction : fundingTransactions) {
+            final Long fundingTxnSavingAccountId = fundingTransaction.getDepositAccountOnHoldTransaction().getSavingsAccount().getId();
+            final Loan guarantorLoanAccount = fundingTransaction.getGuarantorFundingDetails().getAccountAssociations().getLoanAccount();
+            final SavingsAccount savingsAccount = this.savingsAccountRepositoy.findOne(fundingTxnSavingAccountId);
+            final BigDecimal savingAccountBalance = savingsAccount.getSummary().getAccountBalance();
+            final BigDecimal undoTxnAmount = fundingTransaction.getDepositAccountOnHoldTransaction().getAmount();
+            if ((savingAccountBalance.longValue() > undoTxnAmount.longValue()) && (guarantorLoanAccount.isOpen())) {
+                if (savingTransactionSavingAccId == fundingTxnSavingAccountId) {
+                    fundingTransaction.undoDepositSavingAccTxnThenUndoOnhold(undoTxnAmount);
+                } else {
+                    fundingTransaction.reverseTransactionIfDepositUndoTxn();
+                }
+            } else {
+                throw new UndoReleasedGuarantorNotAllowed(guarantorLoanAccount.getId());
+            }
         }
+
+        if (!fundingTransactions.isEmpty()) {
+            this.guarantorFundingTransactionRepository.save(fundingTransactions);
+        }
+
+    }
+
+    // following change for undo deposit transaction need to undo release
+    // guarantor
+
+    private class UndoReleaseFundIfUndoDeposit implements BusinessEventListner {
+
+        @Override
+        public void businessEventToBeExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void businessEventWasExecuted(final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            // TODO Auto-generated method stub
+
+            final Object savingTransactionEntity = businessEventEntity.get(BUSINESS_ENTITY.SAVING_TRANSACTION);
+            if (savingTransactionEntity != null && savingTransactionEntity instanceof SavingsAccountTransaction) {
+                final SavingsAccountTransaction savingTransaction = (SavingsAccountTransaction) savingTransactionEntity;
+                final List<Long> reversedTransactions = new ArrayList<>(1);
+                reversedTransactions.add(savingTransaction.getId());
+                reverseTransactionIfDepositUndoTxn(reversedTransactions, savingTransaction);
+            }
+
+        }
+
+    }
 
 }

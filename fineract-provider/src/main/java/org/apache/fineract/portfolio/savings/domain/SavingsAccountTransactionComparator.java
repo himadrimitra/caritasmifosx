@@ -31,11 +31,14 @@ public class SavingsAccountTransactionComparator implements Comparator<SavingsAc
         int compareResult = 0;
         final int comparsion = o1.transactionLocalDate().compareTo(o2.transactionLocalDate());
         if (comparsion == 0) {
-            compareResult = o1.createdDate().compareTo(o2.createdDate());
-            if (compareResult == 0 && o1.getId() != null && o2.getId() != null) {
-                compareResult = o1.getId().compareTo(o2.getId());
-            } else {
-                compareResult = comparsion;
+            if (o1.isInterestPosting() && !o2.isInterestPosting()) {
+                compareResult = -1;
+            }
+            if (!o1.isInterestPosting() && o2.isInterestPosting()) {
+                compareResult = 1;
+            }
+            if (compareResult == 0) {
+                compareResult = o1.createdDate().compareTo(o2.createdDate());
             }
         } else {
             compareResult = comparsion;

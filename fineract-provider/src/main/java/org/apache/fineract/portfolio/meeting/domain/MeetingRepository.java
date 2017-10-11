@@ -26,4 +26,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpecificationExecutor<Meeting> {
 
     Meeting findByCalendarInstanceIdAndMeetingDate(Long calendarInstanceId, Date meetingDate);
+
 }

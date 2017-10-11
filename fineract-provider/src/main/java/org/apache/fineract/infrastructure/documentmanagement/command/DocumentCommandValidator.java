@@ -62,7 +62,7 @@ public class DocumentCommandValidator {
         baseDataValidator.reset().parameter("name").value(this.command.getName()).notBlank().notExceedingLengthOf(250);
         baseDataValidator.reset().parameter("size").value(this.command.getSize()).integerGreaterThanZero();
         baseDataValidator.reset().parameter("fileName").value(this.command.getFileName()).notBlank().notExceedingLengthOf(250);
-        baseDataValidator.reset().parameter("description").value(this.command.getName()).notExceedingLengthOf(250);
+        baseDataValidator.reset().parameter("description").value(this.command.getDescription()).notExceedingLengthOf(250);
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
                 "Validation errors exist.", dataValidationErrors); }

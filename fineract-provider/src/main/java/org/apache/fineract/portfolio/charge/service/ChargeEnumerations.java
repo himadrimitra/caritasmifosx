@@ -23,6 +23,8 @@ import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 
 public class ChargeEnumerations {
 
@@ -74,14 +76,39 @@ public class ChargeEnumerations {
                         ChargeTimeType.OVERDUE_INSTALLMENT.getCode(), "Overdue Fees");
             break;
             case OVERDRAFT_FEE:
-                optionData = new EnumOptionData(ChargeTimeType.OVERDRAFT_FEE.getValue().longValue(),
-                        ChargeTimeType.OVERDRAFT_FEE.getCode(), "Overdraft Fee");
+                optionData = new EnumOptionData(ChargeTimeType.OVERDRAFT_FEE.getValue().longValue(), ChargeTimeType.OVERDRAFT_FEE.getCode(),
+                        "Overdraft Fee");
             break;
             case LATE_DEPOSITE_FEE:
                 optionData = new EnumOptionData(ChargeTimeType.LATE_DEPOSITE_FEE.getValue().longValue(),
                         ChargeTimeType.LATE_DEPOSITE_FEE.getCode(), "Savings Late Fee");
             break;
 
+            case TRANCHE_DISBURSEMENT:
+                optionData = new EnumOptionData(ChargeTimeType.TRANCHE_DISBURSEMENT.getValue().longValue(),
+                        ChargeTimeType.TRANCHE_DISBURSEMENT.getCode(), "Tranche Disbursement");
+            break;
+            case SHAREACCOUNT_ACTIVATION:
+                optionData = new EnumOptionData(ChargeTimeType.SHAREACCOUNT_ACTIVATION.getValue().longValue(),
+                        ChargeTimeType.SHAREACCOUNT_ACTIVATION.getCode(), "Share Account Activate");
+            break;
+
+            case SHARE_PURCHASE:
+                optionData = new EnumOptionData(ChargeTimeType.SHARE_PURCHASE.getValue().longValue(),
+                        ChargeTimeType.SHARE_PURCHASE.getCode(), "Share Purchase");
+            break;
+            case SHARE_REDEEM:
+                optionData = new EnumOptionData(ChargeTimeType.SHARE_REDEEM.getValue().longValue(), ChargeTimeType.SHARE_REDEEM.getCode(),
+                        "Share Redeem");
+            break;
+            case SAVINGS_NOACTIVITY_FEE:
+                optionData = new EnumOptionData(ChargeTimeType.SAVINGS_NOACTIVITY_FEE.getValue().longValue(),
+                        ChargeTimeType.SAVINGS_NOACTIVITY_FEE.getCode(), "Saving No Activity Fee");
+            break;
+            case UPFRONT_FEE:
+                optionData = new EnumOptionData(ChargeTimeType.UPFRONT_FEE.getValue().longValue(), ChargeTimeType.UPFRONT_FEE.getCode(),
+                        "Upfront Fee");
+            break;
             default:
                 optionData = new EnumOptionData(ChargeTimeType.INVALID.getValue().longValue(), ChargeTimeType.INVALID.getCode(), "Invalid");
             break;
@@ -102,6 +129,12 @@ public class ChargeEnumerations {
             case SAVINGS:
                 optionData = new EnumOptionData(ChargeAppliesTo.SAVINGS.getValue().longValue(), ChargeAppliesTo.SAVINGS.getCode(),
                         "Savings");
+            break;
+            case CLIENT:
+                optionData = new EnumOptionData(ChargeAppliesTo.CLIENT.getValue().longValue(), ChargeAppliesTo.CLIENT.getCode(), "Client");
+            break;
+            case SHARES:
+                optionData = new EnumOptionData(ChargeAppliesTo.SHARES.getValue().longValue(), ChargeAppliesTo.SHARES.getCode(), "Shares");
             break;
             default:
                 optionData = new EnumOptionData(ChargeAppliesTo.INVALID.getValue().longValue(), ChargeAppliesTo.INVALID.getCode(),
@@ -124,7 +157,7 @@ public class ChargeEnumerations {
             break;
             case PERCENT_OF_AMOUNT:
                 optionData = new EnumOptionData(ChargeCalculationType.PERCENT_OF_AMOUNT.getValue().longValue(),
-                        ChargeCalculationType.PERCENT_OF_AMOUNT.getCode(), "% Amount");
+                        ChargeCalculationType.PERCENT_OF_AMOUNT.getCode(), "% Approved Amount");
             break;
             case PERCENT_OF_AMOUNT_AND_INTEREST:
                 optionData = new EnumOptionData(ChargeCalculationType.PERCENT_OF_AMOUNT_AND_INTEREST.getValue().longValue(),
@@ -133,6 +166,18 @@ public class ChargeEnumerations {
             case PERCENT_OF_INTEREST:
                 optionData = new EnumOptionData(ChargeCalculationType.PERCENT_OF_INTEREST.getValue().longValue(),
                         ChargeCalculationType.PERCENT_OF_INTEREST.getCode(), "% Interest");
+            break;
+            case PERCENT_OF_DISBURSEMENT_AMOUNT:
+                optionData = new EnumOptionData(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue().longValue(),
+                        ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getCode(), "% Disbursement Amount");
+            break;
+            case SLAB_BASED:
+                optionData = new EnumOptionData(ChargeCalculationType.SLAB_BASED.getValue().longValue(),
+                        ChargeCalculationType.SLAB_BASED.getCode(), "Slab Based");
+            break;
+            case PERCENT_OF_AMOUNT_INTEREST_AND_FEES:
+                optionData = new EnumOptionData(ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES.getValue().longValue(),
+                        ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES.getCode(), "%(Loan Amount + Interest + Fees)");
             break;
             default:
                 optionData = new EnumOptionData(ChargeCalculationType.INVALID.getValue().longValue(),
@@ -156,6 +201,48 @@ public class ChargeEnumerations {
             default:
                 optionData = new EnumOptionData(ChargePaymentMode.REGULAR.getValue().longValue(), ChargePaymentMode.REGULAR.getCode(),
                         "Regular");
+            break;
+        }
+        return optionData;
+    }
+
+    public static EnumOptionData glimChargeCalculationType(final int id) {
+        return glimChargeCalculationType(GlimChargeCalculationType.fromInt(id));
+    }
+
+    public static EnumOptionData glimChargeCalculationType(final GlimChargeCalculationType type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case INVALID:
+                optionData = new EnumOptionData(GlimChargeCalculationType.INVALID.getValue().longValue(),
+                        GlimChargeCalculationType.INVALID.getCode(), "Invalid");
+            break;
+            case ROUND:
+                optionData = new EnumOptionData(GlimChargeCalculationType.ROUND.getValue().longValue(),
+                        GlimChargeCalculationType.ROUND.getCode(), "round");
+            break;
+            case ROUND_WITH_MAX_CHARGE:
+                optionData = new EnumOptionData(GlimChargeCalculationType.ROUND_WITH_MAX_CHARGE.getValue().longValue(),
+                        GlimChargeCalculationType.ROUND_WITH_MAX_CHARGE.getCode(), "round with max charge");
+            break;
+            case ROUND_WITHOUT_MAX_CHARGE:
+                optionData = new EnumOptionData(GlimChargeCalculationType.ROUND_WITHOUT_MAX_CHARGE.getValue().longValue(),
+                        GlimChargeCalculationType.ROUND_WITHOUT_MAX_CHARGE.getCode(), "round without max charge");
+            break;
+        }
+        return optionData;
+    }
+
+    public static EnumOptionData slabChargeType(final SlabChargeType type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case INSTALLMENT_AMOUNT:
+                optionData = new EnumOptionData(SlabChargeType.INSTALLMENT_AMOUNT.getValue().longValue(),
+                        SlabChargeType.INSTALLMENT_AMOUNT.getCode(), SlabChargeType.INSTALLMENT_AMOUNT.getDisplayValue());
+            break;
+            case INSTALLMENT_NUMBER:
+                optionData = new EnumOptionData(SlabChargeType.INSTALLMENT_NUMBER.getValue().longValue(),
+                        SlabChargeType.INSTALLMENT_NUMBER.getCode(), SlabChargeType.INSTALLMENT_NUMBER.getDisplayValue());
             break;
         }
         return optionData;

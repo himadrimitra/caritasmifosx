@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.configuration.domain;
 
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,7 +26,10 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
+import org.apache.fineract.infrastructure.configuration.exception.GlobalConfigurationPropertyCannotBeModfied;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.security.exception.ForcePasswordResetException;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -39,43 +43,57 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
     private boolean enabled;
 
     @Column(name = "value", nullable = true)
-    private Long value;
-    
+    private String value;
+
+    @Column(name = "date_value", nullable = true)
+    private Date dateValue;
+
     @Column(name = "description", nullable = true)
     private final String description;
+
+    @Column(name = "is_trap_door", nullable = false)
+    private final boolean isTrapDoor;
 
     protected GlobalConfigurationProperty() {
         this.name = null;
         this.enabled = false;
         this.value = null;
+        this.dateValue = null;
         this.description = null;
+        this.isTrapDoor = false;
     }
 
-    public GlobalConfigurationProperty(final String name, final boolean enabled, final Long value,
-    		final String description) {
+    public GlobalConfigurationProperty(final String name, final boolean enabled, final String value, final Date dateValue,
+            final String description, final boolean isTrapDoor) {
         this.name = name;
         this.enabled = enabled;
         this.value = value;
+        this.dateValue = dateValue;
         this.description = description;
+        this.isTrapDoor = isTrapDoor;
     }
 
     public boolean isEnabled() {
         return this.enabled;
     }
 
-    public Long getValue() {
+    public String getValue() {
         return this.value;
     }
 
-    public boolean updateTo(final boolean value) {
-        final boolean updated = this.enabled != value;
-        this.enabled = value;
-        return updated;
+    public Date getDateValue() {
+        return this.dateValue;
+    }
+
+    public String getName() {
+        return this.name;
     }
 
     public Map<String, Object> update(final JsonCommand command) {
 
         final Map<String, Object> actualChanges = new LinkedHashMap<>(7);
+
+        if (this.isTrapDoor == true) { throw new GlobalConfigurationPropertyCannotBeModfied(getId()); }
 
         final String enabledParamName = "enabled";
         if (command.isChangeInBooleanParameterNamed(enabledParamName, this.enabled)) {
@@ -85,19 +103,42 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
         }
 
         final String valueParamName = "value";
-        if (command.isChangeInLongParameterNamed(valueParamName, this.value)) {
-            final Long newValue = command.longValueOfParameterNamed(valueParamName);
+        final String previousValue = this.value;
+        if (command.isChangeInStringParameterNamed(valueParamName, this.value)) {
+            final String newValue = command.stringValueOfParameterNamed(valueParamName);
             actualChanges.put(valueParamName, newValue);
             this.value = newValue;
+        }
+
+        final String dateValueParamName = "dateValue";
+        if (command.isChangeInDateParameterNamed(dateValueParamName, this.dateValue)) {
+            final Date newDateValue = command.DateValueOfParameterNamed(dateValueParamName);
+            actualChanges.put(dateValueParamName, newDateValue);
+            this.dateValue = newDateValue;
+        }
+
+        final String passwordPropertyName = "force-password-reset-days";
+        if (this.name.equalsIgnoreCase(passwordPropertyName)) {
+            if (this.enabled == true && command.hasParameter(valueParamName) && loangValue(this.value) == 0 || this.enabled == true
+                    && !command.hasParameter(valueParamName) && loangValue(previousValue) == 0) { throw new ForcePasswordResetException(); }
         }
 
         return actualChanges;
 
     }
 
-    public static GlobalConfigurationProperty newSurveyConfiguration(final String name)
-    {
-        return new GlobalConfigurationProperty(name, false, null, null);
+    public static GlobalConfigurationProperty newSurveyConfiguration(final String name) {
+        return new GlobalConfigurationProperty(name, false, null, null, null, false);
+    }
+
+    private Long loangValue(final String value) {
+        if (value == null) { return null; }
+        return Long.parseLong(value);
+    }
+
+    public GlobalConfigurationPropertyData toData() {
+        return new GlobalConfigurationPropertyData(getName(), isEnabled(), getValue(), getDateValue(), getId(), this.description,
+                this.isTrapDoor);
     }
 
 }

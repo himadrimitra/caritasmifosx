@@ -18,6 +18,12 @@
  */
 package org.apache.fineract.portfolio.loanaccount.api;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
+
 public interface LoanApiConstants {
 
     public static final String emiAmountParameterName = "fixedEmiAmount";
@@ -28,7 +34,9 @@ public interface LoanApiConstants {
     public static final String updatedDisbursementDateParameterName = "updatedExpectedDisbursementDate";
     public static final String updatedDisbursementPrincipalParameterName = "updatedPrincipal";
     public static final String disbursementIdParameterName = "id";
+    public static final String loanChargeIdParameterName = "loanChargeId";
     public static final String principalDisbursedParameterName = "transactionAmount";
+    public static final String chargesParameterName = "charges";
 
     public static final String approvedLoanAmountParameterName = "approvedLoanAmount";
     public static final String approvedOnDateParameterName = "approvedOnDate";
@@ -38,16 +46,57 @@ public interface LoanApiConstants {
     public static final String rejectedOnDateParameterName = "rejectedOnDate";
     public static final String withdrawnOnDateParameterName = "withdrawnOnDate";
 
-    // Interest recalculation related
-    public static final String isInterestRecalculationEnabledParameterName = "isInterestRecalculationEnabled";
+    public static final String transactionProcessingStrategyIdParameterName = "transactionProcessingStrategyId";
+    public static final String loanPurposeIdParameterName = "loanPurposeId";
+    public static final String loanOfficerIdParameterName = "loanOfficerId";
+    public static final String fundIdParameterName = "fundId";
+    public static final String externalIdParameterName = "externalId";
+    public static final String accountNoParameterName = "accountNo";
+    public static final String productIdParameterName = "productId";
+    public static final String calendarIdParameterName = "calendarId";
+    public static final String loanTypeParameterName = "loanType";
+    public static final String groupIdParameterName = "groupId";
+    public static final String clientIdParameterName = "clientId";
+    public static final String idParameterName = "id";
+    public static final String graceOnInterestChargedParameterName = "graceOnInterestCharged";
+    public static final String graceOnInterestPaymentParameterName = "graceOnInterestPayment";
+    public static final String graceOnPrincipalPaymentParameterName = "graceOnPrincipalPayment";
+    public static final String repaymentsStartingFromDateParameterName = "repaymentsStartingFromDate";
+    public static final String interestRateFrequencyTypeParameterName = "interestRateFrequencyType";
+    public static final String interestCalculationPeriodTypeParameterName = "interestCalculationPeriodType";
+    public static final String interestTypeParameterName = "interestType";
+    public static final String amortizationTypeParameterName = "amortizationType";
+    public static final String repaymentFrequencyTypeParameterName = "repaymentFrequencyType";
+    public static final String loanTermFrequencyTypeParameterName = "loanTermFrequencyType";
+    public static final String loanTermFrequencyParameterName = "loanTermFrequency";
+    public static final String numberOfRepaymentsParameterName = "numberOfRepayments";
+    public static final String repaymentEveryParameterName = "repaymentEvery";
+    public static final String interestRatePerPeriodParameterName = "interestRatePerPeriod";
+    public static final String inArrearsToleranceParameterName = "inArrearsTolerance";
+    public static final String interestChargedFromDateParameterName = "interestChargedFromDate";
+    public static final String submittedOnDateParameterName = "submittedOnDate";
+    public static final String submittedOnNoteParameterName = "interestChargedFromDate";
+    public static final String collateralParameterName = "collateral";
+    public static final String syncDisbursementWithMeetingParameterName = "syncDisbursementWithMeeting";
+    public static final String linkAccountIdParameterName = "linkAccountId";
+    public static final String createStandingInstructionAtDisbursementParameterName = "createStandingInstructionAtDisbursement";
     public static final String daysInYearTypeParameterName = "daysInYearType";
     public static final String daysInMonthTypeParameterName = "daysInMonthType";
+
+    // Interest recalculation related
+    public static final String isInterestRecalculationEnabledParameterName = "isInterestRecalculationEnabled";
     public static final String interestRecalculationCompoundingMethodParameterName = "interestRecalculationCompoundingMethod";
     public static final String rescheduleStrategyMethodParameterName = "rescheduleStrategyMethod";
-    
+    public static final String repaymentFrequencyNthDayTypeParameterName = "repaymentFrequencyNthDayType";
+    public static final String repaymentFrequencyDayOfWeekTypeParameterName = "repaymentFrequencyDayOfWeekType";
+
+    // Floating interest rate related
+    public static final String interestRateDifferentialParameterName = "interestRateDifferential";
+    public static final String isFloatingInterestRateParameterName = "isFloatingInterestRate";
+
     // Error codes
-    public static final String LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_INTEREST_CALCULATION_TYPE= "loancharge.with.calculation.type.interest.not.allowed";
-    public static final String LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_PRINCIPAL_CALCULATION_TYPE= "loancharge.with.calculation.type.principal.not.allowed";
+    public static final String LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_INTEREST_CALCULATION_TYPE = "loancharge.with.calculation.type.interest.not.allowed";
+    public static final String LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_PRINCIPAL_CALCULATION_TYPE = "loancharge.with.calculation.type.principal.not.allowed";
     public static final String DISBURSEMENT_DATE_START_WITH_ERROR = "first.disbursement.date.must.start.with.expected.disbursement.date";
     public static final String PRINCIPAL_AMOUNT_SHOULD_BE_SAME = "sum.of.multi.disburse.amounts.must.equal.with.total.principal";
     public static final String DISBURSEMENT_DATE_UNIQUE_ERROR = "disbursement.date.must.be.unique.for.tranches";
@@ -57,4 +106,79 @@ public interface LoanApiConstants {
     public static final String DISBURSEMENT_DATE_BEFORE_ERROR = "disbursement.date.of.tranche.cannot.be.before.expected.disbursement.date";
 
 
+    public static final String isFloatingInterestRate = "isFloatingInterestRate";
+    public static final String interestRateDifferential = "interestRateDifferential";
+
+    public static final String exceptionParamName = "exceptions";
+    public static final String modifiedinstallmentsParamName = "modifiedinstallments";
+    public static final String newinstallmentsParamName = "newinstallments";
+    public static final String deletedinstallmentsParamName = "deletedinstallments";
+    public static final String dueDateParamName = "dueDate";
+    public static final String modifiedDueDateParamName = "modifiedDueDate";
+    public static final String principalParamName = "principal";
+    public static final String installmentAmountParamName = "installmentAmount";
+    public static final String recurringMoratoriumOnPrincipalPeriods = "recurringMoratoriumOnPrincipalPeriods";
+    //loan write off
+    public static final String WRITEOFFREASONS = "WriteOffReasons";
+    
+    public static final String subsidyReleaseDate = "subsidyReleaseDate";
+    public static final String subsidyAmountReleased = "subsidyAmountReleased";
+
+    // fore closure constants
+    public static final String transactionDateParamName = "transactionDate";
+    public static final String noteParamName = "note";
+
+    public static final String canUseForTopup = "canUseForTopup";
+    public static final String clientActiveLoanOptions = "clientActiveLoanOptions";
+    public static final String isTopup = "isTopup";
+    public static final String loanIdToClose = "loanIdToClose";
+    public static final String topupAmount = "topupAmount";
+    
+    public static final String LOAN = "loan";
+
+    
+    //glim constants
+    public static final String clientMembersParamName = "clientMembers";
+    public static final String loanPurposeIdParamName = "loanPurposeId";
+    public static final String proposedAmountParamName = "proposedAmount";
+    public static final String amountParamName = "amount";
+    public static final String idParamName = "id";
+    public static final String glimIdParamName = "glimId";
+    public static final String isClientSelectedParamName = "isClientSelected";
+    public static final String upfrontChargesAmountParamName = "upfrontChargesAmount";
+    public static final String GLIM = "glim";
+
+    // glim repayment constants
+    public static final String principalPortionParamName = "principalPortion";
+    public static final String interestPortionParamName = "interestPortion";
+    public static final String chargePortionParamName = "chargePortion";
+    public static final String feePortionParamName = "feePortion";
+    public static final String penaltyPortionParamName = "penaltyPortion";
+    public static final String transactionAmountParamName = "transactionAmount";
+    
+    //expected payment type
+    public static final String expectedDisbursalPaymentTypeParamName = "expectedDisbursalPaymentType";
+    public static final String expectedRepaymentPaymentTypeParamName = "expectedRepaymentPaymentType";
+    public static final String paymentOptionsParamName = "paymentOptions";
+    
+    public static final String skipAuthenticationRule = "skipAuthenticationRule";
+    public static final String syncRepaymentsWithMeeting = "syncRepaymentsWithMeeting";
+    public static final String discountOnDisbursalAmountParameterName = "discountOnDisbursalAmount";
+    public static final String amountForUpfrontCollectionParameterName = "amountForUpfrontCollection";
+    
+    // Interest recalculation related
+    public static final String recalculationCompoundingFrequencyStartDateParamName = "recalculationCompoundingFrequencyStartDate";
+    public static final String recalculationRestFrequencyStartDateParamName = "recalculationRestFrequencyStartDate";
+    
+    public static final Set<LoanStatus> loanStatusAllowedForPayment = new HashSet<>(Arrays.asList(LoanStatus.ACTIVE ,LoanStatus.CLOSED_OBLIGATIONS_MET ,LoanStatus.OVERPAID ));
+    public static final Set<Integer> EXCLUDED_STATUS_FOR_GLIM_PAYMENT_AS_GROUP = new HashSet<>(Arrays.asList(
+            LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(), LoanStatus.APPROVED.getValue()));
+    
+    public static final String tillDateParamName = "tillDate";
+    public static final String loanListParamName = "loanList";
+    public static final String localeParamName = "locale";
+    public static final String dateFormatParamName = "dateFormat";
+    
+    public static final Set<String> LOAN_SCHEDULE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(tillDateParamName,
+            localeParamName, dateFormatParamName, loanListParamName));
 }

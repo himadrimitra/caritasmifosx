@@ -36,7 +36,7 @@ public final class SavingsHelper {
 
     AccountTransfersReadPlatformService accountTransfersReadPlatformService = null;
 
-    public SavingsHelper(AccountTransfersReadPlatformService accountTransfersReadPlatformService) {
+    public SavingsHelper(final AccountTransfersReadPlatformService accountTransfersReadPlatformService) {
         this.accountTransfersReadPlatformService = accountTransfersReadPlatformService;
     }
 
@@ -44,23 +44,40 @@ public final class SavingsHelper {
 
     public List<LocalDateInterval> determineInterestPostingPeriods(final LocalDate startInterestCalculationLocalDate,
             final LocalDate interestPostingUpToDate, final SavingsPostingInterestPeriodType postingPeriodType,
-            final Integer financialYearBeginningMonth) {
+            final Integer financialYearBeginningMonth, final List<LocalDate> postInterestAsOn) {
 
         final List<LocalDateInterval> postingPeriods = new ArrayList<>();
-
         LocalDate periodStartDate = startInterestCalculationLocalDate;
         LocalDate periodEndDate = periodStartDate;
+        LocalDate actualPeriodStartDate = periodStartDate;
 
         while (!periodStartDate.isAfter(interestPostingUpToDate) && !periodEndDate.isAfter(interestPostingUpToDate)) {
 
             final LocalDate interestPostingLocalDate = determineInterestPostingPeriodEndDateFrom(periodStartDate, postingPeriodType,
                     interestPostingUpToDate, financialYearBeginningMonth);
+
             periodEndDate = interestPostingLocalDate.minusDays(1);
+
+            if (!postInterestAsOn.isEmpty()) {
+                for (final LocalDate transactiondate : postInterestAsOn) {
+                    if (periodStartDate.isBefore(transactiondate)
+                            && (periodEndDate.isAfter(transactiondate) || periodEndDate.isEqual(transactiondate))) {
+                        periodEndDate = transactiondate.minusDays(1);
+                        actualPeriodStartDate = periodEndDate;
+                        break;
+                    }
+                }
+            }
 
             postingPeriods.add(LocalDateInterval.create(periodStartDate, periodEndDate));
 
-            periodEndDate = interestPostingLocalDate;
-            periodStartDate = interestPostingLocalDate;
+            if (actualPeriodStartDate.isEqual(periodEndDate)) {
+                periodEndDate = actualPeriodStartDate.plusDays(1);
+                periodStartDate = actualPeriodStartDate.plusDays(1);
+            } else {
+                periodEndDate = interestPostingLocalDate;
+                periodStartDate = interestPostingLocalDate;
+            }
         }
 
         return postingPeriods;
@@ -73,7 +90,9 @@ public final class SavingsHelper {
         LocalDate periodEndDate = interestPostingUpToDate;
         final Integer monthOfYear = periodStartDate.getMonthOfYear();
         financialYearBeginningMonth--;
-        if (financialYearBeginningMonth == 0) financialYearBeginningMonth = 12;
+        if (financialYearBeginningMonth == 0) {
+            financialYearBeginningMonth = 12;
+        }
 
         final ArrayList<LocalDate> quarterlyDates = new ArrayList<>();
         quarterlyDates.add(periodStartDate.withMonthOfYear(financialYearBeginningMonth).dayOfMonth().withMaximumValue());
@@ -101,7 +120,7 @@ public final class SavingsHelper {
                 periodEndDate = periodStartDate.dayOfMonth().withMaximumValue();
             break;
             case QUATERLY:
-                for (LocalDate quarterlyDate : quarterlyDates) {
+                for (final LocalDate quarterlyDate : quarterlyDates) {
                     if (quarterlyDate.isAfter(periodStartDate)) {
                         periodEndDate = quarterlyDate;
                         isEndDateSet = true;
@@ -109,10 +128,12 @@ public final class SavingsHelper {
                     }
                 }
 
-                if (!isEndDateSet) periodEndDate = quarterlyDates.get(0).plusYears(1).dayOfMonth().withMaximumValue();
+                if (!isEndDateSet) {
+                    periodEndDate = quarterlyDates.get(0).plusYears(1).dayOfMonth().withMaximumValue();
+                }
             break;
             case BIANNUAL:
-                for (LocalDate biannualDate : biannualDates) {
+                for (final LocalDate biannualDate : biannualDates) {
                     if (biannualDate.isAfter(periodStartDate)) {
                         periodEndDate = biannualDate;
                         isEndDateSet = true;
@@ -120,7 +141,9 @@ public final class SavingsHelper {
                     }
                 }
 
-                if (!isEndDateSet) periodEndDate = biannualDates.get(0).plusYears(1).dayOfMonth().withMaximumValue();
+                if (!isEndDateSet) {
+                    periodEndDate = biannualDates.get(0).plusYears(1).dayOfMonth().withMaximumValue();
+                }
             break;
             case ANNUAL:
                 if (financialYearBeginningMonth < monthOfYear) {
@@ -132,20 +155,18 @@ public final class SavingsHelper {
                 periodEndDate = periodEndDate.dayOfMonth().withMaximumValue();
             break;
         }
-
         // interest posting always occurs on next day after the period end date.
         periodEndDate = periodEndDate.plusDays(1);
-
         return periodEndDate;
     }
 
     public Money calculateInterestForAllPostingPeriods(final MonetaryCurrency currency, final List<PostingPeriod> allPeriods,
-            LocalDate accountLockedUntil, Boolean immediateWithdrawalOfInterest) {
+            final LocalDate accountLockedUntil, final Boolean immediateWithdrawalOfInterest) {
         return this.compoundInterestHelper.calculateInterestForAllPostingPeriods(currency, allPeriods, accountLockedUntil,
                 immediateWithdrawalOfInterest);
     }
 
-    public Collection<Long> fetchPostInterestTransactionIds(Long accountId) {
+    public Collection<Long> fetchPostInterestTransactionIds(final Long accountId) {
         return this.accountTransfersReadPlatformService.fetchPostInterestTransactionIds(accountId);
     }
 }

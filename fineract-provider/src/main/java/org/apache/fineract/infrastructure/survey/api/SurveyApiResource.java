@@ -82,7 +82,7 @@ public class SurveyApiResource {
 
         this.context.authenticatedUser().validateHasReadPermission(SurveyApiConstants.SURVEY_RESOURCE_NAME);
 
-        List<SurveyDataTableData> surveys = this.readSurveyService.retrieveAllSurveys();
+        final List<SurveyDataTableData> surveys = this.readSurveyService.retrieveAllSurveys();
         return this.toApiJsonSerializer.serialize(surveys);
     }
 
@@ -94,7 +94,7 @@ public class SurveyApiResource {
 
         this.context.authenticatedUser().validateHasReadPermission(SurveyApiConstants.SURVEY_RESOURCE_NAME);
 
-        SurveyDataTableData surveys = this.readSurveyService.retrieveSurvey(surveyName);
+        final SurveyDataTableData surveys = this.readSurveyService.retrieveSurvey(surveyName);
 
         return this.toApiJsonSerializer.serialize(surveys);
 
@@ -126,7 +126,7 @@ public class SurveyApiResource {
 
         this.context.authenticatedUser().validateHasReadPermission(SurveyApiConstants.SURVEY_RESOURCE_NAME);
 
-        List<ClientScoresOverview> scores = this.readSurveyService.retrieveClientSurveyScoreOverview(clientId);
+        final List<ClientScoresOverview> scores = this.readSurveyService.retrieveClientSurveyScoreOverview(clientId);
 
         return this.toApiJsonClientScoreOverviewSerializer.serialize(scores);
     }
@@ -153,8 +153,8 @@ public class SurveyApiResource {
     public String register(@PathParam("surveyName") final String datatable, @PathParam("apptable") final String apptable,
             final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().registerSurvey(datatable, apptable)
-                .withJson(apiRequestBodyAsJson).build();
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().registerSurvey(datatable, apptable).withJson(apiRequestBodyAsJson)
+                .build();
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
@@ -170,7 +170,7 @@ public class SurveyApiResource {
             @PathParam("fulfilledId") final Long fulfilledId) {
 
         final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .deleteDatatable(surveyName, clientId, fulfilledId) //
+                .deleteDatatable(surveyName, clientId.toString(), fulfilledId) //
                 .build();
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);

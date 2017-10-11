@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
@@ -37,9 +38,15 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.joda.time.LocalDate;
 
 @Entity
-@Table(name = "acc_gl_closure", uniqueConstraints = { @UniqueConstraint(columnNames = { "office_id", "closing_date" }, name = "office_id_closing_date") })
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Table(name = "acc_gl_closure", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "office_id", "closing_date" }, name = "office_id_closing_date") })
 public class GLClosure extends AbstractAuditableCustom<AppUser, Long> {
 
     @ManyToOne
@@ -100,6 +107,10 @@ public class GLClosure extends AbstractAuditableCustom<AppUser, Long> {
 
     public Office getOffice() {
         return this.office;
+    }
+
+    public LocalDate getClosingLocalDate() {
+        return new LocalDate(this.closingDate);
     }
 
 }

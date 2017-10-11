@@ -33,6 +33,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.joda.time.MonthDay;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -173,6 +174,10 @@ public class FromJsonHelper {
         return this.helperDelegator.extractArrayNamed(parameterName, element, new HashSet<String>());
     }
 
+    public Integer[] extractIntegerArrayNamed(final String parameterName, final JsonElement element) {
+        return this.helperDelegator.extractIntegerArrayNamed(parameterName, element);
+    }
+    
     public String[] extractArrayNamed(final String parameterName, final JsonElement element, final Set<String> parametersPassedInRequest) {
         return this.helperDelegator.extractArrayNamed(parameterName, element, parametersPassedInRequest);
     }
@@ -197,7 +202,11 @@ public class FromJsonHelper {
     public LocalDate extractLocalDateNamed(final String parameterName, final JsonElement element) {
         return this.helperDelegator.extractLocalDateNamed(parameterName, element, new HashSet<String>());
     }
-
+    
+    public LocalDateTime extractLocalTimeNamed(final String parameterName, final JsonElement element) {
+        return this.helperDelegator.extractLocalTimeNamed(parameterName, element, new HashSet<String>());
+    }
+    
     public LocalDate extractLocalDateNamed(final String parameterName, final JsonElement element, final String dateFormat,
             final Locale locale) {
         return this.helperDelegator.extractLocalDateNamed(parameterName, element.getAsJsonObject(), dateFormat, locale,

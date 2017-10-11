@@ -33,9 +33,9 @@ import org.springframework.stereotype.Component;
  * Implements {@link org.apache.fineract.batch.command.CommandStrategy} and
  * applies a new loan on an existing client. It passes the contents of the body
  * from the BatchRequest to
- * {@link org.mifosplatform.portfolio.client.api.LoansApiResource} and gets back
+ * {@link org.apache.fineract.portfolio.client.api.LoansApiResource} and gets back
  * the response. This class will also catch any errors raised by
- * {@link org.mifosplatform.portfolio.client.api.LoansApiResource} and map those
+ * {@link org.apache.fineract.portfolio.client.api.LoansApiResource} and map those
  * errors to appropriate status codes in BatchResponse.
  * 
  * @author Rishabh Shukla
@@ -62,13 +62,14 @@ public class ApplyLoanCommandStrategy implements CommandStrategy {
 
         response.setRequestId(request.getRequestId());
         response.setHeaders(request.getHeaders());
+        final boolean includePastTranches = true;
 
         // Try-catch blocks to map exceptions to appropriate status codes
         try {
 
             // Calls 'SubmitLoanFunction' function from 'LoansApiResource' to
             // Apply Loan to an existing client
-            responseBody = loansApiResource.calculateLoanScheduleOrSubmitLoanApplication(null, null, request.getBody());
+            responseBody = loansApiResource.calculateLoanScheduleOrSubmitLoanApplication(null, null,includePastTranches, request.getBody());
 
             response.setStatusCode(200);
             // Sets the body of the response after loan is successfully applied

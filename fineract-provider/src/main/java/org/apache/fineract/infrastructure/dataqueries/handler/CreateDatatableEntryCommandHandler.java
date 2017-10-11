@@ -41,8 +41,7 @@ public class CreateDatatableEntryCommandHandler implements NewCommandSourceHandl
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
 
-        final CommandProcessingResult commandProcessingResult = this.writePlatformService.createNewDatatableEntry(command.entityName(),
-                command.entityId(), command);
+        final CommandProcessingResult commandProcessingResult = this.writePlatformService.createNewDatatableEntry(command);
 
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
@@ -52,6 +51,8 @@ public class CreateDatatableEntryCommandHandler implements NewCommandSourceHandl
                 .withClientId(commandProcessingResult.getClientId()) //
                 .withSavingsId(commandProcessingResult.getSavingsId()) //
                 .withLoanId(commandProcessingResult.getLoanId()) //
+                .withTransactionId(commandProcessingResult.getTransactionId())//
+                .withEntityId(commandProcessingResult.resourceId())//
                 .build();
     }
 }

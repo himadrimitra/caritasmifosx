@@ -24,12 +24,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.accounting.journalentry.api.DateParam;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.sms.SmsApiConstants;
+import org.apache.fineract.infrastructure.sms.domain.SmsMessageStatusType;
+import org.apache.fineract.infrastructure.sms.exception.InvalidSmsStatusException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -129,6 +133,18 @@ public final class SmsDataValidator {
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    public void validateQueryParams(final Integer status, final DateParam dateFrom, final DateParam dateTo, final String dateFormat) {
+        if (status != null) {
+            if (SmsMessageStatusType
+                    .fromInt(status) == SmsMessageStatusType.INVALID) { throw new InvalidSmsStatusException(status.toString()); }
+        }
+
+        if (dateFrom != null || dateTo != null) {
+            if (dateFormat == null) { throw new GeneralPlatformDomainRuleException("error.msg.sms.dateformat.cannot.be.empty",
+                    "date format is not passed in query parameter.", "dateFormat"); }
+        }
     }
 
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {

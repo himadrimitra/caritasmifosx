@@ -30,8 +30,9 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
-import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
+import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductInterestRecalculationDetails;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanRescheduleStrategyMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
 import org.joda.time.LocalDate;
@@ -48,7 +49,6 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 @Table(name = "m_loan_recalculation_details")
 public class LoanInterestRecalculationDetails extends AbstractPersistable<Long> {
 
-    @SuppressWarnings("unused")
     @OneToOne
     @JoinColumn(name = "loan_id", nullable = false)
     private Loan loan;
@@ -71,9 +71,18 @@ public class LoanInterestRecalculationDetails extends AbstractPersistable<Long> 
     @Column(name = "rest_frequency_interval", nullable = false)
     private Integer restInterval;
 
+    @Column(name = "rest_frequency_nth_day_enum", nullable = true)
+    private Integer restFrequencyNthDay;
+
+    @Column(name = "rest_frequency_weekday_enum", nullable = true)
+    private Integer restFrequencyWeekday;
+
+    @Column(name = "rest_frequency_on_day", nullable = true)
+    private Integer restFrequencyOnDay;
+    
     @Temporal(TemporalType.DATE)
-    @Column(name = "rest_freqency_date")
-    private Date restFrequencyDate;
+    @Column(name = "rest_frequency_start_date")
+    private Date restFrequencyStartDate;
 
     @Column(name = "compounding_frequency_type_enum", nullable = true)
     private Integer compoundingFrequencyType;
@@ -81,76 +90,79 @@ public class LoanInterestRecalculationDetails extends AbstractPersistable<Long> 
     @Column(name = "compounding_frequency_interval", nullable = true)
     private Integer compoundingInterval;
 
+    @Column(name = "compounding_frequency_nth_day_enum", nullable = true)
+    private Integer compoundingFrequencyNthDay;
+    @Column(name = "compounding_frequency_weekday_enum", nullable = true)
+    private Integer compoundingFrequencyWeekday;
+    @Column(name = "compounding_frequency_on_day", nullable = true)
+    private Integer compoundingFrequencyOnDay;
+    
     @Temporal(TemporalType.DATE)
-    @Column(name = "compounding_freqency_date")
-    private Date compoundingFrequencyDate;
+    @Column(name = "compounding_frequency_start_date")
+    private Date compoundingFrequencyStartDate;
+
+    @Column(name = "is_compounding_to_be_posted_as_transaction")
+    private Boolean isCompoundingToBePostedAsTransaction;
+    @Column(name = "allow_compounding_on_eod")
+    private Boolean allowCompoundingOnEod;
+
+    @Column(name = "is_subsidy_applicable")
+    private Boolean isSubsidyApplicable;
 
     protected LoanInterestRecalculationDetails() {
         // Default constructor for jpa repository
     }
 
     private LoanInterestRecalculationDetails(final Integer interestRecalculationCompoundingMethod, final Integer rescheduleStrategyMethod,
-            final Integer restFrequencyType, final Integer restInterval, final Date restFrequencyDate, Integer compoundingFrequencyType,
-            Integer compoundingInterval, Date compoundingFrequencyDate) {
+            final Integer restFrequencyType, final Integer restInterval, final Integer restFrequencyNthDay, Integer restFrequencyWeekday,
+            Integer restFrequencyOnDay, final LocalDate restFrequencyStartDate, Integer compoundingFrequencyType, Integer compoundingInterval,
+            Integer compoundingFrequencyNthDay, Integer compoundingFrequencyWeekday, Integer compoundingFrequencyOnDay,
+            final boolean isCompoundingToBePostedAsTransaction, final boolean allowCompoundingOnEod, final Boolean isSubsidyApplicable,
+            final LocalDate compoundingFrequencyStartDate) {
         this.interestRecalculationCompoundingMethod = interestRecalculationCompoundingMethod;
         this.rescheduleStrategyMethod = rescheduleStrategyMethod;
-        this.restFrequencyDate = restFrequencyDate;
+        this.restFrequencyNthDay = restFrequencyNthDay;
+        this.restFrequencyWeekday = restFrequencyWeekday;
+        this.restFrequencyOnDay = restFrequencyOnDay;
         this.restFrequencyType = restFrequencyType;
         this.restInterval = restInterval;
-        this.compoundingFrequencyDate = compoundingFrequencyDate;
+        if (restFrequencyStartDate != null) {
+            this.restFrequencyStartDate = restFrequencyStartDate.toDate();
+        }
+        this.compoundingFrequencyNthDay = compoundingFrequencyNthDay;
+        this.compoundingFrequencyWeekday = compoundingFrequencyWeekday;
+        this.compoundingFrequencyOnDay = compoundingFrequencyOnDay;
         this.compoundingFrequencyType = compoundingFrequencyType;
         this.compoundingInterval = compoundingInterval;
+        this.isCompoundingToBePostedAsTransaction = isCompoundingToBePostedAsTransaction;
+        this.allowCompoundingOnEod = allowCompoundingOnEod;
+        this.isSubsidyApplicable = isSubsidyApplicable;
+        if (compoundingFrequencyStartDate != null) {
+            this.compoundingFrequencyStartDate = compoundingFrequencyStartDate.toDate();
+        }
     }
 
-    public static LoanInterestRecalculationDetails createFrom(final Integer interestRecalculationCompoundingMethod,
-            final Integer rescheduleStrategyMethod, final Integer restFrequencyType, final Integer restInterval,
-            final Date restFrequencyDate, final Integer compoundingFrequencyType, final Integer compoundingInterval,
-            final Date compoundingFrequencyDate) {
-        return new LoanInterestRecalculationDetails(interestRecalculationCompoundingMethod, rescheduleStrategyMethod, restFrequencyType,
-                restInterval, restFrequencyDate, compoundingFrequencyType, compoundingInterval, compoundingFrequencyDate);
+    public static LoanInterestRecalculationDetails createFrom(
+            final LoanProductInterestRecalculationDetails loanProductInterestRecalculationDetails, final LocalDate restFrequencyStartDate,
+            final LocalDate compoundingFrequencyStartDate) {
+        return new LoanInterestRecalculationDetails(loanProductInterestRecalculationDetails.getInterestRecalculationCompoundingMethod(),
+                loanProductInterestRecalculationDetails.getRescheduleStrategyMethod(), loanProductInterestRecalculationDetails
+                        .getRestFrequencyType().getValue(), loanProductInterestRecalculationDetails.getRestInterval(),
+                loanProductInterestRecalculationDetails.getRestFrequencyNthDay(),
+                loanProductInterestRecalculationDetails.getRestFrequencyWeekday(),
+                loanProductInterestRecalculationDetails.getRestFrequencyOnDay(), restFrequencyStartDate,
+                loanProductInterestRecalculationDetails.getCompoundingFrequencyType().getValue(),
+                loanProductInterestRecalculationDetails.getCompoundingInterval(),
+                loanProductInterestRecalculationDetails.getCompoundingFrequencyNthDay(),
+                loanProductInterestRecalculationDetails.getCompoundingFrequencyWeekday(),
+                loanProductInterestRecalculationDetails.getCompoundingFrequencyOnDay(),
+                loanProductInterestRecalculationDetails.getIsCompoundingToBePostedAsTransaction(),
+                loanProductInterestRecalculationDetails.allowCompoundingOnEod(),
+                loanProductInterestRecalculationDetails.isSubsidyApplicable(), compoundingFrequencyStartDate);
     }
 
     public void updateLoan(final Loan loan) {
         this.loan = loan;
-    }
-
-    public void update(final JsonCommand command, final Map<String, Object> actualChanges) {
-        if (command.isChangeInLocalDateParameterNamed(LoanProductConstants.recalculationRestFrequencyDateParamName,
-                getRestFrequencyLocalDate())) {
-            final String dateFormatAsInput = command.dateFormat();
-            final String localeAsInput = command.locale();
-            final String valueAsInput = command.stringValueOfParameterNamed(LoanProductConstants.recalculationRestFrequencyDateParamName);
-            actualChanges.put(LoanProductConstants.recalculationRestFrequencyDateParamName, valueAsInput);
-            actualChanges.put("dateFormat", dateFormatAsInput);
-            actualChanges.put("locale", localeAsInput);
-
-            final LocalDate newValue = command.localDateValueOfParameterNamed(LoanProductConstants.recalculationRestFrequencyDateParamName);
-            if (newValue == null || getRestFrequencyType().isSameAsRepayment()) {
-                this.restFrequencyDate = null;
-            } else {
-                this.restFrequencyDate = newValue.toDate();
-            }
-        }
-
-        if (command.isChangeInLocalDateParameterNamed(LoanProductConstants.recalculationCompoundingFrequencyDateParamName,
-                getCompoundingFrequencyLocalDate())) {
-            final String dateFormatAsInput = command.dateFormat();
-            final String localeAsInput = command.locale();
-            final String valueAsInput = command
-                    .stringValueOfParameterNamed(LoanProductConstants.recalculationCompoundingFrequencyDateParamName);
-            actualChanges.put(LoanProductConstants.recalculationCompoundingFrequencyDateParamName, valueAsInput);
-            actualChanges.put("dateFormat", dateFormatAsInput);
-            actualChanges.put("locale", localeAsInput);
-
-            final LocalDate newValue = command
-                    .localDateValueOfParameterNamed(LoanProductConstants.recalculationCompoundingFrequencyDateParamName);
-            if (newValue == null || !getInterestRecalculationCompoundingMethod().isCompoundingEnabled()
-                    || getCompoundingFrequencyType().isSameAsRepayment()) {
-                this.compoundingFrequencyDate = null;
-            } else {
-                this.compoundingFrequencyDate = newValue.toDate();
-            }
-        }
     }
 
     public InterestRecalculationCompoundingMethod getInterestRecalculationCompoundingMethod() {
@@ -161,28 +173,12 @@ public class LoanInterestRecalculationDetails extends AbstractPersistable<Long> 
         return LoanRescheduleStrategyMethod.fromInt(this.rescheduleStrategyMethod);
     }
 
-    public LocalDate getRestFrequencyLocalDate() {
-        LocalDate recurrenceOnLocalDate = null;
-        if (this.restFrequencyDate != null) {
-            recurrenceOnLocalDate = new LocalDate(this.restFrequencyDate);
-        }
-        return recurrenceOnLocalDate;
-    }
-
     public RecalculationFrequencyType getRestFrequencyType() {
         return RecalculationFrequencyType.fromInt(this.restFrequencyType);
     }
 
     public Integer getRestInterval() {
         return this.restInterval;
-    }
-
-    public LocalDate getCompoundingFrequencyLocalDate() {
-        LocalDate recurrenceOnLocalDate = null;
-        if (this.compoundingFrequencyDate != null) {
-            recurrenceOnLocalDate = new LocalDate(this.compoundingFrequencyDate);
-        }
-        return recurrenceOnLocalDate;
     }
 
     public RecalculationFrequencyType getCompoundingFrequencyType() {
@@ -192,4 +188,119 @@ public class LoanInterestRecalculationDetails extends AbstractPersistable<Long> 
     public Integer getCompoundingInterval() {
         return this.compoundingInterval;
     }
+
+    public Integer getRestFrequencyNthDay() {
+        return this.restFrequencyNthDay;
+    }
+
+    public Integer getRestFrequencyWeekday() {
+        return this.restFrequencyWeekday;
+    }
+
+    public Integer getRestFrequencyOnDay() {
+        return this.restFrequencyOnDay;
+    }
+
+    public Integer getCompoundingFrequencyNthDay() {
+        return this.compoundingFrequencyNthDay;
+    }
+
+    public Integer getCompoundingFrequencyWeekday() {
+        return this.compoundingFrequencyWeekday;
+    }
+
+    public Integer getCompoundingFrequencyOnDay() {
+        return this.compoundingFrequencyOnDay;
+    }
+
+    public boolean isCompoundingToBePostedAsTransaction() {
+        return null == this.isCompoundingToBePostedAsTransaction ? false : this.getInterestRecalculationCompoundingMethod()
+                .isCompoundingEnabled() && this.isCompoundingToBePostedAsTransaction;
+    }
+
+    public boolean allowCompoundingOnEod() {
+        return this.allowCompoundingOnEod;
+    }
+
+    public Boolean isSubsidyApplicable() {
+        return isSubsidyApplicable;
+    }
+    
+    public LocalDate getRestFrequencyStartDateLocalDate() {
+        LocalDate restFrequencyStartDate = null;
+        if (this.restFrequencyStartDate != null) {
+            restFrequencyStartDate = new LocalDate(this.restFrequencyStartDate);
+        }
+        return restFrequencyStartDate;
+    }
+    
+    public LocalDate getRestFrequencyStartDateLocalDate(final Loan loan) {
+        LocalDate restFrequencyStartDate = null;
+        if (this.restFrequencyStartDate == null) {
+            restFrequencyStartDate = loan.getDisbursementDate();
+        } else {
+            restFrequencyStartDate = new LocalDate(this.restFrequencyStartDate);
+        }
+        return restFrequencyStartDate;
+    }
+
+    public void setRestFrequencyStartDate(Date restFrequencyStartDate) {
+        this.restFrequencyStartDate = restFrequencyStartDate;
+    }
+
+    public LocalDate getCompoundingFrequencyStartDateLocalDate() {
+        LocalDate compoundingFrequencyStartDate = null;
+        if (this.compoundingFrequencyStartDate != null) {
+            compoundingFrequencyStartDate = new LocalDate(this.compoundingFrequencyStartDate);
+        }
+        return compoundingFrequencyStartDate;
+    }
+    
+    public LocalDate getCompoundingFrequencyStartDateLocalDate(final Loan loan) {
+        LocalDate compoundingFrequencyStartDate = null;
+        if (this.compoundingFrequencyStartDate == null) {
+            compoundingFrequencyStartDate = loan.getDisbursementDate();
+        } else {
+            compoundingFrequencyStartDate = new LocalDate(this.compoundingFrequencyStartDate);
+        }
+        return compoundingFrequencyStartDate;
+    }
+
+    public void setCompoundingFrequencyStartDate(Date compoundingFrequencyStartDate) {
+        this.compoundingFrequencyStartDate = compoundingFrequencyStartDate;
+    }
+    
+    public void update(final JsonCommand command, final Map<String, Object> actualChanges) {
+        if (command.isChangeInLocalDateParameterNamed(LoanApiConstants.recalculationRestFrequencyStartDateParamName,
+                getRestFrequencyStartDateLocalDate())) {
+            final String valueAsInput = command.stringValueOfParameterNamed(LoanApiConstants.recalculationRestFrequencyStartDateParamName);
+            actualChanges.put(LoanApiConstants.recalculationRestFrequencyStartDateParamName, valueAsInput);
+            actualChanges.put("recalculateLoanSchedule", true);
+
+            final LocalDate newValue = command
+                    .localDateValueOfParameterNamed(LoanApiConstants.recalculationRestFrequencyStartDateParamName);
+            if (newValue == null) {
+                this.restFrequencyStartDate = null;
+            } else {
+                this.restFrequencyStartDate = newValue.toDate();
+            }
+        }
+
+        if (command.isChangeInLocalDateParameterNamed(LoanApiConstants.recalculationCompoundingFrequencyStartDateParamName,
+                getCompoundingFrequencyStartDateLocalDate())) {
+            final String valueAsInput = command
+                    .stringValueOfParameterNamed(LoanApiConstants.recalculationCompoundingFrequencyStartDateParamName);
+            actualChanges.put(LoanApiConstants.recalculationCompoundingFrequencyStartDateParamName, valueAsInput);
+            actualChanges.put("recalculateLoanSchedule", true);
+
+            final LocalDate newValue = command
+                    .localDateValueOfParameterNamed(LoanApiConstants.recalculationCompoundingFrequencyStartDateParamName);
+            if (newValue == null) {
+                this.compoundingFrequencyStartDate = null;
+            } else {
+                this.compoundingFrequencyStartDate = newValue.toDate();
+            }
+        }
+    }
+
 }

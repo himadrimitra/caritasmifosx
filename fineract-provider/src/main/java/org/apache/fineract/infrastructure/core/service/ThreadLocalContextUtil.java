@@ -18,7 +18,9 @@
  */
 package org.apache.fineract.infrastructure.core.service;
 
-import org.apache.fineract.infrastructure.core.domain.MifosPlatformTenant;
+import java.util.Map;
+
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.springframework.util.Assert;
 
 /**
@@ -30,16 +32,20 @@ public class ThreadLocalContextUtil {
 
     private static final ThreadLocal<String> contextHolder = new ThreadLocal<>();
 
-    private static final ThreadLocal<MifosPlatformTenant> tenantcontext = new ThreadLocal<>();
-    
+    private static final ThreadLocal<FineractPlatformTenant> tenantcontext = new ThreadLocal<>();
+
     private static final ThreadLocal<String> authTokenContext = new ThreadLocal<>();
 
-    public static void setTenant(final MifosPlatformTenant tenant) {
+    private static final ThreadLocal<Boolean> ignoreOverdue = new ThreadLocal<>();
+
+    private static final ThreadLocal<Map<String, Object>> jobParams = new ThreadLocal<>();
+
+    public static void setTenant(final FineractPlatformTenant tenant) {
         Assert.notNull(tenant, "tenant cannot be null");
         tenantcontext.set(tenant);
     }
 
-    public static MifosPlatformTenant getTenant() {
+    public static FineractPlatformTenant getTenant() {
         return tenantcontext.get();
     }
 
@@ -58,13 +64,29 @@ public class ThreadLocalContextUtil {
     public static void clearDataSourceContext() {
         contextHolder.remove();
     }
-    
+
     public static void setAuthToken(final String authToken) {
-    	authTokenContext.set(authToken);
+        authTokenContext.set(authToken);
     }
 
     public static String getAuthToken() {
         return authTokenContext.get();
+    }
+
+    public static void setIgnoreOverdue(final Boolean setIgnoreOverdue) {
+        ignoreOverdue.set(setIgnoreOverdue);
+    }
+
+    public static Boolean getIgnoreOverdue() {
+        return ignoreOverdue.get();
+    }
+
+    public static void setJobParams(final Map<String, Object> params) {
+        jobParams.set(params);
+    }
+
+    public static Map<String, Object> getJobParams() {
+        return jobParams.get();
     }
 
 }

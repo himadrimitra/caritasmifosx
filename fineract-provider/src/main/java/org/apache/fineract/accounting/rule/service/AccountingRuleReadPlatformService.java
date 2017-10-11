@@ -28,4 +28,7 @@ public interface AccountingRuleReadPlatformService {
 
     AccountingRuleData retrieveAccountingRuleById(Long accountingRuleId);
 
+    List<AccountingRuleData> retrieveAllAccountingRules(Long officeId, boolean includeInheritedRules,
+            boolean isAssociationParametersExists);
+
 }

@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -37,12 +38,15 @@ public class CurrencyReadPlatformServiceImpl implements CurrencyReadPlatformServ
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
     private final CurrencyMapper currencyRowMapper;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
-    public CurrencyReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
+    public CurrencyReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
+            final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.currencyRowMapper = new CurrencyMapper();
+        this.configurationDomainService = configurationDomainService;
     }
 
     @Override
@@ -61,6 +65,34 @@ public class CurrencyReadPlatformServiceImpl implements CurrencyReadPlatformServ
         final String sql = "select " + this.currencyRowMapper.schema() + " from m_currency c order by c.name";
 
         return this.jdbcTemplate.query(sql, this.currencyRowMapper, new Object[] {});
+    }
+
+    @Override
+    public CurrencyData retrieveCurrency(final String code) {
+
+        final String sql = "select " + this.currencyRowMapper.schema() + " from m_currency c  where c.code = ? order by c.name";
+
+        return this.jdbcTemplate.queryForObject(sql, this.currencyRowMapper, new Object[] { code });
+    }
+
+    @Override
+    public String getDefaultCurrencyCode() {
+        String currencyCode = null;
+        if (this.configurationDomainService.isDefaultCurrencyEnabled()) {
+            currencyCode = this.configurationDomainService.retreiveDefaultCurrency();
+        } else {
+            final CurrencyData currencyData = retrieveFirstCurrency();
+            currencyCode = currencyData.code();
+        }
+        return currencyCode;
+    }
+
+    public CurrencyData retrieveFirstCurrency() {
+        this.context.authenticatedUser();
+
+        final String sql = "select " + this.currencyRowMapper.schema() + " from m_organisation_currency c order by c.name limit 1";
+
+        return this.jdbcTemplate.queryForObject(sql, this.currencyRowMapper, new Object[] {});
     }
 
     private static final class CurrencyMapper implements RowMapper<CurrencyData> {

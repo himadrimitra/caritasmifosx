@@ -78,11 +78,14 @@ public class CalendarHistory extends AbstractPersistable<Long> {
     @Column(name = "second_reminder", nullable = true)
     private Integer secondReminder;
 
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive;
+
     protected CalendarHistory() {
 
     }
 
-    public CalendarHistory(Calendar calendar, Date startDate) {
+    public CalendarHistory(final Calendar calendar, final Date startDate) {
         this.calendar = calendar;
         this.title = calendar.getTitle();
         this.description = calendar.getDescription();
@@ -97,6 +100,7 @@ public class CalendarHistory extends AbstractPersistable<Long> {
         this.remindById = calendar.getRemindById();
         this.firstReminder = calendar.getFirstReminder();
         this.secondReminder = calendar.getSecondReminder();
+        this.isActive = true;
     }
 
     public String getRecurrence() {
@@ -140,7 +144,27 @@ public class CalendarHistory extends AbstractPersistable<Long> {
         return false;
     }
 
-    public void updateEndDate(Date historyCalEndDate) {
+    public void updateEndDate(final Date historyCalEndDate) {
         this.endDate = historyCalEndDate;
     }
+
+    public Calendar getCalendar() {
+        return this.calendar;
+    }
+
+    public void updateIsActive(final boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public boolean isActive() {
+        return this.isActive;
+    }
+
+    public void updateStatusBasedOnDates() {
+        if (this.startDate != null && this.endDate != null && (this.startDate.after(this.endDate))) {
+            this.isActive = false;
+            this.endDate = null;
+        }
+    }
+
 }

@@ -35,15 +35,22 @@ public class LoanTransactionProcessingStrategy extends AbstractPersistable<Long>
     @Column(name = "name")
     private String name;
 
+    @Column(name = "sort_order")
+    private Integer sortOrder ; //Don't change this name as this property name is used as sort order while retrieving this objects
+   
     protected LoanTransactionProcessingStrategy() {
         //
+    }
+    
+    public LoanTransactionProcessingStrategy(final String code) {
+        this.code = code;
     }
 
     public TransactionProcessingStrategyData toData() {
         return new TransactionProcessingStrategyData(getId(), this.code, this.name);
     }
 
-    public boolean isStandardMifosStrategy() {
+    public boolean isStandardStrategy() {
         return "mifos-standard-strategy".equalsIgnoreCase(this.code);
     }
 

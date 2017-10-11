@@ -39,6 +39,7 @@ import org.apache.fineract.accounting.journalentry.data.JournalEntryAssociationP
 import org.apache.fineract.accounting.journalentry.data.JournalEntryData;
 import org.apache.fineract.accounting.journalentry.data.OfficeOpeningBalancesData;
 import org.apache.fineract.accounting.journalentry.service.JournalEntryReadPlatformService;
+import org.apache.fineract.accounting.producttoaccountmapping.domain.PortfolioProductType;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
@@ -59,10 +60,10 @@ import org.springframework.stereotype.Component;
 @Scope("singleton")
 public class JournalEntriesApiResource {
 
-    private static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "officeId", "officeName",
-            "glAccountName", "glAccountId", "glAccountCode", "glAccountType", "transactionDate", "entryType", "amount", "transactionId",
-            "manualEntry", "entityType", "entityId", "createdByUserId", "createdDate", "createdByUserName", "comments", "reversed",
-            "referenceNumber", "currency", "transactionDetails"));
+    private static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList("id", "officeId", "officeName", "glAccountName", "glAccountId", "glAccountCode", "glAccountType",
+                    "transactionDate", "entryType", "amount", "transactionId", "manualEntry", "entityType", "entityId", "createdByUserId",
+                    "createdDate", "createdByUserName", "comments", "reversed", "referenceNumber", "currency", "transactionDetails"));
 
     private final String resourceNameForPermission = "JOURNALENTRY";
 
@@ -95,7 +96,8 @@ public class JournalEntriesApiResource {
             @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
             @QueryParam("locale") final String locale, @QueryParam("dateFormat") final String dateFormat,
             @QueryParam("loanId") final Long loanId, @QueryParam("savingsId") final Long savingsId,
-            @QueryParam("runningBalance") final boolean runningBalance, @QueryParam("transactionDetails") final boolean transactionDetails) {
+            @QueryParam("runningBalance") final boolean runningBalance,
+            @QueryParam("transactionDetails") final boolean transactionDetails) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
 
@@ -110,8 +112,8 @@ public class JournalEntriesApiResource {
 
         final SearchParameters searchParameters = SearchParameters.forJournalEntries(officeId, offset, limit, orderBy, sortOrder, loanId,
                 savingsId);
-        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(transactionDetails,
-                runningBalance);
+        final JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(
+                transactionDetails, runningBalance, false);
 
         final Page<JournalEntryData> glJournalEntries = this.journalEntryReadPlatformService.retrieveAll(searchParameters, glAccountId,
                 onlyManualEntries, fromDate, toDate, transactionId, entityType, associationParametersData);
@@ -124,11 +126,12 @@ public class JournalEntriesApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retreiveJournalEntryById(@PathParam("journalEntryId") final Long journalEntryId, @Context final UriInfo uriInfo,
-            @QueryParam("runningBalance") final boolean runningBalance, @QueryParam("transactionDetails") final boolean transactionDetails) {
+            @QueryParam("runningBalance") final boolean runningBalance,
+            @QueryParam("transactionDetails") final boolean transactionDetails) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
-        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(transactionDetails,
-                runningBalance);
+        final JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(
+                transactionDetails, runningBalance, false);
         final JournalEntryData glJournalEntryData = this.journalEntryReadPlatformService.retrieveGLJournalEntryById(journalEntryId,
                 associationParametersData);
 
@@ -176,14 +179,30 @@ public class JournalEntriesApiResource {
     }
 
     @GET
+    @Path("provisioning")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveJournalEntries(@QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+            @QueryParam("entryId") final Long entryId, @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser();
+        final String transactionId = "P" + entryId;
+        final SearchParameters params = SearchParameters.forPagination(offset, limit);
+        final Page<JournalEntryData> entries = this.journalEntryReadPlatformService.retrieveAll(params, null, null, null, null,
+                transactionId, PortfolioProductType.PROVISIONING.getValue(), null);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.apiJsonSerializerService.serialize(settings, entries, RESPONSE_DATA_PARAMETERS);
+    }
+
+    @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Path("openingbalance")
-    public String retrieveOpeningBalance(@Context final UriInfo uriInfo, @QueryParam("officeId") final Long officeId) {
+    public String retrieveOpeningBalance(@Context final UriInfo uriInfo, @QueryParam("officeId") final Long officeId,
+            @QueryParam("currencyCode") final String currencyCode) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
         final OfficeOpeningBalancesData officeOpeningBalancesData = this.journalEntryReadPlatformService
-                .retrieveOfficeOpeningBalances(officeId);
+                .retrieveOfficeOpeningBalances(officeId, currencyCode);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.apiJsonSerializerService.serialize(settings, officeOpeningBalancesData);
     }

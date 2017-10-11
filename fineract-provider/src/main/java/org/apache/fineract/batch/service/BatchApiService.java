@@ -60,7 +60,6 @@ public interface BatchApiService {
      * @param requestList
      * @param uriInfo
      * @return List<BatchResponse>
-     * @throws Exception 
      */
     List<BatchResponse> handleBatchRequestsWithEnclosingTransaction(List<BatchRequest> requestList, UriInfo uriInfo);
 }

@@ -34,9 +34,11 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
@@ -47,7 +49,10 @@ public final class UserDataValidator {
      * The parameters supported for this command.
      */
     private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("username", "firstname", "lastname", "password",
-            "repeatPassword", "email", "officeId", "notSelectedRoles", "roles", "sendPasswordToEmail", "staffId", "passwordNeverExpires"));
+            "repeatPassword", "email", "officeId", "notSelectedRoles", "roles", "sendPasswordToEmail", "staffId", "passwordNeverExpires",
+            AppUserConstants.IS_SELF_SERVICE_USER, AppUserConstants.CLIENTS, AppUserConstants.externalIdParamName,
+            AppUserConstants.mobileNoParamName, AppUserConstants.isLoanOfficerParamName, AppUserConstants.isActiveParamName,
+            AppUserConstants.joiningDateParamName, AppUserConstants.dateFormatParamName, AppUserConstants.localeParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -90,7 +95,7 @@ public final class UserDataValidator {
                 final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
                 final String regex = validationPolicy.getRegex();
                 final String description = validationPolicy.getDescription();
-                baseDataValidator.reset().parameter("password").value(password).matchesRegularExpression(regex,description);
+                baseDataValidator.reset().parameter("password").value(password).matchesRegularExpression(regex, description);
 
                 if (StringUtils.isNotBlank(password)) {
                     baseDataValidator.reset().parameter("password").value(password).equalToParameter("repeatPassword", repeatPassword);
@@ -109,13 +114,67 @@ public final class UserDataValidator {
         }
 
         if (this.fromApiJsonHelper.parameterExists(AppUserConstants.PASSWORD_NEVER_EXPIRES, element)) {
-            final boolean passwordNeverExpire = this.fromApiJsonHelper
-                    .extractBooleanNamed(AppUserConstants.PASSWORD_NEVER_EXPIRES, element);
+            final boolean passwordNeverExpire = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.PASSWORD_NEVER_EXPIRES,
+                    element);
             baseDataValidator.reset().parameter("passwordNeverExpire").value(passwordNeverExpire).validateForBooleanValue();
+        }
+
+        Boolean isSelfServiceUser = null;
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.IS_SELF_SERVICE_USER, element)) {
+            isSelfServiceUser = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.IS_SELF_SERVICE_USER, element);
+            if (isSelfServiceUser == null) {
+                baseDataValidator.reset().parameter(AppUserConstants.IS_SELF_SERVICE_USER).trueOrFalseRequired(false);
+            }
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.CLIENTS, element)) {
+            if (isSelfServiceUser == null || !isSelfServiceUser) {
+                baseDataValidator.reset().parameter(AppUserConstants.CLIENTS).failWithCode("not.supported.when.isSelfServiceUser.is.false",
+                        "clients parameter is not supported when isSelfServiceUser parameter is false");
+            } else {
+                final JsonArray clientsArray = this.fromApiJsonHelper.extractJsonArrayNamed(AppUserConstants.CLIENTS, element);
+                baseDataValidator.reset().parameter(AppUserConstants.CLIENTS).value(clientsArray).jsonArrayNotEmpty();
+
+                for (final JsonElement client : clientsArray) {
+                    final Long clientId = client.getAsLong();
+                    baseDataValidator.reset().parameter(AppUserConstants.CLIENTS).value(clientId).longGreaterThanZero();
+                }
+            }
         }
 
         final String[] roles = this.fromApiJsonHelper.extractArrayNamed("roles", element);
         baseDataValidator.reset().parameter("roles").value(roles).arrayNotEmpty();
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.mobileNoParamName, element)) {
+            final String mobileNo = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.mobileNoParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.mobileNoParamName).value(mobileNo).ignoreIfNull().notExceedingLengthOf(50);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.isLoanOfficerParamName, element)) {
+            final Boolean loanOfficerFlag = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.isLoanOfficerParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.isLoanOfficerParamName).value(loanOfficerFlag).notNull()
+                    .validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.isActiveParamName, element)) {
+            final Boolean activeFlag = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.isActiveParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.isActiveParamName).value(activeFlag).notNull().validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.joiningDateParamName, element)) {
+            final LocalDate joiningDate = this.fromApiJsonHelper.extractLocalDateNamed(AppUserConstants.joiningDateParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.joiningDateParamName).value(joiningDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.dateFormatParamName, element)) {
+            final String dateFormat = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.dateFormatParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.dateFormatParamName).value(dateFormat).notBlank();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.localeParamName, element)) {
+            final String locale = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.localeParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.localeParamName).value(locale).notBlank();
+        }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -177,7 +236,7 @@ public final class UserDataValidator {
             final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
             final String regex = validationPolicy.getRegex();
             final String description = validationPolicy.getDescription();
-            baseDataValidator.reset().parameter("password").value(password).matchesRegularExpression(regex,description);
+            baseDataValidator.reset().parameter("password").value(password).matchesRegularExpression(regex, description);
 
             if (StringUtils.isNotBlank(password)) {
                 baseDataValidator.reset().parameter("password").value(password).equalToParameter("repeatPassword", repeatPassword);
@@ -187,6 +246,60 @@ public final class UserDataValidator {
         if (this.fromApiJsonHelper.parameterExists("passwordNeverExpire", element)) {
             final boolean passwordNeverExpire = this.fromApiJsonHelper.extractBooleanNamed("passwordNeverExpire", element);
             baseDataValidator.reset().parameter("passwordNeverExpire").value(passwordNeverExpire).validateForBooleanValue();
+        }
+
+        Boolean isSelfServiceUser = null;
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.IS_SELF_SERVICE_USER, element)) {
+            isSelfServiceUser = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.IS_SELF_SERVICE_USER, element);
+            if (isSelfServiceUser == null) {
+                baseDataValidator.reset().parameter(AppUserConstants.IS_SELF_SERVICE_USER).trueOrFalseRequired(false);
+            }
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.CLIENTS, element)) {
+            if (isSelfServiceUser != null && !isSelfServiceUser) {
+                baseDataValidator.reset().parameter(AppUserConstants.CLIENTS).failWithCode("not.supported.when.isSelfServiceUser.is.false",
+                        "clients parameter is not supported when isSelfServiceUser parameter is false");
+            } else {
+                final JsonArray clientsArray = this.fromApiJsonHelper.extractJsonArrayNamed(AppUserConstants.CLIENTS, element);
+                baseDataValidator.reset().parameter(AppUserConstants.CLIENTS).value(clientsArray).jsonArrayNotEmpty();
+
+                for (final JsonElement client : clientsArray) {
+                    final Long clientId = client.getAsLong();
+                    baseDataValidator.reset().parameter(AppUserConstants.CLIENTS).value(clientId).longGreaterThanZero();
+                }
+            }
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.mobileNoParamName, element)) {
+            final String mobileNo = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.mobileNoParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.mobileNoParamName).value(mobileNo).ignoreIfNull().notExceedingLengthOf(50);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.isLoanOfficerParamName, element)) {
+            final Boolean loanOfficerFlag = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.isLoanOfficerParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.isLoanOfficerParamName).value(loanOfficerFlag).notNull()
+                    .validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.isActiveParamName, element)) {
+            final Boolean activeFlag = this.fromApiJsonHelper.extractBooleanNamed(AppUserConstants.isActiveParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.isActiveParamName).value(activeFlag).notNull().validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.joiningDateParamName, element)) {
+            final LocalDate joiningDate = this.fromApiJsonHelper.extractLocalDateNamed(AppUserConstants.joiningDateParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.joiningDateParamName).value(joiningDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.dateFormatParamName, element)) {
+            final String dateFormat = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.dateFormatParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.dateFormatParamName).value(dateFormat).notBlank();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(AppUserConstants.localeParamName, element)) {
+            final String locale = this.fromApiJsonHelper.extractStringNamed(AppUserConstants.localeParamName, element);
+            baseDataValidator.reset().parameter(AppUserConstants.localeParamName).value(locale).notBlank();
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

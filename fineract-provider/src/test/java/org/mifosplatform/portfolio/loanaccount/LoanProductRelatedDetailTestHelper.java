@@ -29,6 +29,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRelatedDetail;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 
 /**
  * This class is used to keep in one place configurations for setting up
@@ -144,6 +145,7 @@ public class LoanProductRelatedDetailTestHelper {
             final AmortizationMethod amortizationMethod, final BigDecimal inArrearsTolerance) {
 
         final Integer graceOnPrincipalPayment = Integer.valueOf(0);
+        final Integer recurringMoratoriumOnPrincipalPeriods = Integer.valueOf(0);
         final Integer graceOnInterestPayment = Integer.valueOf(0);
         final Integer graceOnInterestCharged = Integer.valueOf(0);
         final Integer graceOnArrearsAgeing = Integer.valueOf(0);
@@ -151,10 +153,16 @@ public class LoanProductRelatedDetailTestHelper {
         final Integer daysInMonthType = DaysInMonthType.ACTUAL.getValue();
         final Integer daysInYearType = DaysInYearType.ACTUAL.getValue();
         final boolean isInterestRecalculationEnabled = false;
+        final boolean considerPartialPeriodInterest = false;
+        final Integer weeksInMonthType = WeeksInYearType.Week_52.getValue();
+        final boolean isEmiBasedOnDisbursements = false ;
+        final Integer pmtCalculationPeriodMethod = null;
+        final Integer brokenPeriodMethod = null;
 
         return new LoanProductRelatedDetail(currency, defaultPrincipal, defaultNominalInterestRatePerPeriod, interestPeriodFrequencyType,
-                defaultAnnualNominalInterestRate, interestMethod, interestCalculationPeriodMethod, repayEvery, repaymentFrequencyType,
-                defaultNumberOfRepayments, graceOnPrincipalPayment, graceOnInterestPayment, graceOnInterestCharged, amortizationMethod,
-                inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType, isInterestRecalculationEnabled);
+                defaultAnnualNominalInterestRate, interestMethod, interestCalculationPeriodMethod, considerPartialPeriodInterest, repayEvery,
+                repaymentFrequencyType, defaultNumberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged,
+                amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType, isInterestRecalculationEnabled, weeksInMonthType,
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod);
     }
 }

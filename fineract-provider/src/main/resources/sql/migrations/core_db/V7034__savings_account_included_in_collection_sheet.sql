@@ -1,0 +1,2 @@
+INSERT INTO c_configuration (`name`, `enabled`, `description`) VALUES ('savings_account_included_in_collection_sheet', '0', 'allowing savings account in the collection sheet');
+INSERT INTO c_configuration (`name`, `enabled`, `description`) VALUES ('savings_withdraw_included_in_collection_sheet', '0', 'allowing savings withdraw in the collection sheet');

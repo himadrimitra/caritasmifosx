@@ -27,18 +27,23 @@ public class PaymentTypeApiResourceConstants {
     public static final String RESOURCE_NAME = "paymenttype";
     public static final String ENTITY_NAME = "PAYMENTTYPE";
 
-    public static final String resourceNameForPermissions = "PAYMENT_TYPE";
+    public static final String resourceNameForPermissions = "PAYMENTTYPE";
     public static final String ID = "id";
     public static final String NAME = "name";
     public static final String DESCRIPTION = "description";
     public static final String ISCASHPAYMENT = "isCashPayment";
     public static final String POSITION = "position";
+    public static final String externalServiceIdParamName = "externalServiceId";
+    public static final String bankAccountDetailsParamName = "bankAccountDetails";
+    public static final String externalServiceOptionsParamName = "externalServiceOptions";
+    public static final String bankAccountTypeOptions = "bankAccountTypeOptions";
 
-    public static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(ID, NAME, DESCRIPTION, ISCASHPAYMENT));
+    public static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(ID, NAME, DESCRIPTION, ISCASHPAYMENT,
+            bankAccountDetailsParamName, externalServiceIdParamName, externalServiceOptionsParamName, bankAccountTypeOptions));
 
     public static final Set<String> CREATE_PAYMENT_TYPE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(NAME, DESCRIPTION,
-            ISCASHPAYMENT, POSITION));
+            ISCASHPAYMENT, POSITION, externalServiceIdParamName, bankAccountDetailsParamName));
 
     public static final Set<String> UPDATE_PAYMENT_TYPE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(NAME, DESCRIPTION,
-            ISCASHPAYMENT, POSITION));
+            ISCASHPAYMENT, POSITION, externalServiceIdParamName, bankAccountDetailsParamName));
 }

@@ -31,6 +31,7 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.calendar.CalendarConstants.CALENDAR_SUPPORTED_PARAMETERS;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.joda.time.LocalDate;
@@ -46,15 +47,36 @@ public final class CalculateLoanScheduleQueryFromApiJsonHelper {
     /**
      * The parameters supported for this command.
      */
-    final Set<String> supportedParameters = new HashSet<>(Arrays.asList("id", "clientId", "groupId", "loanType", "calendarId", "productId",
-            "accountNo", "externalId", "fundId", "loanOfficerId", "loanPurposeId", "transactionProcessingStrategyId", "principal",
-            "inArrearsTolerance", "interestRatePerPeriod", "repaymentEvery", "numberOfRepayments", "loanTermFrequency",
-            "loanTermFrequencyType", "repaymentFrequencyType", "amortizationType", "interestType", "interestCalculationPeriodType",
-            "expectedDisbursementDate", "repaymentsStartingFromDate", "graceOnPrincipalPayment", "graceOnInterestPayment",
-            "graceOnInterestCharged", "interestChargedFromDate", "submittedOnDate", "submittedOnNote", "locale", "dateFormat", "charges",
-            "collateral", "syncDisbursementWithMeeting", "linkAccountId", LoanApiConstants.disbursementDataParameterName,
+    final Set<String> supportedParameters = new HashSet<>(Arrays.asList(LoanApiConstants.idParameterName,
+            LoanApiConstants.clientIdParameterName, LoanApiConstants.groupIdParameterName, LoanApiConstants.loanTypeParameterName,
+            LoanApiConstants.calendarIdParameterName, LoanApiConstants.productIdParameterName, LoanApiConstants.accountNoParameterName,
+            LoanApiConstants.externalIdParameterName, LoanApiConstants.fundIdParameterName, LoanApiConstants.loanOfficerIdParameterName,
+            LoanApiConstants.loanPurposeIdParameterName, LoanApiConstants.transactionProcessingStrategyIdParameterName,
+            LoanApiConstants.principalParamName, LoanApiConstants.inArrearsToleranceParameterName,
+            LoanApiConstants.interestRatePerPeriodParameterName, LoanApiConstants.repaymentEveryParameterName,
+            LoanApiConstants.numberOfRepaymentsParameterName, LoanApiConstants.loanTermFrequencyParameterName,
+            LoanApiConstants.loanTermFrequencyTypeParameterName, LoanApiConstants.repaymentFrequencyTypeParameterName,
+            LoanApiConstants.amortizationTypeParameterName, LoanApiConstants.interestTypeParameterName,
+            LoanApiConstants.interestCalculationPeriodTypeParameterName,
+            LoanProductConstants.allowPartialPeriodInterestCalcualtionParamName, LoanApiConstants.interestRateFrequencyTypeParameterName,
+            LoanApiConstants.disbursementDateParameterName, LoanApiConstants.repaymentsStartingFromDateParameterName,
+            LoanApiConstants.graceOnPrincipalPaymentParameterName, LoanApiConstants.graceOnInterestPaymentParameterName,
+            LoanApiConstants.graceOnInterestChargedParameterName, LoanApiConstants.interestChargedFromDateParameterName,
+            LoanApiConstants.submittedOnDateParameterName, LoanApiConstants.submittedOnNoteParameterName,
+            LoanApiConstants.localeParameterName, LoanApiConstants.dateFormatParameterName, LoanApiConstants.chargesParameterName,
+            LoanApiConstants.collateralParameterName, LoanApiConstants.syncDisbursementWithMeetingParameterName,
+            LoanApiConstants.linkAccountIdParameterName, LoanApiConstants.disbursementDataParameterName,
             LoanApiConstants.emiAmountParameterName, LoanApiConstants.maxOutstandingBalanceParameterName,
-            LoanProductConstants.graceOnArrearsAgeingParameterName, LoanProductConstants.recalculationRestFrequencyDateParamName,"createStandingInstructionAtDisbursement"));
+            LoanProductConstants.graceOnArrearsAgeingParameterName, LoanApiConstants.createStandingInstructionAtDisbursementParameterName,
+            LoanApiConstants.isFloatingInterestRateParameterName, LoanApiConstants.interestRateDifferentialParameterName,
+            LoanApiConstants.repaymentFrequencyNthDayTypeParameterName, LoanApiConstants.repaymentFrequencyDayOfWeekTypeParameterName,
+            LoanApiConstants.recurringMoratoriumOnPrincipalPeriods, LoanProductConstants.isSubsidyApplicableParamName, "fixedEmiAmount",
+            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName,
+            LoanApiConstants.expectedDisbursalPaymentTypeParamName, LoanApiConstants.expectedRepaymentPaymentTypeParamName,
+            LoanApiConstants.syncRepaymentsWithMeeting, CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue(),
+            LoanProductConstants.brokenPeriodMethodTypeParamName, LoanApiConstants.amountForUpfrontCollectionParameterName,
+            LoanApiConstants.discountOnDisbursalAmountParameterName, LoanApiConstants.recalculationRestFrequencyStartDateParamName,
+            LoanApiConstants.recalculationCompoundingFrequencyStartDateParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -106,17 +128,8 @@ public final class CalculateLoanScheduleQueryFromApiJsonHelper {
             repaymentsStartingFromDate = this.fromApiJsonHelper.extractLocalDateNamed(repaymentsStartingFromDateParameterName, element);
         }
 
-        LocalDate interestChargedFromDate = null;
-        final String interestChargedFromDateParameterName = "interestChargedFromDate";
-        if (this.fromApiJsonHelper.parameterExists(interestChargedFromDateParameterName, element)) {
-            interestChargedFromDate = this.fromApiJsonHelper.extractLocalDateNamed(interestChargedFromDateParameterName, element);
-        }
-
         validateRepaymentsStartingFromDateIsAfterDisbursementDate(dataValidationErrors, expectedDisbursementDate,
                 repaymentsStartingFromDate);
-
-        validateRepaymentsStartingFromDateAndInterestChargedFromDate(dataValidationErrors, expectedDisbursementDate,
-                repaymentsStartingFromDate, interestChargedFromDate);
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
                 "Validation errors exist.", dataValidationErrors); }
@@ -135,11 +148,10 @@ public final class CalculateLoanScheduleQueryFromApiJsonHelper {
             if (loanTermFrequency != null && repaymentEvery != null && numberOfRepayments != null) {
                 final int suggestsedLoanTerm = repaymentEvery * numberOfRepayments;
                 if (loanTermFrequency.intValue() < suggestsedLoanTerm) {
-                    final ApiParameterError error = ApiParameterError
-                            .parameterError(
-                                    "validation.msg.loan.loanTermFrequency.less.than.repayment.structure.suggests",
-                                    "The parameter loanTermFrequency is less than the suggest loan term as indicated by numberOfRepayments and repaymentEvery.",
-                                    "loanTermFrequency", loanTermFrequency, numberOfRepayments, repaymentEvery);
+                    final ApiParameterError error = ApiParameterError.parameterError(
+                            "validation.msg.loan.loanTermFrequency.less.than.repayment.structure.suggests",
+                            "The parameter loanTermFrequency is less than the suggest loan term as indicated by numberOfRepayments and repaymentEvery.",
+                            "loanTermFrequency", loanTermFrequency, numberOfRepayments, repaymentEvery);
                     dataValidationErrors.add(error);
                 }
             }

@@ -30,9 +30,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.collateral.data.CollateralData;
 import org.apache.fineract.portfolio.collateral.exception.CollateralNotFoundException;
-import org.apache.fineract.portfolio.loanaccount.domain.Loan;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
+import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -44,25 +42,25 @@ public class CollateralReadPlatformServiceImpl implements CollateralReadPlatform
 
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
-    private final LoanRepository loanRepository;
+    private final LoanReadPlatformService loanReadPlatformService;
 
     @Autowired
     public CollateralReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final LoanRepository loanRepository) {
+            final LoanReadPlatformService loanReadPlatformService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.loanRepository = loanRepository;
+        this.loanReadPlatformService = loanReadPlatformService;
     }
 
     private static final class CollateralMapper implements RowMapper<CollateralData> {
 
         private final StringBuilder sqlBuilder = new StringBuilder(
                 "lc.id as id, lc.description as description, lc.value as value, cv.id as typeId, cv.code_value as typeName, oc.code as currencyCode, ")
-                .append(" oc.name as currencyName,oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, oc.internationalized_name_code as currencyNameCode")
-                .append(" FROM m_loan_collateral lc") //
-                .append(" JOIN m_code_value cv on lc.type_cv_id = cv.id")//
-                .append(" JOIN m_loan loan on lc.loan_id = loan.id")//
-                .append(" JOIN m_organisation_currency oc on loan.currency_code = oc.code");
+                        .append(" oc.name as currencyName,oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, oc.internationalized_name_code as currencyNameCode")
+                        .append(" FROM m_loan_collateral lc") //
+                        .append(" JOIN m_code_value cv on lc.type_cv_id = cv.id")//
+                        .append(" JOIN m_loan loan on lc.loan_id = loan.id")//
+                        .append(" JOIN m_organisation_currency oc on loan.currency_code = oc.code");
 
         public String schema() {
             return this.sqlBuilder.toString();
@@ -119,8 +117,7 @@ public class CollateralReadPlatformServiceImpl implements CollateralReadPlatform
 
     @Override
     public List<CollateralData> retrieveCollateralsForValidLoan(final Long loanId) {
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
+        this.loanReadPlatformService.validateForLoanExistence(loanId);
         return retrieveCollaterals(loanId);
     }
 

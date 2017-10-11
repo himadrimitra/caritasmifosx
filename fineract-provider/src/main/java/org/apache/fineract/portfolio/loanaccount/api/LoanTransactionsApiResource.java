@@ -39,6 +39,7 @@ import org.apache.fineract.accounting.journalentry.api.DateParam;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
@@ -46,7 +47,9 @@ import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSeria
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
+import org.apache.fineract.portfolio.loanaccount.service.LoanCalculationReadService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
@@ -60,8 +63,8 @@ import org.springframework.stereotype.Component;
 @Scope("singleton")
 public class LoanTransactionsApiResource {
 
-    private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "type", "date", "currency", "amount",
-            "externalId"));
+    private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList("id", "type", "date", "currency", "amount", "externalId"));
 
     private final String resourceNameForPermissions = "LOAN";
 
@@ -71,19 +74,22 @@ public class LoanTransactionsApiResource {
     private final DefaultToApiJsonSerializer<LoanTransactionData> toApiJsonSerializer;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
+    private final LoanCalculationReadService loanCalculationReadService;
 
     @Autowired
     public LoanTransactionsApiResource(final PlatformSecurityContext context, final LoanReadPlatformService loanReadPlatformService,
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final DefaultToApiJsonSerializer<LoanTransactionData> toApiJsonSerializer,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-            PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+            final LoanCalculationReadService loanCalculationReadService) {
         this.context = context;
         this.loanReadPlatformService = loanReadPlatformService;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
+        this.loanCalculationReadService = loanCalculationReadService;
     }
 
     private boolean is(final String commandParam, final String commandValue) {
@@ -96,15 +102,23 @@ public class LoanTransactionsApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveTransactionTemplate(@PathParam("loanId") final Long loanId, @QueryParam("command") final String commandParam,
             @Context final UriInfo uriInfo, @QueryParam("dateFormat") final String dateFormat,
-            @QueryParam("transactionDate") final DateParam transactionDateParam, @QueryParam("locale") final String locale) {
+            @QueryParam("transactionDate") final DateParam transactionDateParam, @QueryParam("locale") final String locale,
+            @QueryParam("isTotalOutstandingInterest") final Boolean isTotalOutstandingInterest) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
         LoanTransactionData transactionData = null;
         if (is(commandParam, "repayment")) {
             transactionData = this.loanReadPlatformService.retrieveLoanTransactionTemplate(loanId);
+            final Set<String> associationParameters = ApiParameterHelper
+                    .extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
+            if (associationParameters.contains(LoanApiConstants.LOAN)) {
+                // get loan basic details
+                final LoanAccountData loanBasicDetials = this.loanReadPlatformService.retrieveOne(loanId);
+                transactionData = LoanTransactionData.LoanTransactionRepaymentTemplate(transactionData, loanBasicDetials);
+            }
         } else if (is(commandParam, "waiveinterest")) {
-            transactionData = this.loanReadPlatformService.retrieveWaiveInterestDetails(loanId);
+            transactionData = this.loanReadPlatformService.retrieveWaiveInterestDetails(loanId, isTotalOutstandingInterest);
         } else if (is(commandParam, "writeoff")) {
             transactionData = this.loanReadPlatformService.retrieveLoanWriteoffTemplate(loanId);
         } else if (is(commandParam, "close-rescheduled")) {
@@ -117,6 +131,8 @@ public class LoanTransactionsApiResource {
             transactionData = this.loanReadPlatformService.retrieveDisbursalTemplate(loanId, false);
         } else if (is(commandParam, "recoverypayment")) {
             transactionData = this.loanReadPlatformService.retrieveRecoveryPaymentTemplate(loanId);
+        } else if (is(commandParam, "refund")) {
+            transactionData = this.loanReadPlatformService.refundTemplate(loanId);
         } else if (is(commandParam, "prepayLoan")) {
             LocalDate transactionDate = null;
             if (transactionDateParam == null) {
@@ -124,11 +140,23 @@ public class LoanTransactionsApiResource {
             } else {
                 transactionDate = LocalDate.fromDateFields(transactionDateParam.getDate("transactionDate", dateFormat, locale));
             }
-            transactionData = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(loanId, transactionDate);
+            final boolean calcualteInterestTillDate = false;
+            transactionData = this.loanCalculationReadService.retrieveLoanPrePaymentTemplate(loanId, transactionDate,
+                    calcualteInterestTillDate);
         } else if (is(commandParam, "refundbycash")) {
             transactionData = this.loanReadPlatformService.retrieveRefundByCashTemplate(loanId);
         } else if (is(commandParam, "refundbytransfer")) {
             transactionData = this.loanReadPlatformService.retrieveDisbursalTemplate(loanId, true);
+        } else if (is(commandParam, "foreclosure")) {
+            LocalDate transactionDate = null;
+            if (transactionDateParam == null) {
+                transactionDate = DateUtils.getLocalDateOfTenant();
+            } else {
+                transactionDate = LocalDate.fromDateFields(transactionDateParam.getDate("transactionDate", dateFormat, locale));
+            }
+            transactionData = this.loanCalculationReadService.retrieveLoanForeclosureTemplate(loanId, transactionDate);
+        } else if (is(commandParam, "currentstatus")) {
+            transactionData = this.loanReadPlatformService.retrieveLoanInstallmentDetails(loanId);
         } else {
             throw new UnrecognizedQueryParamException("command", commandParam);
         }
@@ -189,6 +217,22 @@ public class LoanTransactionsApiResource {
         } else if (is(commandParam, "refundByCash")) {
             final CommandWrapper commandRequest = builder.refundLoanTransactionByCash(loanId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "addsubsidy")) {
+            final CommandWrapper commandRequest = builder.loanSubsidyAddTransaction(loanId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "revokesubsidy")) {
+            final CommandWrapper commandRequest = builder.loanSubsidyRevokeTransaction(loanId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "refund")) {
+            final CommandWrapper commandRequest = builder.refundOverPaidLoan(loanId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "foreclosure")) {
+            final CommandWrapper commandRequest = builder.loanForeclosure(loanId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }
+        if (is(commandParam, "prepayment")) {
+            final CommandWrapper commandRequest = builder.loanPrepaymentTransaction(loanId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
 
         if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam); }
@@ -210,5 +254,4 @@ public class LoanTransactionsApiResource {
 
         return this.toApiJsonSerializer.serialize(result);
     }
-
 }

@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.charge.service;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -40,4 +41,21 @@ public interface ChargeDropdownReadPlatformService {
 
     List<EnumOptionData> retrieveSavingsCollectionTimeTypes();
 
+    List<EnumOptionData> retrieveClientCalculationTypes();
+
+    List<EnumOptionData> retrieveClientCollectionTimeTypes();
+
+    List<EnumOptionData> retrieveSharesCalculationTypes();
+
+    List<EnumOptionData> retrieveSharesCollectionTimeTypes();
+
+    List<EnumOptionData> retrieveGlimChargeCalculationTypes();
+
+    List<EnumOptionData> retrieveSlabChargeTypes();
+
+    Collection<EnumOptionData> retriveChargePercentageTypes();
+
+    Collection<EnumOptionData> retriveChargePercentagePeriodTypes();
+
+    Collection<EnumOptionData> retrivePenaltyGraceTypes();
 }

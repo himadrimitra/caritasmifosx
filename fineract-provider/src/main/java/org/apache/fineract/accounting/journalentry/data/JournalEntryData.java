@@ -18,16 +18,15 @@
  */
 package org.apache.fineract.accounting.journalentry.data;
 
-import java.math.BigDecimal;
+import java.util.Collection;
 
-import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.joda.time.LocalDate;
 
 /**
  * Immutable object representing a General Ledger Account
- * 
+ *
  * Note: no getter/setters required as google will produce json from fields of
  * object.
  */
@@ -38,15 +37,13 @@ public class JournalEntryData {
     @SuppressWarnings("unused")
     private final String officeName;
     @SuppressWarnings("unused")
-    private final String glAccountName;
-    private final Long glAccountId;
-    @SuppressWarnings("unused")
-    private final String glAccountCode;
-    private final EnumOptionData glAccountType;
-    @SuppressWarnings("unused")
     private final LocalDate transactionDate;
-    private final EnumOptionData entryType;
-    private final BigDecimal amount;
+
+    @SuppressWarnings("unused")
+    private final LocalDate valueDate;
+    @SuppressWarnings("unused")
+    private final LocalDate effectiveDate;
+
     @SuppressWarnings("unused")
     private final CurrencyData currency;
     private final String transactionId;
@@ -56,6 +53,9 @@ public class JournalEntryData {
     private final EnumOptionData entityType;
     @SuppressWarnings("unused")
     private final Long entityId;
+
+    @SuppressWarnings("unused")
+    private final Long entityTransactionId;
     @SuppressWarnings("unused")
     private final Long createdByUserId;
     @SuppressWarnings("unused")
@@ -68,101 +68,48 @@ public class JournalEntryData {
     private final Boolean reversed;
     @SuppressWarnings("unused")
     private final String referenceNumber;
-    @SuppressWarnings("unused")
-    private final BigDecimal officeRunningBalance;
-    @SuppressWarnings("unused")
-    private final BigDecimal organizationRunningBalance;
-    @SuppressWarnings("unused")
-    private final Boolean runningBalanceComputed;
+
+    private final Long reversalId;
 
     @SuppressWarnings("unused")
     private final TransactionDetailData transactionDetails;
 
-    public JournalEntryData(final Long id, final Long officeId, final String officeName, final String glAccountName,
-            final Long glAccountId, final String glAccountCode, final EnumOptionData glAccountClassification,
-            final LocalDate transactionDate, final EnumOptionData entryType, final BigDecimal amount, final String transactionId,
-            final Boolean manualEntry, final EnumOptionData entityType, final Long entityId, final Long createdByUserId,
+    private Collection<JournalEntryDetailData> journalEntryDetails;
+
+    private final Boolean isReversalEntry;
+
+    public JournalEntryData(final Long id, final Long officeId, final String officeName, final LocalDate transactionDate,
+            final LocalDate valueDate, final LocalDate effectiveDate, final String transactionId, final Boolean manualEntry,
+            final EnumOptionData entityType, final Long entityId, final Long entityTransactionId, final Long createdByUserId,
             final LocalDate createdDate, final String createdByUserName, final String comments, final Boolean reversed,
-            final String referenceNumber, final BigDecimal officeRunningBalance, final BigDecimal organizationRunningBalance,
-            final Boolean runningBalanceComputed, final TransactionDetailData transactionDetailData, final CurrencyData currency) {
+            final String referenceNumber, final TransactionDetailData transactionDetailData, final CurrencyData currency,
+            final Collection<JournalEntryDetailData> journalEntryDetails, final Long reversalId, final Boolean isReversalEntry) {
         this.id = id;
         this.officeId = officeId;
         this.officeName = officeName;
-        this.glAccountName = glAccountName;
-        this.glAccountId = glAccountId;
-        this.glAccountCode = glAccountCode;
-        this.glAccountType = glAccountClassification;
         this.transactionDate = transactionDate;
-        this.entryType = entryType;
-        this.amount = amount;
+        this.valueDate = valueDate;
+        this.effectiveDate = effectiveDate;
         this.transactionId = transactionId;
         this.manualEntry = manualEntry;
         this.entityType = entityType;
         this.entityId = entityId;
+        this.entityTransactionId = entityTransactionId;
         this.createdByUserId = createdByUserId;
         this.createdDate = createdDate;
         this.createdByUserName = createdByUserName;
         this.comments = comments;
         this.reversed = reversed;
         this.referenceNumber = referenceNumber;
-        this.officeRunningBalance = officeRunningBalance;
-        this.organizationRunningBalance = organizationRunningBalance;
-        this.runningBalanceComputed = runningBalanceComputed;
         this.transactionDetails = transactionDetailData;
         this.currency = currency;
-    }
-
-    public static JournalEntryData fromGLAccountData(final GLAccountData glAccountData) {
-
-        final Long id = null;
-        final Long officeId = null;
-        final String officeName = null;
-        final String glAccountName = glAccountData.getName();
-        final Long glAccountId = glAccountData.getId();
-        final String glAccountCode = glAccountData.getGlCode();
-        final EnumOptionData glAccountClassification = glAccountData.getType();
-        final LocalDate transactionDate = null;
-        final EnumOptionData entryType = null;
-        final BigDecimal amount = null;
-        final String transactionId = null;
-        final Boolean manualEntry = null;
-        final EnumOptionData entityType = null;
-        final Long entityId = null;
-        final Long createdByUserId = null;
-        final LocalDate createdDate = null;
-        final String createdByUserName = null;
-        final String comments = null;
-        final Boolean reversed = null;
-        final String referenceNumber = null;
-        final BigDecimal officeRunningBalance = null;
-        final BigDecimal organizationRunningBalance = null;
-        final Boolean runningBalanceComputed = null;
-        final TransactionDetailData transactionDetailData = null;
-        final CurrencyData currency = null;
-        return new JournalEntryData(id, officeId, officeName, glAccountName, glAccountId, glAccountCode, glAccountClassification,
-                transactionDate, entryType, amount, transactionId, manualEntry, entityType, entityId, createdByUserId, createdDate,
-                createdByUserName, comments, reversed, referenceNumber, officeRunningBalance, organizationRunningBalance,
-                runningBalanceComputed, transactionDetailData, currency);
+        this.journalEntryDetails = journalEntryDetails;
+        this.reversalId = reversalId;
+        this.isReversalEntry = isReversalEntry;
     }
 
     public Long getId() {
         return this.id;
-    }
-
-    public Long getGlAccountId() {
-        return this.glAccountId;
-    }
-
-    public EnumOptionData getGlAccountType() {
-        return this.glAccountType;
-    }
-
-    public BigDecimal getAmount() {
-        return this.amount;
-    }
-
-    public EnumOptionData getEntryType() {
-        return this.entryType;
     }
 
     public Long getOfficeId() {
@@ -170,6 +117,22 @@ public class JournalEntryData {
     }
 
     public String getTransactionId() {
-        return transactionId;
+        return this.transactionId;
+    }
+
+    public Collection<JournalEntryDetailData> getJournalEntryDetails() {
+        return this.journalEntryDetails;
+    }
+
+    public void setJournalEntryDetails(final Collection<JournalEntryDetailData> journalEntryDetails) {
+        this.journalEntryDetails = journalEntryDetails;
+    }
+
+    public boolean isReversed() {
+        return this.reversed;
+    }
+
+    public Long getReversedJournalEntryId() {
+        return this.reversalId;
     }
 }

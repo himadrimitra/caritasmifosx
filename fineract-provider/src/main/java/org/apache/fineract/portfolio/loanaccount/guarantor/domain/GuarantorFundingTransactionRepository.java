@@ -25,13 +25,14 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface GuarantorFundingTransactionRepository extends JpaRepository<GuarantorFundingTransaction, Long>,
-        JpaSpecificationExecutor<GuarantorFundingTransaction> {
+public interface GuarantorFundingTransactionRepository
+        extends JpaRepository<GuarantorFundingTransaction, Long>, JpaSpecificationExecutor<GuarantorFundingTransaction> {
 
     @Query("from GuarantorFundingTransaction ft where ft.loanTransaction.id in (:loanTransactions)")
     List<GuarantorFundingTransaction> fetchGuarantorFundingTransactions(@Param("loanTransactions") List<Long> loanTransactions);
-    
+
     @Query("from GuarantorFundingTransaction ft where ft.savingTransaction.id in (:savingTransactions)")
-    List<GuarantorFundingTransaction> fetchGuarantorFundingTransactionsForSavingsTxnId(@Param("savingTransactions") List<Long> savingTransactions);
+    List<GuarantorFundingTransaction> fetchGuarantorFundingTransactionsForSavingsTxnId(
+            @Param("savingTransactions") List<Long> savingTransactions);
 
 }

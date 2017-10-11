@@ -19,6 +19,7 @@
 package org.apache.fineract.organisation.holiday.domain;
 
 import static org.apache.fineract.organisation.holiday.api.HolidayApiConstants.descriptionParamName;
+import static org.apache.fineract.organisation.holiday.api.HolidayApiConstants.extendRepaymentRescheduleParamName;
 import static org.apache.fineract.organisation.holiday.api.HolidayApiConstants.fromDateParamName;
 import static org.apache.fineract.organisation.holiday.api.HolidayApiConstants.nameParamName;
 import static org.apache.fineract.organisation.holiday.api.HolidayApiConstants.officesParamName;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -53,12 +55,16 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.organisation.holiday.api.HolidayApiConstants;
 import org.apache.fineract.organisation.office.domain.Office;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import com.google.gson.JsonArray;
 
 @Entity
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "Holiday")
 @Table(name = "m_holiday", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "holiday_name") })
 public class Holiday extends AbstractPersistable<Long> {
 
@@ -73,9 +79,15 @@ public class Holiday extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date toDate;
 
-    @Column(name = "repayments_rescheduled_to", nullable = false)
+    @Column(name = "repayments_rescheduled_to", nullable = true)
     @Temporal(TemporalType.DATE)
     private Date repaymentsRescheduledTo;
+
+    @Column(name = "extend_repayment_schedule", nullable = false)
+    private boolean extendRepaymentReschedule;
+
+    @Column(name = "resheduling_type", nullable = false)
+    private int reshedulingType;
 
     @Column(name = "status_enum", nullable = false)
     private Integer status;
@@ -100,7 +112,11 @@ public class Holiday extends AbstractPersistable<Long> {
         final boolean processed = false;// default it to false. Only batch job
                                         // should update this field.
         final String description = command.stringValueOfParameterNamed(HolidayApiConstants.descriptionParamName);
-        return new Holiday(name, fromDate, toDate, repaymentsRescheduledTo, status, processed, description, offices);
+        final boolean extendRepaymentReschedule = command
+                .booleanPrimitiveValueOfParameterNamed(HolidayApiConstants.extendRepaymentRescheduleParamName);
+        final int repaymentScheduleUpdateType = command.integerValueOfParameterNamed(HolidayApiConstants.reshedulingType);
+        return new Holiday(name, fromDate, toDate, repaymentsRescheduledTo, status, processed, description, offices,
+                extendRepaymentReschedule, repaymentScheduleUpdateType);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -126,6 +142,13 @@ public class Holiday extends AbstractPersistable<Long> {
             this.description = StringUtils.defaultIfEmpty(newValue, null);
         }
 
+        final String reshedulingType = "reshedulingType";
+        if (command.isChangeInIntegerParameterNamed(reshedulingType, this.reshedulingType)) {
+            final Integer newValue = command.integerValueOfParameterNamed(reshedulingType);
+            actualChanges.put(reshedulingType, newValue);
+            this.reshedulingType = RescheduleType.fromInt(newValue).getValue();
+        }
+
         if (currentStatus.isPendingActivation()) {
             if (command.isChangeInLocalDateParameterNamed(fromDateParamName, getFromDateLocalDate())) {
                 final String valueAsInput = command.stringValueOfParameterNamed(fromDateParamName);
@@ -146,7 +169,8 @@ public class Holiday extends AbstractPersistable<Long> {
                 this.toDate = newValue.toDate();
             }
 
-            if (command.isChangeInLocalDateParameterNamed(repaymentsRescheduledToParamName, getRepaymentsRescheduledToLocalDate())) {
+            if (command.hasParameter(repaymentsRescheduledToParamName)
+                    && command.isChangeInLocalDateParameterNamed(repaymentsRescheduledToParamName, getRepaymentsRescheduledToLocalDate())) {
                 final String valueAsInput = command.stringValueOfParameterNamed(repaymentsRescheduledToParamName);
                 actualChanges.put(repaymentsRescheduledToParamName, valueAsInput);
                 actualChanges.put(dateFormatParamName, dateFormatAsInput);
@@ -154,6 +178,12 @@ public class Holiday extends AbstractPersistable<Long> {
 
                 final LocalDate newValue = command.localDateValueOfParameterNamed(repaymentsRescheduledToParamName);
                 this.repaymentsRescheduledTo = newValue.toDate();
+            } else if (!command.hasParameter(repaymentsRescheduledToParamName)) {
+                final String valueAsInput = command.stringValueOfParameterNamed(repaymentsRescheduledToParamName);
+                actualChanges.put(repaymentsRescheduledToParamName, valueAsInput);
+                actualChanges.put(dateFormatParamName, dateFormatAsInput);
+                actualChanges.put(localeParamName, localeAsInput);
+                this.repaymentsRescheduledTo = null;
             }
 
             if (command.hasParameter(officesParamName)) {
@@ -162,6 +192,13 @@ public class Holiday extends AbstractPersistable<Long> {
                     actualChanges.put(officesParamName, command.jsonFragment(officesParamName));
                 }
             }
+
+            if (command.isChangeInBooleanParameterNamed(extendRepaymentRescheduleParamName, isExtendRepaymentReschedule())) {
+                final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(extendRepaymentRescheduleParamName);
+                actualChanges.put(extendRepaymentRescheduleParamName, newValue);
+                this.extendRepaymentReschedule = newValue;
+            }
+
         } else {
             if (command.isChangeInLocalDateParameterNamed(fromDateParamName, getFromDateLocalDate())) {
                 baseDataValidator.reset().parameter(fromDateParamName).failWithCode("cannot.edit.holiday.in.active.state");
@@ -177,6 +214,10 @@ public class Holiday extends AbstractPersistable<Long> {
 
             if (command.hasParameter(officesParamName)) {
                 baseDataValidator.reset().parameter(repaymentsRescheduledToParamName).failWithCode("cannot.edit.holiday.in.active.state");
+            }
+
+            if (command.hasParameter(extendRepaymentRescheduleParamName)) {
+                baseDataValidator.reset().parameter(extendRepaymentRescheduleParamName).failWithCode("cannot.edit.holiday.in.active.state");
             }
 
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
@@ -205,7 +246,8 @@ public class Holiday extends AbstractPersistable<Long> {
     }
 
     private Holiday(final String name, final LocalDate fromDate, final LocalDate toDate, final LocalDate repaymentsRescheduledTo,
-            final Integer status, final boolean processed, final String description, final Set<Office> offices) {
+            final Integer status, final boolean processed, final String description, final Set<Office> offices,
+            final boolean extendRepaymentReschedule, final int repaymentScheduleUpdateType) {
         if (StringUtils.isNotBlank(name)) {
             this.name = name.trim();
         }
@@ -234,6 +276,9 @@ public class Holiday extends AbstractPersistable<Long> {
         if (offices != null) {
             this.offices = offices;
         }
+
+        this.extendRepaymentReschedule = extendRepaymentReschedule;
+        this.reshedulingType = repaymentScheduleUpdateType;
     }
 
     protected Holiday() {}
@@ -262,6 +307,10 @@ public class Holiday extends AbstractPersistable<Long> {
         return fromDate;
     }
 
+    public boolean isExtendRepaymentReschedule() {
+        return this.extendRepaymentReschedule;
+    }
+
     public LocalDate getToDateLocalDate() {
         LocalDate toDate = null;
         if (this.toDate != null) {
@@ -283,7 +332,7 @@ public class Holiday extends AbstractPersistable<Long> {
             baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("not.in.pending.for.activation.state");
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         }
-
+        this.processed = false;
         this.status = HolidayStatusType.ACTIVE.getValue();
     }
 
@@ -296,6 +345,15 @@ public class Holiday extends AbstractPersistable<Long> {
             baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("already.in.deleted.state");
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         }
+        if (currentStatus.isActive() && this.processed) {
+            this.processed = false;
+        } else {
+            this.processed = true;
+        }
         this.status = HolidayStatusType.DELETED.getValue();
+    }
+
+    public RescheduleType getReScheduleType() {
+        return RescheduleType.fromInt(this.reshedulingType);
     }
 }

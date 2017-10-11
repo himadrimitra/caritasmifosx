@@ -35,6 +35,7 @@ public enum DaysInYearType {
 
     INVALID(0, "DaysInYearType.invalid"), //
     ACTUAL(1, "DaysInYearType.actual"), //
+    DAYS_240(240, "DaysInYearType.days240"),
     DAYS_360(360, "DaysInYearType.days360"), //
     DAYS_364(364, "DaysInYearType.days364"), //
     DAYS_365(365, "DaysInYearType.days365");
@@ -72,6 +73,9 @@ public enum DaysInYearType {
             switch (type) {
                 case 1:
                     repaymentFrequencyType = DaysInYearType.ACTUAL;
+                break;
+                case 240:
+                    repaymentFrequencyType = DaysInYearType.DAYS_240;
                 break;
                 case 360:
                     repaymentFrequencyType = DaysInYearType.DAYS_360;

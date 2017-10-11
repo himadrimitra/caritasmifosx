@@ -24,20 +24,14 @@ public enum JobName {
     UPDATE_LOAN_ARREARS_AGEING("Update Loan Arrears Ageing"), //
     UPDATE_LOAN_PAID_IN_ADVANCE("Update Loan Paid In Advance"), //
     APPLY_ANNUAL_FEE_FOR_SAVINGS("Apply Annual Fee For Savings"), //
-    APPLY_HOLIDAYS_TO_LOANS("Apply Holidays To Loans"), //
+    APPLY_HOLIDAYS("Apply Holidays"), //
     POST_INTEREST_FOR_SAVINGS("Post Interest For Savings"), //
     TRANSFER_FEE_CHARGE_FOR_LOANS("Transfer Fee For Loans From Savings"), //
     ACCOUNTING_RUNNING_BALANCE_UPDATE("Update Accounting Running Balances"), //
     PAY_DUE_SAVINGS_CHARGES("Pay Due Savings Charges"), //
     APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT("Apply penalty to overdue loans"),
-    EXECUTE_STANDING_INSTRUCTIONS("Execute Standing Instruction"),
     ADD_ACCRUAL_ENTRIES("Add Accrual Transactions"),
-    UPDATE_NPA("Update Non Performing Assets"),
-    UPDATE_DEPOSITS_ACCOUNT_MATURITY_DETAILS("Update Deposit Accounts Maturity details"),
-    TRANSFER_INTEREST_TO_SAVINGS("Transfer Interest To Savings"),
-    ADD_PERIODIC_ACCRUAL_ENTRIES("Add Periodic Accrual Transactions"),
     RECALCULATE_INTEREST_FOR_LOAN("Recalculate Interest For Loans"),
-    GENERATE_RD_SCEHDULE("Generate Mandatory Savings Schedule"),
     APPY_SAVING_DEPOSITE_LATE_FEE("Apply Saving Deposite Late Fee"),
     UPDATE_CLIENT_SUB_STATUS("Update Client Sub-Status"),
     LOAN_REPAYMENT_SMS_REMINDER_TO_CLIENT("Loan Repayment Sms Reminder"),
@@ -48,8 +42,32 @@ public enum JobName {
     DEFAULT_WARNING_SMS_TO_CLIENT("Default Wring Sms To Client"),
     DEFAULT_WARNING_SMS_TO_GURANTOR("Default Warning Sms To gurantor"),
     DORMANCY_WARNING_SMS_TO_CLIENT("Dormancy Warning Sms To Clients"),
-    DO_INVESTMENT_DISTRIBUTION("Distribute Investment Earning");
+    DO_INVESTMENT_DISTRIBUTION("Distribute Investment Earning"),
 
+    OVERDUE_CALCULATIONS_FOR_LOANS("Overdue Calculations For Loans"), //
+    APPLY_PENALTY_CHARGE_FOR_BROKEN_PERIODS("Apply Penalty For Broken Periods"), //
+    EXECUTE_STANDING_INSTRUCTIONS("Execute Standing Instruction"), //
+    ADD_DUE_DATE_ACCRUAL_ENTRIES("Add Due Date Accrual Transactions"), //
+    UPDATE_NPA("Update Non Performing Assets"), //
+    UPDATE_DEPOSITS_ACCOUNT_MATURITY_DETAILS("Update Deposit Accounts Maturity details"), //
+    TRANSFER_INTEREST_TO_SAVINGS("Transfer Interest To Savings"), //
+    ADD_PERIODIC_ACCRUAL_ENTRIES("Add Periodic Accrual Transactions"), //
+    GENERATE_RD_SCEHDULE("Generate Mandatory Savings Schedule"), //
+    GENERATE_LOANLOSS_PROVISIONING("Generate Loan Loss Provisioning"), //
+    POST_DIVIDENTS_FOR_SHARES("Post Dividends For Shares"), //
+    UPDATE_SAVINGS_DORMANT_ACCOUNTS("Update Savings Dormant Accounts"), //
+    ADD_PERIODIC_ACCRUAL_ENTRIES_FOR_LOANS_WITH_INCOME_POSTED_AS_TRANSACTIONS("Add Accrual Transactions For Loans With Income Posted As Transactions"),
+    SEND_MESSAGES_TO_SMS_GATEWAY("Send messages to SMS gateway"), 
+    GET_DELIVERY_REPORTS_FROM_SMS_GATEWAY("Get delivery reports from SMS gateway"),
+    UPDATE_SMS_OUTBOUND_WITH_CAMPAIGN_MESSAGE("Update Sms Outbound with campaign message"),
+    EXECUTE_REPORT_MAILING_JOBS("Execute Report Mailing Jobs"),
+    APPLY_RECURRING_CHARGE_ON_CLIENT("Apply Recurring Charge On Client"),
+    INITIATE_BANK_TRANSACTION("Initiate Bank Transactions"),
+    UPDATE_BANK_TRANSACTION_STATUS("Update Bank Transaction Status"),
+    HIGHMARK_ENQUIRY("Highmark Enquiry"),
+    REDUCE_DP_LIMIT_FOR_SAVINGS("Reduce Dp Limit For Savings"),
+    FUND_STATUS_UPDATE("Fund Status update"),
+    UPDATE_NEXT_RECURRING_DATE("Update Next Recurring Date");
 
     private final String name;
 

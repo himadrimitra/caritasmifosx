@@ -22,56 +22,54 @@ import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
+import org.apache.fineract.infrastructure.configuration.data.SMTPCredentialsData;
+import org.apache.fineract.infrastructure.configuration.service.ExternalServicesPropertiesReadPlatformService;
 import org.apache.fineract.infrastructure.core.domain.EmailDetail;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GmailBackedPlatformEmailService implements PlatformEmailService {
 
+    private final ExternalServicesPropertiesReadPlatformService externalServicesReadPlatformService;
+
+    @Autowired
+    public GmailBackedPlatformEmailService(final ExternalServicesPropertiesReadPlatformService externalServicesReadPlatformService) {
+        this.externalServicesReadPlatformService = externalServicesReadPlatformService;
+    }
+
     @Override
     public void sendToUserAccount(final EmailDetail emailDetail, final String unencodedPassword) {
         final Email email = new SimpleEmail();
+        final SMTPCredentialsData smtpCredentialsData = this.externalServicesReadPlatformService.getSMTPCredentials();
+        final String authuserName = smtpCredentialsData.getUsername();
 
-        final String authuserName = "it.caritas.nairobi@gmail.com";
-
-        final String authuser = "it.caritas.nairobi@gmail.com";
-        final String authpwd = "downbytheR123";
+        final String authuser = smtpCredentialsData.getUsername();
+        final String authpwd = smtpCredentialsData.getPassword();
 
         // Very Important, Don't use email.setAuthentication()
         email.setAuthenticator(new DefaultAuthenticator(authuser, authpwd));
         email.setDebug(false); // true if you want to debug
-        email.setHostName("smtp.gmail.com");
+        email.setHostName(smtpCredentialsData.getHost());
         try {
-            email.getMailSession().getProperties().put("mail.smtp.starttls.enable", "true");
+            if (smtpCredentialsData.isUseTLS()) {
+                email.getMailSession().getProperties().put("mail.smtp.starttls.enable", "true");
+            }
             email.setFrom(authuser, authuserName);
 
-            final StringBuilder subjectBuilder = new StringBuilder().append("Caritas Nairobi Mifos X Credentials");
-            
+            final StringBuilder subjectBuilder = new StringBuilder().append("Fineract Prototype Demo: ")
+                    .append(emailDetail.getContactName()).append(" user account creation.");
+
             email.setSubject(subjectBuilder.toString());
 
             final String sendToEmail = emailDetail.getAddress();
-            
-            final StringBuilder messageBuilder = new StringBuilder().append("Hello ").append(emailDetail.getContactName()).append(",")
-            		 .append("\n\n")
-            		 .append("You are receiving this email as your email account: ")
-            		 .append(sendToEmail).append(" has being used to create a user account for a group named ")
-            		 .append(emailDetail.getOrganisationName())
-            		 .append(" on Caritas Nairobi MifosX.")
-            		 .append("\n\n")
-            		 .append("You can login using the following credentials:")
-            		 .append("\n\n")
-            		 .append("URL Link: https://livemis.caritasnairobi.org ")
-            		 .append("\n")
-            		 .append("Username: ").append(emailDetail.getUsername())
-            		 .append("\n")
-            		 .append("Password: ").append(unencodedPassword)
-            		 .append("\n\n")
-            		 .append("For any queries please email it@caritasnairobi.org ")
-            		 .append("\n\n\n")
-            		 .append("Thanks,")
-            		 .append("\n")
-            		 .append("Caritas Nairobi IT Team");
-            
+
+            final StringBuilder messageBuilder = new StringBuilder().append("You are receiving this email as your email account: ")
+                    .append(sendToEmail).append(" has being used to create a user account for an organisation named [")
+                    .append(emailDetail.getOrganisationName()).append("] on Fineract Prototype Demo.")
+                    .append("You can login using the following credentials: username: ").append(emailDetail.getUsername())
+                    .append(" password: ").append(unencodedPassword);
+
             email.setMsg(messageBuilder.toString());
 
             email.addTo(sendToEmail, emailDetail.getContactName());

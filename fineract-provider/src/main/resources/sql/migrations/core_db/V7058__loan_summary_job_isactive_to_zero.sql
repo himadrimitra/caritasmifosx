@@ -1,0 +1,1 @@
+update job j set j.is_active=0 where j.name='Update loan Summary';

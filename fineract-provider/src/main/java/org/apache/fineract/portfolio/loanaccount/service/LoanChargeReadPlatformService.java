@@ -18,9 +18,7 @@
  */
 package org.apache.fineract.portfolio.loanaccount.service;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
@@ -42,10 +40,11 @@ public interface LoanChargeReadPlatformService {
     Collection<LoanInstallmentChargeData> retrieveInstallmentLoanCharges(Long loanChargeId, boolean onlyPaymentPendingCharges);
 
     Collection<Integer> retrieveOverdueInstallmentChargeFrequencyNumber(Long loanId, Long chargeId, Integer periodNumber);
-    
+
     Collection<LoanChargeData> retrieveLoanChargesForAccural(Long loanId);
 
-    Collection<LoanChargePaidByData> retriveLoanChargesPaidBy(Long chargeId, LoanTransactionType transactionType, Integer installmentNumber);
-    
-    Collection<LoanChargeSummaryData> retriveLoanCharge(Long loanId,String chargeonDate);
+    Collection<LoanChargePaidByData> retriveLoanChargesPaidBy(Long chargeId, LoanTransactionType transactionType,
+            Integer installmentNumber);
+
+    Collection<LoanChargeSummaryData> retriveLoanCharge(Long loanId, String chargeonDate);
 }

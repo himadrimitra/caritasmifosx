@@ -21,7 +21,9 @@ package org.apache.fineract.infrastructure.jobs.service;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
@@ -43,6 +45,10 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
     private final JdbcTemplate jdbcTemplate;
 
     private final PaginationHelper<JobDetailHistoryData> paginationHelper = new PaginationHelper<>();
+    
+    private final String jobParamSql = "select jp.param_key as paramKey,jp.param_value as paramValue from  job_parameters jp where jp.job_id = ?";
+    
+    private final String jobParamSqlByJobName = "select jp.param_key as paramKey,jp.param_value as paramValue from job j join  job_parameters jp on jp.job_id = j.id where j.name = ?";
 
     @Autowired
     public SchedulerJobRunnerReadServiceImpl(final RoutingDataSource dataSource) {
@@ -62,11 +68,11 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
     public JobDetailData retrieveOne(final Long jobId) {
         try {
             final JobDetailMapper detailMapper = new JobDetailMapper();
-            final String sql = detailMapper.schema() + " where job.id=?";
+            final String sql = detailMapper.schema() + " where job.id=? order by runHistory.version DESC limit 1";
             return this.jdbcTemplate.queryForObject(sql, detailMapper, new Object[] { jobId });
         } catch (final EmptyResultDataAccessException e) {
             throw new JobNotFoundException(String.valueOf(jobId));
-        }
+        } 
     }
 
     @Override
@@ -124,7 +130,8 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
 
         private final StringBuilder sqlBuilder = new StringBuilder("select")
                 .append(" job.id,job.display_name as displayName,job.next_run_time as nextRunTime,job.initializing_errorlog as initializingError,job.cron_expression as cronExpression,job.is_active as active,job.currently_running as currentlyRunning,")
-                .append(" runHistory.version,runHistory.start_time as lastRunStartTime,runHistory.end_time as lastRunEndTime,runHistory.`status`,runHistory.error_message as jobRunErrorMessage,runHistory.trigger_type as triggerType,runHistory.error_log as jobRunErrorLog ")
+                .append(" runHistory.version,runHistory.start_time as lastRunStartTime,runHistory.end_time as lastRunEndTime,runHistory.`status`,runHistory.error_message as jobRunErrorMessage,runHistory.trigger_type as triggerType,runHistory.error_log as jobRunErrorLog,")
+                .append(" job.depands_on_job_name as dependentJobNames ")
                 .append(" from job job  left join job_run_history runHistory ON job.id=runHistory.job_id and job.previous_run_start_time=runHistory.start_time ");
 
         public String schema() {
@@ -148,6 +155,7 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
             final String jobRunErrorMessage = rs.getString("jobRunErrorMessage");
             final String triggerType = rs.getString("triggerType");
             final String jobRunErrorLog = rs.getString("jobRunErrorLog");
+            final String dependentJobNames = rs.getString("dependentJobNames");
 
             JobDetailHistoryData lastRunHistory = null;
             if (version > 0) {
@@ -155,7 +163,7 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
                         jobRunErrorLog);
             }
             final JobDetailData jobDetail = new JobDetailData(id, displayName, nextRunTime, initializingError, cronExpression, active,
-                    currentlyRunning, lastRunHistory);
+                    currentlyRunning, lastRunHistory, dependentJobNames);
             return jobDetail;
         }
 
@@ -185,6 +193,64 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
             return jobDetailHistory;
         }
 
+    }
+
+    @Override
+    public String getDependentJobs(String jobName) {
+        return this.jdbcTemplate.queryForObject("select j.depands_on_job_name from job j where j.name = '" + jobName + "'", String.class);
+    }
+
+    @Override
+    public Date getLastRunDate(String jobName) {
+        return this.jdbcTemplate
+                .queryForObject(
+                        "select DATE(max(jh.end_time)) from job j join job_run_history jh on j.id = jh.job_id where jh.`status` = 'success' and j.currently_running = 0 and j.name = '"
+                                + jobName + "'", Date.class);
+    }
+
+    @Override
+    public boolean isActive(String jobName) {
+        return this.jdbcTemplate.queryForObject("select j.is_active from job j where j.name='" + jobName + "'", Boolean.class);
+    }
+    
+    @Override
+    public Map<String,Object> getDependentJobStatusAndLastRunDate(String jobName) {
+        return this.jdbcTemplate.queryForMap("select j.is_active as active,   DATE(max(jrh.end_time)) as lastSuccessRunDate from job j left join job_run_history jrh on j.is_active = 1 and j.id = jrh.job_id and jrh.`status` = 'success' where j.name='" + jobName + "'");
+    }
+
+    @Override
+    public Map<String, String> getJobParams(Long jobId) {
+        Map<String, String> paramMap = new HashMap<>();
+        List<Map<String, Object>> params = this.jdbcTemplate.queryForList(jobParamSql, jobId);
+        for (Map<String, Object> paramData : params) {
+            String key = (String) paramData.get("paramKey");
+            String paramValue = (String) paramData.get("paramValue");
+            paramMap.put(key, paramValue);
+        }
+        return paramMap;
+    }
+
+    @Override
+    public Map<String, String> getJobParams(String jobName) {
+        Map<String, String> paramMap = new HashMap<>();
+        List<Map<String, Object>> params = this.jdbcTemplate.queryForList(jobParamSqlByJobName, jobName);
+        for (Map<String, Object> paramData : params) {
+            String key = (String) paramData.get("paramKey");
+            String paramValue = (String) paramData.get("paramValue");
+            paramMap.put(key, paramValue);
+        }
+        return paramMap;
+    }
+
+    @Override
+    public Long findMaxVersionByJobKey(String jobKey) {
+        Long version = 0L;
+        String sql = "select max(sjrh.version) from job sj join  job_run_history sjrh on sj.id = sjrh.job_id where sj.job_key = ?";
+        final Long versionFromDB =  this.jdbcTemplate.queryForObject(sql, Long.class, jobKey);
+        if (versionFromDB != null) {
+            version = versionFromDB;
+        }
+        return version;
     }
 
 }

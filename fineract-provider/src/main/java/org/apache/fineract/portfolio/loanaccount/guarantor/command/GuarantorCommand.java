@@ -57,11 +57,12 @@ public class GuarantorCommand {
     private final LocalDate dob;
     private final Long savingsId;
     private final BigDecimal amount;
+    private final String nationalId;
 
-    public GuarantorCommand(final Long clientRelationshipTypeId, final Integer guarantorTypeId, final Long entityId,
-            final String firstname, final String lastname, final String addressLine1, final String addressLine2, final String city,
-            final String state, final String zip, final String country, final String mobileNumber, final String housePhoneNumber,
-            final String comment, final LocalDate dob, final Long savingsId, final BigDecimal amount) {
+    public GuarantorCommand(final Long clientRelationshipTypeId, final Integer guarantorTypeId, final Long entityId, final String firstname,
+            final String lastname, final String addressLine1, final String addressLine2, final String city, final String state,
+            final String zip, final String country, final String mobileNumber, final String housePhoneNumber, final String comment,
+            final LocalDate dob, final Long savingsId, final BigDecimal amount, final String nationalId) {
 
         this.clientRelationshipTypeId = clientRelationshipTypeId;
 
@@ -84,6 +85,7 @@ public class GuarantorCommand {
         this.dob = dob;
         this.savingsId = savingsId;
         this.amount = amount;
+        this.nationalId = nationalId;
     }
 
     public boolean isExternalGuarantor() {
@@ -189,8 +191,8 @@ public class GuarantorCommand {
                 .notExceedingLengthOf(50);
         baseDataValidator.reset().parameter(GUARANTOR_JSON_INPUT_PARAMS.MOBILE_NUMBER.getValue()).value(this.mobileNumber).ignoreIfNull()
                 .notExceedingLengthOf(20).validatePhoneNumber();
-        baseDataValidator.reset().parameter(GUARANTOR_JSON_INPUT_PARAMS.PHONE_NUMBER.getValue()).value(this.housePhoneNumber)
-                .ignoreIfNull().notExceedingLengthOf(20).validatePhoneNumber();
+        baseDataValidator.reset().parameter(GUARANTOR_JSON_INPUT_PARAMS.PHONE_NUMBER.getValue()).value(this.housePhoneNumber).ignoreIfNull()
+                .notExceedingLengthOf(20).validatePhoneNumber();
         baseDataValidator.reset().parameter(GUARANTOR_JSON_INPUT_PARAMS.COMMENT.getValue()).value(this.comment).ignoreIfNull()
                 .notExceedingLengthOf(500);
     }
@@ -222,5 +224,9 @@ public class GuarantorCommand {
 
     public BigDecimal getAmount() {
         return this.amount;
+    }
+
+    public String getNationalId() {
+        return this.nationalId;
     }
 }

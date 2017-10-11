@@ -18,8 +18,13 @@
  */
 package org.apache.fineract.infrastructure.security.domain;
 
+import javax.persistence.QueryHint;
+
+import org.springframework.data.jpa.repository.QueryHints;
+
 public interface PlatformUserRepository {
 
+    @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value = "true") })
     PlatformUser findByUsernameAndDeletedAndEnabled(String username, boolean deleted, boolean enabled);
 
 }

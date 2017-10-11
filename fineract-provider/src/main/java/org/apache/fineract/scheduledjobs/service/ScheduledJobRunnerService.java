@@ -20,7 +20,9 @@ package org.apache.fineract.scheduledjobs.service;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
+import org.apache.fineract.infrastructure.jobs.service.JobName;
 
 public interface ScheduledJobRunnerService {
 
@@ -32,35 +34,51 @@ public interface ScheduledJobRunnerService {
 
     void applyDueChargesForSavings() throws JobExecutionException;
 
-    void updateNPA();
+    void updateNPA() throws JobExecutionException;
 
     void updateMaturityDetailsOfDepositAccounts();
 
     void generateRDSchedule();
 
     void updateClientSubStatus();
-    
+
     void loanRepaymentSmsReminder();
-    
+
     void loanFirstOverdueRepaymentReminder();
-    
+
     void loanSecondOverdueRepaymentReminder();
-    
+
     void loanThirdOverdueRepaymentReminder();
-    
+
     void loanFourthOverdueRepaymentReminder();
-    
-    void defaultWarningToClients(); 
-    
+
+    void defaultWarningToClients();
+
     void defaultWarningToGuarantors();
-    
+
     void dormancyWarningToClients();
-    
 
     void doAppySavingLateFeeCharge() throws JobExecutionException;
 
-    //the following method will call if any user manually wanted to run the job by passing some parameter from front end
+    // the following method will call if any user manually wanted to run the job
+    // by passing some parameter from front end
     CommandProcessingResult doInvestmentTracker(JsonCommand json);
-    
+
     void distributeInvestmentEarning();
+
+    void postDividends() throws JobExecutionException;
+
+    void applyClientRecurringCharge() throws JobExecutionException;
+
+    void highmarkEnquiry();
+
+    void generateNextRecurringDate();
+
+    @CronTarget(jobName = JobName.INITIATE_BANK_TRANSACTION)
+    void initiateBankTransactions() throws JobExecutionException;
+
+    @CronTarget(jobName = JobName.UPDATE_BANK_TRANSACTION_STATUS)
+    void updateBankTransactionsStatus() throws JobExecutionException;
+
+    void applyHolidays() throws JobExecutionException;
 }

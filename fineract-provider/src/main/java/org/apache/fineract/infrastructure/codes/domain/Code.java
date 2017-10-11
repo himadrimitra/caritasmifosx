@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -33,9 +34,13 @@ import javax.persistence.UniqueConstraint;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.exception.SystemDefinedCodeCannotBeChangedException;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "Code")
 @Table(name = "m_code", uniqueConstraints = { @UniqueConstraint(columnNames = { "code_name" }, name = "code_name") })
 public class Code extends AbstractPersistable<Long> {
 
@@ -48,18 +53,29 @@ public class Code extends AbstractPersistable<Long> {
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "code", orphanRemoval = true)
     private Set<CodeValue> values;
 
+    @Column(name = "parent_id")
+    private Long parentId;
+
     public static Code fromJson(final JsonCommand command) {
         final String name = command.stringValueOfParameterNamed("name");
-        return new Code(name);
+        final Long parentId = command.longValueOfParameterNamed("parentId");
+        return new Code(name, parentId);
+    }
+
+    public static Code createNew(final String name) {
+        final Long parentId = null;
+        return new Code(name, parentId);
     }
 
     protected Code() {
         this.systemDefined = false;
+        this.parentId = null;
     }
 
-    private Code(final String name) {
+    private Code(final String name, final Long parentId) {
         this.name = name;
         this.systemDefined = false;
+        this.parentId = parentId;
     }
 
     public String name() {
@@ -77,10 +93,16 @@ public class Code extends AbstractPersistable<Long> {
         final Map<String, Object> actualChanges = new LinkedHashMap<>(1);
 
         final String firstnameParamName = "name";
+        final String parentIdParamName = "parentId";
         if (command.isChangeInStringParameterNamed(firstnameParamName, this.name)) {
             final String newValue = command.stringValueOfParameterNamed(firstnameParamName);
             actualChanges.put(firstnameParamName, newValue);
             this.name = StringUtils.defaultIfEmpty(newValue, null);
+        }
+        if (command.isChangeInLongParameterNamed(parentIdParamName, this.parentId)) {
+            final Long newValue = command.longValueOfParameterNamed(parentIdParamName);
+            actualChanges.put(parentIdParamName, newValue);
+            this.parentId = newValue;
         }
 
         return actualChanges;

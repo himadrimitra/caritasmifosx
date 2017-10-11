@@ -29,7 +29,7 @@ import org.springframework.context.annotation.ImportResource;
  * AbstractApplicationConfiguration.
  *
  * This (intentionally) only configures the original (pre-Spring Boot &
- * MariaDB4j) Mifos X Spring Beans, and does NOT include the embedded Tomcat
+ * MariaDB4j) fineract Spring Beans, and does NOT include the embedded Tomcat
  * (incl. TomcatSSLConfiguration) nor the MariaDB4jSetupService or
  * MariaDB4jDataSourceConfiguration, and not even the DataSourceConfiguration
  * (as it uses "classic" JNDI) - we want the WAR to "work like before".

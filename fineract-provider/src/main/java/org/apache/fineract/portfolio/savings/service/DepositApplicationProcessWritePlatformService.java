@@ -20,7 +20,9 @@ package org.apache.fineract.portfolio.savings.service;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
+import org.joda.time.LocalDate;
 
 public interface DepositApplicationProcessWritePlatformService {
 
@@ -41,4 +43,6 @@ public interface DepositApplicationProcessWritePlatformService {
     CommandProcessingResult rejectApplication(Long accountId, JsonCommand command, DepositAccountType depositAccountType);
 
     CommandProcessingResult applicantWithdrawsFromApplication(Long accountId, JsonCommand command, DepositAccountType depositAccountType);
+
+    void updateScheduleDates(final Long accountId, final HolidayDetailDTO holidayDetailDTO, LocalDate recalculateFrom);
 }

@@ -25,6 +25,7 @@ import java.util.Set;
 public class AccrualAccountingConstants {
 
     public static final String accrueTillParamName = "tillDate";
+    public static final String loanListParamName = "loanList";
     public static final String localeParamName = "locale";
     public static final String dateFormatParamName = "dateFormat";
     
@@ -32,5 +33,5 @@ public class AccrualAccountingConstants {
     public static final String PERIODIC_ACCRUAL_ACCOUNTING_EXECUTION_ERROR_CODE = "execution.failed";
 
     public static final Set<String> LOAN_PERIODIC_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(accrueTillParamName,
-            localeParamName, dateFormatParamName));
+            localeParamName, dateFormatParamName, loanListParamName));
 }

@@ -28,110 +28,136 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Date;
 
 import javax.imageio.ImageIO;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryUtils;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.poi.util.IOUtils;
-
-import java.io.ByteArrayInputStream;
 
 public class ImageData {
 
-   
     private final Long imageId;
     private final String location;
     private final Integer storageType;
     private final String entityDisplayName;
+    private final EntityType entityType;
+    private final Long entityId;
+    private final String createdBy;
+    private final Date createdOn;
+    private final String name;
 
     private File file;
     private ContentRepositoryUtils.IMAGE_FILE_EXTENSION fileExtension;
-    private byte[] byteArray;
+    private InputStream inputStream;
 
-    public ImageData(final Long imageId, final String location, final Integer storageType, final String entityDisplayName) {
+    private final GeoTag geoTag;
+
+    public ImageData(final Long imageId, final String location, final Integer storageType, final String entityDisplayName,
+            final GeoTag geoTag) {
         this.imageId = imageId;
         this.location = location;
         this.storageType = storageType;
         this.entityDisplayName = entityDisplayName;
+        this.geoTag = geoTag;
+        this.entityType = null;
+        this.entityId = null;
+        this.createdBy = null;
+        this.createdOn = null;
+        this.name = this.location.substring(this.location.lastIndexOf("\\") + 1, this.location.length());
+    }
+
+    public ImageData(final Long imageId, final String location, final Integer storageType, final String entityDisplayName,
+            final GeoTag geoTag, final EntityType entityType, final Long entityId, final String createdBy, final Date createdOn) {
+
+        this.imageId = imageId;
+        this.location = location;
+        this.name = this.location.substring(this.location.lastIndexOf("\\") + 1, this.location.length());
+        this.storageType = storageType;
+        this.entityDisplayName = entityDisplayName;
+        this.geoTag = geoTag;
+        this.entityType = entityType;
+        this.entityId = entityId;
+        this.createdBy = createdBy;
+        this.createdOn = createdOn;
     }
 
     public byte[] getContent() {
         // TODO Vishwas Fix error handling
-    	try {
-    		   if (this.byteArray == null) {
-    		   this.byteArray = IOUtils.toByteArray(new FileInputStream(this.file));
-    	       }
-           return byteArray;
+        try {
+            if (this.inputStream == null) {
+                final FileInputStream fileInputStream = new FileInputStream(this.file);
+                return IOUtils.toByteArray(fileInputStream);
+            }
+
+            return IOUtils.toByteArray(this.inputStream);
         } catch (final IOException e) {
             return null;
         }
     }
 
-    public byte[] resizeImage(InputStream in, int maxWidth, int maxHeight) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+    public byte[] resizeImage(final InputStream in, final int maxWidth, final int maxHeight) throws IOException {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
         resizeImage(in, out, maxWidth, maxHeight);
         return out.toByteArray();
     }
 
-    public void resizeImage(InputStream in, OutputStream out, int maxWidth, int maxHeight) throws IOException {
+    public void resizeImage(final InputStream in, final OutputStream out, final int maxWidth, final int maxHeight) throws IOException {
 
-        BufferedImage src = ImageIO.read(in);
+        final BufferedImage src = ImageIO.read(in);
         if (src.getWidth() <= maxWidth && src.getHeight() <= maxHeight) {
-        	IOUtils.copy(in,out);
+            out.write(getContent());
             return;
         }
-        float widthRatio = (float) src.getWidth() / maxWidth;
-        float heightRatio = (float) src.getHeight() / maxHeight;
-        float scaleRatio = widthRatio > heightRatio ? widthRatio : heightRatio;
+        final float widthRatio = (float) src.getWidth() / maxWidth;
+        final float heightRatio = (float) src.getHeight() / maxHeight;
+        final float scaleRatio = widthRatio > heightRatio ? widthRatio : heightRatio;
 
         // TODO(lindahl): Improve compressed image quality (perhaps quality
         // ratio)
 
-        int newWidth = (int) (src.getWidth() / scaleRatio);
-        int newHeight = (int) (src.getHeight() / scaleRatio);
-        int colorModel = fileExtension == ContentRepositoryUtils.IMAGE_FILE_EXTENSION.JPEG ? BufferedImage.TYPE_INT_RGB
+        final int newWidth = (int) (src.getWidth() / scaleRatio);
+        final int newHeight = (int) (src.getHeight() / scaleRatio);
+        final int colorModel = this.fileExtension == ContentRepositoryUtils.IMAGE_FILE_EXTENSION.JPEG ? BufferedImage.TYPE_INT_RGB
                 : BufferedImage.TYPE_INT_ARGB;
-        BufferedImage target = new BufferedImage(newWidth, newHeight, colorModel);
-        Graphics2D g = target.createGraphics();
+        final BufferedImage target = new BufferedImage(newWidth, newHeight, colorModel);
+        final Graphics2D g = target.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         g.drawImage(src, 0, 0, newWidth, newHeight, Color.BLACK, null);
         g.dispose();
-        ImageIO.write(target, fileExtension != null ? fileExtension.getValueWithoutDot() : "jpeg", out);
+        ImageIO.write(target, this.fileExtension != null ? this.fileExtension.getValueWithoutDot() : "jpeg", out);
     }
 
-    public byte[] getContentOfSize(Integer maxWidth, Integer maxHeight) {
+    public byte[] getContentOfSize(final Integer maxWidth, final Integer maxHeight) {
         if (maxWidth == null && maxHeight == null) { return getContent(); }
-        InputStream fis = null;
+        FileInputStream fis = null;
         try {
-            	if (byteArray != null) {
-    	 	      fis = new ByteArrayInputStream(byteArray);
-               }        		
-                 if (fis == null) {
-                 fis = new FileInputStream(this.file);
-               }
-            byte[] out = resizeImage(fis, maxWidth != null ? maxWidth : Integer.MAX_VALUE, maxHeight != null ? maxHeight
-                    : Integer.MAX_VALUE);
+            fis = new FileInputStream(this.file);
+            final byte[] out = resizeImage(fis, maxWidth != null ? maxWidth : Integer.MAX_VALUE,
+                    maxHeight != null ? maxHeight : Integer.MAX_VALUE);
             return out;
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             return null;
         } finally {
             if (fis != null) {
                 try {
                     fis.close();
-                } catch (IOException ex) {}
+                } catch (final IOException ex) {}
             }
         }
     }
 
-    private void setImageContentType(String filename) {
-        fileExtension = ContentRepositoryUtils.IMAGE_FILE_EXTENSION.JPEG;
+    private void setImageContentType(final String filename) {
+        this.fileExtension = ContentRepositoryUtils.IMAGE_FILE_EXTENSION.JPEG;
 
         if (StringUtils.endsWith(filename.toLowerCase(), ContentRepositoryUtils.IMAGE_FILE_EXTENSION.GIF.getValue())) {
-            fileExtension = ContentRepositoryUtils.IMAGE_FILE_EXTENSION.GIF;
+            this.fileExtension = ContentRepositoryUtils.IMAGE_FILE_EXTENSION.GIF;
         } else if (StringUtils.endsWith(filename, ContentRepositoryUtils.IMAGE_FILE_EXTENSION.PNG.getValue())) {
-            fileExtension = ContentRepositoryUtils.IMAGE_FILE_EXTENSION.PNG;
+            this.fileExtension = ContentRepositoryUtils.IMAGE_FILE_EXTENSION.PNG;
         }
     }
 
@@ -157,9 +183,9 @@ public class ImageData {
     public String location() {
         return this.location;
     }
-    public void updateContent(final byte[] byteArray) {
-    	 this.byteArray = byteArray;
-    	 setImageContentType(this.location());
+
+    public void updateContent(final InputStream objectContent) {
+        this.inputStream = objectContent;
     }
 
     public String getEntityDisplayName() {
@@ -167,7 +193,30 @@ public class ImageData {
     }
 
     public Long getImageId() {
-       return this.imageId;
+        return this.imageId;
     }
-    
+
+    public GeoTag getGeoTag() {
+        return this.geoTag;
+    }
+
+    public EntityType getEntityType() {
+        return this.entityType;
+    }
+
+    public Long getEntityId() {
+        return this.entityId;
+    }
+
+    public String getCreatedBy() {
+        return this.createdBy;
+    }
+
+    public Date getCreatedOn() {
+        return this.createdOn;
+    }
+
+    public String getName() {
+        return this.name;
+    }
 }

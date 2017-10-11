@@ -18,14 +18,19 @@
  */
 package org.apache.fineract.portfolio.loanaccount.service;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
+import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
+import org.apache.fineract.portfolio.floatingrates.data.InterestRatePeriodData;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanApprovalData;
@@ -34,6 +39,9 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.data.PaidInAdvanceData;
 import org.apache.fineract.portfolio.loanaccount.data.RepaymentScheduleRelatedLoanData;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRecurringCharge;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
@@ -42,9 +50,11 @@ import org.joda.time.LocalDate;
 public interface LoanReadPlatformService {
 
     LoanAccountData retrieveOne(Long loanId);
+
     List<Long> retriveLoanAccountId(Long savingId);
+
     LoanScheduleData retrieveRepaymentSchedule(Long loanId, RepaymentScheduleRelatedLoanData repaymentScheduleRelatedData,
-            Collection<DisbursementData> disbursementData, boolean isInterestRecalculationEnabled);
+            Collection<DisbursementData> disbursementData, BigDecimal totalPaidFeeCharges);
 
     Collection<LoanTransactionData> retrieveLoanTransactions(Long loanId);
 
@@ -54,7 +64,7 @@ public interface LoanReadPlatformService {
 
     LoanTransactionData retrieveLoanTransactionTemplate(Long loanId);
 
-    LoanTransactionData retrieveWaiveInterestDetails(Long loanId);
+    LoanTransactionData retrieveWaiveInterestDetails(Long loanId, Boolean isTotalOutstandingInterest);
 
     LoanTransactionData retrieveLoanTransaction(Long loanId, Long transactionId);
 
@@ -76,19 +86,9 @@ public interface LoanReadPlatformService {
 
     Collection<CalendarData> retrieveCalendars(Long groupId);
 
-    Page<LoanAccountData> retrieveAll(SearchParameters searchParameters);
+    Page<LoanAccountData> retrieveAll(SearchParameters searchParameters, boolean lookup);
 
     Collection<StaffData> retrieveAllowedLoanOfficers(Long selectedOfficeId, boolean staffInSelectedOfficeOnly);
-
-    /*
-     * musoni-specific at present - will find overdue scheduled installments
-     * that have a special 'overdue charge' associated with the loan product.
-     * 
-     * The 'overdue-charge' is only ever applied once to an installment and as a
-     * result overdue installments with this charge already applied are not
-     * returned.
-     */
-    Collection<OverdueLoanScheduleData> retrieveAllLoansWithOverdueInstallments(final Long penaltyWaitPeriod);
 
     Integer retriveLoanCounter(Long groupId, Integer loanType, Long productId);
 
@@ -106,11 +106,11 @@ public interface LoanReadPlatformService {
 
     LoanTransactionData retrieveLoanWriteoffTemplate(Long loanId);
 
-    Collection<LoanScheduleAccrualData> retrivePeriodicAccrualData(LocalDate tillDate);
-
     Collection<Long> fetchArrearLoans();
 
-    LoanTransactionData retrieveLoanPrePaymentTemplate(Long loanId, LocalDate onDate);
+    Collection<LoanScheduleAccrualData> retrivePeriodicAccrualData(LocalDate tillDate, List<Long> loanList);
+
+    List<Long> fetchLoansForInterestRecalculation();
 
     Collection<LoanTransactionData> retrieveWaiverLoanTransactions(Long loanId);
 
@@ -123,4 +123,53 @@ public interface LoanReadPlatformService {
     PaidInAdvanceData retrieveTotalPaidInAdvance(Long loanId);
 
     LoanTransactionData retrieveRefundByCashTemplate(Long loanId);
+
+    Collection<InterestRatePeriodData> retrieveLoanInterestRatePeriodData(LoanAccountData loanData);
+
+    Collection<Long> retrieveLoanIdsWithPendingIncomePostingTransactions();
+
+    Collection<Long> retrieveAllActiveSubmittedAprrovedGroupLoanIds(Long groupId);
+
+    Collection<LoanAccountData> retrieveAllForTaskLookupBySearchParameters(SearchParameters searchParameters);
+
+    LoanTransactionData refundTemplate(Long loanId);
+
+    boolean isAnyActiveJLGLoanForClient(Long clientid, Long groupId);
+
+    Long retrieveLoanApplicationReferenceId(final LoanAccountData loanBasicDetails);
+
+    Long retrieveLoanProductIdByLoanId(final Long loanId);
+
+    Collection<Long> retrieveLoansByOfficesAndHoliday(Long officeId, List<Holiday> holidays, Collection<Integer> status,
+            LocalDate recalculateFrom);
+
+    LoanAccountData retrieveOneWithBasicDetails(Long loanId);
+
+    void validateForLoanExistence(Long loanId);
+
+    // Collection<LoanAccountData> retrieveLoanDetailForHierarchy(ClientData
+    // clientData);
+
+    Map<String, Object> retrieveLoanProductIdApprovedAmountClientId(final Long loanId);
+
+    LoanTransactionData retrieveLoanInstallmentDetails(Long loanId);
+
+    Collection<Long> retriveLoansForMarkingAsNonNPAWithPeriodicAccounding();
+
+    Collection<Long> retriveLoansForMarkingAsNPAWithPeriodicAccounding();
+
+    Collection<LoanSchedulePeriodData> lookUpLoanSchedulePeriodsByPeriodNumberAndDueDateAndDueAmounts(final Long loanId,
+            final boolean excludeLoanScheduleMappedToPDC);
+
+    Long retrivePaymentDetailsIdWithLoanAccountNumberAndLoanTransactioId(final long loanTransactionId, final String loanAccountNumber);
+
+    List<LoanRepaymentScheduleInstallment> retrieveLoanRepaymentScheduleInstallments(Long loanId);
+
+    List<LoanTransaction> retrieveLoanTransactions(Long loanId, Integer... types);
+
+    List<LoanRecurringCharge> retrieveLoanOverdueRecurringCharge(Long loanId, boolean fetchApplicableChargesByState);
+
+    MonetaryCurrency retrieveLoanCurrency(Long loanId);
+
+    List<Long> fetchLoanIdsForOverdueCharge(boolean isRunForBrokenPeriod, boolean isInterestRecalculationLoans);
 }

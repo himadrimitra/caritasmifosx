@@ -18,15 +18,14 @@
  */
 package org.apache.fineract.portfolio.client.api;
 
-
-
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -44,10 +43,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.accounting.journalentry.api.DateParam;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
+import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
@@ -63,11 +63,16 @@ import org.apache.fineract.portfolio.accountdetails.data.MpesaTransactionSummary
 import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
+import org.apache.fineract.portfolio.deduplication.service.DeDuplicationService;
+import org.apache.fineract.portfolio.group.data.GroupGeneralData;
+import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import com.finflux.common.util.FinfluxStringUtils;
 
 @Path("/clients")
 @Component
@@ -82,6 +87,9 @@ public class ClientsApiResource {
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
+    private final GroupReadPlatformService groupReadPlatformService;
+    private final ConfigurationDomainService configurationDomainService;
+    private final DeDuplicationService deDuplicationService;
 
     @Autowired
     public ClientsApiResource(final PlatformSecurityContext context, final ClientReadPlatformService readPlatformService,
@@ -90,7 +98,9 @@ public class ClientsApiResource {
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
-            final SavingsAccountReadPlatformService savingsAccountReadPlatformService) {
+            final ConfigurationDomainService configurationDomainService, final DeDuplicationService deDuplicationService,
+            final SavingsAccountReadPlatformService savingsAccountReadPlatformService,
+            final GroupReadPlatformService groupReadPlatformService) {
         this.context = context;
         this.clientReadPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -99,6 +109,9 @@ public class ClientsApiResource {
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
+        this.groupReadPlatformService = groupReadPlatformService;
+        this.configurationDomainService = configurationDomainService;
+        this.deDuplicationService = deDuplicationService;
     }
 
     @GET
@@ -132,21 +145,49 @@ public class ClientsApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
+    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("searchConditions") final String searchConditions,
             @QueryParam("officeId") final Long officeId, @QueryParam("externalId") final String externalId,
             @QueryParam("displayName") final String displayName, @QueryParam("firstName") final String firstname,
             @QueryParam("lastName") final String lastname, @QueryParam("underHierarchy") final String hierarchy,
             @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
             @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
-            @QueryParam("clientStatus") final Long clientStatus, @QueryParam("mobileNoLength") final String mobileNoLength) {
+            @QueryParam("orphansOnly") final Boolean orphansOnly, @QueryParam("groupId") final Long groupId) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
+        return this.retrieveAll(uriInfo, searchConditionsMap, officeId, externalId, displayName, firstname, lastname, hierarchy, offset,
+                limit, orderBy, sortOrder, orphansOnly, false, groupId);
+    }
 
+    public String retrieveAll(final UriInfo uriInfo, final Map<String, String> searchConditions, final Long officeId,
+            final String externalId, final String displayName, final String firstname, final String lastname, final String hierarchy,
+            final Integer offset, final Integer limit, final String orderBy, final String sortOrder, final Boolean orphansOnly,
+            final boolean isSelfUser, final Long groupId) {
         this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
-
-        final SearchParameters searchParameters = SearchParameters.forClients(sqlSearch, officeId, externalId, displayName, firstname,
-                lastname, hierarchy, offset, limit, orderBy, sortOrder, clientStatus, mobileNoLength);
-
+        final SearchParameters searchParameters = SearchParameters.forClients(searchConditions, officeId, externalId, displayName,
+                firstname, lastname, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, isSelfUser, groupId);
         final Page<ClientData> clientData = this.clientReadPlatformService.retrieveAll(searchParameters);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, clientData, ClientApiConstants.CLIENT_RESPONSE_DATA_PARAMETERS);
+    }
 
+    @GET
+    @Path("lookup")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo,
+            @QueryParam("searchConditions") final String searchConditions, @QueryParam("officeId") final Long officeId,
+            @QueryParam("staffId") final Long staffId, @QueryParam("groupId") final Long groupId,
+            @QueryParam("centerId") final Long centerId) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
+        this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
+        final Integer offset = null;
+        final Integer limit = null;
+        final String orderBy = null;
+        final String sortOrder = null;
+        final Long paymentTypeId = null;
+        final SearchParameters searchParameters = SearchParameters.forTask(searchConditionsMap, officeId, staffId, centerId, groupId,
+                offset, limit, orderBy, sortOrder, paymentTypeId);
+        final Collection<ClientData> clientData = this.clientReadPlatformService
+                .retrieveAllForTaskLookupBySearchParameters(searchParameters);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, clientData, ClientApiConstants.CLIENT_RESPONSE_DATA_PARAMETERS);
     }
@@ -156,24 +197,66 @@ public class ClientsApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveOne(@PathParam("clientId") final Long clientId, @Context final UriInfo uriInfo,
-            @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly) {
+            @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
+            @DefaultValue("false") @QueryParam("isFetchAdressDetails") final boolean isFetchAdressDetails) {
 
         this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
-
+        final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        ClientData clientData = null;
+        if (isFetchAdressDetails) {
+            clientData = this.clientReadPlatformService.retrieveOneWithBasicDetails(clientId);
+        } else {
+            clientData = this.clientReadPlatformService.retrieveOne(clientId);
 
-        ClientData clientData = this.clientReadPlatformService.retrieveOne(clientId);
-        if (settings.isTemplate()) {
-            final ClientData templateData = this.clientReadPlatformService.retrieveTemplate(clientData.officeId(),
-                    staffInSelectedOfficeOnly);
-            clientData = ClientData.templateOnTop(clientData, templateData);
-            Collection<SavingsAccountData> savingAccountOptions = this.savingsAccountReadPlatformService.retrieveForLookup(clientId, null);
-            if (savingAccountOptions != null && savingAccountOptions.size() > 0) {
-                clientData = ClientData.templateWithSavingAccountOptions(clientData, savingAccountOptions);
+            if (!associationParameters.isEmpty()) {
+                if (associationParameters.contains("hierarchyLookup")) {
+                    final Collection<GroupGeneralData> groups = clientData.getGroups();
+                    if (groups != null) {
+                        final Collection<GroupGeneralData> updatedgroups = new ArrayList<>();
+                        for (final GroupGeneralData groupGeneralData : groups) {
+                            final GroupGeneralData data = this.groupReadPlatformService.retrieveCenterDetailsWithGroup(groupGeneralData);
+                            updatedgroups.add(data);
+                        }
+                        clientData = ClientData.setParentGroups(clientData, updatedgroups);
+                    }
+                }
+            }
+
+            if (settings.isTemplate()) {
+                final ClientData templateData = this.clientReadPlatformService.retrieveTemplate(clientData.officeId(),
+                        staffInSelectedOfficeOnly);
+                clientData = ClientData.templateOnTop(clientData, templateData);
+                final Collection<SavingsAccountData> savingAccountOptions = this.savingsAccountReadPlatformService
+                        .retrieveForLookup(clientId, null);
+                if (savingAccountOptions != null && savingAccountOptions.size() > 0) {
+                    clientData = ClientData.templateWithSavingAccountOptions(clientData, savingAccountOptions);
+                }
             }
         }
 
         return this.toApiJsonSerializer.serialize(settings, clientData, ClientApiConstants.CLIENT_RESPONSE_DATA_PARAMETERS);
+    }
+
+    @GET
+    @Path("{clientId}/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveTemplateForClient(@PathParam("clientId") final Long clientId, @Context final UriInfo uriInfo,
+            @QueryParam("command") final String commandParam) {
+
+        this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
+
+        ClientData clientData = null;
+        if (is(commandParam, "activate")) {
+            clientData = this.clientReadPlatformService.retrieveOne(clientId);
+            if (this.configurationDomainService.isCustomerDeDuplicationEnabled()) {
+                clientData.setPossibleClientMatches(this.deDuplicationService.getDuplicationMatches(clientId));
+            }
+        }
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, clientData);
     }
 
     @POST
@@ -236,6 +319,9 @@ public class ClientsApiResource {
         if (is(commandParam, "activate")) {
             commandRequest = builder.activateClient(clientId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "forceActivate")) {
+            commandRequest = builder.forceActivateClient(clientId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         } else if (is(commandParam, "assignStaff")) {
             commandRequest = builder.assignClientStaff(clientId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
@@ -274,11 +360,17 @@ public class ClientsApiResource {
         } else if (is(commandParam, "reactivate")) {
             commandRequest = builder.reActivateClient(clientId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "undoRejection")) {
+            commandRequest = builder.undoRejection(clientId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "undoWithdrawal")) {
+            commandRequest = builder.undoWithdrawal(clientId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
 
-        if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { "activate",
-                "unassignStaff", "assignStaff", "close", "proposeTransfer", "withdrawTransfer", "acceptTransfer", "rejectTransfer",
-                "updateSavingsAccount", "reject", "withdraw", "reactivate" }); }
+        if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam,
+                new Object[] { "activate", "unassignStaff", "assignStaff", "close", "proposeTransfer", "withdrawTransfer", "acceptTransfer",
+                        "rejectTransfer", "updateSavingsAccount", "reject", "withdraw", "reactivate" }); }
 
         return this.toApiJsonSerializer.serialize(result);
     }
@@ -297,13 +389,13 @@ public class ClientsApiResource {
 
         final AccountSummaryCollectionData clientAccount = this.accountDetailsReadPlatformService.retrieveClientAccountDetails(clientId);
 
-        final Set<String> CLIENT_ACCOUNTS_DATA_PARAMETERS = new HashSet<>(Arrays.asList("loanAccounts", "savingsAccounts",
-                "paymentTypeOptions"));
+        final Set<String> CLIENT_ACCOUNTS_DATA_PARAMETERS = new HashSet<>(
+                Arrays.asList("loanAccounts", "savingsAccounts", "paymentTypeOptions", "pledges", "shareAccounts"));
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.clientAccountSummaryToApiJsonSerializer.serialize(settings, clientAccount, CLIENT_ACCOUNTS_DATA_PARAMETERS);
     }
-    
+
     @GET
     @Path("{clientId}/incomingSmsDetail")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -311,11 +403,13 @@ public class ClientsApiResource {
     public String retrievePaymentDetail(@PathParam("clientId") final Long clientId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
-       ArrayList<PaymentDetailCollectionData> PaymentDetail =  (ArrayList<PaymentDetailCollectionData>) this.accountDetailsReadPlatformService.retrivePaymentDetail(clientId);
-       // final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final ArrayList<PaymentDetailCollectionData> PaymentDetail = (ArrayList<PaymentDetailCollectionData>) this.accountDetailsReadPlatformService
+                .retrivePaymentDetail(clientId);
+        // final ApiRequestJsonSerializationSettings settings =
+        // this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.clientAccountSummaryToApiJsonSerializer.serialize(PaymentDetail);
     }
-    
+
     @GET
     @Path("{clientId}/sharesAccount")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -323,37 +417,44 @@ public class ClientsApiResource {
     public String retrieveSharesAccountBalance(@PathParam("clientId") final Long clientId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
-       ArrayList<SharesAccountBalanceCollectionData> sharesAccountBalance =  (ArrayList<SharesAccountBalanceCollectionData>) this.accountDetailsReadPlatformService.retriveSharesBalance(clientId);
-       // final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final ArrayList<SharesAccountBalanceCollectionData> sharesAccountBalance = (ArrayList<SharesAccountBalanceCollectionData>) this.accountDetailsReadPlatformService
+                .retriveSharesBalance(clientId);
+        // final ApiRequestJsonSerializationSettings settings =
+        // this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.clientAccountSummaryToApiJsonSerializer.serialize(sharesAccountBalance);
     }
-    
+
     @GET
     @Path("{clientId}/Mpesa")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retriveMpesaTransactionDetail(@PathParam("clientId") final Long clientId, @QueryParam("TransactionDate") final String TransactionDate, @QueryParam("ReceiptNo") final String ReceiptNo,@Context final UriInfo uriInfo) {
-    	this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
-		   	ArrayList<MpesaTransactionSummaryData> mpesaTxnDetails = (ArrayList<MpesaTransactionSummaryData>) this.accountDetailsReadPlatformService.retriveMpesaTransactionDetail(clientId,TransactionDate,ReceiptNo);
-            return this.clientAccountSummaryToApiJsonSerializer.serialize(mpesaTxnDetails);
+    public String retriveMpesaTransactionDetail(@PathParam("clientId") final Long clientId,
+            @QueryParam("TransactionDate") final String TransactionDate, @QueryParam("ReceiptNo") final String ReceiptNo,
+            @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
+        final ArrayList<MpesaTransactionSummaryData> mpesaTxnDetails = (ArrayList<MpesaTransactionSummaryData>) this.accountDetailsReadPlatformService
+                .retriveMpesaTransactionDetail(clientId, TransactionDate, ReceiptNo);
+        return this.clientAccountSummaryToApiJsonSerializer.serialize(mpesaTxnDetails);
     }
-    
+
     @GET
     @Path("{clientId}/clientsPayments")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retriveAssociateAccountsAndCharges(@PathParam("clientId") final Long clientId, @QueryParam("submittedOnDate") final Date submittedOnDate ,@Context final UriInfo uriInfo) {
+    public String retriveAssociateAccountsAndCharges(@PathParam("clientId") final Long clientId,
+            @QueryParam("submittedOnDate") final Date submittedOnDate, @Context final UriInfo uriInfo) {
 
-    	this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
-    	Date currentdate = new Date();    	
-    	DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-    	String chargeonDate= formatter.format(currentdate);
-    	if(submittedOnDate!=null){
-    	chargeonDate = formatter.format(submittedOnDate); 
-    	}
-    	final AccountSummaryCollectionData clientAccount = this.accountDetailsReadPlatformService.retriveClientAccountAndChargeDetails(clientId,chargeonDate);
-        final Set<String> CLIENT_ACCOUNTS_DATA_PARAMETERS = new HashSet<String>(Arrays.asList("loanAccounts", "savingsAccounts",
-                "paymentTypeOptions","loanCharges","savingsCharges"));
+        this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
+        final Date currentdate = new Date();
+        final DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        String chargeonDate = formatter.format(currentdate);
+        if (submittedOnDate != null) {
+            chargeonDate = formatter.format(submittedOnDate);
+        }
+        final AccountSummaryCollectionData clientAccount = this.accountDetailsReadPlatformService
+                .retriveClientAccountAndChargeDetails(clientId, chargeonDate);
+        final Set<String> CLIENT_ACCOUNTS_DATA_PARAMETERS = new HashSet<>(
+                Arrays.asList("loanAccounts", "savingsAccounts", "paymentTypeOptions", "loanCharges", "savingsCharges"));
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.clientAccountSummaryToApiJsonSerializer.serialize(settings, clientAccount, CLIENT_ACCOUNTS_DATA_PARAMETERS);
 

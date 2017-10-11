@@ -35,5 +35,31 @@ public class DataTableApiConstant {
     public static final Set<String> REGISTER_PARAMS = new HashSet<>(Arrays.asList(categoryParamName,localParamName));
 
     public static final String DATATABLE_RESOURCE_NAME ="dataTables";
-
+    public static final String displayNameParamName = "displayName";
+    public static final String displayPositionParamName = "displayPosition";
+    public static final String visibleParamName = "visible";
+    public static final String dependsOnWithParamName = "dependsOn";
+    public static final String visibilityCriteriaParamName = "visibilityCriteria";
+    public static final String columnNameParamName = "columnName";
+    public static final String valueParamName = "value";
+    public static final String mandatoryIfVisibleParamName = "mandatoryIfVisible";
+    public static final String columnValuesParamName = "columnValues";
+    public static final String scopeParamName = "scope";
+    public static final String idParamName = "id";
+    public static final String allowedValuesParamName = "allowedValues";
+    public static final String scopingCriteriaEnumParamName = "scopingCriteriaEnum";
+    public static final String dataTableDisplayNameParam = "dataTableDisplayName";
+    public static final String JOURNAL_ENTRY_TABLE_NAME = "f_journal_entry";
+    public static final String LOAN_APPLICATION_REFERENCE = "f_loan_application_reference";
+    public static final String sectionsParamName = "sections";
+    public static final String columnsParamName = "columns";
+    public static final String changeColumnsParamName = "changeColumns";
+    public static final String addColumnsParamName = "addColumns";
+    public static final String sectionIdParamName = "sectionId";
+    public static final String dropColumnsParamName = "dropColumns";
+    public static final String addSectionsParamName = "addSections";
+    public static final String dropSectionsParamName = "dropSections";
+    public static final String changeSectionsParamName = "changeSections";
+    public static final String VILLAGE = "chai_villages";
+    public static final String DISTRICT = "f_district";
 }

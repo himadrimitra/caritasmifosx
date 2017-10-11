@@ -27,7 +27,6 @@ import org.apache.fineract.infrastructure.hooks.exception.HookNotFoundException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -79,7 +78,7 @@ public class HookReadPlatformServiceImpl implements HookReadPlatformService {
     }
 
     @Override
-    @Cacheable(value = "hooks", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('HK')")
+//    @Cacheable(value = "hooks", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#actionName+#entityName+'HK')")
     public List<Hook> retrieveHooksByEvent(final String actionName,
             final String entityName) {
 

@@ -24,6 +24,9 @@ import java.util.Set;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
+import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringCharge;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.joda.time.LocalDate;
 
 /**
@@ -33,7 +36,8 @@ import org.joda.time.LocalDate;
 public class LoanRepaymentScheduleProcessingWrapper {
 
     public void reprocess(final MonetaryCurrency currency, final LocalDate disbursementDate,
-            final List<LoanRepaymentScheduleInstallment> repaymentPeriods, final Set<LoanCharge> loanCharges) {
+            final List<LoanRepaymentScheduleInstallment> repaymentPeriods, final Set<LoanCharge> loanCharges,
+            final List<LoanDisbursementDetails> disbursementDetails) {
 
         Money totalInterest = Money.zero(currency);
         Money totalPrincipal = Money.zero(currency);
@@ -41,22 +45,32 @@ public class LoanRepaymentScheduleProcessingWrapper {
             totalInterest = totalInterest.plus(installment.getInterestCharged(currency));
             totalPrincipal = totalPrincipal.plus(installment.getPrincipal(currency));
         }
+
         LocalDate startDate = disbursementDate;
         for (final LoanRepaymentScheduleInstallment period : repaymentPeriods) {
-
+            if (disbursementDetails != null && !disbursementDetails.isEmpty()) {
+                totalPrincipal = Money.zero(currency);
+                for (final LoanDisbursementDetails detail : disbursementDetails) {
+                    if (detail.isDisbursed() && !detail.getDisbursementDateAsLocalDate().isAfter(period.getDueDate())) {
+                        totalPrincipal = totalPrincipal.plus(detail.principal());
+                    }
+                }
+            }
             final Money feeChargesDueForRepaymentPeriod = cumulativeFeeChargesDueWithin(startDate, period.getDueDate(), loanCharges,
-                    currency, period, repaymentPeriods.size(), totalPrincipal, totalInterest, true);
+                    currency, period, totalPrincipal, totalInterest, !period.isRecalculatedInterestComponent(),
+                    period.getInstallmentNumber());
             final Money feeChargesWaivedForRepaymentPeriod = cumulativeFeeChargesWaivedWithin(startDate, period.getDueDate(), loanCharges,
-                    currency, true);
+                    currency, !period.isRecalculatedInterestComponent(), period.getInstallmentNumber());
             final Money feeChargesWrittenOffForRepaymentPeriod = cumulativeFeeChargesWrittenOffWithin(startDate, period.getDueDate(),
-                    loanCharges, currency, true);
+                    loanCharges, currency, !period.isRecalculatedInterestComponent(), period.getInstallmentNumber());
 
-            final Money penaltyChargesDueForRepaymentPeriod = cumulativePenaltyChargesDueWithin(startDate, period.getDueDate(),
-                    loanCharges, currency, period, repaymentPeriods.size(), totalPrincipal, totalInterest, true);
+            final Money penaltyChargesDueForRepaymentPeriod = cumulativePenaltyChargesDueWithin(startDate, period.getDueDate(), loanCharges,
+                    currency, period, totalPrincipal, totalInterest, !period.isRecalculatedInterestComponent(),
+                    period.getInstallmentNumber());
             final Money penaltyChargesWaivedForRepaymentPeriod = cumulativePenaltyChargesWaivedWithin(startDate, period.getDueDate(),
-                    loanCharges, currency, true);
+                    loanCharges, currency, !period.isRecalculatedInterestComponent(), period.getInstallmentNumber());
             final Money penaltyChargesWrittenOffForRepaymentPeriod = cumulativePenaltyChargesWrittenOffWithin(startDate,
-                    period.getDueDate(), loanCharges, currency, true);
+                    period.getDueDate(), loanCharges, currency, !period.isRecalculatedInterestComponent(), period.getInstallmentNumber());
 
             period.updateChargePortion(feeChargesDueForRepaymentPeriod, feeChargesWaivedForRepaymentPeriod,
                     feeChargesWrittenOffForRepaymentPeriod, penaltyChargesDueForRepaymentPeriod, penaltyChargesWaivedForRepaymentPeriod,
@@ -67,28 +81,48 @@ public class LoanRepaymentScheduleProcessingWrapper {
     }
 
     private Money cumulativeFeeChargesDueWithin(final LocalDate periodStart, final LocalDate periodEnd, final Set<LoanCharge> loanCharges,
-            final MonetaryCurrency monetaryCurrency, LoanRepaymentScheduleInstallment period, int numberOfRepayments,
-            final Money totalPrincipal, final Money totalInterest, boolean isInstallmentChargeApplicable) {
+            final MonetaryCurrency monetaryCurrency, final LoanRepaymentScheduleInstallment period, final Money totalPrincipal,
+            final Money totalInterest, final boolean isInstallmentChargeApplicable, final int installmentNumber) {
 
         Money cumulative = Money.zero(monetaryCurrency);
+        Money totalLoanCharges = Money.zero(monetaryCurrency);
+        Integer numberOfRepayments = null;
 
         for (final LoanCharge loanCharge : loanCharges) {
-            if (loanCharge.isFeeCharge()) {
+            if (loanCharge.isFeeCharge() && !loanCharge.isDueAtDisbursement()) {
                 if (loanCharge.isInstalmentFee() && isInstallmentChargeApplicable) {
                     if (loanCharge.getChargeCalculation().isPercentageBased()) {
                         BigDecimal amount = BigDecimal.ZERO;
                         if (loanCharge.getChargeCalculation().isPercentageOfAmountAndInterest()) {
-                            amount = amount.add(period.getPrincipal(monetaryCurrency).getAmount()).add(
-                                    period.getInterestCharged(monetaryCurrency).getAmount());
+                            amount = amount.add(period.getPrincipal(monetaryCurrency).getAmount())
+                                    .add(period.getInterestCharged(monetaryCurrency).getAmount());
                         } else if (loanCharge.getChargeCalculation().isPercentageOfInterest()) {
                             amount = amount.add(period.getInterestCharged(monetaryCurrency).getAmount());
+                        } else if (loanCharge.getChargeCalculation().isPercentageOfDisbursementAmount()) {
+                            numberOfRepayments = loanCharge.getLoan().fetchNumberOfInstallmensAfterExceptions();
+                            totalLoanCharges = totalLoanCharges.plus(loanCharge.amount());
                         } else {
                             amount = amount.add(period.getPrincipal(monetaryCurrency).getAmount());
                         }
-                        BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
-                        cumulative = cumulative.plus(loanChargeAmt);
+                        if (loanCharge.getChargeCalculation().isPercentageOfDisbursementAmount()) {
+                            if (loanCharge.getLoan().isGlimPaymentAsGroup()) {
+                                final LoanInstallmentCharge loanInstallmentCharge = loanCharge.getInstallmentLoanCharge(installmentNumber);
+                                cumulative = cumulative.plus(loanInstallmentCharge.getAmount());
+                            } else {
+                                BigDecimal installmentChargePerClient = BigDecimal.ZERO;
+                                installmentChargePerClient = glimInstallmentChargePerClient(period, numberOfRepayments, loanCharge,
+                                        installmentChargePerClient);
+                                cumulative = cumulative.plus(installmentChargePerClient);
+                            }
+                        } else {
+                            final BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
+                            cumulative = cumulative.plus(loanChargeAmt);
+                        }
+                    } else if (loanCharge.getChargeCalculation().isSlabBased()) {
+                        final BigDecimal amount = loanCharge.getInstallmentLoanCharge(installmentNumber).getAmount();
+                        cumulative = cumulative.plus(amount);
                     } else {
-                        cumulative = cumulative.plus(loanCharge.amount().divide(BigDecimal.valueOf(numberOfRepayments)));
+                        cumulative = cumulative.plus(loanCharge.amountOrPercentage());
                     }
                 } else if (loanCharge.isOverdueInstallmentCharge()
                         && loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)
@@ -96,18 +130,15 @@ public class LoanRepaymentScheduleProcessingWrapper {
                     cumulative = cumulative.plus(loanCharge.chargeAmount());
                 } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)
                         && loanCharge.getChargeCalculation().isPercentageBased()) {
-                    BigDecimal amount = BigDecimal.ZERO;
-                    if (loanCharge.getChargeCalculation().isPercentageOfAmountAndInterest()) {
-                        amount = amount.add(totalPrincipal.getAmount()).add(totalInterest.getAmount());
-                    } else if (loanCharge.getChargeCalculation().isPercentageOfInterest()) {
-                        amount = amount.add(totalInterest.getAmount());
-                    } else {
-                        amount = amount.add(totalPrincipal.getAmount());
-                    }
-                    BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
-                    cumulative = cumulative.plus(loanChargeAmt);
+                    cumulative = calculateChargesWithPercentage(totalPrincipal, totalInterest, cumulative, loanCharge);
                 } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)) {
                     cumulative = cumulative.plus(loanCharge.amount());
+                } else if (loanCharge.isUpfrontFee() && installmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment) {
+                    if (loanCharge.getChargeCalculation().isPercentageBased()) {
+                        cumulative = calculateChargesWithPercentage(totalPrincipal, totalInterest, cumulative, loanCharge);
+                    } else {
+                        cumulative = cumulative.plus(loanCharge.amount());
+                    }
                 }
             }
         }
@@ -115,19 +146,59 @@ public class LoanRepaymentScheduleProcessingWrapper {
         return cumulative;
     }
 
+    private BigDecimal glimInstallmentChargePerClient(final LoanRepaymentScheduleInstallment period, final Integer numberOfRepayments,
+            final LoanCharge loanCharge, BigDecimal installmentChargePerClient) {
+        for (final GroupLoanIndividualMonitoring glim : loanCharge.getLoan().getDefautGlimMembers()) {
+            final Set<GroupLoanIndividualMonitoringCharge> charges = glim.getGroupLoanIndividualMonitoringCharges();
+            for (final GroupLoanIndividualMonitoringCharge glimCharge : charges) {
+                if (loanCharge.getCharge().getId() == glimCharge.getCharge().getId()) {
+                    final BigDecimal chargeAmount = glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount()
+                            : glimCharge.getRevisedFeeAmount();
+                    final BigDecimal perInstallmentCharge = MathUtility.divide(chargeAmount, numberOfRepayments,
+                            loanCharge.getLoan().getCurrency());
+                    if (period.getInstallmentNumber() == numberOfRepayments) {
+                        installmentChargePerClient = MathUtility.add(installmentChargePerClient,
+                                MathUtility.subtract(chargeAmount, MathUtility.multiply(perInstallmentCharge, numberOfRepayments - 1)));
+                    } else {
+                        installmentChargePerClient = MathUtility.add(installmentChargePerClient, perInstallmentCharge);
+                    }
+
+                }
+            }
+        }
+        return installmentChargePerClient;
+    }
+
+    private Money calculateChargesWithPercentage(final Money totalPrincipal, final Money totalInterest, Money cumulative,
+            final LoanCharge loanCharge) {
+        BigDecimal amount = BigDecimal.ZERO;
+        if (loanCharge.getChargeCalculation().isPercentageOfAmountAndInterest()) {
+            amount = amount.add(totalPrincipal.getAmount()).add(totalInterest.getAmount());
+        } else if (loanCharge.getChargeCalculation().isPercentageOfInterest()) {
+            amount = amount.add(totalInterest.getAmount());
+        } else {
+            amount = amount.add(totalPrincipal.getAmount());
+        }
+        final BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
+        cumulative = cumulative.plus(loanChargeAmt);
+        return cumulative;
+    }
+
     private Money cumulativeFeeChargesWaivedWithin(final LocalDate periodStart, final LocalDate periodEnd,
-            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, boolean isInstallmentChargeApplicable) {
+            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, final boolean isInstallmentChargeApplicable,
+            final int installmentNumber) {
 
         Money cumulative = Money.zero(currency);
 
         for (final LoanCharge loanCharge : loanCharges) {
-            if (loanCharge.isFeeCharge()) {
+            if (loanCharge.isFeeCharge() && !loanCharge.isDueAtDisbursement()) {
                 if (loanCharge.isInstalmentFee() && isInstallmentChargeApplicable) {
-                    LoanInstallmentCharge loanChargePerInstallment = loanCharge.getInstallmentLoanCharge(periodEnd);
+                    final LoanInstallmentCharge loanChargePerInstallment = loanCharge.getInstallmentLoanCharge(periodEnd);
                     if (loanChargePerInstallment != null) {
                         cumulative = cumulative.plus(loanChargePerInstallment.getAmountWaived(currency));
                     }
-                } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)) {
+                } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)
+                        || (loanCharge.isUpfrontFee() && installmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
                     cumulative = cumulative.plus(loanCharge.getAmountWaived(currency));
                 }
             }
@@ -137,18 +208,20 @@ public class LoanRepaymentScheduleProcessingWrapper {
     }
 
     private Money cumulativeFeeChargesWrittenOffWithin(final LocalDate periodStart, final LocalDate periodEnd,
-            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, boolean isInstallmentChargeApplicable) {
+            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, final boolean isInstallmentChargeApplicable,
+            final int installmentNumber) {
 
         Money cumulative = Money.zero(currency);
 
         for (final LoanCharge loanCharge : loanCharges) {
-            if (loanCharge.isFeeCharge()) {
+            if (loanCharge.isFeeCharge() && !loanCharge.isDueAtDisbursement()) {
                 if (loanCharge.isInstalmentFee() && isInstallmentChargeApplicable) {
-                    LoanInstallmentCharge loanChargePerInstallment = loanCharge.getInstallmentLoanCharge(periodEnd);
+                    final LoanInstallmentCharge loanChargePerInstallment = loanCharge.getInstallmentLoanCharge(periodEnd);
                     if (loanChargePerInstallment != null) {
                         cumulative = cumulative.plus(loanChargePerInstallment.getAmountWrittenOff(currency));
                     }
-                } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)) {
+                } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)
+                        || (loanCharge.isUpfrontFee() && installmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
                     cumulative = cumulative.plus(loanCharge.getAmountWrittenOff(currency));
                 }
             }
@@ -158,10 +231,13 @@ public class LoanRepaymentScheduleProcessingWrapper {
     }
 
     private Money cumulativePenaltyChargesDueWithin(final LocalDate periodStart, final LocalDate periodEnd,
-            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, LoanRepaymentScheduleInstallment period,
-            int numberOfRepayments, final Money totalPrincipal, final Money totalInterest, boolean isInstallmentChargeApplicable) {
+            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, final LoanRepaymentScheduleInstallment period,
+            final Money totalPrincipal, final Money totalInterest, final boolean isInstallmentChargeApplicable,
+            final int installmentNumber) {
 
         Money cumulative = Money.zero(currency);
+        Money totalLoanCharges = Money.zero(currency);
+        Integer numberOfRepayments = null;
 
         for (final LoanCharge loanCharge : loanCharges) {
             if (loanCharge.isPenaltyCharge()) {
@@ -169,17 +245,25 @@ public class LoanRepaymentScheduleProcessingWrapper {
                     if (loanCharge.getChargeCalculation().isPercentageBased()) {
                         BigDecimal amount = BigDecimal.ZERO;
                         if (loanCharge.getChargeCalculation().isPercentageOfAmountAndInterest()) {
-                            amount = amount.add(period.getPrincipal(currency).getAmount()).add(
-                                    period.getInterestCharged(currency).getAmount());
+                            amount = amount.add(period.getPrincipal(currency).getAmount())
+                                    .add(period.getInterestCharged(currency).getAmount());
                         } else if (loanCharge.getChargeCalculation().isPercentageOfInterest()) {
                             amount = amount.add(period.getInterestCharged(currency).getAmount());
+                        } else if (loanCharge.getChargeCalculation().isPercentageOfDisbursementAmount()) {
+                            numberOfRepayments = loanCharge.getLoan().fetchNumberOfInstallmensAfterExceptions();
+                            totalLoanCharges = totalLoanCharges.plus(loanCharge.amount());
                         } else {
                             amount = amount.add(period.getPrincipal(currency).getAmount());
                         }
-                        BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
-                        cumulative = cumulative.plus(loanChargeAmt);
+                        if (loanCharge.getChargeCalculation().isPercentageOfDisbursementAmount()) {
+                            final BigDecimal loanChargeAmount = BigDecimal.valueOf(loanCharge.amount().doubleValue() / numberOfRepayments);
+                            cumulative = cumulative.plus(loanChargeAmount);
+                        } else {
+                            final BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
+                            cumulative = cumulative.plus(loanChargeAmt);
+                        }
                     } else {
-                        cumulative = cumulative.plus(loanCharge.amount().divide(BigDecimal.valueOf(numberOfRepayments)));
+                        cumulative = cumulative.plus(loanCharge.amountOrPercentage());
                     }
                 } else if (loanCharge.isOverdueInstallmentCharge()
                         && loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)
@@ -187,19 +271,24 @@ public class LoanRepaymentScheduleProcessingWrapper {
                     cumulative = cumulative.plus(loanCharge.chargeAmount());
                 } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)
                         && loanCharge.getChargeCalculation().isPercentageBased()) {
-                    BigDecimal amount = BigDecimal.ZERO;
-                    if (loanCharge.getChargeCalculation().isPercentageOfAmountAndInterest()) {
-                        amount = amount.add(totalPrincipal.getAmount()).add(totalInterest.getAmount());
-                    } else if (loanCharge.getChargeCalculation().isPercentageOfInterest()) {
-                        amount = amount.add(totalInterest.getAmount());
-                    } else {
-                        amount = amount.add(totalPrincipal.getAmount());
-                    }
-                    BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
-                    cumulative = cumulative.plus(loanChargeAmt);
+                    cumulative = calculateChargesWithPercentage(totalPrincipal, totalInterest, cumulative, loanCharge);
                 } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)) {
                     cumulative = cumulative.plus(loanCharge.amount());
+                } else if (loanCharge.isUpfrontFee() && installmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment) {
+                    if (loanCharge.getChargeCalculation().isPercentageBased()) {
+                        cumulative = calculateChargesWithPercentage(totalPrincipal, totalInterest, cumulative, loanCharge);
+                    } else {
+                        cumulative = cumulative.plus(loanCharge.amount());
+                    }
                 }
+            }
+        }
+
+        if (numberOfRepayments != null && isLastRepaymentPeriod(numberOfRepayments, period.getInstallmentNumber())
+                && totalLoanCharges.compareTo(Money.zero(cumulative.getCurrency())) == 1) {
+            final Money totalGlimCharges = cumulative.multipliedBy(BigDecimal.valueOf(numberOfRepayments.doubleValue()));
+            if (totalGlimCharges.compareTo(totalLoanCharges) != BigDecimal.ZERO.intValue()) {
+                cumulative = cumulative.minus((totalGlimCharges.minus(totalLoanCharges)));
             }
         }
 
@@ -207,18 +296,20 @@ public class LoanRepaymentScheduleProcessingWrapper {
     }
 
     private Money cumulativePenaltyChargesWaivedWithin(final LocalDate periodStart, final LocalDate periodEnd,
-            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, boolean isInstallmentChargeApplicable) {
+            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, final boolean isInstallmentChargeApplicable,
+            final int installmentNumber) {
 
         Money cumulative = Money.zero(currency);
 
         for (final LoanCharge loanCharge : loanCharges) {
             if (loanCharge.isPenaltyCharge()) {
                 if (loanCharge.isInstalmentFee() && isInstallmentChargeApplicable) {
-                    LoanInstallmentCharge loanChargePerInstallment = loanCharge.getInstallmentLoanCharge(periodEnd);
+                    final LoanInstallmentCharge loanChargePerInstallment = loanCharge.getInstallmentLoanCharge(periodEnd);
                     if (loanChargePerInstallment != null) {
                         cumulative = cumulative.plus(loanChargePerInstallment.getAmountWaived(currency));
                     }
-                } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)) {
+                } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)
+                        || (loanCharge.isUpfrontFee() && installmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
                     cumulative = cumulative.plus(loanCharge.getAmountWaived(currency));
                 }
             }
@@ -228,23 +319,29 @@ public class LoanRepaymentScheduleProcessingWrapper {
     }
 
     private Money cumulativePenaltyChargesWrittenOffWithin(final LocalDate periodStart, final LocalDate periodEnd,
-            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, boolean isInstallmentChargeApplicable) {
+            final Set<LoanCharge> loanCharges, final MonetaryCurrency currency, final boolean isInstallmentChargeApplicable,
+            final int installmentNumber) {
 
         Money cumulative = Money.zero(currency);
 
         for (final LoanCharge loanCharge : loanCharges) {
             if (loanCharge.isPenaltyCharge()) {
                 if (loanCharge.isInstalmentFee() && isInstallmentChargeApplicable) {
-                    LoanInstallmentCharge loanChargePerInstallment = loanCharge.getInstallmentLoanCharge(periodEnd);
+                    final LoanInstallmentCharge loanChargePerInstallment = loanCharge.getInstallmentLoanCharge(periodEnd);
                     if (loanChargePerInstallment != null) {
                         cumulative = cumulative.plus(loanChargePerInstallment.getAmountWrittenOff(currency));
                     }
-                } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)) {
+                } else if (loanCharge.isDueForCollectionFromAndUpToAndIncluding(periodStart, periodEnd)
+                        || (loanCharge.isUpfrontFee() && installmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
                     cumulative = cumulative.plus(loanCharge.getAmountWrittenOff(currency));
                 }
             }
         }
 
         return cumulative;
+    }
+
+    protected final boolean isLastRepaymentPeriod(final int numberOfRepayments, final int periodNumber) {
+        return periodNumber == numberOfRepayments;
     }
 }

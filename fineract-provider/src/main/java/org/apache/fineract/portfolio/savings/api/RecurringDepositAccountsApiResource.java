@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.savings.api;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -51,6 +52,7 @@ import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSeria
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
@@ -67,6 +69,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.util.FinfluxStringUtils;
 import com.google.gson.JsonElement;
 
 @Path("/recurringdepositaccounts")
@@ -340,5 +343,28 @@ public class RecurringDepositAccountsApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, account,
                 DepositsApiConstants.RECURRING_DEPOSIT_ACCOUNT_RESPONSE_DATA_PARAMETERS);
+    }
+    
+    @GET
+    @Path("tasklookup")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo,
+            @QueryParam("searchConditions") final String searchConditions, @QueryParam("officeId") final Long officeId,
+            @QueryParam("staffId") final Long staffId, @QueryParam("groupId") final Long groupId,
+            @QueryParam("centerId") final Long centerId) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
+        this.context.authenticatedUser().validateHasReadPermission(DepositsApiConstants.RECURRING_DEPOSIT_ACCOUNT_RESOURCE_NAME);
+        final Integer offset = null;
+        final Integer limit = null;
+        final String orderBy = null;
+        final String sortOrder = null;
+        final Long paymentTypeId = null;
+        final SearchParameters searchParameters = SearchParameters.forTask(searchConditionsMap, officeId, staffId, centerId, groupId,
+                offset, limit, orderBy, sortOrder, paymentTypeId);
+        final Collection<DepositAccountData> rdAccountData = this.depositAccountReadPlatformService
+                .getRDAccountsForTaskLookup(searchParameters);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, rdAccountData);
     }
 }

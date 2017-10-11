@@ -18,33 +18,31 @@
  */
 package org.apache.fineract.portfolio.paymentdetail.data;
 
+import java.util.Date;
+
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 
 /**
  * Immutable data object representing a payment.
  */
+@SuppressWarnings("unused")
 public class PaymentDetailData {
 
-    @SuppressWarnings("unused")
     private final Long id;
-    @SuppressWarnings("unused")
     private final PaymentTypeData paymentType;
-    @SuppressWarnings("unused")
     private final String accountNumber;
-    @SuppressWarnings("unused")
     private final String checkNumber;
-    @SuppressWarnings("unused")
     private final String routingCode;
-    @SuppressWarnings("unused")
     private final String receiptNumber;
-    @SuppressWarnings("unused")
     private final String bankNumber;
 
-    @SuppressWarnings("unused")
     private final String chargeName;
-    
+    private final String branchName;
+    private final Date transactionDate;
+
     public PaymentDetailData(final Long id, final PaymentTypeData paymentType, final String accountNumber, final String checkNumber,
-            final String routingCode, final String receiptNumber, final String bankNumber) {
+            final String routingCode, final String receiptNumber, final String bankNumber, final String branchName,
+            final Date transactionDate) {
         this.id = id;
         this.paymentType = paymentType;
         this.accountNumber = accountNumber;
@@ -53,18 +51,22 @@ public class PaymentDetailData {
         this.receiptNumber = receiptNumber;
         this.bankNumber = bankNumber;
         this.chargeName = null;
+
+        this.branchName = branchName;
+        this.transactionDate = transactionDate;
     }
-    
-    public PaymentDetailData(final String chargeName){
-    	 this.chargeName = chargeName;
-    	 this.id = null;
-         this.paymentType = null;
-         this.accountNumber = null;
-         this.checkNumber = null;
-         this.routingCode = null;
-         this.receiptNumber = null;
-         this.bankNumber = null;
+
+    public PaymentDetailData(final String chargeName) {
+        this.chargeName = chargeName;
+        this.id = null;
+        this.paymentType = null;
+        this.accountNumber = null;
+        this.checkNumber = null;
+        this.routingCode = null;
+        this.receiptNumber = null;
+        this.bankNumber = null;
+        this.branchName = null;
+        this.transactionDate = null;
     }
-    
 
 }

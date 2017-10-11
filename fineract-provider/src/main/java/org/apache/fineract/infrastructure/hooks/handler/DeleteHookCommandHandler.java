@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.hooks.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -27,21 +28,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@CommandType(entity = "HOOK", action = "DELETE")
 public class DeleteHookCommandHandler implements NewCommandSourceHandler {
 
-	private final HookWritePlatformService writePlatformService;
+    private final HookWritePlatformService writePlatformService;
 
-	@Autowired
-	public DeleteHookCommandHandler(
-			final HookWritePlatformService writePlatformService) {
-		this.writePlatformService = writePlatformService;
-	}
+    @Autowired
+    public DeleteHookCommandHandler(final HookWritePlatformService writePlatformService) {
+        this.writePlatformService = writePlatformService;
+    }
 
-	@Transactional
-	@Override
-	public CommandProcessingResult processCommand(final JsonCommand command) {
+    @Transactional
+    @Override
+    public CommandProcessingResult processCommand(final JsonCommand command) {
 
-		return this.writePlatformService.deleteHook(command.entityId());
-	}
+        return this.writePlatformService.deleteHook(command.entityId());
+    }
 
 }

@@ -31,6 +31,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.holiday.api.HolidayApiConstants;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,15 +69,27 @@ public class HolidayDataValidator {
         final String name = this.fromApiJsonHelper.extractStringNamed(HolidayApiConstants.nameParamName, element);
         baseDataValidator.reset().parameter(HolidayApiConstants.nameParamName).value(name).notNull().notExceedingLengthOf(100);
 
+        final LocalDate currentDate = DateUtils.getLocalDateOfTenant();
         final LocalDate fromDate = this.fromApiJsonHelper.extractLocalDateNamed(HolidayApiConstants.fromDateParamName, element);
-        baseDataValidator.reset().parameter(HolidayApiConstants.fromDateParamName).value(fromDate).notNull();
+        baseDataValidator.reset().parameter(HolidayApiConstants.fromDateParamName).value(fromDate).notNull().validateDateAfter(currentDate);
 
         final LocalDate toDate = this.fromApiJsonHelper.extractLocalDateNamed(HolidayApiConstants.toDateParamName, element);
         baseDataValidator.reset().parameter(HolidayApiConstants.toDateParamName).value(toDate).notNull();
 
-        final LocalDate repaymentsRescheduledTo = this.fromApiJsonHelper.extractLocalDateNamed(
-                HolidayApiConstants.repaymentsRescheduledToParamName, element);
-        baseDataValidator.reset().parameter(HolidayApiConstants.repaymentsRescheduledToParamName).value(repaymentsRescheduledTo).notNull();
+        if (this.fromApiJsonHelper.parameterExists(HolidayApiConstants.repaymentsRescheduledToParamName, element)) {
+            final LocalDate repaymentsRescheduledTo = this.fromApiJsonHelper
+                    .extractLocalDateNamed(HolidayApiConstants.repaymentsRescheduledToParamName, element);
+            baseDataValidator.reset().parameter(HolidayApiConstants.repaymentsRescheduledToParamName).value(repaymentsRescheduledTo)
+                    .notNull().validateDateAfter(currentDate);
+
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(HolidayApiConstants.extendRepaymentRescheduleParamName, element)) {
+            final boolean extendRepaymentReschedule = this.fromApiJsonHelper
+                    .extractBooleanNamed(HolidayApiConstants.extendRepaymentRescheduleParamName, element);
+            baseDataValidator.reset().parameter(HolidayApiConstants.extendRepaymentRescheduleParamName).value(extendRepaymentReschedule)
+                    .notNull();
+        }
 
         Set<Long> offices = null;
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
@@ -129,9 +142,16 @@ public class HolidayDataValidator {
         }
 
         if (this.fromApiJsonHelper.parameterExists(HolidayApiConstants.repaymentsRescheduledToParamName, element)) {
-            final LocalDate repaymentsRescheduledTo = this.fromApiJsonHelper.extractLocalDateNamed(
-                    HolidayApiConstants.repaymentsRescheduledToParamName, element);
+            final LocalDate repaymentsRescheduledTo = this.fromApiJsonHelper
+                    .extractLocalDateNamed(HolidayApiConstants.repaymentsRescheduledToParamName, element);
             baseDataValidator.reset().parameter(HolidayApiConstants.repaymentsRescheduledToParamName).value(repaymentsRescheduledTo)
+                    .notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(HolidayApiConstants.extendRepaymentRescheduleParamName, element)) {
+            final boolean extendRepaymentReschedule = this.fromApiJsonHelper
+                    .extractBooleanNamed(HolidayApiConstants.extendRepaymentRescheduleParamName, element);
+            baseDataValidator.reset().parameter(HolidayApiConstants.extendRepaymentRescheduleParamName).value(extendRepaymentReschedule)
                     .notNull();
         }
 

@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.client.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -26,22 +27,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 @Service
-public class WithdrawClientCommandHandler  implements NewCommandSourceHandler {
-	
-	private final ClientWritePlatformService clientWritePlatformService;
+@CommandType(entity = "CLIENT", action = "WITHDRAW")
+public class WithdrawClientCommandHandler implements NewCommandSourceHandler {
 
-@Autowired
-public WithdrawClientCommandHandler(final ClientWritePlatformService clientWritePlatformService) {
-    this.clientWritePlatformService = clientWritePlatformService;
-}
+    private final ClientWritePlatformService clientWritePlatformService;
 
-@Transactional
-@Override
-public CommandProcessingResult processCommand(final JsonCommand command) {
+    @Autowired
+    public WithdrawClientCommandHandler(final ClientWritePlatformService clientWritePlatformService) {
+        this.clientWritePlatformService = clientWritePlatformService;
+    }
 
-    return this.clientWritePlatformService.withdrawClient(command.entityId(), command);
-}
+    @Transactional
+    @Override
+    public CommandProcessingResult processCommand(final JsonCommand command) {
+
+        return this.clientWritePlatformService.withdrawClient(command.entityId(), command);
+    }
 
 }

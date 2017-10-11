@@ -31,12 +31,14 @@ public class LoanInstallmentChargeData {
     private final BigDecimal amountWaived;
     private final boolean paid;
     private final boolean waived;
-
     private BigDecimal amountAccrued;
     private BigDecimal amountUnrecognized;
+    private final BigDecimal amountSansTax;
+    private final BigDecimal taxAmount;
 
     public LoanInstallmentChargeData(final Integer installmentNumber, final LocalDate dueDate, final BigDecimal amount,
-            final BigDecimal amountOutstanding, BigDecimal amountWaived, final boolean paid, final boolean waived) {
+            final BigDecimal amountOutstanding, BigDecimal amountWaived, final boolean paid, final boolean waived,
+            final BigDecimal amountSansTax, final BigDecimal taxAmount) {
         this.installmentNumber = installmentNumber;
         this.dueDate = dueDate;
         this.amount = amount;
@@ -44,11 +46,13 @@ public class LoanInstallmentChargeData {
         this.paid = paid;
         this.waived = waived;
         this.amountWaived = amountWaived;
+        this.amountSansTax = amountSansTax;
+        this.taxAmount = taxAmount;
     }
 
     public LoanInstallmentChargeData(final Integer installmentNumber, final LocalDate dueDate, final BigDecimal amount,
             final BigDecimal amountOutstanding, final BigDecimal amountWaived, final boolean paid, final boolean waived,
-            final BigDecimal amountAccrued) {
+            final BigDecimal amountAccrued, final BigDecimal amountSansTax, final BigDecimal taxAmount) {
         this.installmentNumber = installmentNumber;
         this.dueDate = dueDate;
         this.amount = amount;
@@ -57,6 +61,8 @@ public class LoanInstallmentChargeData {
         this.waived = waived;
         this.amountWaived = amountWaived;
         this.amountAccrued = amountAccrued;
+        this.amountSansTax = amountSansTax;
+        this.taxAmount = taxAmount;
     }
 
     public LoanInstallmentChargeData(final LoanInstallmentChargeData installmentChargeData, final BigDecimal amountUnrecognized) {
@@ -69,6 +75,8 @@ public class LoanInstallmentChargeData {
         this.amountWaived = installmentChargeData.amountWaived;
         this.amountAccrued = installmentChargeData.amountAccrued;
         this.amountUnrecognized = amountUnrecognized;
+        this.amountSansTax = installmentChargeData.amountSansTax;
+        this.taxAmount = installmentChargeData.taxAmount;
     }
 
     public Integer getInstallmentNumber() {
@@ -101,6 +109,14 @@ public class LoanInstallmentChargeData {
 
     public BigDecimal getAmountUnrecognized() {
         return this.amountUnrecognized;
+    }
+
+    public BigDecimal getAmountSansTax() {
+        return this.amountSansTax;
+    }
+
+    public BigDecimal getTaxAmount() {
+        return this.taxAmount;
     }
 
 }

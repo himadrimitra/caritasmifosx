@@ -21,6 +21,7 @@ package org.apache.fineract.infrastructure.codes.serialization;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -68,6 +69,10 @@ public final class CodeValueCommandFromApiJsonDeserializer {
         final String name = this.fromApiJsonHelper.extractStringNamed(CODEVALUE_JSON_INPUT_PARAMS.NAME.getValue(), element);
         baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.NAME.getValue()).value(name).notBlank().notExceedingLengthOf(100);
 
+        final Long parentId = this.fromApiJsonHelper.extractLongNamed(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue(), element);
+        baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue()).value(parentId).ignoreIfNull()
+                .longGreaterThanZero();
+
         if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.DESCRIPTION.getValue(), element)) {
             final String description = this.fromApiJsonHelper.extractStringNamed(CODEVALUE_JSON_INPUT_PARAMS.DESCRIPTION.getValue(),
                     element);
@@ -78,6 +83,19 @@ public final class CodeValueCommandFromApiJsonDeserializer {
         if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.POSITION.getValue(), element)) {
             // Validate input value is a valid Integer
             this.fromApiJsonHelper.extractIntegerSansLocaleNamed(CODEVALUE_JSON_INPUT_PARAMS.POSITION.getValue(), element);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue(), element)) {
+            final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue(), element);
+            baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue()).value(isActive).validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element)) {
+            // Validate input value is a valid Integer
+            final Integer codeScore = this.fromApiJsonHelper.extractIntegerNamed(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element,
+                    Locale.getDefault());
+            baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue()).value(codeScore).ignoreIfNull()
+                    .integerZeroOrGreater();
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
@@ -109,6 +127,25 @@ public final class CodeValueCommandFromApiJsonDeserializer {
         if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.POSITION.getValue(), element)) {
             // Validate input value is a valid Integer
             this.fromApiJsonHelper.extractIntegerSansLocaleNamed(CODEVALUE_JSON_INPUT_PARAMS.POSITION.getValue(), element);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue(), element)) {
+            final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue(), element);
+            baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue()).value(isActive).validateForBooleanValue();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue(), element)) {
+            final Long parentId = this.fromApiJsonHelper.extractLongNamed(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue(), element);
+            baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue()).value(parentId).ignoreIfNull()
+                    .longGreaterThanZero();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element)) {
+            // Validate input value is a valid Integer
+            final Integer codeScore = this.fromApiJsonHelper.extractIntegerNamed(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element,
+                    Locale.getDefault());
+            baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue()).value(codeScore).ignoreIfNull()
+                    .integerZeroOrGreater();
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

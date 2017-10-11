@@ -21,5 +21,13 @@ package org.apache.fineract.useradministration.api;
 public class AppUserApiConstant {
 
     public static final int numberOfPreviousPasswords = 3;
+    public static final int minLength = 2;
+    public static final String idParam = "id";
+
+    /** Parameters related to role based limits **/
+    public static final String ROLE_BASED_LIMITS = "roleBasedLimits";
+    public static final String LOAN_APPROVAL_AMOUNT_LIMIT = "maxLoanApprovalAmount";
+    public static final String CURRENCY_CODE = "currencyCode";
+    public static final String LOCALE = "locale";
 
 }

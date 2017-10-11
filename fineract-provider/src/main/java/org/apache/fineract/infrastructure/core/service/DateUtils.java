@@ -19,6 +19,7 @@
 package org.apache.fineract.infrastructure.core.service;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -26,7 +27,7 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
-import org.apache.fineract.infrastructure.core.domain.MifosPlatformTenant;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -38,7 +39,7 @@ import org.joda.time.format.DateTimeFormatter;
 public class DateUtils {
 
     public static DateTimeZone getDateTimeZoneOfTenant() {
-        final MifosPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+        final FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
         DateTimeZone zone = null;
         if (tenant != null) {
             zone = DateTimeZone.forID(tenant.getTimezoneId());
@@ -48,7 +49,7 @@ public class DateUtils {
     }
 
     public static TimeZone getTimeZoneOfTenant() {
-        final MifosPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+        final FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
         TimeZone zone = null;
         if (tenant != null) {
             zone = TimeZone.getTimeZone(tenant.getTimezoneId());
@@ -93,8 +94,8 @@ public class DateUtils {
             return dateTime.toLocalDate();
         } catch (final IllegalArgumentException e) {
             final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-            final ApiParameterError error = ApiParameterError.parameterError("validation.msg.invalid.date.pattern", "The parameter date ("
-                    + stringDate + ") is invalid w.r.t. pattern " + pattern, "date", stringDate, pattern);
+            final ApiParameterError error = ApiParameterError.parameterError("validation.msg.invalid.date.pattern",
+                    "The parameter date (" + stringDate + ") is invalid w.r.t. pattern " + pattern, "date", stringDate, pattern);
             dataValidationErrors.add(error);
             throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist", "Validation errors exist.",
                     dataValidationErrors);
@@ -106,6 +107,12 @@ public class DateUtils {
         df.setTimeZone(getTimeZoneOfTenant());
         final String formattedSqlDate = df.format(date);
         return formattedSqlDate;
+    }
+
+    public static String convertLocalDateToStringUsingDatePattern(final LocalDate dueDate, final String pattern) throws ParseException {
+        final DateTimeFormatter dateStringFormat = DateTimeFormat.forPattern(pattern);
+        dateStringFormat.withZone(getDateTimeZoneOfTenant());
+        return dueDate.toString(dateStringFormat);
     }
 
     public static boolean isDateInTheFuture(final LocalDate localDate) {

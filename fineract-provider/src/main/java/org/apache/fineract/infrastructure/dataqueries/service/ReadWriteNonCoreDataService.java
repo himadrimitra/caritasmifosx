@@ -24,11 +24,12 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.dataqueries.data.DatatableData;
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
+import org.apache.fineract.infrastructure.dataqueries.data.ScopeOptionsData;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 public interface ReadWriteNonCoreDataService {
 
-    List<DatatableData> retrieveDatatableNames(String appTable);
+    List<DatatableData> retrieveDatatableNames(String appTable, Long associatedEntityId, boolean isFetchBasicData);
 
     DatatableData retrieveDatatable(String datatable);
 
@@ -36,7 +37,7 @@ public interface ReadWriteNonCoreDataService {
     void registerDatatable(JsonCommand command);
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'REGISTER_DATATABLE')")
-    void registerDatatable(String dataTableName, String applicationTableName);
+    void registerDatatable(String dataTableName, String applicationTableName, final Long scopingCriteriaEnum, String dataTableDisplayName);
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'REGISTER_DATATABLE')")
     void registerDatatable(JsonCommand command, String permissionTable);
@@ -44,7 +45,7 @@ public interface ReadWriteNonCoreDataService {
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'DEREGISTER_DATATABLE')")
     void deregisterDatatable(String datatable);
 
-    GenericResultsetData retrieveDataTableGenericResultSet(String datatable, Long appTableId, String order, Long id);
+    GenericResultsetData retrieveDataTableGenericResultSet(String datatable, String apptableIdentifier, String order, Long id);
 
     CommandProcessingResult createDatatable(JsonCommand command);
 
@@ -52,20 +53,22 @@ public interface ReadWriteNonCoreDataService {
 
     void deleteDatatable(String datatableName);
 
-    CommandProcessingResult createNewDatatableEntry(String datatable, Long appTableId, JsonCommand command);
+    CommandProcessingResult createNewDatatableEntry(JsonCommand command);
 
-    CommandProcessingResult createPPIEntry(String datatable, Long appTableId, JsonCommand command);
+    CommandProcessingResult createPPIEntry(String datatable, String apptableIdentifier, JsonCommand command);
 
-    CommandProcessingResult updateDatatableEntryOneToOne(String datatable, Long appTableId, JsonCommand command);
+    CommandProcessingResult updateDatatableEntryOneToOne(JsonCommand command);
 
-    CommandProcessingResult updateDatatableEntryOneToMany(String datatable, Long appTableId, Long datatableId, JsonCommand command);
+    CommandProcessingResult updateDatatableEntryOneToMany(JsonCommand command);
 
-    CommandProcessingResult deleteDatatableEntries(String datatable, Long appTableId);
+    CommandProcessingResult deleteDatatableEntries(JsonCommand command);
 
-    CommandProcessingResult deleteDatatableEntry(String datatable, Long appTableId, Long datatableId);
+    CommandProcessingResult deleteDatatableEntry(JsonCommand command);
 
     String getTableName(String Url);
 
     String getDataTableName(String Url);
+
+    ScopeOptionsData retriveAllScopeOptions();
 
 }

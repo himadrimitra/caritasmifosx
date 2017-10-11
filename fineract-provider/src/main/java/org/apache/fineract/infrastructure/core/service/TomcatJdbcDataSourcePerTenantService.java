@@ -23,7 +23,9 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
-import org.apache.fineract.infrastructure.core.domain.MifosPlatformTenant;
+import org.apache.fineract.infrastructure.core.boot.JDBCDriverConfig;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenantConnection;
 import org.apache.tomcat.jdbc.pool.PoolConfiguration;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,15 +36,18 @@ import org.springframework.stereotype.Service;
  * Implementation that returns a new or existing tomcat 7 jdbc connection pool
  * datasource based on the tenant details stored in a {@link ThreadLocal}
  * variable for this request.
- * 
+ *
  * {@link ThreadLocalContextUtil} is used to retrieve the
- * {@link MifosPlatformTenant} for the request.
+ * {@link FineractPlatformTenant} for the request.
  */
 @Service
 public class TomcatJdbcDataSourcePerTenantService implements RoutingDataSourceService {
 
     private final Map<Long, DataSource> tenantToDataSourceMap = new HashMap<>(1);
     private final DataSource tenantDataSource;
+
+    @Autowired
+    private JDBCDriverConfig driverConfig;
 
     @Autowired
     public TomcatJdbcDataSourcePerTenantService(final @Qualifier("tenantDataSourceJndi") DataSource tenantDataSource) {
@@ -55,17 +60,20 @@ public class TomcatJdbcDataSourcePerTenantService implements RoutingDataSourceSe
         // default to tenant database datasource
         DataSource tenantDataSource = this.tenantDataSource;
 
-        final MifosPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+        final FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
         if (tenant != null) {
+            final FineractPlatformTenantConnection tenantConnection = tenant.getConnection();
+
             synchronized (this.tenantToDataSourceMap) {
-                // if tenant information available switch to appropriate
+                // if tenantConnection information available switch to
+                // appropriate
                 // datasource
                 // for that tenant.
-                if (this.tenantToDataSourceMap.containsKey(tenant.getId())) {
-                    tenantDataSource = this.tenantToDataSourceMap.get(tenant.getId());
+                if (this.tenantToDataSourceMap.containsKey(tenantConnection.getConnectionId())) {
+                    tenantDataSource = this.tenantToDataSourceMap.get(tenantConnection.getConnectionId());
                 } else {
-                    tenantDataSource = createNewDataSourceFor(tenant);
-                    this.tenantToDataSourceMap.put(tenant.getId(), tenantDataSource);
+                    tenantDataSource = createNewDataSourceFor(tenantConnection);
+                    this.tenantToDataSourceMap.put(tenantConnection.getConnectionId(), tenantDataSource);
                 }
             }
         }
@@ -73,46 +81,47 @@ public class TomcatJdbcDataSourcePerTenantService implements RoutingDataSourceSe
         return tenantDataSource;
     }
 
-    private DataSource createNewDataSourceFor(final MifosPlatformTenant tenant) {
+    // creates the data source oltp and report databases
+    private DataSource createNewDataSourceFor(final FineractPlatformTenantConnection tenantConnectionObj) {
         // see
         // http://www.tomcatexpert.com/blog/2010/04/01/configuring-jdbc-pool-high-concurrency
 
-	// see also org.mifosplatform.DataSourceProperties.setMifosDefaults()
-
-        final String jdbcUrl = tenant.databaseURL();
-
+        // see also org.apache.fineract.DataSourceProperties.setDefaults()
+        final String jdbcUrl = this.driverConfig.constructProtocol(tenantConnectionObj.getSchemaServer(),
+                tenantConnectionObj.getSchemaServerPort(), tenantConnectionObj.getSchemaName());
+        // final String jdbcUrl = tenantConnectionObj.databaseURL();
         final PoolConfiguration poolConfiguration = new PoolProperties();
-        poolConfiguration.setDriverClassName("com.mysql.jdbc.Driver");
-        poolConfiguration.setName(tenant.getSchemaName() + "_pool");
+        poolConfiguration.setDriverClassName(this.driverConfig.getDriverClassName());
+        poolConfiguration.setName(tenantConnectionObj.getSchemaName() + "_pool");
         poolConfiguration.setUrl(jdbcUrl);
-        poolConfiguration.setUsername(tenant.getSchemaUsername());
-        poolConfiguration.setPassword(tenant.getSchemaPassword());
+        poolConfiguration.setUsername(tenantConnectionObj.getSchemaUsername());
+        poolConfiguration.setPassword(tenantConnectionObj.getSchemaPassword());
 
-        poolConfiguration.setInitialSize(tenant.getInitialSize());
+        poolConfiguration.setInitialSize(tenantConnectionObj.getInitialSize());
 
-        poolConfiguration.setTestOnBorrow(tenant.isTestOnBorrow());
+        poolConfiguration.setTestOnBorrow(tenantConnectionObj.isTestOnBorrow());
         poolConfiguration.setValidationQuery("SELECT 1");
-        poolConfiguration.setValidationInterval(tenant.getValidationInterval());
+        poolConfiguration.setValidationInterval(tenantConnectionObj.getValidationInterval());
 
-        poolConfiguration.setRemoveAbandoned(tenant.isRemoveAbandoned());
-        poolConfiguration.setRemoveAbandonedTimeout(tenant.getRemoveAbandonedTimeout());
-        poolConfiguration.setLogAbandoned(tenant.isLogAbandoned());
-        poolConfiguration.setAbandonWhenPercentageFull(tenant.getAbandonWhenPercentageFull());
+        poolConfiguration.setRemoveAbandoned(tenantConnectionObj.isRemoveAbandoned());
+        poolConfiguration.setRemoveAbandonedTimeout(tenantConnectionObj.getRemoveAbandonedTimeout());
+        poolConfiguration.setLogAbandoned(tenantConnectionObj.isLogAbandoned());
+        poolConfiguration.setAbandonWhenPercentageFull(tenantConnectionObj.getAbandonWhenPercentageFull());
 
         /**
          * Vishwas- Do we need to enable the below properties and add
          * ResetAbandonedTimer for long running batch Jobs?
          **/
-        // poolConfiguration.setMaxActive(tenant.getMaxActive());
-        // poolConfiguration.setMinIdle(tenant.getMinIdle());
-        // poolConfiguration.setMaxIdle(tenant.getMaxIdle());
+        poolConfiguration.setMaxActive(tenantConnectionObj.getMaxActive());
+        poolConfiguration.setMinIdle(tenantConnectionObj.getMinIdle());
+        poolConfiguration.setMaxIdle(tenantConnectionObj.getMaxIdle());
 
-        // poolConfiguration.setSuspectTimeout(tenant.getSuspectTimeout());
-        // poolConfiguration.setTimeBetweenEvictionRunsMillis(tenant.getTimeBetweenEvictionRunsMillis());
-        // poolConfiguration.setMinEvictableIdleTimeMillis(tenant.getMinEvictableIdleTimeMillis());
+        poolConfiguration.setSuspectTimeout(tenantConnectionObj.getSuspectTimeout());
+        poolConfiguration.setTimeBetweenEvictionRunsMillis(tenantConnectionObj.getTimeBetweenEvictionRunsMillis());
+        poolConfiguration.setMinEvictableIdleTimeMillis(tenantConnectionObj.getMinEvictableIdleTimeMillis());
 
         poolConfiguration.setJdbcInterceptors("org.apache.tomcat.jdbc.pool.interceptor.ConnectionState;"
-                + "org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer;org.apache.tomcat.jdbc.pool.interceptor.SlowQueryReport");
+                + "org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer;org.apache.tomcat.jdbc.pool.interceptor.SlowQueryReport;org.apache.tomcat.jdbc.pool.interceptor.ResetAbandonedTimer");
 
         return new org.apache.tomcat.jdbc.pool.DataSource(poolConfiguration);
     }

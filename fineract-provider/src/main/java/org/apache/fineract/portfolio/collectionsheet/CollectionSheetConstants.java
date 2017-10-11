@@ -35,11 +35,16 @@ public class CollectionSheetConstants {
     public static final String actualDisbursementDateParamName = "actualDisbursementDate";
     public static final String bulkRepaymentTransactionsParamName = "bulkRepaymentTransactions";
     public static final String bulkDisbursementTransactionsParamName = "bulkDisbursementTransactions";
-    public static final String bulkSavingsDueTransactionsParamName = "bulkSavingsDueTransactions";
+    public static final String bulkSavingsTransactionsParamName = "bulkSavingsTransactions";
     public static final String noteParamName = "note";
     public static final String calendarIdParamName = "calendarId";
     public static final String officeIdParamName = "officeId";
     public static final String staffIdParamName = "staffId";
+    public static final String isTransactionDateOnNonMeetingDateParamName = "isTransactionDateOnNonMeetingDate";
+    public static final String forcedSubmitOfCollectionSheet = "forcedSubmitOfCollectionSheet";
+    public static final String withdrawAmountParamName = "withdrawAmount";
+    public static final String bulkSavingsDueTransactionsParamName = "bulkSavingsDueTransactions";
+    public static final String searchParamsParamName = "searchParams";
 
     // attendance parameters
     public static final String clientsAttendanceParamName = "clientsAttendance";
@@ -49,19 +54,25 @@ public class CollectionSheetConstants {
     public static final String loanIdParamName = "loanId";
     public static final String savingsIdParamName = "savingsId";
     public static final String transactionAmountParamName = "transactionAmount";
+    public static final String clientChargeTransactionsParamName = "clientChargeTransactions";
+    public static final String chargeIdParamName = "chargeId";
+    public static final String groupIdParamName = "groupId";
+    public static final String centerIdParamName = "centerId";
+    public static final String collectionSheetId = "collectionSheetId";
 
-    public static final Set<String> COLLECTIONSHEET_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, transactionDateParamName, actualDisbursementDateParamName, bulkRepaymentTransactionsParamName,
-            bulkDisbursementTransactionsParamName, noteParamName, calendarIdParamName, clientsAttendanceParamName,
-            bulkSavingsDueTransactionsParamName, PaymentDetailConstants.paymentTypeParamName,
-            PaymentDetailConstants.accountNumberParamName, PaymentDetailConstants.checkNumberParamName,
-            PaymentDetailConstants.routingCodeParamName, PaymentDetailConstants.receiptNumberParamName,
-            PaymentDetailConstants.bankNumberParamName));
+    public static final Set<String> COLLECTIONSHEET_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, transactionDateParamName, actualDisbursementDateParamName,
+                    bulkRepaymentTransactionsParamName, bulkDisbursementTransactionsParamName, noteParamName, calendarIdParamName,
+                    clientsAttendanceParamName, bulkSavingsTransactionsParamName, PaymentDetailConstants.paymentTypeParamName,
+                    PaymentDetailConstants.accountNumberParamName, PaymentDetailConstants.checkNumberParamName,
+                    PaymentDetailConstants.routingCodeParamName, PaymentDetailConstants.receiptNumberParamName,
+                    PaymentDetailConstants.bankNumberParamName, isTransactionDateOnNonMeetingDateParamName, forcedSubmitOfCollectionSheet,
+                    clientChargeTransactionsParamName, searchParamsParamName, groupIdParamName, centerIdParamName));
 
     public static final Set<String> INDIVIDUAL_COLLECTIONSHEET_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, transactionDateParamName, actualDisbursementDateParamName, bulkRepaymentTransactionsParamName,
-            bulkDisbursementTransactionsParamName, noteParamName, bulkSavingsDueTransactionsParamName));
+            bulkDisbursementTransactionsParamName, noteParamName, bulkSavingsTransactionsParamName));
 
-    public static final Set<String> INDIVIDUAL_COLLECTIONSHEET_SUPPORTED_PARAMS = new HashSet<>(Arrays.asList(transactionDateParamName,
-            localeParamName, dateFormatParamName, officeIdParamName, staffIdParamName));
+    public static final Set<String> INDIVIDUAL_COLLECTIONSHEET_SUPPORTED_PARAMS = new HashSet<>(
+            Arrays.asList(transactionDateParamName, localeParamName, dateFormatParamName, officeIdParamName, staffIdParamName));
 }

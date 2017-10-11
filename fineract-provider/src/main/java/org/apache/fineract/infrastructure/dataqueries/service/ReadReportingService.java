@@ -18,16 +18,18 @@
  */
 package org.apache.fineract.infrastructure.dataqueries.service;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
 import org.apache.fineract.infrastructure.dataqueries.data.ReportData;
 import org.apache.fineract.infrastructure.dataqueries.data.ReportParameterData;
+import org.apache.fineract.infrastructure.dataqueries.domain.Report;
+import org.apache.fineract.useradministration.domain.AppUser;
 
 public interface ReadReportingService {
 
@@ -35,15 +37,22 @@ public interface ReadReportingService {
 
     GenericResultsetData retrieveGenericResultset(String name, String type, Map<String, String> extractedQueryParams);
 
-    Response processPentahoRequest(String reportName, String outputType, Map<String, String> queryParams, Locale locale);
-
     String retrieveReportPDF(String name, String type, Map<String, String> extractedQueryParams);
 
     String getReportType(String reportName);
 
-    Collection<ReportData> retrieveReportList();
+    Collection<ReportData> retrieveReportList(final boolean usageTrackingEnabledOnly);
 
     Collection<ReportParameterData> getAllowedParameters();
 
     ReportData retrieveReport(final Long id);
+
+    Collection<String> getAllowedReportTypes();
+    
+    ByteArrayOutputStream generatePentahoReportAsOutputStream(String reportName, String outputTypeParam,
+            Map<String, String> queryParams, Locale locale, AppUser runReportAsUser, StringBuilder errorLog);
+    
+    public GenericResultsetData retrieveGenericResultSetForSmsCampaign(final String name, final String type, final Map<String, String> queryParams);
+    
+    Report retrieveReportByName(final String name);
 }

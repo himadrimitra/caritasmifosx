@@ -21,7 +21,6 @@ package org.apache.fineract.accounting.glaccount.data;
 public class GLAccountDataForLookup {
 
     private final Long id;
-    @SuppressWarnings("unused")
     private final String name;
     @SuppressWarnings("unused")
     private final String glCode;
@@ -34,6 +33,10 @@ public class GLAccountDataForLookup {
 
     public Long getId() {
         return this.id;
+    }
+
+    public String getName() {
+        return this.name;
     }
 
 }

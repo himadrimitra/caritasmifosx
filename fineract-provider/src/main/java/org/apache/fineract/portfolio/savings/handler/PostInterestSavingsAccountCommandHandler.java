@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.savings.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@CommandType(entity = "SAVINGSACCOUNT", action = "POSTINTEREST")
 public class PostInterestSavingsAccountCommandHandler implements NewCommandSourceHandler {
 
     private final SavingsAccountWritePlatformService writePlatformService;
@@ -39,6 +41,6 @@ public class PostInterestSavingsAccountCommandHandler implements NewCommandSourc
     @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-        return this.writePlatformService.postInterest(command.getSavingsId());
+        return this.writePlatformService.postInterest(command);
     }
 }

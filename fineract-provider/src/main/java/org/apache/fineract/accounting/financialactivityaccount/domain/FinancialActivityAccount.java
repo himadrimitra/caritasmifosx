@@ -18,17 +18,29 @@
  */
 package org.apache.fineract.accounting.financialactivityaccount.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.Cacheable;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.apache.fineract.accounting.glaccount.domain.GLAccount;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "FinancialActivityAccount")
 @Table(name = "acc_gl_financial_activity_account")
 public class FinancialActivityAccount extends AbstractPersistable<Long> {
 
@@ -38,6 +50,11 @@ public class FinancialActivityAccount extends AbstractPersistable<Long> {
 
     @Column(name = "financial_activity_type", nullable = false)
     private Integer financialActivityType;
+
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "financial_activity_account_id", referencedColumnName = "id", nullable = false)
+    private List<FinancialActivityAccountPaymentTypeMapping> financialActivityAccountPaymentTypeMapping = new ArrayList<>();
 
     public static FinancialActivityAccount createNew(final GLAccount glAccount, final Integer financialAccountType) {
         return new FinancialActivityAccount(glAccount, financialAccountType);
@@ -67,4 +84,19 @@ public class FinancialActivityAccount extends AbstractPersistable<Long> {
     public void updateFinancialActivityType(final Integer financialActivityType) {
         this.financialActivityType = financialActivityType;
     }
+
+    public void addAllFinancialActivityAccountPaymentTypeMapping(
+            final List<FinancialActivityAccountPaymentTypeMapping> financialActivityAccountPaymentTypeMapping) {
+        this.financialActivityAccountPaymentTypeMapping.addAll(financialActivityAccountPaymentTypeMapping);
+    }
+
+    public List<FinancialActivityAccountPaymentTypeMapping> getFinancialActivityAccountPaymentTypeMapping() {
+        return this.financialActivityAccountPaymentTypeMapping;
+    }
+
+    public void updateFinancialActivityAccountPaymentTypeMapping(
+            final List<FinancialActivityAccountPaymentTypeMapping> financialActivityAccountPaymentTypeMappingList) {
+        this.financialActivityAccountPaymentTypeMapping = financialActivityAccountPaymentTypeMappingList;
+    }
+
 }

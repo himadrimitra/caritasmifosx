@@ -62,7 +62,8 @@ public class AttendanceEnumerations {
     public static List<EnumOptionData> attendanceType(final AttendanceType[] attendanceTypes) {
         final List<EnumOptionData> optionDatas = new ArrayList<>();
         for (final AttendanceType attendanceType : attendanceTypes) {
-            if (attendanceType.getValue().equals(AttendanceType.INVALID.getValue())) {
+            if (!attendanceType.getValue().equals(AttendanceType.PRESENT.getValue())
+                    && !attendanceType.getValue().equals(AttendanceType.ABSENT.getValue())) {
                 continue;
             }
             optionDatas.add(attendanceType(attendanceType));

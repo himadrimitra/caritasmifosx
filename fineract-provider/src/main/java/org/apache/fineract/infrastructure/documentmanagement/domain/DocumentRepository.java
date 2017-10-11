@@ -20,7 +20,12 @@ package org.apache.fineract.infrastructure.documentmanagement.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface DocumentRepository extends JpaRepository<Document, Long>, JpaSpecificationExecutor<Document> {
-    // no added behaviour
+
+    @Query("from Document document where document.reportIdentifier= :reportIdentifier")
+    Document findDocumentByReportIdentifier(@Param("reportIdentifier") Long reportIdentifier);
+
 }

@@ -138,11 +138,18 @@ public class AccountTransferTransaction extends AbstractPersistable<Long> {
         this.reversed = true;
     }
 
-    public void updateToLoanTransaction(LoanTransaction toLoanTransaction) {
+    public void updateToLoanTransaction(final LoanTransaction toLoanTransaction) {
         this.toLoanTransaction = toLoanTransaction;
     }
 
     public AccountTransferDetails accountTransferDetails() {
         return this.accountTransferDetails;
+    }
+
+    public static AccountTransferTransaction LoanToLoanTransfer(final AccountTransferDetails accountTransferDetails,
+            final LoanTransaction disburseTransaction, final LoanTransaction repaymentTransaction, final LocalDate transactionDate,
+            final Money transactionMonetaryAmount, final String description) {
+        return new AccountTransferTransaction(accountTransferDetails, null, null, repaymentTransaction, disburseTransaction,
+                transactionDate, transactionMonetaryAmount, description);
     }
 }

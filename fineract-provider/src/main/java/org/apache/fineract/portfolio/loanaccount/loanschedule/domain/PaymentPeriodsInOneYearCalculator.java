@@ -23,7 +23,7 @@ import org.joda.time.LocalDate;
 
 public interface PaymentPeriodsInOneYearCalculator {
 
-    Integer calculate(PeriodFrequencyType repaymentFrequencyType);
+    Integer calculate(PeriodFrequencyType repaymentFrequencyType, final Integer weeksInYear);
 
     double calculatePortionOfRepaymentPeriodInterestChargingGrace(LocalDate repaymentPeriodStartDate, LocalDate scheduledDueDate,
             LocalDate interestChargedFromLocalDate, PeriodFrequencyType repaymentPeriodFrequencyType, Integer repaidEvery);

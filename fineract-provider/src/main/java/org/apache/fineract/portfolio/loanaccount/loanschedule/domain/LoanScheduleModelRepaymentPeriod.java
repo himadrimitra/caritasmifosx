@@ -19,8 +19,11 @@
 package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalcualtionAdditionalDetails;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.joda.time.LocalDate;
 
@@ -38,20 +41,32 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
     private Money interestDue;
     private Money feeChargesDue;
     private Money penaltyChargesDue;
+    private Money capitalChargeDue;
     private Money totalDue;
+    private Money advancePayment;
     private final boolean recalculatedInterestComponent;
+    private final List<LoanInterestRecalcualtionAdditionalDetails> loanCompoundingDetails = new ArrayList<>();
 
     public static LoanScheduleModelRepaymentPeriod repayment(final int periodNumber, final LocalDate startDate,
             final LocalDate scheduledDueDate, final Money principalDue, final Money outstandingLoanBalance, final Money interestDue,
-            final Money feeChargesDue, final Money penaltyChargesDue, final Money totalDue, boolean recalculatedInterestComponent) {
+            final Money feeChargesDue, final Money penaltyChargesDue, final Money totalDue, final boolean recalculatedInterestComponent) {
+        final Money advancePayment = null;
+        return new LoanScheduleModelRepaymentPeriod(periodNumber, startDate, scheduledDueDate, principalDue, outstandingLoanBalance,
+                interestDue, feeChargesDue, penaltyChargesDue, totalDue, recalculatedInterestComponent, advancePayment);
+    }
+
+    public static LoanScheduleModelRepaymentPeriod repayment(final int periodNumber, final LocalDate startDate,
+            final LocalDate scheduledDueDate, final Money principalDue, final Money outstandingLoanBalance, final Money interestDue,
+            final Money feeChargesDue, final Money penaltyChargesDue, final Money totalDue, final boolean recalculatedInterestComponent,
+            final Money advancePayment) {
 
         return new LoanScheduleModelRepaymentPeriod(periodNumber, startDate, scheduledDueDate, principalDue, outstandingLoanBalance,
-                interestDue, feeChargesDue, penaltyChargesDue, totalDue, recalculatedInterestComponent);
+                interestDue, feeChargesDue, penaltyChargesDue, totalDue, recalculatedInterestComponent, advancePayment);
     }
 
     public LoanScheduleModelRepaymentPeriod(final int periodNumber, final LocalDate fromDate, final LocalDate dueDate,
             final Money principalDue, final Money outstandingLoanBalance, final Money interestDue, final Money feeChargesDue,
-            final Money penaltyChargesDue, final Money totalDue, final boolean recalculatedInterestComponent) {
+            final Money penaltyChargesDue, final Money totalDue, final boolean recalculatedInterestComponent, final Money advancePayment) {
         this.periodNumber = periodNumber;
         this.fromDate = fromDate;
         this.dueDate = dueDate;
@@ -62,13 +77,15 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
         this.penaltyChargesDue = penaltyChargesDue;
         this.totalDue = totalDue;
         this.recalculatedInterestComponent = recalculatedInterestComponent;
+        this.advancePayment = advancePayment;
     }
 
     @Override
     public LoanSchedulePeriodData toData() {
         return LoanSchedulePeriodData.repaymentOnlyPeriod(this.periodNumber, this.fromDate, this.dueDate, this.principalDue.getAmount(),
                 this.outstandingLoanBalance.getAmount(), this.interestDue.getAmount(), this.feeChargesDue.getAmount(),
-                this.penaltyChargesDue.getAmount(), this.totalDue.getAmount());
+                this.penaltyChargesDue.getAmount(), this.totalDue.getAmount(), this.principalDue.plus(this.interestDue).getAmount(),
+                this.recalculatedInterestComponent);
     }
 
     @Override
@@ -132,16 +149,16 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
     }
 
     @Override
-    public void addLoanCharges(BigDecimal feeCharge, BigDecimal penaltyCharge) {
+    public void addLoanCharges(final BigDecimal feeCharge, final BigDecimal penaltyCharge) {
         this.feeChargesDue = this.feeChargesDue.plus(feeCharge);
         this.penaltyChargesDue = this.penaltyChargesDue.plus(penaltyCharge);
         this.totalDue = this.totalDue.plus(feeCharge).plus(penaltyCharge);
     }
-    
+
     @Override
-    public void addPrincipalAmount(final Money principalDue){
-         this.principalDue = this.principalDue.plus(principalDue);
-         this.totalDue = this.totalDue.plus(principalDue);
+    public void addPrincipalAmount(final Money principalDue) {
+        this.principalDue = this.principalDue.plus(principalDue);
+        this.totalDue = this.totalDue.plus(principalDue);
     }
 
     @Override
@@ -150,8 +167,51 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
     }
 
     @Override
-    public void addInterestAmount(Money interestDue) {
+    public void addInterestAmount(final Money interestDue) {
         this.interestDue = this.interestDue.plus(interestDue);
-        this.totalDue = this.totalDue.plus(principalDue);
+        this.totalDue = this.totalDue.plus(interestDue);
+    }
+
+    @Override
+    public List<LoanInterestRecalcualtionAdditionalDetails> getLoanCompoundingDetails() {
+        return this.loanCompoundingDetails;
+    }
+
+    @Override
+    public void adjustInterestForCurrentPeriod(final Money adjustedInterestForCurrentPeriod) {
+        this.interestDue = adjustedInterestForCurrentPeriod;
+
+    }
+
+    @Override
+    public BigDecimal advancePayment() {
+        BigDecimal value = null;
+        if (this.recalculatedInterestComponent) {
+            if (this.principalDue != null && this.principalDue.isGreaterThanZero()) {
+                value = this.principalDue.getAmount();
+            }
+        } else if (this.advancePayment != null && this.advancePayment.isGreaterThanZero()) {
+            value = this.advancePayment.getAmount();
+        }
+        return value;
+    }
+
+    @Override
+    public void setAdvancePayment(final Money advancePayment) {
+        this.advancePayment = advancePayment;
+    }
+
+    @Override
+    public BigDecimal capitalChargeDue() {
+        BigDecimal value = null;
+        if (this.capitalChargeDue != null) {
+            value = this.capitalChargeDue.getAmount();
+        }
+        return value;
+    }
+
+    @Override
+    public void setCapitalChargeDue(final Money capitalChargeDue) {
+        this.capitalChargeDue = capitalChargeDue;
     }
 }

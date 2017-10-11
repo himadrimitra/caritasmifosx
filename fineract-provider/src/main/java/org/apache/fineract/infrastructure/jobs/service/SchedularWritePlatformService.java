@@ -19,6 +19,7 @@
 package org.apache.fineract.infrastructure.jobs.service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -36,8 +37,6 @@ public interface SchedularWritePlatformService {
 
     public void saveOrUpdate(ScheduledJobDetail scheduledJobDetails, ScheduledJobRunHistory scheduledJobRunHistory);
 
-    public Long fetchMaxVersionBy(String triggerKey);
-
     public ScheduledJobDetail findByJobId(Long jobId);
 
     public CommandProcessingResult updateJobDetail(Long jobId, JsonCommand command);
@@ -46,6 +45,10 @@ public interface SchedularWritePlatformService {
 
     public void updateSchedulerDetail(final SchedulerDetail schedulerDetail);
 
-    public boolean processJobDetailForExecution(String jobKey, String triggerType);
+    public boolean processJobDetailForExecution(String jobKey, String triggerType, Map<String, Object> jobParams);
+
+    boolean updateCurrentlyRunningStatus(String jobName, boolean status);
+
+    ScheduledJobDetail findByJobName(String jobName);
 
 }

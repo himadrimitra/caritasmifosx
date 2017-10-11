@@ -20,7 +20,6 @@ package org.apache.fineract.infrastructure.dataqueries.api;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,12 +42,17 @@ import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
 import org.apache.fineract.infrastructure.dataqueries.data.ReportData;
 import org.apache.fineract.infrastructure.dataqueries.service.GenericDataService;
 import org.apache.fineract.infrastructure.dataqueries.service.ReadReportingService;
+import org.apache.fineract.infrastructure.report.provider.ReportingProcessServiceProvider;
+import org.apache.fineract.infrastructure.report.service.ReportingProcessService;
 import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import com.finflux.ReportAudits.domain.ReportAudit;
+import com.finflux.ReportAudits.service.ReportAuditWritePlatformService;
 
 @Path("/runreports")
 @Component
@@ -59,20 +63,26 @@ public class RunreportsApiResource {
     private final ToApiJsonSerializer<ReportData> toApiJsonSerializer;
     private final ReadReportingService readExtraDataAndReportingService;
     private final GenericDataService genericDataService;
+    private final ReportingProcessServiceProvider reportingProcessServiceProvider;
+    private final ReportAuditWritePlatformService reportAuditWritePlatformService;
 
     @Autowired
     public RunreportsApiResource(final PlatformSecurityContext context, final ReadReportingService readExtraDataAndReportingService,
-            final GenericDataService genericDataService, final ToApiJsonSerializer<ReportData> toApiJsonSerializer) {
+            final GenericDataService genericDataService, final ToApiJsonSerializer<ReportData> toApiJsonSerializer,
+            final ReportingProcessServiceProvider reportingProcessServiceProvider,
+            final ReportAuditWritePlatformService reportAuditWritePlatformService) {
         this.context = context;
         this.readExtraDataAndReportingService = readExtraDataAndReportingService;
         this.genericDataService = genericDataService;
         this.toApiJsonSerializer = toApiJsonSerializer;
+        this.reportingProcessServiceProvider = reportingProcessServiceProvider;
+        this.reportAuditWritePlatformService = reportAuditWritePlatformService;
     }
 
     @GET
     @Path("{reportName}")
     @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON, "application/x-msdownload", "application/vnd.ms-excel", "application/pdf", "text/html" })
+    @Produces({ MediaType.APPLICATION_JSON, "text/csv", "application/vnd.ms-excel", "application/pdf", "text/html" })
     public Response runReport(@PathParam("reportName") final String reportName, @Context final UriInfo uriInfo) {
 
         final MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
@@ -87,12 +97,10 @@ public class RunreportsApiResource {
         String parameterTypeValue = null;
         if (!parameterType) {
             parameterTypeValue = "report";
-            if (this.readExtraDataAndReportingService.getReportType(reportName).equalsIgnoreCase("Pentaho")) {
-                final Map<String, String> reportParams = getReportParams(queryParams, true);
-                final Locale locale = ApiParameterHelper.extractLocale(queryParams);
-                return this.readExtraDataAndReportingService.processPentahoRequest(reportName, queryParams.getFirst("output-type"),
-                        reportParams, locale);
-            }
+            final String reportType = this.readExtraDataAndReportingService.getReportType(reportName);
+            final ReportingProcessService reportingProcessService = this.reportingProcessServiceProvider
+                    .findReportingProcessService(reportType);
+            if (reportingProcessService != null) { return reportingProcessService.processRequest(reportName, queryParams); }
         } else {
             parameterTypeValue = "parameter";
         }
@@ -100,23 +108,24 @@ public class RunreportsApiResource {
         // PDF format
 
         if (exportPdf) {
-            final Map<String, String> reportParams = getReportParams(queryParams, false);
-            final String pdfFileName = this.readExtraDataAndReportingService
-                    .retrieveReportPDF(reportName, parameterTypeValue, reportParams);
+            final Map<String, String> reportParams = getReportParams(queryParams);
+            final ReportAudit reportAudit = this.reportAuditWritePlatformService.createReportAudit(reportName, reportParams);
+            final String pdfFileName = this.readExtraDataAndReportingService.retrieveReportPDF(reportName, parameterTypeValue,
+                    reportParams);
 
             final File file = new File(pdfFileName);
 
             final ResponseBuilder response = Response.ok(file);
             response.header("Content-Disposition", "attachment; filename=\"" + pdfFileName + "\"");
             response.header("content-Type", "application/pdf");
-
+            this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.build().getStatus());
             return response.build();
 
         }
 
         if (!exportCsv) {
-            final Map<String, String> reportParams = getReportParams(queryParams, false);
-
+            final Map<String, String> reportParams = getReportParams(queryParams);
+            final ReportAudit reportAudit = this.reportAuditWritePlatformService.createReportAudit(reportName, reportParams);
             final GenericResultsetData result = this.readExtraDataAndReportingService.retrieveGenericResultset(reportName,
                     parameterTypeValue, reportParams);
 
@@ -133,16 +142,20 @@ public class RunreportsApiResource {
                 json = this.toApiJsonSerializer.serializePretty(prettyPrint, result);
             }
 
-            return Response.ok().entity(json).type(MediaType.APPLICATION_JSON).build();
+            final Response response = Response.ok().entity(json).type(MediaType.APPLICATION_JSON).build();
+            this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+            return response;
         }
 
         // CSV Export
-        final Map<String, String> reportParams = getReportParams(queryParams, false);
-        final StreamingOutput result = this.readExtraDataAndReportingService
-                .retrieveReportCSV(reportName, parameterTypeValue, reportParams);
-
-        return Response.ok().entity(result).type("application/x-msdownload")
+        final Map<String, String> reportParams = getReportParams(queryParams);
+        final ReportAudit reportAudit = this.reportAuditWritePlatformService.createReportAudit(reportName, reportParams);
+        final StreamingOutput result = this.readExtraDataAndReportingService.retrieveReportCSV(reportName, parameterTypeValue,
+                reportParams);
+        final Response response = Response.ok().entity(result).type("text/csv")
                 .header("Content-Disposition", "attachment;filename=" + reportName.replaceAll(" ", "") + ".csv").build();
+        this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+        return response;
     }
 
     private void checkUserPermissionForReport(final String reportName, final boolean parameterType) {
@@ -151,12 +164,12 @@ public class RunreportsApiResource {
         // (dropdown listbox) values.
         if (!parameterType) {
             final AppUser currentUser = this.context.authenticatedUser();
-            if (currentUser.hasNotPermissionForReport(reportName)) { throw new NoAuthorizationException("Not authorised to run report: "
-                    + reportName); }
+            if (currentUser.hasNotPermissionForReport(
+                    reportName)) { throw new NoAuthorizationException("Not authorised to run report: " + reportName); }
         }
     }
 
-    private Map<String, String> getReportParams(final MultivaluedMap<String, String> queryParams, final Boolean isPentaho) {
+    private Map<String, String> getReportParams(final MultivaluedMap<String, String> queryParams) {
 
         final Map<String, String> reportParams = new HashMap<>();
         final Set<String> keys = queryParams.keySet();
@@ -165,16 +178,25 @@ public class RunreportsApiResource {
         for (final String k : keys) {
 
             if (k.startsWith("R_")) {
-                if (isPentaho) {
-                    pKey = k.substring(2);
+                pKey = "${" + k.substring(2) + "}";
+                if (queryParams.get(k).size() > 1) {
+                    pValue = null;
+                    for (final String queryParamValue : queryParams.get(k)) {
+                        if (pValue == null) {
+                            pValue = new String();
+                        } else {
+                            pValue = pValue + ",";
+                        }
+                        pValue = pValue + queryParamValue;
+                    }
+                    reportParams.put(pKey, pValue);
                 } else {
-                    pKey = "${" + k.substring(2) + "}";
+                    pValue = queryParams.get(k).get(0);
+                    reportParams.put(pKey, pValue);
                 }
-
-                pValue = queryParams.get(k).get(0);
-                reportParams.put(pKey, pValue);
             }
         }
         return reportParams;
     }
+
 }

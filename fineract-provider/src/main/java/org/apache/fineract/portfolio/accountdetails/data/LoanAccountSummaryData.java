@@ -44,11 +44,12 @@ public class LoanAccountSummaryData {
     private final BigDecimal originalLoan;
     private final BigDecimal loanBalance;
     private final BigDecimal amountPaid;
- //   private final BigDecimal charges;
+    private final Boolean isCoApplicant;
     
     public LoanAccountSummaryData(final Long id, final String accountNo, final String externalId, final Long productId,
             final String loanProductName, final String shortLoanProductName, final LoanStatusEnumData loanStatus, final EnumOptionData loanType, final Integer loanCycle,
-            final LoanApplicationTimelineData timeline, final Boolean inArrears,final BigDecimal originalLoan,final BigDecimal loanBalance,final BigDecimal amountPaid) {
+            final LoanApplicationTimelineData timeline, final Boolean inArrears,final BigDecimal originalLoan,final BigDecimal loanBalance,final BigDecimal amountPaid,
+            final Boolean isCoApplicant) {
         this.id = id;
         this.accountNo = accountNo;
         this.externalId = externalId;
@@ -63,6 +64,37 @@ public class LoanAccountSummaryData {
         this.loanBalance = loanBalance;
         this.originalLoan = originalLoan;
         this.amountPaid = amountPaid;
-   
+        this.isCoApplicant = isCoApplicant;
     }
+
+    public static LoanAccountSummaryData instance(final Long id, final String accountNo, final String loanProductName,
+            final String shortLoanProductName, final LoanStatusEnumData loanStatus, final BigDecimal originalLoan,
+            final BigDecimal loanBalance, final BigDecimal amountPaid,final Boolean inArrears) {
+        final String externalId = null;
+        final EnumOptionData loanType = null;
+        final LoanApplicationTimelineData timeline = null;
+        final Integer loanCycle = null;
+        final Long productId = null;
+        final Boolean isCoApplicant = false;
+        return new LoanAccountSummaryData(id, accountNo, externalId, productId, loanProductName, shortLoanProductName, loanStatus,
+                loanType, loanCycle, timeline, inArrears, originalLoan, loanBalance, amountPaid, isCoApplicant);
+    }
+    
+    public static LoanAccountSummaryData formLoanAccountSummaryData(final Long id, final String accountNo, final String loanProductName
+            ) {
+         final String externalId = null;
+         final EnumOptionData loanType = null;
+         final LoanApplicationTimelineData timeline = null;
+         final Boolean inArrears = null;
+         final Integer loanCycle = null;
+         final Long productId = null;
+         final String shortLoanProductName = null;
+         final LoanStatusEnumData loanStatus = null;
+         final BigDecimal originalLoan = null;
+         final BigDecimal loanBalance = null;
+         final BigDecimal amountPaid = null;
+         final Boolean isCoApplicant = false;
+         return new LoanAccountSummaryData(id, accountNo, externalId, productId, loanProductName, shortLoanProductName, loanStatus,
+                 loanType, loanCycle, timeline, inArrears, originalLoan, loanBalance, amountPaid, isCoApplicant);
+     }
 }

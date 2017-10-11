@@ -1,0 +1,2 @@
+INSERT IGNORE INTO `f_authentication` ( `name`, `description`, `auth_service_class_name`, `is_active`, `lastmodified_date`, `lastmodifiedby_id`) VALUES
+('Fingerprint Auth', 'Finger Print service', 'ClientInternalAuthenticationUsingFingerPrint', 1, Null, Null);

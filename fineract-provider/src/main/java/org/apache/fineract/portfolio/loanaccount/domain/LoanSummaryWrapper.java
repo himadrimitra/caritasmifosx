@@ -19,7 +19,9 @@
 package org.apache.fineract.portfolio.loanaccount.domain;
 
 import java.util.List;
+import java.util.Set;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.joda.time.LocalDate;
@@ -126,11 +128,12 @@ public final class LoanSummaryWrapper {
         return total;
     }
 
-    public Money calculateTotalFeeChargesWaived(final List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments,
-            final MonetaryCurrency currency) {
+    public Money calculateTotalFeeChargesWaived(final Set<LoanCharge> charges, final MonetaryCurrency currency) {
         Money total = Money.zero(currency);
-        for (final LoanRepaymentScheduleInstallment installment : repaymentScheduleInstallments) {
-            total = total.plus(installment.getFeeChargesWaived(currency));
+        for (final LoanCharge charge : charges) {
+            if (charge.isActive() && !charge.isPenaltyCharge()) {
+                total = total.plus(charge.getAmountWaived(currency));
+            }
         }
         return total;
     }
@@ -213,6 +216,21 @@ public final class LoanSummaryWrapper {
         return principalOverdue.plus(interestOverdue).plus(feeChargesOverdue).plus(penaltyChargesOverdue);
     }
 
+    public LocalDate determineOverdueSince(final List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments) {
+        LocalDate overdueSince = null;
+        for (final LoanRepaymentScheduleInstallment installment : repaymentScheduleInstallments) {
+            if (installment.getDueDate().isAfter(DateUtils.getLocalDateOfTenant())) {
+                break;
+            }
+            if (installment.isNotFullyPaidOff()) {
+                overdueSince = installment.getDueDate();
+                break;
+            }
+        }
+
+        return overdueSince;
+    }
+
     public LocalDate determineOverdueSinceDateFrom(final List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments,
             final MonetaryCurrency currency, final LocalDate from) {
 
@@ -229,5 +247,17 @@ public final class LoanSummaryWrapper {
         }
 
         return overdueSince;
+    }
+
+    public Money calculateTotalChargesRepaidAtDisbursement(final Set<LoanCharge> charges, final MonetaryCurrency currency) {
+        Money total = Money.zero(currency);
+        if (charges == null) { return total; }
+        for (final LoanCharge loanCharge : charges) {
+            if (!loanCharge.isPenaltyCharge() && loanCharge.getAmountPaid(currency).isGreaterThanZero()) {
+                total = total.plus(loanCharge.getAmountPaid(currency));
+            }
+        }
+        return total;
+
     }
 }

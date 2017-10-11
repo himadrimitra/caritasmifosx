@@ -108,8 +108,6 @@ public class AccountAssociationsReadPlatformServiceImpl implements AccountAssoci
 
         final List<Map<String, Object>> statusList = this.jdbcTemplate.queryForList(sql1, savingsId);
         for (final Map<String, Object> statusMap : statusList) {
-        	
-        	 if((Boolean)statusMap.get("active")==true){
             AccountAssociationType associationType = AccountAssociationType.fromInt((Integer) statusMap.get("type"));
             if (!associationType.isLinkedAccountAssociation() && (Boolean) statusMap.get("active")) {
                 hasActiveAccount = true;
@@ -131,7 +129,6 @@ public class AccountAssociationsReadPlatformServiceImpl implements AccountAssoci
                     break;
                 }
             }
-         }
         }
 
         return hasActiveAccount;

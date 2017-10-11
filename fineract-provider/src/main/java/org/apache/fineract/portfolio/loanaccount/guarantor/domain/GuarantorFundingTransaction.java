@@ -44,12 +44,12 @@ public class GuarantorFundingTransaction extends AbstractPersistable<Long> {
     @ManyToOne
     @JoinColumn(name = "loan_transaction_id", nullable = true)
     private LoanTransaction loanTransaction;
-    
+
     @ManyToOne
     @JoinColumn(name = "saving_transaction_id", nullable = true)
     private SavingsAccountTransaction savingTransaction;
 
-	@OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "deposit_on_hold_transaction_id", nullable = false)
     private DepositAccountOnHoldTransaction depositAccountOnHoldTransaction;
 
@@ -59,7 +59,7 @@ public class GuarantorFundingTransaction extends AbstractPersistable<Long> {
     protected GuarantorFundingTransaction() {}
 
     public GuarantorFundingTransaction(final GuarantorFundingDetails guarantorFundingDetails, final LoanTransaction loanTransaction,
-            final DepositAccountOnHoldTransaction depositAccountOnHoldTransaction, final SavingsAccountTransaction savingTransaction ) {
+            final DepositAccountOnHoldTransaction depositAccountOnHoldTransaction, final SavingsAccountTransaction savingTransaction) {
         this.depositAccountOnHoldTransaction = depositAccountOnHoldTransaction;
         this.guarantorFundingDetails = guarantorFundingDetails;
         this.loanTransaction = loanTransaction;
@@ -70,59 +70,57 @@ public class GuarantorFundingTransaction extends AbstractPersistable<Long> {
     public void reverseTransaction() {
         if (!this.reversed) {
             this.reversed = true;
-            BigDecimal amountForReverse = this.depositAccountOnHoldTransaction.getAmount();
+            final BigDecimal amountForReverse = this.depositAccountOnHoldTransaction.getAmount();
             this.depositAccountOnHoldTransaction.reverseTransaction();
             if (this.depositAccountOnHoldTransaction.getTransactionType().isRelease()) {
                 this.guarantorFundingDetails.undoReleaseFunds(amountForReverse);
             }
         }
     }
-    
-  //following code change for if undo the deposit amount then release guarantor amount has to be undo (other guarantor)
-    public void reverseTransactionIfDepositUndoTxn(){
-    	   if(!this.reversed){
-    			   this.reversed = true;
-    			   BigDecimal amountForReverse = this.depositAccountOnHoldTransaction.getAmount();
-    			   this.depositAccountOnHoldTransaction.reverseTxnIfUndoDepositTxn(amountForReverse);
-    			   if(this.depositAccountOnHoldTransaction.getTransactionType().isRelease()){
-    				   this.guarantorFundingDetails.undoReleaseFunds(amountForReverse);
-    			   }
-    		   }
-       }
-    
-    //following code change if undo the self saving on hold amount transaction then on hold amount has to reduce to last txn amount.(self guarantor)
-    public void undoDepositSavingAccTxnThenUndoOnhold(BigDecimal undoTxnAmount){
-    	if(!this.reversed){
-    		this.reversed = true;
-    		BigDecimal selfRemainingAmount = this.guarantorFundingDetails.getAmountRemaining();
-    		BigDecimal newSelfRemainingAmount = selfRemainingAmount.subtract(undoTxnAmount);
-    		if(newSelfRemainingAmount.longValue()>0){
-    			this.guarantorFundingDetails.setAmountRemaining(newSelfRemainingAmount);
-    		}else{
-    			this.guarantorFundingDetails.setAmountRemaining(BigDecimal.ZERO);
-    		}
-    		this.depositAccountOnHoldTransaction.removedOnholdsFundsWithTxnAmount(undoTxnAmount);
-    	}
+
+    // following code change for if undo the deposit amount then release
+    // guarantor amount has to be undo (other guarantor)
+    public void reverseTransactionIfDepositUndoTxn() {
+        if (!this.reversed) {
+            this.reversed = true;
+            final BigDecimal amountForReverse = this.depositAccountOnHoldTransaction.getAmount();
+            this.depositAccountOnHoldTransaction.reverseTxnIfUndoDepositTxn(amountForReverse);
+            if (this.depositAccountOnHoldTransaction.getTransactionType().isRelease()) {
+                this.guarantorFundingDetails.undoReleaseFunds(amountForReverse);
+            }
+        }
     }
-  
-   
-	public DepositAccountOnHoldTransaction getDepositAccountOnHoldTransaction() {
-		return this.depositAccountOnHoldTransaction;
-	}
 
-	public void setDepositAccountOnHoldTransaction(
-			DepositAccountOnHoldTransaction depositAccountOnHoldTransaction) {
-		this.depositAccountOnHoldTransaction = depositAccountOnHoldTransaction;
-	}
+    // following code change if undo the self saving on hold amount transaction
+    // then on hold amount has to reduce to last txn amount.(self guarantor)
+    public void undoDepositSavingAccTxnThenUndoOnhold(final BigDecimal undoTxnAmount) {
+        if (!this.reversed) {
+            this.reversed = true;
+            final BigDecimal selfRemainingAmount = this.guarantorFundingDetails.getAmountRemaining();
+            final BigDecimal newSelfRemainingAmount = selfRemainingAmount.subtract(undoTxnAmount);
+            if (newSelfRemainingAmount.longValue() > 0) {
+                this.guarantorFundingDetails.setAmountRemaining(newSelfRemainingAmount);
+            } else {
+                this.guarantorFundingDetails.setAmountRemaining(BigDecimal.ZERO);
+            }
+            this.depositAccountOnHoldTransaction.removedOnholdsFundsWithTxnAmount(undoTxnAmount);
+        }
+    }
 
-	public GuarantorFundingDetails getGuarantorFundingDetails() {
-		return this.guarantorFundingDetails;
-	}
+    public DepositAccountOnHoldTransaction getDepositAccountOnHoldTransaction() {
+        return this.depositAccountOnHoldTransaction;
+    }
 
-	public void setGuarantorFundingDetails(
-			GuarantorFundingDetails guarantorFundingDetails) {
-		this.guarantorFundingDetails = guarantorFundingDetails;
-	}
+    public void setDepositAccountOnHoldTransaction(final DepositAccountOnHoldTransaction depositAccountOnHoldTransaction) {
+        this.depositAccountOnHoldTransaction = depositAccountOnHoldTransaction;
+    }
 
+    public GuarantorFundingDetails getGuarantorFundingDetails() {
+        return this.guarantorFundingDetails;
+    }
+
+    public void setGuarantorFundingDetails(final GuarantorFundingDetails guarantorFundingDetails) {
+        this.guarantorFundingDetails = guarantorFundingDetails;
+    }
 
 }

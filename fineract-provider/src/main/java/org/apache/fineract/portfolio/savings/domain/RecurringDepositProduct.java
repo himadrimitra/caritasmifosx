@@ -47,6 +47,7 @@ import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYea
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
 import org.apache.fineract.portfolio.savings.SavingsPostingInterestPeriodType;
+import org.apache.fineract.portfolio.tax.domain.TaxGroup;
 
 @Entity
 @DiscriminatorValue("300")
@@ -67,17 +68,20 @@ public class RecurringDepositProduct extends FixedDepositProduct {
             final SavingsPeriodFrequencyType lockinPeriodFrequencyType, final AccountingRuleType accountingRuleType,
             final Set<Charge> charges, final DepositProductTermAndPreClosure productTermAndPreClosure,
             final DepositProductRecurringDetail recurringDetail, final Set<InterestRateChart> charts,
-            BigDecimal minBalanceForInterestCalculation) {
+            final BigDecimal minBalanceForInterestCalculation, final TaxGroup taxGroup, final boolean withHoldTax,
+            final String externalId) {
 
         final BigDecimal minRequiredOpeningBalance = null;
         final boolean withdrawalFeeApplicableForTransfer = false;
         final boolean allowOverdraft = false;
         final BigDecimal overdraftLimit = null;
+        final boolean releaseguarantor = false;
 
         return new RecurringDepositProduct(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
-                productTermAndPreClosure, recurringDetail, charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation);
+                productTermAndPreClosure, recurringDetail, charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation,
+                withHoldTax, taxGroup, externalId, releaseguarantor);
     }
 
     protected RecurringDepositProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
@@ -88,12 +92,14 @@ public class RecurringDepositProduct extends FixedDepositProduct {
             final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
             final DepositProductTermAndPreClosure productTermAndPreClosure, final DepositProductRecurringDetail recurringDetail,
             final Set<InterestRateChart> charts, final boolean allowOverdraft, final BigDecimal overdraftLimit,
-            final BigDecimal minBalanceForInterestCalculation) {
+            final BigDecimal minBalanceForInterestCalculation, final boolean withHoldTax, final TaxGroup taxGroup, final String externalId,
+            final boolean releaseguarantor) {
 
         super(name, shortName, description, currency, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
                 lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges, productTermAndPreClosure,
-                charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation);
+                charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation, withHoldTax, taxGroup, externalId,
+                releaseguarantor);
 
         this.recurringDetail = recurringDetail;
     }
@@ -148,7 +154,7 @@ public class RecurringDepositProduct extends FixedDepositProduct {
     }
 
     private void validateDomainRules(final DataValidatorBuilder baseDataValidator) {
-        final DepositTermDetail termDetails = this.depositProductTermAndPreClosure().depositTermDetail();
+        final DepositTermDetail termDetails = depositProductTermAndPreClosure().depositTermDetail();
         final boolean isMinTermGreaterThanMax = termDetails.isMinDepositTermGreaterThanMaxDepositTerm();
         if (isMinTermGreaterThanMax) {
             final Integer maxTerm = termDetails.maxDepositTerm();
@@ -159,10 +165,11 @@ public class RecurringDepositProduct extends FixedDepositProduct {
         if (this.charts != null) {
             validateCharts(baseDataValidator);
         } else if (this.nominalAnnualInterestRate == null || this.nominalAnnualInterestRate.compareTo(BigDecimal.ZERO) == 0) {
-            baseDataValidator.reset().parameter(DepositsApiConstants.nominalAnnualInterestRateParamName).value(nominalAnnualInterestRate)
+            baseDataValidator.reset().parameter(DepositsApiConstants.nominalAnnualInterestRateParamName)
+                    .value(this.nominalAnnualInterestRate)
                     .failWithCodeNoParameterAddedToErrorCode("interest.chart.or.nominal.interest.rate.required");
         }
 
-        this.validateInterestPostingAndCompoundingPeriodTypes(baseDataValidator);
+        validateInterestPostingAndCompoundingPeriodTypes(baseDataValidator);
     }
 }

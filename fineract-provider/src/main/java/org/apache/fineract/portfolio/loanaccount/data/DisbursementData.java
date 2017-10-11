@@ -27,18 +27,24 @@ import org.joda.time.LocalDate;
  */
 public class DisbursementData implements Comparable<DisbursementData> {
 
-    @SuppressWarnings("unused")
     private final Long id;
     private final LocalDate expectedDisbursementDate;
     private final LocalDate actualDisbursementDate;
-    private final BigDecimal principal;
+    private BigDecimal principal;
+    private final String loanChargeId;
+    private final BigDecimal chargeAmount;
+    private final BigDecimal discountOnDisbursalAmount;
 
-    public DisbursementData(Long id, final LocalDate expectedDisbursementDate, final LocalDate actualDisbursementDate,
-            final BigDecimal principalDisbursed) {
+    public DisbursementData(final Long id, final LocalDate expectedDisbursementDate, final LocalDate actualDisbursementDate,
+            final BigDecimal principalDisbursed, final String loanChargeId, final BigDecimal chargeAmount,
+            final BigDecimal discountOnDisbursalAmount) {
         this.id = id;
         this.expectedDisbursementDate = expectedDisbursementDate;
         this.actualDisbursementDate = actualDisbursementDate;
         this.principal = principalDisbursed;
+        this.loanChargeId = loanChargeId;
+        this.chargeAmount = chargeAmount;
+        this.discountOnDisbursalAmount = discountOnDisbursalAmount;
     }
 
     public LocalDate disbursementDate() {
@@ -52,7 +58,11 @@ public class DisbursementData implements Comparable<DisbursementData> {
     public BigDecimal amount() {
         return this.principal;
     }
-    
+
+    public BigDecimal getChargeAmount() {
+        return this.chargeAmount;
+    }
+
     public boolean isDisbursed() {
         return this.actualDisbursementDate != null;
     }
@@ -72,6 +82,42 @@ public class DisbursementData implements Comparable<DisbursementData> {
     private boolean occursOnDayFromAndUpToAndIncluding(final LocalDate fromNotInclusive, final LocalDate upToAndInclusive,
             final LocalDate target) {
         return target != null && target.isAfter(fromNotInclusive) && !target.isAfter(upToAndInclusive);
+    }
+
+    public Long getId() {
+        return this.id;
+    }
+
+    public LocalDate getExpectedDisbursementDate() {
+        return this.expectedDisbursementDate;
+    }
+
+    public LocalDate getActualDisbursementDate() {
+        return this.actualDisbursementDate;
+    }
+
+    public BigDecimal getPrincipal() {
+        return this.principal;
+    }
+
+    public String getLoanChargeId() {
+        return this.loanChargeId;
+    }
+
+    public void addBrokenPeriodInterest(final BigDecimal interest) {
+        this.principal = this.principal.add(interest);
+    }
+
+    public void reducePrincipal(final BigDecimal amount) {
+        this.principal = this.principal.subtract(amount);
+    }
+
+    public BigDecimal getDiscountOnDisbursalAmount() {
+        return this.discountOnDisbursalAmount;
+    }
+
+    public BigDecimal fetchDiscountOnDisbursalAmount() {
+        return this.discountOnDisbursalAmount == null ? BigDecimal.ZERO : this.discountOnDisbursalAmount;
     }
 
 }

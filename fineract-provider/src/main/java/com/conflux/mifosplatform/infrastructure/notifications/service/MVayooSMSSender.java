@@ -3,7 +3,7 @@ package com.conflux.mifosplatform.infrastructure.notifications.service;
 import java.io.UnsupportedEncodingException;
 
 import org.json.JSONArray;
-import org.pentaho.reporting.libraries.formula.util.URLEncoder;
+import java.net.URLEncoder;
 
 public class MVayooSMSSender extends AbstractSMSSender implements SMSSender {
 

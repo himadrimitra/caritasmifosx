@@ -46,6 +46,7 @@ import org.springframework.stereotype.Service;
 public class GroupRolesWritePlatformServiceJpaRepositoryImpl implements GroupRolesWritePlatformService {
 
     private final static Logger logger = LoggerFactory.getLogger(GroupRolesWritePlatformServiceJpaRepositoryImpl.class);
+    final boolean loadLazyEntities = true;
 
     private final PlatformSecurityContext context;
     private final GroupRepositoryWrapper groupRepository;
@@ -80,7 +81,7 @@ public class GroupRolesWritePlatformServiceJpaRepositoryImpl implements GroupRol
             final Long clientId = command.longValueOfParameterNamed(GroupingTypesApiConstants.clientIdParamName);
             final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
 
-            final Group group = this.groupRepository.findOneWithNotFoundDetection(command.getGroupId());
+            final Group group = this.groupRepository.findOneWithNotFoundDetection(command.getGroupId(),loadLazyEntities);
             if (!group.hasClientAsMember(client)) { throw new ClientNotInGroupException(clientId, command.getGroupId()); }
             final GroupRole groupRole = GroupRole.createGroupRole(group, client, role);
             this.groupRoleRepository.save(groupRole);
@@ -118,7 +119,7 @@ public class GroupRolesWritePlatformServiceJpaRepositoryImpl implements GroupRol
             this.context.authenticatedUser();
             this.fromApiJsonDeserializer.validateForUpdateRole(command);
 
-            final Group group = this.groupRepository.findOneWithNotFoundDetection(command.getGroupId());
+            final Group group = this.groupRepository.findOneWithNotFoundDetection(command.getGroupId(),loadLazyEntities);
 
             final GroupRole groupRole = this.groupRoleRepository.findOneWithNotFoundDetection(command.entityId());
             final Map<String, Object> actualChanges = groupRole.update(command);

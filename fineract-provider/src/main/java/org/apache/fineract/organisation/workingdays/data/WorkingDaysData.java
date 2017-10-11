@@ -32,22 +32,41 @@ public class WorkingDaysData {
     @SuppressWarnings("unused")
     private final EnumOptionData repaymentRescheduleType;
 
+    @SuppressWarnings("unused")
+    private final Boolean extendTermForDailyRepayments;
+
     // template date
     @SuppressWarnings("unused")
     private final Collection<EnumOptionData> repaymentRescheduleOptions;
 
-    public WorkingDaysData(Long id, String recurrence, EnumOptionData repaymentRescheduleType) {
+    @SuppressWarnings("unused")
+    private final Collection<EnumOptionData> repaymentRescheduleOptionsForAdvancedReschedule;
+
+    @SuppressWarnings("unused")
+    private Collection<NonWorkingDayRescheduleData> advancedRescheduleDetail;
+
+    public WorkingDaysData(final Long id, final String recurrence, final EnumOptionData repaymentRescheduleType,
+            final Boolean extendTermForDailyRepayments) {
         this.id = id;
         this.recurrence = recurrence;
         this.repaymentRescheduleType = repaymentRescheduleType;
         this.repaymentRescheduleOptions = null;
+        this.extendTermForDailyRepayments = extendTermForDailyRepayments;
+        this.repaymentRescheduleOptionsForAdvancedReschedule = null;
     }
 
-    public WorkingDaysData(Long id, String recurrence, EnumOptionData repaymentRescheduleType,
-            Collection<EnumOptionData> repaymentRescheduleOptions) {
+    public WorkingDaysData(final Long id, final String recurrence, final EnumOptionData repaymentRescheduleType,
+            final Collection<EnumOptionData> repaymentRescheduleOptions, final Boolean extendTermForDailyRepayments,
+            final Collection<EnumOptionData> repaymentRescheduleOptionsForAdvancedReschedule) {
         this.id = id;
         this.recurrence = recurrence;
         this.repaymentRescheduleType = repaymentRescheduleType;
         this.repaymentRescheduleOptions = repaymentRescheduleOptions;
+        this.extendTermForDailyRepayments = extendTermForDailyRepayments;
+        this.repaymentRescheduleOptionsForAdvancedReschedule = repaymentRescheduleOptionsForAdvancedReschedule;
+    }
+
+    public void setAdvancedRescheduleDetail(final Collection<NonWorkingDayRescheduleData> advancedRescheduleDetail) {
+        this.advancedRescheduleDetail = advancedRescheduleDetail;
     }
 }

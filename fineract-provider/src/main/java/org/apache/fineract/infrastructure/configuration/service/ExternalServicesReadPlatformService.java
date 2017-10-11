@@ -18,10 +18,10 @@
  */
 package org.apache.fineract.infrastructure.configuration.service;
 
-import org.apache.fineract.infrastructure.configuration.data.S3CredentialsData;
+import org.apache.fineract.infrastructure.configuration.data.ExternalServicesData;
 
 public interface ExternalServicesReadPlatformService {
 
-    S3CredentialsData getS3Credentials();
+    ExternalServicesData getExternalServiceDetailsByServiceName(String serviceName);
 
 }

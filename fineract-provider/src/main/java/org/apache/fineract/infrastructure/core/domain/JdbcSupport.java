@@ -26,6 +26,7 @@ import java.util.Date;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
@@ -52,6 +53,15 @@ public class JdbcSupport {
         return localDate;
     }
 
+    public static LocalTime getLocalTime(final ResultSet rs, final String columnName) throws SQLException {
+        LocalTime localTime = null;
+        final Date timeValue = rs.getTime(columnName);
+        if (timeValue != null) {
+            localTime = new LocalTime(timeValue);
+        }
+        return localTime;
+    }
+
     public static Long getLong(final ResultSet rs, final String columnName) throws SQLException {
         return (Long) JdbcUtils.getResultSetValue(rs, rs.findColumn(columnName), Long.class);
     }
@@ -64,7 +74,7 @@ public class JdbcSupport {
         final Integer value = (Integer) JdbcUtils.getResultSetValue(rs, rs.findColumn(columnName), Integer.class);
         return defaultToNullIfZero(value);
     }
-    
+
     public static Long getLongDefaultToNullIfZero(final ResultSet rs, final String columnName) throws SQLException {
         final Long value = (Long) JdbcUtils.getResultSetValue(rs, rs.findColumn(columnName), Long.class);
         return defaultToNullIfZero(value);
@@ -77,7 +87,7 @@ public class JdbcSupport {
         }
         return result;
     }
-    
+
     private static Long defaultToNullIfZero(final Long value) {
         Long result = value;
         if (result != null && Long.valueOf(0).equals(value)) {
@@ -110,5 +120,21 @@ public class JdbcSupport {
             result = null;
         }
         return result;
+    }
+
+    public static Long getLongActualValue(final ResultSet rs, final String columnName) throws SQLException {
+        if (rs.getObject(columnName) != null) {
+            final Long value = Long.parseLong(rs.getObject(columnName).toString());
+            if (value != null) { return value; }
+        }
+        return null;
+    }
+
+    public static Integer getIntegeActualValue(final ResultSet rs, final String columnName) throws SQLException {
+        if (rs.getObject(columnName) != null) {
+            final Integer value = Integer.parseInt(rs.getObject(columnName).toString());
+            if (value != null) { return value; }
+        }
+        return null;
     }
 }

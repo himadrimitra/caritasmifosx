@@ -64,6 +64,15 @@ public final class LoanScheduleModel {
                 loanScheduleModel.totalRepaymentExpected, loanScheduleModel.totalOutstanding);
     }
 
+    public static LoanScheduleModel withLoanScheduleModelPeriods(final Collection<LoanScheduleModelPeriod> periods,
+            final LoanScheduleModel loanScheduleModel) {
+
+        return new LoanScheduleModel(periods, loanScheduleModel.applicationCurrency, loanScheduleModel.loanTermInDays,
+                loanScheduleModel.totalPrincipalDisbursed, loanScheduleModel.totalPrincipalExpected, loanScheduleModel.totalPrincipalPaid,
+                loanScheduleModel.totalInterestCharged, loanScheduleModel.totalFeeChargesCharged,
+                loanScheduleModel.totalPenaltyChargesCharged, loanScheduleModel.totalRepaymentExpected, loanScheduleModel.totalOutstanding);
+    }
+
     private LoanScheduleModel(final Collection<LoanScheduleModelPeriod> periods, final ApplicationCurrency applicationCurrency,
             final int loanTermInDays, final Money principalDisbursed, final BigDecimal totalPrincipalExpected,
             final BigDecimal totalPrincipalPaid, final BigDecimal totalInterestCharged, final BigDecimal totalFeeChargesCharged,
@@ -97,18 +106,18 @@ public final class LoanScheduleModel {
         final BigDecimal totalRepayment = null;
         final BigDecimal totalPaidInAdvance = null;
         final BigDecimal totalPaidLate = null;
+        final BigDecimal totalAdvancePayment = null;
 
         return new LoanScheduleData(currency, periodsData, this.loanTermInDays, this.totalPrincipalDisbursed.getAmount(),
                 this.totalPrincipalExpected, this.totalPrincipalPaid, this.totalInterestCharged, this.totalFeeChargesCharged,
                 this.totalPenaltyChargesCharged, totalWaived, totalWrittenOff, this.totalRepaymentExpected, totalRepayment,
-                totalPaidInAdvance, totalPaidLate, this.totalOutstanding);
+                totalPaidInAdvance, totalPaidLate, this.totalOutstanding, totalAdvancePayment);
     }
 
     public Collection<LoanScheduleModelPeriod> getPeriods() {
         return this.periods;
     }
 
-    
     public BigDecimal getTotalPenaltyChargesCharged() {
         return this.totalPenaltyChargesCharged;
     }

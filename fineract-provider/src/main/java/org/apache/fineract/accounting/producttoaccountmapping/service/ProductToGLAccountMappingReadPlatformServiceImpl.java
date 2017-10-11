@@ -25,16 +25,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.accounting.common.AccountingConstants.ACCRUAL_ACCOUNTS_FOR_LOAN;
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_LOAN;
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_SAVINGS;
+import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_SHARES;
 import org.apache.fineract.accounting.common.AccountingConstants.LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS;
 import org.apache.fineract.accounting.common.AccountingConstants.SAVINGS_PRODUCT_ACCOUNTING_DATA_PARAMS;
+import org.apache.fineract.accounting.common.AccountingConstants.SHARES_PRODUCT_ACCOUNTING_PARAMS;
+import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.producttoaccountmapping.data.ChargeToGLAccountMapper;
+import org.apache.fineract.accounting.producttoaccountmapping.data.CodeValueToGLAccountMapper;
 import org.apache.fineract.accounting.producttoaccountmapping.data.PaymentTypeToGLAccountMapper;
 import org.apache.fineract.accounting.producttoaccountmapping.domain.PortfolioProductType;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
@@ -60,9 +64,10 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
             return " mapping.id as id, mapping.gl_account_id as glAccountId,glaccount.name as name,glaccount.gl_code as code,"
                     + " mapping.product_id as productId, mapping.product_type as productType,mapping.financial_account_type as financialAccountType, "
                     + " mapping.payment_type as paymentTypeId,pt.value as paymentTypeValue, mapping.charge_id as chargeId, charge.is_penalty as penalty, "
-                    + " charge.name as chargeName "
+                    + " charge.name as chargeName, mapping.code_value_cv_id as codeValueId, cv.code_value as codeValueName "
                     + " from acc_product_mapping mapping left join m_charge charge on mapping.charge_id=charge.id "
                     + " left join acc_gl_account as  glaccount on mapping.gl_account_id = glaccount.id"
+                    + " left join m_code_value cv on mapping.code_value_cv_id=cv.id "
                     + " left join m_payment_type pt on mapping.payment_type=pt.id" + " where mapping.product_type= ? ";
         }
 
@@ -81,6 +86,8 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
             final String glCode = rs.getString("code");
             final String chargeName = rs.getString("chargeName");
             final Boolean penalty = rs.getBoolean("penalty");
+            final Long codeValueId = JdbcSupport.getLong(rs, "codeValueId");
+            final String codeValueName = rs.getString("codeValueName");
 
             final Map<String, Object> loanProductToGLAccountMap = new LinkedHashMap<>(5);
             loanProductToGLAccountMap.put("id", id);
@@ -95,6 +102,8 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
             loanProductToGLAccountMap.put("penalty", penalty);
             loanProductToGLAccountMap.put("glAccountName", glAccountName);
             loanProductToGLAccountMap.put("glCode", glCode);
+            loanProductToGLAccountMap.put("codeValueId", codeValueId);
+            loanProductToGLAccountMap.put("codeValueName", codeValueName);
             return loanProductToGLAccountMap;
         }
     }
@@ -105,10 +114,11 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
         final Map<String, Object> accountMappingDetails = new LinkedHashMap<>(8);
 
         final ProductToGLAccountMappingMapper rm = new ProductToGLAccountMappingMapper();
-        final String sql = "select " + rm.schema() + " and product_id = ? and payment_type is null and mapping.charge_id is null";
+        final String sql = "select " + rm.schema()
+                + " and product_id = ? and payment_type is null and mapping.charge_id is null and mapping.code_value_cv_id is null";
 
-        final List<Map<String, Object>> listOfProductToGLAccountMaps = this.jdbcTemplate.query(sql, rm, new Object[] {
-                PortfolioProductType.LOAN.getValue(), loanProductId });
+        final List<Map<String, Object>> listOfProductToGLAccountMaps = this.jdbcTemplate.query(sql, rm,
+                new Object[] { PortfolioProductType.LOAN.getValue(), loanProductId });
 
         if (AccountingRuleType.CASH_BASED.getValue().equals(accountingType)) {
 
@@ -140,6 +150,10 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
                     accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.OVERPAYMENT.getValue(), gLAccountData);
                 } else if (glAccountForLoan.equals(CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_RECOVERY)) {
                     accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.INCOME_FROM_RECOVERY.getValue(), gLAccountData);
+                } else if ((glAccountForLoan.equals(CASH_ACCOUNTS_FOR_LOAN.SUBSIDY_FUND_SOURCE))) {
+                    accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.SUBSIDY_FUND_SOURCE.getValue(), gLAccountData);
+                } else if ((glAccountForLoan.equals(CASH_ACCOUNTS_FOR_LOAN.SUBSIDY_ACCOUNT))) {
+                    accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.SUBSIDY_ACCOUNT.getValue(), gLAccountData);
                 }
             }
         } else if (AccountingRuleType.ACCRUAL_UPFRONT.getValue().equals(accountingType)
@@ -178,6 +192,16 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
                     accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.PENALTIES_RECEIVABLE.getValue(), gLAccountData);
                 } else if ((glAccountForLoan.equals(ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_RECOVERY))) {
                     accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.INCOME_FROM_RECOVERY.getValue(), gLAccountData);
+                } else if ((glAccountForLoan.equals(ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_FUND_SOURCE))) {
+                    accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.SUBSIDY_FUND_SOURCE.getValue(), gLAccountData);
+                } else if ((glAccountForLoan.equals(ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_ACCOUNT))) {
+                    accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.SUBSIDY_ACCOUNT.getValue(), gLAccountData);
+                } else if (glAccountForLoan.equals(ACCRUAL_ACCOUNTS_FOR_LOAN.NPA_INTEREST_SUSPENSE)) {
+                    accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.NPA_INTEREST_SUSPENSE.getValue(), gLAccountData);
+                } else if (glAccountForLoan.equals(ACCRUAL_ACCOUNTS_FOR_LOAN.NPA_FEES_SUSPENSE)) {
+                    accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.NPA_FEES_SUSPENSE.getValue(), gLAccountData);
+                } else if (glAccountForLoan.equals(ACCRUAL_ACCOUNTS_FOR_LOAN.NPA_PENALTIES_SUSPENSE)) {
+                    accountMappingDetails.put(LOAN_PRODUCT_ACCOUNTING_DATA_PARAMS.NPA_PENALTIES_SUSPENSE.getValue(), gLAccountData);
                 }
             }
 
@@ -193,8 +217,8 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
         final ProductToGLAccountMappingMapper rm = new ProductToGLAccountMappingMapper();
         final String sql = "select " + rm.schema() + " and product_id = ? and payment_type is null and mapping.charge_id is null ";
 
-        final List<Map<String, Object>> listOfProductToGLAccountMaps = this.jdbcTemplate.query(sql, rm, new Object[] {
-                PortfolioProductType.SAVING.getValue(), savingsProductId });
+        final List<Map<String, Object>> listOfProductToGLAccountMaps = this.jdbcTemplate.query(sql, rm,
+                new Object[] { PortfolioProductType.SAVING.getValue(), savingsProductId });
 
         if (AccountingRuleType.CASH_BASED.getValue().equals(accountingType)) {
 
@@ -226,6 +250,8 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
                     accountMappingDetails.put(SAVINGS_PRODUCT_ACCOUNTING_DATA_PARAMS.LOSSES_WRITTEN_OFF.getValue(), gLAccountData);
                 } else if (glAccountForSavings.equals(CASH_ACCOUNTS_FOR_SAVINGS.INCOME_FROM_INTEREST)) {
                     accountMappingDetails.put(SAVINGS_PRODUCT_ACCOUNTING_DATA_PARAMS.INCOME_FROM_INTEREST.getValue(), gLAccountData);
+                } else if (glAccountForSavings.equals(CASH_ACCOUNTS_FOR_SAVINGS.ESCHEAT_LIABILITY)) {
+                    accountMappingDetails.put(SAVINGS_PRODUCT_ACCOUNTING_DATA_PARAMS.ESCHEAT_LIABILITY.getValue(), gLAccountData);
                 }
             }
         }
@@ -252,8 +278,8 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
         final ProductToGLAccountMappingMapper rm = new ProductToGLAccountMappingMapper();
         final String sql = "select " + rm.schema() + " and product_id = ? and payment_type is not null";
 
-        final List<Map<String, Object>> paymentTypeToFundSourceMappingsList = this.jdbcTemplate.query(sql, rm, new Object[] {
-                portfolioProductType.getValue(), loanProductId });
+        final List<Map<String, Object>> paymentTypeToFundSourceMappingsList = this.jdbcTemplate.query(sql, rm,
+                new Object[] { portfolioProductType.getValue(), loanProductId });
 
         List<PaymentTypeToGLAccountMapper> paymentTypeToGLAccountMappers = null;
         for (final Map<String, Object> productToGLAccountMap : paymentTypeToFundSourceMappingsList) {
@@ -286,12 +312,12 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
     }
 
     @Override
-    public List<ChargeToGLAccountMapper> fetchFeeToIncomeAccountMappingsForSavingsProduct(Long savingsProductId) {
+    public List<ChargeToGLAccountMapper> fetchFeeToIncomeAccountMappingsForSavingsProduct(final Long savingsProductId) {
         return fetchChargeToIncomeAccountMappings(PortfolioProductType.SAVING, savingsProductId, false);
     }
 
     @Override
-    public List<ChargeToGLAccountMapper> fetchPenaltyToIncomeAccountMappingsForSavingsProduct(Long savingsProductId) {
+    public List<ChargeToGLAccountMapper> fetchPenaltyToIncomeAccountMappingsForSavingsProduct(final Long savingsProductId) {
         return fetchChargeToIncomeAccountMappings(PortfolioProductType.SAVING, savingsProductId, true);
     }
 
@@ -305,8 +331,8 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
             sql = sql + " 0";
         }
 
-        final List<Map<String, Object>> chargeToFundSourceMappingsList = this.jdbcTemplate.query(sql, rm, new Object[] {
-                portfolioProductType.getValue(), loanProductId });
+        final List<Map<String, Object>> chargeToFundSourceMappingsList = this.jdbcTemplate.query(sql, rm,
+                new Object[] { portfolioProductType.getValue(), loanProductId });
         List<ChargeToGLAccountMapper> chargeToGLAccountMappers = null;
         for (final Map<String, Object> chargeToIncomeAccountMap : chargeToFundSourceMappingsList) {
             if (chargeToGLAccountMappers == null) {
@@ -324,6 +350,77 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
             chargeToGLAccountMappers.add(chargeToGLAccountMapper);
         }
         return chargeToGLAccountMappers;
+    }
+
+    @Override
+    public Map<String, Object> fetchAccountMappingDetailsForShareProduct(final Long productId, final Integer accountingType) {
+
+        final Map<String, Object> accountMappingDetails = new LinkedHashMap<>(8);
+
+        final ProductToGLAccountMappingMapper rm = new ProductToGLAccountMappingMapper();
+        final String sql = "select " + rm.schema() + " and product_id = ? and payment_type is null and mapping.charge_id is null ";
+
+        final List<Map<String, Object>> listOfProductToGLAccountMaps = this.jdbcTemplate.query(sql, rm,
+                new Object[] { PortfolioProductType.SHARES.getValue(), productId });
+
+        if (AccountingRuleType.CASH_BASED.getValue().equals(accountingType)) {
+            for (final Map<String, Object> productToGLAccountMap : listOfProductToGLAccountMaps) {
+                final Integer financialAccountType = (Integer) productToGLAccountMap.get("financialAccountType");
+                final CASH_ACCOUNTS_FOR_SHARES glAccountForShares = CASH_ACCOUNTS_FOR_SHARES.fromInt(financialAccountType);
+
+                final Long glAccountId = (Long) productToGLAccountMap.get("glAccountId");
+                final String glAccountName = (String) productToGLAccountMap.get("glAccountName");
+                final String glCode = (String) productToGLAccountMap.get("glCode");
+                final GLAccountData gLAccountData = new GLAccountData(glAccountId, glAccountName, glCode);
+
+                if (glAccountForShares.equals(CASH_ACCOUNTS_FOR_SHARES.SHARES_REFERENCE)) {
+                    accountMappingDetails.put(SHARES_PRODUCT_ACCOUNTING_PARAMS.SHARES_REFERENCE.getValue(), gLAccountData);
+                } else if (glAccountForShares.equals(CASH_ACCOUNTS_FOR_SHARES.SHARES_SUSPENSE)) {
+                    accountMappingDetails.put(SHARES_PRODUCT_ACCOUNTING_PARAMS.SHARES_SUSPENSE.getValue(), gLAccountData);
+                } else if (glAccountForShares.equals(CASH_ACCOUNTS_FOR_SHARES.INCOME_FROM_FEES)) {
+                    accountMappingDetails.put(SHARES_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), gLAccountData);
+                } else if (glAccountForShares.equals(CASH_ACCOUNTS_FOR_SHARES.SHARES_EQUITY)) {
+                    accountMappingDetails.put(SHARES_PRODUCT_ACCOUNTING_PARAMS.SHARES_EQUITY.getValue(), gLAccountData);
+                }
+            }
+        }
+        return accountMappingDetails;
+
+    }
+
+    @Override
+    public List<PaymentTypeToGLAccountMapper> fetchPaymentTypeToFundSourceMappingsForShareProduct(final Long productId) {
+        return fetchPaymentTypeToFundSourceMappings(PortfolioProductType.SHARES, productId);
+    }
+
+    @Override
+    public List<ChargeToGLAccountMapper> fetchFeeToIncomeAccountMappingsForShareProduct(final Long productId) {
+        return fetchChargeToIncomeAccountMappings(PortfolioProductType.SHARES, productId, false);
+    }
+
+    @Override
+    public List<CodeValueToGLAccountMapper> fetchCodeValueToExpenseAccountMappingsForLoanProduct(final Long loanProductId) {
+        final ProductToGLAccountMappingMapper rm = new ProductToGLAccountMappingMapper();
+        final String sql = "select " + rm.schema() + " and product_id = ? and mapping.code_value_cv_id is not null ";
+        final List<Map<String, Object>> codeValueToFundSourceMappingsList = this.jdbcTemplate.query(sql, rm,
+                new Object[] { PortfolioProductType.LOAN.getValue(), loanProductId });
+        List<CodeValueToGLAccountMapper> writeOffReasonsToExpenseAccountMappings = null;
+        for (final Map<String, Object> codeValueToAccountMap : codeValueToFundSourceMappingsList) {
+            if (writeOffReasonsToExpenseAccountMappings == null) {
+                writeOffReasonsToExpenseAccountMappings = new ArrayList<>();
+            }
+            final Long glAccountId = (Long) codeValueToAccountMap.get("glAccountId");
+            final String glAccountName = (String) codeValueToAccountMap.get("glAccountName");
+            final String glCode = (String) codeValueToAccountMap.get("glCode");
+            final GLAccountData gLAccountData = new GLAccountData(glAccountId, glAccountName, glCode);
+            final Long codeValueId = (Long) codeValueToAccountMap.get("codeValueId");
+            final String codeValueName = (String) codeValueToAccountMap.get("codeValueName");
+            final CodeValueData codeValueData = CodeValueData.instance(codeValueId, codeValueName);
+            final CodeValueToGLAccountMapper writeOffReasonsToExpenseAccountMapper = new CodeValueToGLAccountMapper(codeValueData,
+                    gLAccountData);
+            writeOffReasonsToExpenseAccountMappings.add(writeOffReasonsToExpenseAccountMapper);
+        }
+        return writeOffReasonsToExpenseAccountMappings;
     }
 
 }

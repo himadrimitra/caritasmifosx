@@ -23,6 +23,8 @@ import org.apache.fineract.portfolio.loanaccount.rescheduleloan.RescheduleLoansA
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
 import org.apache.fineract.useradministration.api.PasswordPreferencesApiConstants;
 
+import com.sun.jersey.multipart.FormDataMultiPart;
+
 public class CommandWrapper {
 
     private final Long commandId;
@@ -41,28 +43,39 @@ public class CommandWrapper {
     private final String json;
     private final String transactionId;
     private final Long productId;
+    private final String option;
+    private final Integer entityTypeId;
+    private final FormDataMultiPart formDataMultiPart;
 
     @SuppressWarnings("unused")
     private Long templateId;
 
-    public static CommandWrapper wrap(final String actionName, final String entityName, final Long resourceId, final Long subresourceId) {
-        return new CommandWrapper(null, actionName, entityName, resourceId, subresourceId, null, null);
+    public static CommandWrapper wrap(final String actionName, final String entityName, final Long resourceId, final Long subresourceId,
+            final String option, final Integer entityTypeId) {
+        final FormDataMultiPart formDataMultiPart = null;
+        return new CommandWrapper(null, actionName, entityName, resourceId, subresourceId, null, null, option, entityTypeId,
+                formDataMultiPart);
     }
 
     public static CommandWrapper fromExistingCommand(final Long commandId, final String actionName, final String entityName,
-            final Long resourceId, final Long subresourceId, final String resourceGetUrl, final Long productId) {
-        return new CommandWrapper(commandId, actionName, entityName, resourceId, subresourceId, resourceGetUrl, productId);
+            final Long resourceId, final Long subresourceId, final String resourceGetUrl, final Long productId, final String option,
+            final Integer entityTypeId) {
+        final FormDataMultiPart formDataMultiPart = null;
+        return new CommandWrapper(commandId, actionName, entityName, resourceId, subresourceId, resourceGetUrl, productId, option,
+                entityTypeId, formDataMultiPart);
     }
 
     public static CommandWrapper fromExistingCommand(final Long commandId, final String actionName, final String entityName,
             final Long resourceId, final Long subresourceId, final String resourceGetUrl, final Long productId, final Long officeId,
-            final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId) {
+            final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId,
+            final String option, final Integer entityTypeId) {
         return new CommandWrapper(commandId, actionName, entityName, resourceId, subresourceId, resourceGetUrl, productId, officeId,
-                groupId, clientId, loanId, savingsId, transactionId);
+                groupId, clientId, loanId, savingsId, transactionId, option, entityTypeId);
     }
 
     private CommandWrapper(final Long commandId, final String actionName, final String entityName, final Long resourceId,
-            final Long subresourceId, final String resourceGetUrl, final Long productId) {
+            final Long subresourceId, final String resourceGetUrl, final Long productId, final String option, final Integer entityTypeId,
+            final FormDataMultiPart formDataMultiPart) {
         this.commandId = commandId;
         this.officeId = null;
         this.groupId = null;
@@ -78,12 +91,15 @@ public class CommandWrapper {
         this.json = null;
         this.transactionId = null;
         this.productId = productId;
+        this.option = option;
+        this.entityTypeId = entityTypeId;
+        this.formDataMultiPart = formDataMultiPart;
     }
 
     public CommandWrapper(final Long officeId, final Long groupId, final Long clientId, final Long loanId, final Long savingsId,
             final String actionName, final String entityName, final Long entityId, final Long subentityId, final String href,
-            final String json, final String transactionId, final Long productId, final Long templateId) {
-
+            final String json, final String transactionId, final Long productId, final Long templateId, final String option,
+            final Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
         this.commandId = null;
         this.officeId = officeId;
         this.groupId = groupId;
@@ -100,11 +116,15 @@ public class CommandWrapper {
         this.transactionId = transactionId;
         this.productId = productId;
         this.templateId = templateId;
+        this.option = option;
+        this.entityTypeId = entityTypeId;
+        this.formDataMultiPart = formDataMultiPart;
     }
 
     private CommandWrapper(final Long commandId, final String actionName, final String entityName, final Long resourceId,
             final Long subresourceId, final String resourceGetUrl, final Long productId, final Long officeId, final Long groupId,
-            final Long clientId, final Long loanId, final Long savingsId, final String transactionId) {
+            final Long clientId, final Long loanId, final Long savingsId, final String transactionId, final String option,
+            final Integer entityTypeId) {
 
         this.commandId = commandId;
         this.officeId = officeId;
@@ -121,38 +141,27 @@ public class CommandWrapper {
         this.json = null;
         this.transactionId = transactionId;
         this.productId = productId;
+        this.option = option;
+        this.entityTypeId = entityTypeId;
+        this.formDataMultiPart = null;
     }
 
-    public Long commandId() {
-        return this.commandId;
+    public String getHref() {
+        return this.href;
     }
 
-    public String actionName() {
-        return this.actionName;
-    }
-
-    public String entityName() {
-        return this.entityName;
-    }
-
-    public Long resourceId() {
-        return this.entityId;
-    }
-
-    public Long subresourceId() {
-        return this.subentityId;
-    }
-
-    public String taskPermissionName() {
-        return this.actionName + "_" + this.entityName;
+    public String getJson() {
+        return this.json;
     }
 
     public boolean isCreate() {
         return this.actionName.equalsIgnoreCase("CREATE");
     }
+
     public boolean isSend() {
-    	return this.actionName.equalsIgnoreCase("SEND");
+        return this.actionName.equalsIgnoreCase("SEND");
     }
+
     public boolean isCreateDatatable() {
         return this.actionName.equalsIgnoreCase("CREATE") && this.href.startsWith("/datatables/") && this.entityId == null;
     }
@@ -165,71 +174,11 @@ public class CommandWrapper {
         return this.actionName.equalsIgnoreCase("UPDATE") && this.href.startsWith("/datatables/") && this.entityId == null;
     }
 
-    public String getTaskPermissionName() {
-        return this.taskPermissionName;
-    }
-
-    public String getHref() {
-        return this.href;
-    }
-
-    public String getJson() {
-        return this.json;
-    }
-
-    public String getTransactionId() {
-        return this.transactionId;
-    }
-
-    public String getEntityName() {
-        return this.entityName;
-    }
-
-    public Long getEntityId() {
-        return this.entityId;
-    }
-
-    public Long getSubentityId() {
-        return this.subentityId;
-    }
-
-    public Long getGroupId() {
-        return this.groupId;
-    }
-
-    public Long getClientId() {
-        return this.clientId;
-    }
-
-    public Long getLoanId() {
-        return this.loanId;
-    }
-
-    public Long getSavingsId() {
-        return this.savingsId;
-    }
-
-    public Long getProductId() {
-        return this.productId;
-    }
-
     public boolean isUpdate() {
         // permissions resource has special update which involves no resource.
-        return isPermissionResource() && isUpdateOperation() || isCurrencyResource() && isUpdateOperation() || isCacheResource()
-                && isUpdateOperation() || isWorkingDaysResource() && isUpdateOperation() || isPasswordPreferencesResource()
-                && isUpdateOperation() || isUpdateOperation() && this.entityId != null;
-    }
-
-    public boolean isUpdateOperation() {
-        return this.actionName.equalsIgnoreCase("UPDATE");
-    }
-
-    public boolean isDelete() {
-        return isDeleteOperation() && this.entityId != null;
-    }
-
-    public boolean isDeleteOperation() {
-        return this.actionName.equalsIgnoreCase("DELETE");
+        return isPermissionResource() && isUpdateOperation() || isCurrencyResource() && isUpdateOperation()
+                || isCacheResource() && isUpdateOperation() || isWorkingDaysResource() && isUpdateOperation()
+                || isPasswordPreferencesResource() && isUpdateOperation() || isUpdateOperation() && this.entityId != null;
     }
 
     public boolean isUpdateRolePermissions() {
@@ -240,32 +189,22 @@ public class CommandWrapper {
         return this.entityName.equalsIgnoreCase("CONFIGURATION");
     }
 
-    public boolean isPermissionResource() {
-        return this.entityName.equalsIgnoreCase("PERMISSION");
-    }
-
     public boolean isRoleResource() {
         return this.entityName.equalsIgnoreCase("ROLE");
-    }
-
-    public boolean isUserResource() {
-        return this.entityName.equalsIgnoreCase("USER");
     }
 
     public boolean isHookResource() {
         return this.entityName.equalsIgnoreCase("HOOK");
     }
 
-    public boolean isCurrencyResource() {
-        return this.entityName.equalsIgnoreCase("CURRENCY");
-    }
-
     public boolean isSmsResource() {
         return this.entityName.equalsIgnoreCase("SMS");
     }
-   public boolean  isNotificationResource() {
-	   return this.entityName.equalsIgnoreCase("NOTIFICATION");
-   }
+
+    public boolean isNotificationResource() {
+        return this.entityName.equalsIgnoreCase("NOTIFICATION");
+    }
+
     public boolean isSmsCampaignResource() {
         return this.entityName.equals("SMS_CAMPAIGN");
     }
@@ -440,6 +379,98 @@ public class CommandWrapper {
 
     public boolean isLoanChargeResource() {
         return this.entityName.equalsIgnoreCase("LOANCHARGE");
+    }
+
+    public Long getSubentityId() {
+        return this.subentityId;
+    }
+
+    public String getTransactionId() {
+        return this.transactionId;
+    }
+
+    public String getEntityName() {
+        return this.entityName;
+    }
+
+    public Long getEntityId() {
+        return this.entityId;
+    }
+
+    public boolean isUpdateOperation() {
+        return this.actionName.equalsIgnoreCase("UPDATE");
+    }
+
+    public boolean isDelete() {
+        return isDeleteOperation() && this.entityId != null;
+    }
+
+    public boolean isDeleteOperation() {
+        return this.actionName.equalsIgnoreCase("DELETE");
+    }
+
+    public Long commandId() {
+        return this.commandId;
+    }
+
+    public String actionName() {
+        return this.actionName;
+    }
+
+    public String entityName() {
+        return this.entityName;
+    }
+
+    public Long resourceId() {
+        return this.entityId;
+    }
+
+    public Long subresourceId() {
+        return this.subentityId;
+    }
+
+    public String taskPermissionName() {
+        return this.actionName + "_" + this.entityName;
+    }
+
+    public String getTaskPermissionName() {
+        return this.taskPermissionName;
+    }
+
+    public Long getGroupId() {
+        return this.groupId;
+    }
+
+    public Long getClientId() {
+        return this.clientId;
+    }
+
+    public Long getLoanId() {
+        return this.loanId;
+    }
+
+    public Long getSavingsId() {
+        return this.savingsId;
+    }
+
+    public FormDataMultiPart getFormDataMultiPart() {
+        return this.formDataMultiPart;
+    }
+
+    public Long getProductId() {
+        return this.productId;
+    }
+
+    public boolean isPermissionResource() {
+        return this.entityName.equalsIgnoreCase("PERMISSION");
+    }
+
+    public boolean isUserResource() {
+        return this.entityName.equalsIgnoreCase("USER");
+    }
+
+    public boolean isCurrencyResource() {
+        return this.entityName.equalsIgnoreCase("CURRENCY");
     }
 
     public boolean isLoanDisburseDetailResource() {
@@ -665,7 +696,6 @@ public class CommandWrapper {
         return this.actionName.equalsIgnoreCase("REMOVESAVINGSOFFICER") && this.entityName.equalsIgnoreCase("SAVINGSACCOUNT");
     }
 
-    
     public boolean isSavingsAccountChargeResource() {
         return this.entityName.equalsIgnoreCase("SAVINGSACCOUNTCHARGE");
     }
@@ -1048,57 +1078,66 @@ public class CommandWrapper {
 
     public boolean isPaymentTypeResource() {
         return this.entityName.equalsIgnoreCase("PAYMENTTYPE");
-    }   
-    
-    public boolean isLoanInvestment(){
-        
-    	return this.entityName.equalsIgnoreCase("LOANINVESTMENT");
-    }
-    public boolean isAddLoanInvestment(){
-    	return this.actionName.equalsIgnoreCase("CREATE")  && this.entityName.equalsIgnoreCase("LOANINVESTMENT");
-    }
-    public boolean isDeleteLoanInvestment(){
-    	return this.actionName.equalsIgnoreCase("DELETE") && this.entityName.equalsIgnoreCase("LOANINVESTMENT");
-    }
-    public boolean isUpdateLoanInvestment(){
-    	return this.actionName.equalsIgnoreCase("UPDATE") && this.entityName.equalsIgnoreCase("LOANINVESTMENT");
-    }
-    
-    public boolean isSavingInvestment(){
-    	return this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
-    }
-    
-    public boolean isAddSavingInvestment(){
-    	return this.actionName.equalsIgnoreCase("CREATE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
-    }
-    
-public boolean isDeleteSavingInvestment(){
-    	return this.actionName.equalsIgnoreCase("DELETE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
-    }
-    
-    public boolean isUpdateSavingInvestment(){
-    	return this.actionName.equalsIgnoreCase("UPDATE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
     }
 
-    public boolean isUploadTransactionDetails(){
-    	    	return this.actionName.equalsIgnoreCase("CREATE") && this.entityName.equalsIgnoreCase("UPLOADSHEET");
-    	    }
+    public boolean isLoanInvestment() {
 
-    
-    public boolean isCloseSavingInvestment(){
-    	return this.actionName.equalsIgnoreCase("CLOSE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
-    }
-    
-    public boolean isCloseLoanInvestment(){
-    	return this.actionName.equalsIgnoreCase("CLOSE") && this.entityName.equalsIgnoreCase("LOANINVESTMENT");
-    }
-    
-    public boolean isInvestmentJob(){
-    	return this.entityName.equalsIgnoreCase("INVESTMENT");
-    }
-    
-    public boolean isInvestmentBatchJob(){
-    	return this.actionName.equalsIgnoreCase("RUNBATCHJOB") && this.entityName.equalsIgnoreCase("INVESTMENT");
+        return this.entityName.equalsIgnoreCase("LOANINVESTMENT");
     }
 
+    public boolean isAddLoanInvestment() {
+        return this.actionName.equalsIgnoreCase("CREATE") && this.entityName.equalsIgnoreCase("LOANINVESTMENT");
+    }
+
+    public boolean isDeleteLoanInvestment() {
+        return this.actionName.equalsIgnoreCase("DELETE") && this.entityName.equalsIgnoreCase("LOANINVESTMENT");
+    }
+
+    public boolean isUpdateLoanInvestment() {
+        return this.actionName.equalsIgnoreCase("UPDATE") && this.entityName.equalsIgnoreCase("LOANINVESTMENT");
+    }
+
+    public boolean isSavingInvestment() {
+        return this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
+    }
+
+    public boolean isAddSavingInvestment() {
+        return this.actionName.equalsIgnoreCase("CREATE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
+    }
+
+    public boolean isDeleteSavingInvestment() {
+        return this.actionName.equalsIgnoreCase("DELETE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
+    }
+
+    public boolean isUpdateSavingInvestment() {
+        return this.actionName.equalsIgnoreCase("UPDATE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
+    }
+
+    public boolean isUploadTransactionDetails() {
+        return this.actionName.equalsIgnoreCase("CREATE") && this.entityName.equalsIgnoreCase("UPLOADSHEET");
+    }
+
+    public boolean isCloseSavingInvestment() {
+        return this.actionName.equalsIgnoreCase("CLOSE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
+    }
+
+    public boolean isCloseLoanInvestment() {
+        return this.actionName.equalsIgnoreCase("CLOSE") && this.entityName.equalsIgnoreCase("LOANINVESTMENT");
+    }
+
+    public boolean isInvestmentJob() {
+        return this.entityName.equalsIgnoreCase("INVESTMENT");
+    }
+
+    public boolean isInvestmentBatchJob() {
+        return this.actionName.equalsIgnoreCase("RUNBATCHJOB") && this.entityName.equalsIgnoreCase("INVESTMENT");
+    }
+
+    public String getOption() {
+        return this.option;
+    }
+
+    public Integer getEntityTypeId() {
+        return this.entityTypeId;
+    }
 }

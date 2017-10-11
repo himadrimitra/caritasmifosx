@@ -24,9 +24,13 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormat;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormatEnumerations.AccountNumberPrefixType;
+import org.apache.fineract.infrastructure.accountnumberformat.service.CustomAccountNumberGeneratorFactory;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
+import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
+import org.apache.fineract.portfolio.shareaccounts.domain.ShareAccount;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -41,49 +45,80 @@ public class AccountNumberGenerator {
 
     private final static String ID = "id";
     private final static String CLIENT_TYPE = "clientType";
-    private final static String OFFICE_NAME = "officeName";
+    private final static String OFFICE_CODE = "officeCode";
     private final static String LOAN_PRODUCT_SHORT_NAME = "loanProductShortName";
     private final static String SAVINGS_PRODUCT_SHORT_NAME = "savingsProductShortName";
+    private final static String SHARE_PRODUCT_SHORT_NAME = "sharesProductShortName";
 
-    public String generate(Client client, AccountNumberFormat accountNumberFormat) {
-        Map<String, String> propertyMap = new HashMap<>();
+    private final CustomAccountNumberGeneratorFactory customAccountNumberGeneratorFactory;
+
+    @Autowired
+    public AccountNumberGenerator(final CustomAccountNumberGeneratorFactory customAccountNumberGeneratorFactory) {
+        this.customAccountNumberGeneratorFactory = customAccountNumberGeneratorFactory;
+    }
+
+    public String generate(final Client client, final AccountNumberFormat accountNumberFormat) {
+        final Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, client.getId().toString());
-        propertyMap.put(OFFICE_NAME, client.getOffice().getName());
-        CodeValue clientType = client.clientType();
+        propertyMap.put(OFFICE_CODE, client.getOffice().getOfficeCodeId());
+        final CodeValue clientType = client.clientType();
         if (clientType != null) {
             propertyMap.put(CLIENT_TYPE, clientType.label());
         }
         return generateAccountNumber(propertyMap, accountNumberFormat);
     }
 
-    public String generate(Loan loan, AccountNumberFormat accountNumberFormat) {
-        Map<String, String> propertyMap = new HashMap<>();
+    public String generate(final Loan loan, final AccountNumberFormat accountNumberFormat) {
+        if (accountNumberFormat != null && accountNumberFormat.getPrefixEnum() != null) {
+            final AccountNumberPrefixType accountNumberPrefixType = AccountNumberPrefixType.fromInt(accountNumberFormat.getPrefixEnum());
+            if (accountNumberPrefixType.getValue()
+                    .equals(AccountNumberPrefixType.CUSTOM.getValue())) { return this.customAccountNumberGeneratorFactory
+                            .determineGenerator(accountNumberFormat.getCustomTypeEnum())
+                            .generateAccountNumberForLoans(loan, accountNumberFormat); }
+        }
+        final Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, loan.getId().toString());
-        propertyMap.put(OFFICE_NAME, loan.getOffice().getName());
+        propertyMap.put(OFFICE_CODE, loan.getOffice().getOfficeCodeId());
         propertyMap.put(LOAN_PRODUCT_SHORT_NAME, loan.loanProduct().getShortName());
         return generateAccountNumber(propertyMap, accountNumberFormat);
+
     }
 
-    public String generate(SavingsAccount savingsAccount, AccountNumberFormat accountNumberFormat) {
-        Map<String, String> propertyMap = new HashMap<>();
+    public String generate(final SavingsAccount savingsAccount, final AccountNumberFormat accountNumberFormat) {
+        if (accountNumberFormat != null && accountNumberFormat.getPrefixEnum() != null) {
+            final AccountNumberPrefixType accountNumberPrefixType = AccountNumberPrefixType.fromInt(accountNumberFormat.getPrefixEnum());
+            if (accountNumberPrefixType.getValue()
+                    .equals(AccountNumberPrefixType.CUSTOM.getValue())) { return this.customAccountNumberGeneratorFactory
+                            .determineGenerator(accountNumberFormat.getCustomTypeEnum())
+                            .generateAccountNumberForSavings(savingsAccount, accountNumberFormat); }
+        }
+        final Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, savingsAccount.getId().toString());
-        propertyMap.put(OFFICE_NAME, savingsAccount.office().getName());
+        propertyMap.put(OFFICE_CODE, savingsAccount.office().getOfficeCodeId());
         propertyMap.put(SAVINGS_PRODUCT_SHORT_NAME, savingsAccount.savingsProduct().getShortName());
+        return generateAccountNumber(propertyMap, accountNumberFormat);
+
+    }
+
+    public String generate(final ShareAccount shareaccount, final AccountNumberFormat accountNumberFormat) {
+        final Map<String, String> propertyMap = new HashMap<>();
+        propertyMap.put(ID, shareaccount.getId().toString());
+        propertyMap.put(SHARE_PRODUCT_SHORT_NAME, shareaccount.getShareProduct().getShortName());
         return generateAccountNumber(propertyMap, accountNumberFormat);
     }
 
-    private String generateAccountNumber(Map<String, String> propertyMap, AccountNumberFormat accountNumberFormat) {
+    private String generateAccountNumber(final Map<String, String> propertyMap, final AccountNumberFormat accountNumberFormat) {
         String accountNumber = StringUtils.leftPad(propertyMap.get(ID), AccountNumberGenerator.maxLength, '0');
         if (accountNumberFormat != null && accountNumberFormat.getPrefixEnum() != null) {
-            AccountNumberPrefixType accountNumberPrefixType = AccountNumberPrefixType.fromInt(accountNumberFormat.getPrefixEnum());
+            final AccountNumberPrefixType accountNumberPrefixType = AccountNumberPrefixType.fromInt(accountNumberFormat.getPrefixEnum());
             String prefix = null;
             switch (accountNumberPrefixType) {
                 case CLIENT_TYPE:
                     prefix = propertyMap.get(CLIENT_TYPE);
                 break;
 
-                case OFFICE_NAME:
-                    prefix = propertyMap.get(OFFICE_NAME);
+                case OFFICE_CODE:
+                    prefix = propertyMap.get(OFFICE_CODE);
                 break;
 
                 case LOAN_PRODUCT_SHORT_NAME:
@@ -101,6 +136,20 @@ public class AccountNumberGenerator {
             accountNumber = StringUtils.overlay(accountNumber, prefix, 0, 0);
         }
         return accountNumber;
+    }
+
+    public String generateGroupAccountNumber(final Group group, final AccountNumberFormat accountNumberFormat) {
+        final Map<String, String> propertyMap = new HashMap<>();
+        propertyMap.put(ID, group.getId().toString());
+        propertyMap.put(OFFICE_CODE, group.getOffice().getOfficeCodeId());
+        return generateAccountNumber(propertyMap, accountNumberFormat);
+    }
+
+    public String generateCenterAccountNumber(final Group group, final AccountNumberFormat accountNumberFormat) {
+        final Map<String, String> propertyMap = new HashMap<>();
+        propertyMap.put(ID, group.getId().toString());
+        propertyMap.put(OFFICE_CODE, group.getOffice().getOfficeCodeId());
+        return generateAccountNumber(propertyMap, accountNumberFormat);
     }
 
 }

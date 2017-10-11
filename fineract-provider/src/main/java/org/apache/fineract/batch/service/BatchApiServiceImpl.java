@@ -63,7 +63,6 @@ public class BatchApiServiceImpl implements BatchApiService {
     private final ResolutionHelper resolutionHelper;
     private final TransactionTemplate transactionTemplate;
     private List<BatchResponse> checkList = new ArrayList<>();
-   
 
     /**
      * Constructs a 'BatchApiServiceImpl' with an argument of
@@ -79,7 +78,6 @@ public class BatchApiServiceImpl implements BatchApiService {
         this.strategyProvider = strategyProvider;
         this.resolutionHelper = resolutionHelper;
         this.transactionTemplate = transactionTemplate;
-        
     }
 
     /**
@@ -98,7 +96,7 @@ public class BatchApiServiceImpl implements BatchApiService {
         final List<BatchRequestNode> batchRequestNodes = this.resolutionHelper.getDependingRequests(requestList);
         checkList.clear();
 
-        for (BatchRequestNode rootNode : batchRequestNodes) {        	
+        for (BatchRequestNode rootNode : batchRequestNodes) {
             final BatchRequest rootRequest = rootNode.getRequest();
             final CommandStrategy commandStrategy = this.strategyProvider.getCommandStrategy(CommandContext
                     .resource(rootRequest.getRelativeUrl()).method(rootRequest.getMethod()).build());
@@ -171,15 +169,14 @@ public class BatchApiServiceImpl implements BatchApiService {
 
     @Override
     public List<BatchResponse> handleBatchRequestsWithoutEnclosingTransaction(final List<BatchRequest> requestList, UriInfo uriInfo) {
-       
+
         return handleBatchRequests(requestList, uriInfo);
     }
 
     @Override
-    public List<BatchResponse> handleBatchRequestsWithEnclosingTransaction(final List<BatchRequest> requestList, final UriInfo uriInfo){
+    public List<BatchResponse> handleBatchRequestsWithEnclosingTransaction(final List<BatchRequest> requestList, final UriInfo uriInfo) {
 
         try {
-        	
             return this.transactionTemplate.execute(new TransactionCallback<List<BatchResponse>>() {
 
                 @Override
@@ -204,34 +201,20 @@ public class BatchApiServiceImpl implements BatchApiService {
             });
         } catch (TransactionException ex) {
             ErrorInfo e = ErrorHandler.handler(ex);
-            List<BatchResponse> errResponseList = new ArrayList<>();
-            
+            BatchResponse errResponse = new BatchResponse();
+            errResponse.setStatusCode(e.getStatusCode());
 
             for (BatchResponse res : checkList) {
                 if (!res.getStatusCode().equals(200)) {
-                	BatchResponse errResponse = new BatchResponse();
-                    errResponse.setStatusCode(200);
-                	errResponse.setRequestId(res.getRequestId());
-                	errResponse.setHeaders(res.getHeaders());
-                	
-                	
-                    errResponse.setBody( res.getBody().replaceAll("\\\"", "\""));
-                    errResponseList.add(errResponse);
+                    errResponse.setBody("Transaction is being rolled back. First erroneous request: \n" + new Gson().toJson(res));
                     break;
-                } /*else {
-                	BatchResponse errResponse = new BatchResponse();
-                    errResponse.setStatusCode(res.getStatusCode());
-                	errResponse.setRequestId(res.getRequestId());
-                	errResponse.setHeaders(res.getHeaders());
-                    errResponse.setBody( "{\"officeId\":1,\"clientId\":17096,\"loanId\":5741,\"resourceId\":45428,\"changes\":{\"transactionDate\":\"03 March 2016\",\"transactionAmount\":\"100\",\"locale\":\"en\",\"dateFormat\":\"dd MMMM yyyy\",\"paymentTypeId\":\"15\",\"receiptNumber\":\"xasddqw\",\"bankNumber\":\"ERROR\"}}");
-                    errResponseList.add(errResponse);
-                }*/
+                }
             }
 
-            //checkList.clear();
-            
-            
-          
+            checkList.clear();
+            List<BatchResponse> errResponseList = new ArrayList<>();
+            errResponseList.add(errResponse);
+
             return errResponseList;
         }
 

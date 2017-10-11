@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.note.domain;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
@@ -30,11 +31,14 @@ import javax.persistence.Table;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
+import org.apache.fineract.portfolio.cgt.domain.Cgt;
+import org.apache.fineract.portfolio.cgt.domain.CgtDay;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
+import org.apache.fineract.portfolio.shareaccounts.domain.ShareAccount;
 import org.apache.fineract.useradministration.domain.AppUser;
 
 @Entity
@@ -67,6 +71,18 @@ public class Note extends AbstractAuditableCustom<AppUser, Long> {
     @JoinColumn(name = "savings_account_id", nullable = true)
     private SavingsAccount savingsAccount;
 
+    @ManyToOne
+    @JoinColumn(name = "share_account_id", nullable = true)
+    private ShareAccount shareAccount;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "cgt_id", nullable = true)
+    private Cgt cgt;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "cgt_day_id", nullable = true)
+    private CgtDay cgtDay;
+
     public static Note clientNoteFromJson(final Client client, final JsonCommand command) {
         final String note = command.stringValueOfParameterNamed("note");
         return new Note(client, note);
@@ -87,6 +103,18 @@ public class Note extends AbstractAuditableCustom<AppUser, Long> {
 
     public static Note savingNote(final SavingsAccount account, final String note) {
         return new Note(account, note);
+    }
+
+    public static Note shareNote(final ShareAccount account, final String note) {
+        return new Note(account, note);
+    }
+
+    public static Note cgtNote(final Cgt cgt, final String note) {
+        return new Note(cgt, note);
+    }
+
+    public static Note cgtDayNote(final CgtDay cgtDay, final String note) {
+        return new Note(cgtDay, note);
     }
 
     public Note(final Client client, final String note) {
@@ -133,6 +161,27 @@ public class Note extends AbstractAuditableCustom<AppUser, Long> {
         this.noteTypeId = NoteType.SAVING_ACCOUNT.getValue();
     }
 
+    public Note(final ShareAccount account, final String note) {
+        this.shareAccount = account;
+        this.client = account.getClient();
+        this.note = note;
+        this.noteTypeId = NoteType.SHARE_ACCOUNT.getValue();
+    }
+
+    public Note(final Cgt cgt, final String note) {
+        this.cgt = cgt;
+        this.note = note;
+        this.client = null;
+        this.noteTypeId = NoteType.CGT.getValue();
+    }
+
+    public Note(final CgtDay cgtDay, final String note) {
+        this.cgtDay = cgtDay;
+        this.note = note;
+        this.client = null;
+        this.noteTypeId = NoteType.CGT_DAY.getValue();
+    }
+
     public Map<String, Object> update(final JsonCommand command) {
         final Map<String, Object> actualChanges = new LinkedHashMap<>(7);
 
@@ -147,6 +196,10 @@ public class Note extends AbstractAuditableCustom<AppUser, Long> {
 
     public boolean isNotAgainstClientWithIdOf(final Long clientId) {
         return !this.client.identifiedBy(clientId);
+    }
+
+    public String getNote() {
+        return this.note;
     }
 
 }

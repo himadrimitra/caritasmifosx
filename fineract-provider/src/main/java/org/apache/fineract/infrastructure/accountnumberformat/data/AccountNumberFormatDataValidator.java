@@ -115,6 +115,13 @@ public class AccountNumberFormatDataValidator {
                 validAccountNumberPrefixes = AccountNumberFormatEnumerations.accountNumberPrefixesForSavingsAccounts;
             break;
 
+            case CENTER:
+                validAccountNumberPrefixes = AccountNumberFormatEnumerations.accountNumberPrefixesForCenters;
+            break;
+
+            case GROUP:
+                validAccountNumberPrefixes = AccountNumberFormatEnumerations.accountNumberPrefixesForGroups;
+            break;
         }
 
         Set<Integer> validAccountNumberPrefixValues = new HashSet<>();

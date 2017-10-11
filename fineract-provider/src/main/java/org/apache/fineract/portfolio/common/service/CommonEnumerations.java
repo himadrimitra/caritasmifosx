@@ -23,12 +23,14 @@ import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.common.domain.ConditionType;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.DaysInMonthType;
 import org.apache.fineract.portfolio.common.domain.DaysInYearType;
+import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 
 public class CommonEnumerations {
-    
+
     public static final String DAYS_IN_MONTH_TYPE = "daysInMonthType";
     public static final String DAYS_IN_YEAR_TYPE = "daysInYearType";
 
@@ -50,20 +52,20 @@ public class CommonEnumerations {
         EnumOptionData optionData = null;
         switch (type) {
             case DAYS:
-                optionData = new EnumOptionData(PeriodFrequencyType.DAYS.getValue().longValue(), codePrefix
-                        + PeriodFrequencyType.DAYS.getCode(), "Days");
+                optionData = new EnumOptionData(PeriodFrequencyType.DAYS.getValue().longValue(),
+                        codePrefix + PeriodFrequencyType.DAYS.getCode(), "Days");
             break;
             case WEEKS:
-                optionData = new EnumOptionData(PeriodFrequencyType.WEEKS.getValue().longValue(), codePrefix
-                        + PeriodFrequencyType.WEEKS.getCode(), "Weeks");
+                optionData = new EnumOptionData(PeriodFrequencyType.WEEKS.getValue().longValue(),
+                        codePrefix + PeriodFrequencyType.WEEKS.getCode(), "Weeks");
             break;
             case MONTHS:
-                optionData = new EnumOptionData(PeriodFrequencyType.MONTHS.getValue().longValue(), codePrefix
-                        + PeriodFrequencyType.MONTHS.getCode(), "Months");
+                optionData = new EnumOptionData(PeriodFrequencyType.MONTHS.getValue().longValue(),
+                        codePrefix + PeriodFrequencyType.MONTHS.getCode(), "Months");
             break;
             case YEARS:
-                optionData = new EnumOptionData(PeriodFrequencyType.YEARS.getValue().longValue(), codePrefix
-                        + PeriodFrequencyType.YEARS.getCode(), "Years");
+                optionData = new EnumOptionData(PeriodFrequencyType.YEARS.getValue().longValue(),
+                        codePrefix + PeriodFrequencyType.YEARS.getCode(), "Years");
             break;
             default:
                 optionData = new EnumOptionData(PeriodFrequencyType.INVALID.getValue().longValue(), PeriodFrequencyType.INVALID.getCode(),
@@ -85,16 +87,16 @@ public class CommonEnumerations {
                         "equal");
             break;
             case NOT_EQUAL:
-                optionData = new EnumOptionData(ConditionType.NOT_EQUAL.getValue().longValue(), codePrefix
-                        + ConditionType.NOT_EQUAL.getCode(), "notEqual");
+                optionData = new EnumOptionData(ConditionType.NOT_EQUAL.getValue().longValue(),
+                        codePrefix + ConditionType.NOT_EQUAL.getCode(), "notEqual");
             break;
             case GRETERTHAN:
-                optionData = new EnumOptionData(ConditionType.GRETERTHAN.getValue().longValue(), codePrefix
-                        + ConditionType.GRETERTHAN.getCode(), "greterthan");
+                optionData = new EnumOptionData(ConditionType.GRETERTHAN.getValue().longValue(),
+                        codePrefix + ConditionType.GRETERTHAN.getCode(), "greterthan");
             break;
             case LESSTHAN:
-                optionData = new EnumOptionData(ConditionType.LESSTHAN.getValue().longValue(), codePrefix
-                        + ConditionType.LESSTHAN.getCode(), "lessthan");
+                optionData = new EnumOptionData(ConditionType.LESSTHAN.getValue().longValue(),
+                        codePrefix + ConditionType.LESSTHAN.getCode(), "lessthan");
             break;
             default:
                 optionData = new EnumOptionData(ConditionType.INVALID.getValue().longValue(), ConditionType.INVALID.getCode(), "Invalid");
@@ -157,10 +159,62 @@ public class CommonEnumerations {
                 optionData = new EnumOptionData(DaysInYearType.DAYS_365.getValue().longValue(), DaysInYearType.DAYS_365.getCode(),
                         "365 Days");
             break;
+            case DAYS_240:
+                optionData = new EnumOptionData(DaysInYearType.DAYS_240.getValue().longValue(), DaysInYearType.DAYS_240.getCode(),
+                        "240 Days");
+            break;
             default:
                 optionData = new EnumOptionData(DaysInYearType.INVALID.getValue().longValue(), DaysInYearType.INVALID.getCode(), "Invalid");
             break;
         }
+        return optionData;
+    }
+
+    public static EnumOptionData nthDayType(final Integer id, final String codePrefix) {
+        if (id == null) { return null; }
+        return nthDayType(NthDayType.fromInt(id), codePrefix);
+    }
+
+    public static EnumOptionData nthDayType(final NthDayType type, final String codePrefix) {
+        // final String codePrefix = "interestRecalculationCompounding.";
+        final long nthDayValue = type.getValue().longValue();
+        EnumOptionData optionData = null;
+        switch (type) {
+            case ONE:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "first");
+            break;
+            case TWO:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "second");
+            break;
+            case THREE:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "third");
+            break;
+            case FOUR:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "fourth");
+            break;
+            case FIVE:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "fifth");
+            break;
+            case LAST:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "last");
+            break;
+            case ONDAY:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "on day");
+            break;
+            default:
+                optionData = new EnumOptionData(new Integer(0).longValue(), codePrefix + type.getCode(), "invalid");
+            break;
+        }
+        return optionData;
+    }
+
+    public static EnumOptionData dayOfWeekType(final Integer id, final String codePrefix) {
+        if (id == null) { return null; }
+        return dayOfWeekType(DayOfWeekType.fromInt(id), codePrefix);
+    }
+
+    public static EnumOptionData dayOfWeekType(final DayOfWeekType type, final String codePrefix) {
+        final EnumOptionData optionData = new EnumOptionData(type.getValue().longValue(), codePrefix + type.getCode(), type.toString());
         return optionData;
     }
 

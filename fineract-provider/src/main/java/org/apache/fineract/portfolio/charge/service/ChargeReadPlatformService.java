@@ -36,6 +36,13 @@ public interface ChargeReadPlatformService {
     ChargeData retrieveNewChargeDetails();
 
     /**
+     * Returns all charges that can be applied to Cients
+     * 
+     * @return
+     */
+    Collection<ChargeData> retrieveAllChargesApplicableToClients();
+
+    /**
      * Returns all Fees (excluding penalties) applicable for loans
      * 
      * @return
@@ -111,5 +118,11 @@ public interface ChargeReadPlatformService {
 
     /** Retrieve savings account charges **/
     Collection<ChargeData> retrieveSavingsAccountApplicableCharges(Long savingsId);
+  
+    /**
+     * Returns charge definitions which are applicable for shares 
+     */
+    Collection<ChargeData> retrieveSharesApplicableCharges();
 
+    public Collection<ChargeData> retrieveShareProductCharges(final Long shareProductId) ;
 }

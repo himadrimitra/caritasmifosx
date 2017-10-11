@@ -19,6 +19,7 @@
 package org.apache.fineract.infrastructure.dataqueries.domain;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,7 +78,10 @@ public final class Report extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "report", orphanRemoval = true)
     private final Set<ReportParameterUsage> reportParameterUsages = new HashSet<>();
 
-    public static Report fromJson(final JsonCommand command) {
+    @Column(name = "track_usage", nullable = false)
+    private boolean trackUsage;
+
+    public static Report fromJson(final JsonCommand command, final Collection<String> reportTypes) {
 
         String reportName = null;
         String reportType = null;
@@ -86,6 +90,7 @@ public final class Report extends AbstractPersistable<Long> {
         String description = null;
         boolean useReport = false;
         String reportSql = null;
+        boolean trackUsage = false;
 
         if (command.parameterExists("reportName")) {
             reportName = command.stringValueOfParameterNamed("reportName");
@@ -108,8 +113,12 @@ public final class Report extends AbstractPersistable<Long> {
         if (command.parameterExists("reportSql")) {
             reportSql = command.stringValueOfParameterNamed("reportSql");
         }
+        if (command.parameterExists("trackUsage")) {
+            trackUsage = command.booleanPrimitiveValueOfParameterNamed("trackUsage");
+        }
 
-        return new Report(reportName, reportType, reportSubType, reportCategory, description, useReport, reportSql);
+        return new Report(reportName, reportType, reportSubType, reportCategory, description, useReport, reportSql, reportTypes,
+                trackUsage);
     }
 
     protected Report() {
@@ -117,7 +126,8 @@ public final class Report extends AbstractPersistable<Long> {
     }
 
     public Report(final String reportName, final String reportType, final String reportSubType, final String reportCategory,
-            final String description, final boolean useReport, final String reportSql) {
+            final String description, final boolean useReport, final String reportSql, final Collection<String> reportTypes,
+            final Boolean trackUsage) {
         this.reportName = reportName;
         this.reportType = reportType;
         this.reportSubType = reportSubType;
@@ -126,10 +136,11 @@ public final class Report extends AbstractPersistable<Long> {
         this.coreReport = false;
         this.useReport = useReport;
         this.reportSql = reportSql;
-        validate();
+        this.trackUsage = trackUsage;
+        validate(reportTypes);
     }
 
-    public Map<String, Object> update(final JsonCommand command) {
+    public Map<String, Object> update(final JsonCommand command, final Collection<String> reportTypes) {
 
         final Map<String, Object> actualChanges = new LinkedHashMap<>(8);
 
@@ -169,6 +180,12 @@ public final class Report extends AbstractPersistable<Long> {
             actualChanges.put(paramName, newValue);
             this.useReport = newValue;
         }
+
+        if (command.isChangeInBooleanParameterNamed("trackUsage", this.trackUsage)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed("trackUsage");
+            actualChanges.put("trackUsage", newValue);
+            this.trackUsage = newValue;
+        }
         paramName = "reportSql";
         if (command.isChangeInStringParameterNamed(paramName, this.reportSql)) {
             final String newValue = command.stringValueOfParameterNamed(paramName);
@@ -184,12 +201,12 @@ public final class Report extends AbstractPersistable<Long> {
             }
         }
 
-        validate();
+        validate(reportTypes);
 
         if (!actualChanges.isEmpty()) {
             if (isCoreReport()) {
                 for (final String key : actualChanges.keySet()) {
-                    if (!(key.equals("useReport"))) { throw new PlatformDataIntegrityException(
+                    if (!(key.equals("useReport") || key.equals("trackUsage"))) { throw new PlatformDataIntegrityException(
                             "error.msg.only.use.report.can.be.updated.for.core.report",
                             "Only the Use Report field can be updated for Core Reports", key); }
                 }
@@ -214,15 +231,14 @@ public final class Report extends AbstractPersistable<Long> {
         return reportParameterUsage;
     }
 
-    private void validate() {
+    private void validate(final Collection<String> reportTypes) {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("report");
 
         baseDataValidator.reset().parameter("reportName").value(this.reportName).notBlank().notExceedingLengthOf(100);
 
-        baseDataValidator.reset().parameter("reportType").value(this.reportType).notBlank()
-                .isOneOfTheseValues(new Object[] { "Table", "Pentaho", "Chart" });
+        baseDataValidator.reset().parameter("reportType").value(this.reportType).notBlank().isOneOfTheseValues(reportTypes.toArray());
 
         baseDataValidator.reset().parameter("reportSubType").value(this.reportSubType).notExceedingLengthOf(20);
 
@@ -241,11 +257,11 @@ public final class Report extends AbstractPersistable<Long> {
 
         if (StringUtils.isNotBlank(this.reportType)) {
             if ((this.reportType.equals("Table")) || (this.reportType.equals("Chart"))) {
-                baseDataValidator.reset().parameter("reportSql").value(this.reportSql)
-                        .cantBeBlankWhenParameterProvidedIs("reportType", this.reportType);
+                baseDataValidator.reset().parameter("reportSql").value(this.reportSql).cantBeBlankWhenParameterProvidedIs("reportType",
+                        this.reportType);
             } else {
-                baseDataValidator.reset().parameter("reportSql").value(this.reportSql)
-                        .mustBeBlankWhenParameterProvidedIs("reportType", this.reportType);
+                baseDataValidator.reset().parameter("reportSql").value(this.reportSql).mustBeBlankWhenParameterProvidedIs("reportType",
+                        this.reportType);
             }
         }
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
@@ -278,4 +294,13 @@ public final class Report extends AbstractPersistable<Long> {
 
         return false;
     }
+
+    public boolean isTrackUsage() {
+        return this.trackUsage;
+    }
+
+    public void setTrackUsage(final boolean trackUsage) {
+        this.trackUsage = trackUsage;
+    }
+
 }

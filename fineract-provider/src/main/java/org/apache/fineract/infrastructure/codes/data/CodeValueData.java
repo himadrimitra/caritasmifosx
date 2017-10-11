@@ -35,31 +35,100 @@ public class CodeValueData implements Serializable {
     @SuppressWarnings("unused")
     private final String description;
 
-    public static CodeValueData instance(final Long id, final String name, final Integer position) {
-        String description = null;
-        return new CodeValueData(id, name, position, description);
+    private final Boolean isActive;
+
+    @SuppressWarnings("unused")
+    private final Integer codeScore;
+
+    private final Boolean mandatory;
+
+    @SuppressWarnings("unused")
+    private final Long parentId;
+
+    public static CodeValueData instance(final Long id, final String name, final Integer position, final Boolean isActive,
+            final Integer codeScore, final boolean mandatory) {
+        final String description = null;
+        final Long parentId = null;
+        return new CodeValueData(id, name, position, description, isActive, codeScore, mandatory, parentId);
     }
 
-    public static CodeValueData instance(final Long id, final String name, final String description) {
-        Integer position = null;
-        return new CodeValueData(id, name, position, description);
+    public static CodeValueData instance(final Long id, final String name, final String description, final boolean isActive,
+            final boolean mandatory) {
+        final Integer position = null;
+        final Integer codeScore = null;
+        final Long parentId = null;
+        return new CodeValueData(id, name, position, description, isActive, codeScore, mandatory, parentId);
+    }
+
+    public static CodeValueData instance(final Long id, final String name, final String description, final boolean isActive) {
+        final Integer position = null;
+        final boolean mandatory = false;
+        final Integer codeScore = null;
+        final Long parentId = null;
+        return new CodeValueData(id, name, position, description, isActive, codeScore, mandatory, parentId);
     }
 
     public static CodeValueData instance(final Long id, final String name) {
-        String description = null;
-        Integer position = null;
-        return new CodeValueData(id, name, position, description);
+        final String description = null;
+        final Integer position = null;
+        final boolean isActive = false;
+        final Integer codeScore = null;
+        final boolean mandatory = false;
+        final Long parentId = null;
+        return new CodeValueData(id, name, position, description, isActive, codeScore, mandatory, parentId);
     }
 
-    public static CodeValueData instance(final Long id, final String name, final Integer position, final String description) {
-        return new CodeValueData(id, name, position, description);
+    public static CodeValueData instance(final Long id, final String name, final Integer position, final String description,
+            final boolean isActive, final Integer codeScore, final boolean mandatory, final Long parentId) {
+        return new CodeValueData(id, name, position, description, isActive, codeScore, mandatory, parentId);
     }
 
-    private CodeValueData(final Long id, final String name, final Integer position, final String description) {
+    public static CodeValueData instanceIdAndName(final Long id, final String name) {
+        final String description = null;
+        final Integer position = null;
+        final Boolean isActive = null;
+        final Long parentId = null;
+        return new CodeValueData(id, name, position, description, isActive, parentId);
+    }
+
+    public static CodeValueData instance(final Long id, final String name, final Integer position, final String description,
+            final boolean isActive, final Long parentId) {
+        return new CodeValueData(id, name, position, description, isActive, parentId);
+    }
+
+    public static CodeValueData instance(final Long id, final String name, final boolean isActive) {
+        final String description = null;
+        final Integer position = null;
+        final Integer codeScore = null;
+        final boolean mandatory = false;
+        final Long parentId = null;
+        return new CodeValueData(id, name, position, description, isActive, codeScore, mandatory, parentId);
+    }
+
+    private CodeValueData(final Long id, final String name, final Integer position, final String description, final Boolean isActive,
+            final Integer codeScore, final boolean mandatory, final Long parentId) {
         this.id = id;
         this.name = name;
         this.position = position;
         this.description = description;
+        this.isActive = isActive;
+        this.codeScore = codeScore;
+        this.mandatory = mandatory;
+        this.parentId = parentId;
+    }
+
+    public CodeValueData(final Long id, final String name, final Integer position, final String description, final Boolean isActive,
+            final Long parentId) {
+        final Integer codeScore = null;
+        final Boolean mandatory = null;
+        this.id = id;
+        this.name = name;
+        this.position = position;
+        this.description = description;
+        this.isActive = isActive;
+        this.codeScore = codeScore;
+        this.mandatory = mandatory;
+        this.parentId = parentId;
     }
 
     public Long getId() {
@@ -68,5 +137,19 @@ public class CodeValueData implements Serializable {
 
     public String getName() {
         return this.name;
+    }
+
+    /**
+     * @return the mandatory
+     */
+    public boolean isMandatory() {
+        return this.mandatory;
+    }
+
+    /**
+     * @return the active
+     */
+    public boolean isActive() {
+        return this.isActive;
     }
 }

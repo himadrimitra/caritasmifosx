@@ -30,6 +30,7 @@ public class FinancialActivityAccountData {
     private final GLAccountData glAccountData;
     private Map<String, List<GLAccountData>> glAccountOptions;
     private List<FinancialActivityData> financialActivityOptions;
+    private final List<FinancialActivityAccountPaymentTypeMappingData> financialActivityAccountPaymentTypeMappingData;
 
     public FinancialActivityAccountData() {
         this.id = null;
@@ -37,29 +38,41 @@ public class FinancialActivityAccountData {
         this.financialActivityData = null;
         this.glAccountOptions = null;
         this.financialActivityOptions = null;
+        this.financialActivityAccountPaymentTypeMappingData = null;
     }
 
-    public FinancialActivityAccountData(final Long id, final FinancialActivityData financialActivityData, final GLAccountData glAccountData) {
+    public FinancialActivityAccountData(final Long id, final FinancialActivityData financialActivityData, final GLAccountData glAccountData,
+            final List<FinancialActivityAccountPaymentTypeMappingData> financialActivityAccountPaymentTypeMappingData) {
         this.id = id;
         this.glAccountData = glAccountData;
         this.financialActivityData = financialActivityData;
+        this.financialActivityAccountPaymentTypeMappingData = financialActivityAccountPaymentTypeMappingData;
     }
 
-    public FinancialActivityAccountData(Map<String, List<GLAccountData>> glAccountOptions,
-            List<FinancialActivityData> financialActivityOptions) {
+    public FinancialActivityAccountData(final Map<String, List<GLAccountData>> glAccountOptions,
+            final List<FinancialActivityData> financialActivityOptions) {
         this.id = null;
         this.glAccountData = null;
         this.financialActivityData = null;
         this.glAccountOptions = glAccountOptions;
         this.financialActivityOptions = financialActivityOptions;
+        this.financialActivityAccountPaymentTypeMappingData = null;
 
     }
 
     public List<FinancialActivityData> getFinancialActivityOptions() {
-        return financialActivityOptions;
+        return this.financialActivityOptions;
     }
 
-    public void setFinancialActivityOptions(List<FinancialActivityData> financialActivityOptions) {
+    public FinancialActivityAccountData(final FinancialActivityAccountData financialActivityAccountData,
+            final List<FinancialActivityAccountPaymentTypeMappingData> financialActivityAccountPaymentTypeMappingData) {
+        this.id = financialActivityAccountData.getId();
+        this.glAccountData = financialActivityAccountData.glAccountData;
+        this.financialActivityData = financialActivityAccountData.getFinancialActivityData();
+        this.financialActivityAccountPaymentTypeMappingData = financialActivityAccountPaymentTypeMappingData;
+    }
+
+    public void setFinancialActivityOptions(final List<FinancialActivityData> financialActivityOptions) {
         this.financialActivityOptions = financialActivityOptions;
     }
 
@@ -67,20 +80,20 @@ public class FinancialActivityAccountData {
         return this.glAccountOptions;
     }
 
-    public void setAccountingMappingOptions(Map<String, List<GLAccountData>> accountingMappingOptions) {
+    public void setAccountingMappingOptions(final Map<String, List<GLAccountData>> accountingMappingOptions) {
         this.glAccountOptions = accountingMappingOptions;
     }
 
     public GLAccountData getGlAccountData() {
-        return glAccountData;
+        return this.glAccountData;
     }
 
     public FinancialActivityData getFinancialActivityData() {
-        return financialActivityData;
+        return this.financialActivityData;
     }
 
     public Long getId() {
-        return id;
+        return this.id;
     }
 
 }

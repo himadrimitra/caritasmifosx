@@ -67,7 +67,7 @@ public class DepositAccountRecurringDetail extends AbstractPersistable<Long> {
     private SavingsAccount account;
 
     /**
-     * 
+     *
      */
     public DepositAccountRecurringDetail() {
         this.noOfOverdueInstallments = 0;
@@ -102,7 +102,8 @@ public class DepositAccountRecurringDetail extends AbstractPersistable<Long> {
 
     public Map<String, Object> update(final JsonCommand command) {
         final Map<String, Object> actualChanges = new LinkedHashMap<>(10);
-        if (command.isChangeInBigDecimalParameterNamed(mandatoryRecommendedDepositAmountParamName, this.mandatoryRecommendedDepositAmount)) {
+        if (command.isChangeInBigDecimalParameterNamed(mandatoryRecommendedDepositAmountParamName,
+                this.mandatoryRecommendedDepositAmount)) {
             final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(mandatoryRecommendedDepositAmountParamName);
             actualChanges.put(mandatoryRecommendedDepositAmountParamName, newValue);
             this.mandatoryRecommendedDepositAmount = newValue;
@@ -113,26 +114,27 @@ public class DepositAccountRecurringDetail extends AbstractPersistable<Long> {
         return actualChanges;
     }
 
-    public Map<String, Object> updateMandatoryRecommendedDepositAmount(BigDecimal newMandatoryRecommendedDepositAmount,
-            LocalDate effectiveDate, Boolean isSavingsInterestPostingAtCurrentPeriodEnd, Integer financialYearBeginningMonth) {
+    public Map<String, Object> updateMandatoryRecommendedDepositAmount(final BigDecimal newMandatoryRecommendedDepositAmount,
+            final LocalDate effectiveDate, final Boolean isSavingsInterestPostingAtCurrentPeriodEnd,
+            final Integer financialYearBeginningMonth) {
         final Map<String, Object> actualChanges = new LinkedHashMap<>(10);
         actualChanges.put(mandatoryRecommendedDepositAmountParamName, newMandatoryRecommendedDepositAmount);
         this.mandatoryRecommendedDepositAmount = newMandatoryRecommendedDepositAmount;
-        RecurringDepositAccount depositAccount = (RecurringDepositAccount) this.account;
+        final RecurringDepositAccount depositAccount = (RecurringDepositAccount) this.account;
         if (depositAccount.isNotActive()) {
             final String defaultUserMessage = "Updates to the recommended deposit amount are allowed only when the underlying account is active.";
-            final ApiParameterError error = ApiParameterError.generalError("error.msg."
-                    + DepositsApiConstants.RECURRING_DEPOSIT_ACCOUNT_RESOURCE_NAME + ".is.not.active", defaultUserMessage);
+            final ApiParameterError error = ApiParameterError.generalError(
+                    "error.msg." + DepositsApiConstants.RECURRING_DEPOSIT_ACCOUNT_RESOURCE_NAME + ".is.not.active", defaultUserMessage);
             final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
             dataValidationErrors.add(error);
             throw new PlatformApiDataValidationException(dataValidationErrors);
         }
         depositAccount.updateScheduleInstallmentsWithNewRecommendedDepositAmount(newMandatoryRecommendedDepositAmount, effectiveDate);
         depositAccount.updateOverduePayments(DateUtils.getLocalDateOfTenant());
-        MathContext mc = MathContext.DECIMAL64;
-        Boolean isPreMatureClosure = false;
+        final MathContext mc = MathContext.DECIMAL64;
+        final Boolean isPreMatureClosure = false;
         depositAccount.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
-                financialYearBeginningMonth);
+                financialYearBeginningMonth, null, null, null);
         return actualChanges;
     }
 

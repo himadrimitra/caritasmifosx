@@ -35,6 +35,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -68,10 +69,10 @@ import org.springframework.stereotype.Component;
 @Scope("singleton")
 public class AccountingRuleApiResource {
 
-    private static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "officeId", "officeName",
-            "accountToDebitId", "accountToCreditId", "name", "description", "systemDefined", "allowedCreditTagOptions",
-            "allowedDebitTagOptions", "debitTags", "creditTags", "creditAccounts", "debitAccounts", "allowMultipleCreditEntries",
-            "allowMultipleDebitEntries", "tag"));
+    private static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList("id", "officeId", "officeName", "accountToDebitId", "accountToCreditId", "name", "description", "systemDefined",
+                    "allowedCreditTagOptions", "allowedDebitTagOptions", "debitTags", "creditTags", "creditAccounts", "debitAccounts",
+                    "allowMultipleCreditEntries", "allowMultipleDebitEntries", "tag"));
 
     private final String resourceNameForPermission = "ACCOUNTINGRULE";
 
@@ -119,7 +120,8 @@ public class AccountingRuleApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAllAccountingRules(@Context final UriInfo uriInfo) {
+    public String retrieveAllAccountingRules(@Context final UriInfo uriInfo, @QueryParam("officeId") final Long officeId,
+            @QueryParam("includeInheritedRules") final boolean includeInheritedRules) {
 
         final AppUser currentUser = this.context.authenticatedUser();
         currentUser.validateHasReadPermission(this.resourceNameForPermission);
@@ -136,10 +138,14 @@ public class AccountingRuleApiResource {
                                                       // journal entry form.
             }
         }
-        final List<AccountingRuleData> accountingRuleDatas = this.accountingRuleReadPlatformService.retrieveAllAccountingRules(
-                hierarchySearchString, isAssociationParametersExists);
-
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        if (officeId != null) {
+            final List<AccountingRuleData> accountingRuleDatas = this.accountingRuleReadPlatformService.retrieveAllAccountingRules(officeId,
+                    includeInheritedRules, isAssociationParametersExists);
+            return this.apiJsonSerializerService.serialize(settings, accountingRuleDatas, RESPONSE_DATA_PARAMETERS);
+        }
+        final List<AccountingRuleData> accountingRuleDatas = this.accountingRuleReadPlatformService
+                .retrieveAllAccountingRules(hierarchySearchString, isAssociationParametersExists);
         return this.apiJsonSerializerService.serialize(settings, accountingRuleDatas, RESPONSE_DATA_PARAMETERS);
     }
 
@@ -204,14 +210,14 @@ public class AccountingRuleApiResource {
         final Collection<CodeValueData> allowedTagOptions = this.codeValueReadPlatformService
                 .retrieveCodeValuesByCode(AccountingConstants.ASSESTS_TAG_OPTION_CODE_NAME);
 
-        allowedTagOptions.addAll(this.codeValueReadPlatformService
-                .retrieveCodeValuesByCode(AccountingConstants.LIABILITIES_TAG_OPTION_CODE_NAME));
-        allowedTagOptions.addAll(this.codeValueReadPlatformService
-                .retrieveCodeValuesByCode(AccountingConstants.EQUITY_TAG_OPTION_CODE_NAME));
-        allowedTagOptions.addAll(this.codeValueReadPlatformService
-                .retrieveCodeValuesByCode(AccountingConstants.INCOME_TAG_OPTION_CODE_NAME));
-        allowedTagOptions.addAll(this.codeValueReadPlatformService
-                .retrieveCodeValuesByCode(AccountingConstants.EXPENSES_TAG_OPTION_CODE_NAME));
+        allowedTagOptions
+                .addAll(this.codeValueReadPlatformService.retrieveCodeValuesByCode(AccountingConstants.LIABILITIES_TAG_OPTION_CODE_NAME));
+        allowedTagOptions
+                .addAll(this.codeValueReadPlatformService.retrieveCodeValuesByCode(AccountingConstants.EQUITY_TAG_OPTION_CODE_NAME));
+        allowedTagOptions
+                .addAll(this.codeValueReadPlatformService.retrieveCodeValuesByCode(AccountingConstants.INCOME_TAG_OPTION_CODE_NAME));
+        allowedTagOptions
+                .addAll(this.codeValueReadPlatformService.retrieveCodeValuesByCode(AccountingConstants.EXPENSES_TAG_OPTION_CODE_NAME));
 
         if (accountingRuleData == null) {
 

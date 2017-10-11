@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.interestratechart.incentive;
 
 import java.math.BigDecimal;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestIncentivesFields;
 import org.joda.time.LocalDate;
@@ -28,7 +29,7 @@ import org.joda.time.Years;
 public class ClientAttributeIncentiveCalculation extends AttributeIncentiveCalculation {
 
     @Override
-    public BigDecimal calculateIncentive(IncentiveDTO incentiveDTO) {
+    public BigDecimal calculateIncentive(final IncentiveDTO incentiveDTO) {
         final Client client = incentiveDTO.client();
         BigDecimal interest = incentiveDTO.interest();
         final InterestIncentivesFields incentivesFields = incentiveDTO.incentives();
@@ -43,7 +44,7 @@ public class ClientAttributeIncentiveCalculation extends AttributeIncentiveCalcu
             case AGE:
                 if (client.dateOfBirth() != null) {
                     final LocalDate dobLacalDate = LocalDate.fromDateFields(client.dateOfBirth());
-                    final int age = Years.yearsBetween(dobLacalDate, LocalDate.now()).getYears();
+                    final int age = Years.yearsBetween(dobLacalDate, DateUtils.getLocalDateOfTenant()).getYears();
                     applyIncentive = applyIncentive(incentivesFields.conditionType(), Long.valueOf(incentivesFields.attributeValue()),
                             Long.valueOf(age));
                 }

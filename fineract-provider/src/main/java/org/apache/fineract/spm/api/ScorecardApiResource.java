@@ -1,0 +1,123 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.fineract.spm.api;
+
+import java.util.Collections;
+import java.util.List;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.client.domain.ClientRepository;
+import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
+import org.apache.fineract.spm.data.SurveyTakenData;
+import org.apache.fineract.spm.domain.Scorecard;
+import org.apache.fineract.spm.domain.Survey;
+import org.apache.fineract.spm.domain.SurveyTaken;
+import org.apache.fineract.spm.exception.SurveyNotFoundException;
+import org.apache.fineract.spm.service.ScorecardService;
+import org.apache.fineract.spm.service.SpmService;
+import org.apache.fineract.spm.util.ScorecardMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Path("/surveys/{surveyId}/scorecards")
+@Component
+@Scope("singleton")
+public class ScorecardApiResource {
+
+    private final PlatformSecurityContext securityContext;
+    private final SpmService spmService;
+    private final ScorecardService scorecardService;
+    private final ClientRepository clientRepository;
+
+    @Autowired
+    public ScorecardApiResource(final PlatformSecurityContext securityContext, final SpmService spmService,
+            final ScorecardService scorecardService, final ClientRepository clientRepository) {
+        super();
+        this.securityContext = securityContext;
+        this.spmService = spmService;
+        this.scorecardService = scorecardService;
+        this.clientRepository = clientRepository;
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Transactional
+    public List<SurveyTakenData> findBySurvey(@PathParam("surveyId") final Long surveyId) {
+        this.securityContext.authenticatedUser();
+
+        final Survey survey = findSurvey(surveyId);
+
+        final List<Scorecard> scorecards = this.scorecardService.findBySurvey(survey);
+
+        if (scorecards != null) { return ScorecardMapper.map(scorecards); }
+
+        return Collections.EMPTY_LIST;
+    }
+
+    @POST
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Transactional
+    public Long createScorecard(@PathParam("surveyId") final Long surveyId, final SurveyTakenData surveyTakenData) {
+        final Survey survey = findSurvey(surveyId);
+        final SurveyTaken surveyTaken = this.scorecardService.createSurveyTakenScorecard(surveyTakenData, survey);
+        return surveyTaken.getId();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Path("/clients/{clientId}")
+    @GET
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Transactional
+    public List<SurveyTakenData> findBySurveyClient(@PathParam("surveyId") final Long surveyId, @PathParam("clientId") final Long clientId) {
+        this.securityContext.authenticatedUser();
+
+        final Survey survey = findSurvey(surveyId);
+
+        final Client client = this.clientRepository.findOne(clientId);
+
+        if (client == null) { throw new ClientNotFoundException(clientId); }
+
+        final List<Scorecard> scorecards = this.scorecardService.findBySurveyAndClient(survey, client);
+
+        if (scorecards != null) { return ScorecardMapper.map(scorecards); }
+
+        return Collections.EMPTY_LIST;
+    }
+
+    private Survey findSurvey(final Long surveyId) {
+        final Survey survey = this.spmService.findById(surveyId);
+        if (survey == null) { throw new SurveyNotFoundException(surveyId); }
+        return survey;
+    }
+}

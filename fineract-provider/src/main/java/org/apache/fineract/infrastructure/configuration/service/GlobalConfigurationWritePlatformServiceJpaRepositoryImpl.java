@@ -60,9 +60,10 @@ public class GlobalConfigurationWritePlatformServiceJpaRepositoryImpl implements
         this.context.authenticatedUser();
 
         try {
-            this.globalConfigurationDataValidator.validateForUpdate(command);
-
+            
             final GlobalConfigurationProperty configItemForUpdate = this.repository.findOneWithNotFoundDetection(configId);
+            
+            this.globalConfigurationDataValidator.validateForUpdate(configItemForUpdate.getName(), command);
             
             final Map<String, Object> changes = configItemForUpdate.update(command);
 

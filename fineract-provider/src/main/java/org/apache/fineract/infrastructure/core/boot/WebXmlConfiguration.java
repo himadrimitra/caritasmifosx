@@ -28,6 +28,7 @@ import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.filter.DelegatingFilterProxy;
 
 import com.sun.jersey.spi.spring.container.servlet.SpringServlet;
@@ -35,10 +36,11 @@ import com.sun.jersey.spi.spring.container.servlet.SpringServlet;
 /**
  * This Configuration replaces what formerly was in web.xml.
  *
- * @see <a
- *      href="http://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto-convert-an-existing-application-to-spring-boot">#howto-convert-an-existing-application-to-spring-boot</a>
+ * @see <a href=
+ *      "http://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto-convert-an-existing-application-to-spring-boot">#howto-convert-an-existing-application-to-spring-boot</a>
  */
 @Configuration
+@Profile("basicauth")
 public class WebXmlConfiguration {
 
     @Autowired
@@ -51,8 +53,8 @@ public class WebXmlConfiguration {
 
     @Bean
     public ServletRegistrationBean jersey() {
-        Servlet jerseyServlet = new SpringServlet();
-        ServletRegistrationBean jerseyServletRegistration = new ServletRegistrationBean();
+        final Servlet jerseyServlet = new SpringServlet();
+        final ServletRegistrationBean jerseyServletRegistration = new ServletRegistrationBean();
         jerseyServletRegistration.setServlet(jerseyServlet);
         jerseyServletRegistration.addUrlMappings("/api/v1/*");
         jerseyServletRegistration.setName("jersey-servlet");
@@ -69,8 +71,8 @@ public class WebXmlConfiguration {
 
     @Bean
     public FilterRegistrationBean filterRegistrationBean() {
-        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
-        filterRegistrationBean.setFilter(basicAuthenticationProcessingFilter);
+        final FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
+        filterRegistrationBean.setFilter(this.basicAuthenticationProcessingFilter);
         filterRegistrationBean.setEnabled(false);
         return filterRegistrationBean;
     }

@@ -18,8 +18,22 @@
  */
 package org.apache.fineract.infrastructure.hooks.service;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.actionNameParamName;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.configParamName;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.contentTypeName;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.entityNameParamName;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.eventsParamName;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.nameParamName;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.payloadURLName;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.templateIdParamName;
+import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.webTemplateName;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
@@ -29,7 +43,13 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.hooks.domain.*;
+import org.apache.fineract.infrastructure.hooks.domain.Hook;
+import org.apache.fineract.infrastructure.hooks.domain.HookConfiguration;
+import org.apache.fineract.infrastructure.hooks.domain.HookRepository;
+import org.apache.fineract.infrastructure.hooks.domain.HookResource;
+import org.apache.fineract.infrastructure.hooks.domain.HookTemplate;
+import org.apache.fineract.infrastructure.hooks.domain.HookTemplateRepository;
+import org.apache.fineract.infrastructure.hooks.domain.Schema;
 import org.apache.fineract.infrastructure.hooks.exception.HookNotFoundException;
 import org.apache.fineract.infrastructure.hooks.exception.HookTemplateNotFoundException;
 import org.apache.fineract.infrastructure.hooks.processor.ProcessorHelper;
@@ -40,21 +60,17 @@ import org.apache.fineract.template.domain.Template;
 import org.apache.fineract.template.domain.TemplateRepository;
 import org.apache.fineract.template.exception.TemplateNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import retrofit.RetrofitError;
 
-import static org.apache.fineract.infrastructure.hooks.api.HookApiConstants.*;
-
-import java.util.*;
-import java.util.Map.Entry;
-
 @Service
-public class HookWritePlatformServiceJpaRepositoryImpl
-        implements
-            HookWritePlatformService {
+public class HookWritePlatformServiceJpaRepositoryImpl implements HookWritePlatformService {
 
     private final PlatformSecurityContext context;
     private final HookRepository hookRepository;
@@ -64,13 +80,9 @@ public class HookWritePlatformServiceJpaRepositoryImpl
     private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
-    public HookWritePlatformServiceJpaRepositoryImpl(
-            final PlatformSecurityContext context,
-            final HookRepository hookRepository,
-            final HookTemplateRepository hookTemplateRepository,
-            final TemplateRepository ugdTemplateRepository,
-            final HookCommandFromApiJsonDeserializer fromApiJsonDeserializer,
-            final FromJsonHelper fromApiJsonHelper) {
+    public HookWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final HookRepository hookRepository,
+            final HookTemplateRepository hookTemplateRepository, final TemplateRepository ugdTemplateRepository,
+            final HookCommandFromApiJsonDeserializer fromApiJsonDeserializer, final FromJsonHelper fromApiJsonHelper) {
         this.context = context;
         this.hookRepository = hookRepository;
         this.hookTemplateRepository = hookTemplateRepository;
@@ -81,7 +93,7 @@ public class HookWritePlatformServiceJpaRepositoryImpl
 
     @Transactional
     @Override
-    @CacheEvict(value = "hooks", allEntries = true)
+    // @CacheEvict(value = "hooks", allEntries = true)
     public CommandProcessingResult createHook(final JsonCommand command) {
 
         try {
@@ -89,33 +101,24 @@ public class HookWritePlatformServiceJpaRepositoryImpl
 
             this.fromApiJsonDeserializer.validateForCreate(command.json());
 
-            final HookTemplate template = retrieveHookTemplateBy(command
-                    .stringValueOfParameterNamed(nameParamName));
+            final HookTemplate template = retrieveHookTemplateBy(command.stringValueOfParameterNamed(nameParamName));
             final String configJson = command.jsonFragment(configParamName);
-            final Set<HookConfiguration> config = assembleConfig(
-                    command.mapValueOfParameterNamed(configJson), template);
-            final JsonArray events = command
-                    .arrayOfParameterNamed(eventsParamName);
+            final Set<HookConfiguration> config = assembleConfig(command.mapValueOfParameterNamed(configJson), template);
+            final JsonArray events = command.arrayOfParameterNamed(eventsParamName);
             final Set<HookResource> allEvents = assembleSetOfEvents(events);
             Template ugdTemplate = null;
             if (command.hasParameter(templateIdParamName)) {
-                final Long ugdTemplateId = command
-                        .longValueOfParameterNamed(templateIdParamName);
+                final Long ugdTemplateId = command.longValueOfParameterNamed(templateIdParamName);
                 ugdTemplate = this.ugdTemplateRepository.findOne(ugdTemplateId);
-                if (ugdTemplate == null) {
-                    throw new TemplateNotFoundException(ugdTemplateId);
-                }
+                if (ugdTemplate == null) { throw new TemplateNotFoundException(ugdTemplateId); }
             }
-            final Hook hook = Hook.fromJson(command, template, config,
-                    allEvents, ugdTemplate);
+            final Hook hook = Hook.fromJson(command, template, config, allEvents, ugdTemplate);
 
             validateHookRules(template, config, allEvents);
 
             this.hookRepository.save(hook);
 
-            return new CommandProcessingResultBuilder()
-                    .withCommandId(command.commandId())
-                    .withEntityId(hook.getId()).build();
+            return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withEntityId(hook.getId()).build();
         } catch (final DataIntegrityViolationException dve) {
             handleHookDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
@@ -124,9 +127,8 @@ public class HookWritePlatformServiceJpaRepositoryImpl
 
     @Transactional
     @Override
-    @CacheEvict(value = "hooks", allEntries = true)
-    public CommandProcessingResult updateHook(final Long hookId,
-            final JsonCommand command) {
+    // @CacheEvict(value = "hooks", allEntries = true)
+    public CommandProcessingResult updateHook(final Long hookId, final JsonCommand command) {
 
         try {
             this.context.authenticatedUser();
@@ -140,10 +142,8 @@ public class HookWritePlatformServiceJpaRepositoryImpl
             if (!changes.isEmpty()) {
 
                 if (changes.containsKey(templateIdParamName)) {
-                    final Long ugdTemplateId = command
-                            .longValueOfParameterNamed(templateIdParamName);
-                    final Template ugdTemplate = this.ugdTemplateRepository
-                            .findOne(ugdTemplateId);
+                    final Long ugdTemplateId = command.longValueOfParameterNamed(templateIdParamName);
+                    final Template ugdTemplate = this.ugdTemplateRepository.findOne(ugdTemplateId);
                     if (ugdTemplate == null) {
                         changes.remove(templateIdParamName);
                         throw new TemplateNotFoundException(ugdTemplateId);
@@ -152,8 +152,7 @@ public class HookWritePlatformServiceJpaRepositoryImpl
                 }
 
                 if (changes.containsKey(eventsParamName)) {
-                    final Set<HookResource> events = assembleSetOfEvents(command
-                            .arrayOfParameterNamed(eventsParamName));
+                    final Set<HookResource> events = assembleSetOfEvents(command.arrayOfParameterNamed(eventsParamName));
                     final boolean updated = hook.updateEvents(events);
                     if (!updated) {
                         changes.remove(eventsParamName);
@@ -161,11 +160,8 @@ public class HookWritePlatformServiceJpaRepositoryImpl
                 }
 
                 if (changes.containsKey(configParamName)) {
-                    final String configJson = command
-                            .jsonFragment(configParamName);
-                    final Set<HookConfiguration> config = assembleConfig(
-                            command.mapValueOfParameterNamed(configJson),
-                            template);
+                    final String configJson = command.jsonFragment(configParamName);
+                    final Set<HookConfiguration> config = assembleConfig(command.mapValueOfParameterNamed(configJson), template);
                     final boolean updated = hook.updateConfig(config);
                     if (!updated) {
                         changes.remove(configParamName);
@@ -188,7 +184,7 @@ public class HookWritePlatformServiceJpaRepositoryImpl
 
     @Transactional
     @Override
-    @CacheEvict(value = "hooks", allEntries = true)
+    // @CacheEvict(value = "hooks", allEntries = true)
     public CommandProcessingResult deleteHook(final Long hookId) {
 
         this.context.authenticatedUser();
@@ -199,34 +195,25 @@ public class HookWritePlatformServiceJpaRepositoryImpl
             this.hookRepository.delete(hook);
             this.hookRepository.flush();
         } catch (final DataIntegrityViolationException e) {
-            throw new PlatformDataIntegrityException(
-                    "error.msg.unknown.data.integrity.issue",
-                    "Unknown data integrity issue with resource: "
-                            + e.getMostSpecificCause());
+            throw new PlatformDataIntegrityException("error.msg.unknown.data.integrity.issue",
+                    "Unknown data integrity issue with resource: " + e.getMostSpecificCause());
         }
-        return new CommandProcessingResultBuilder().withEntityId(hookId)
-                .build();
+        return new CommandProcessingResultBuilder().withEntityId(hookId).build();
     }
 
     private Hook retrieveHookBy(final Long hookId) {
         final Hook hook = this.hookRepository.findOne(hookId);
-        if (hook == null) {
-            throw new HookNotFoundException(hookId.toString());
-        }
+        if (hook == null) { throw new HookNotFoundException(hookId); }
         return hook;
     }
 
     private HookTemplate retrieveHookTemplateBy(final String templateName) {
-        final HookTemplate template = this.hookTemplateRepository
-                .findOne(templateName);
-        if (template == null) {
-            throw new HookTemplateNotFoundException(templateName);
-        }
+        final HookTemplate template = this.hookTemplateRepository.findOne(templateName);
+        if (template == null) { throw new HookTemplateNotFoundException(templateName); }
         return template;
     }
 
-    private Set<HookConfiguration> assembleConfig(
-            final Map<String, String> hookConfig, final HookTemplate template) {
+    private Set<HookConfiguration> assembleConfig(final Map<String, String> hookConfig, final HookTemplate template) {
 
         final Set<HookConfiguration> configuration = new HashSet<>();
         final Set<Schema> fields = template.getSchema();
@@ -236,10 +223,8 @@ public class HookWritePlatformServiceJpaRepositoryImpl
                 final String fieldName = field.getFieldName();
                 if (fieldName.equalsIgnoreCase(configEntry.getKey())) {
 
-                    final HookConfiguration config = HookConfiguration
-                            .createNewWithoutHook(field.getFieldType(),
-                                    configEntry.getKey(),
-                                    configEntry.getValue());
+                    final HookConfiguration config = HookConfiguration.createNewWithoutHook(field.getFieldType(), configEntry.getKey(),
+                            configEntry.getValue());
                     configuration.add(config);
                     break;
                 }
@@ -256,61 +241,47 @@ public class HookWritePlatformServiceJpaRepositoryImpl
 
         for (int i = 0; i < eventsArray.size(); i++) {
 
-            final JsonObject eventElement = eventsArray.get(i)
-                    .getAsJsonObject();
+            final JsonObject eventElement = eventsArray.get(i).getAsJsonObject();
 
-            final String entityName = this.fromApiJsonHelper
-                    .extractStringNamed(entityNameParamName, eventElement);
-            final String actionName = this.fromApiJsonHelper
-                    .extractStringNamed(actionNameParamName, eventElement);
-            final HookResource event = HookResource.createNewWithoutHook(
-                    entityName, actionName);
+            final String entityName = this.fromApiJsonHelper.extractStringNamed(entityNameParamName, eventElement);
+            final String actionName = this.fromApiJsonHelper.extractStringNamed(actionNameParamName, eventElement);
+            final HookResource event = HookResource.createNewWithoutHook(entityName, actionName);
             allEvents.add(event);
         }
 
         return allEvents;
     }
 
-    private void validateHookRules(final HookTemplate template,
-            final Set<HookConfiguration> config, Set<HookResource> events) {
+    private void validateHookRules(final HookTemplate template, final Set<HookConfiguration> config, final Set<HookResource> events) {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(
-                dataValidationErrors).resource("hook");
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("hook");
 
-        if (!template.getName().equalsIgnoreCase(webTemplateName)
-                && this.hookRepository.findOneByTemplateId(template.getId()) != null) {
+        if (!template.getName().equalsIgnoreCase(webTemplateName) && this.hookRepository.findOneByTemplateId(template.getId()) != null) {
             final String errorMessage = "multiple.non.web.template.hooks.not.supported";
-            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(
-                    errorMessage);
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(errorMessage);
         }
 
         for (final HookConfiguration conf : config) {
             final String fieldValue = conf.getFieldValue();
             if (conf.getFieldName().equals(contentTypeName)) {
-                if (!(fieldValue.equalsIgnoreCase("json") || fieldValue
-                        .equalsIgnoreCase("form"))) {
+                if (!(fieldValue.equalsIgnoreCase("json") || fieldValue.equalsIgnoreCase("form"))) {
                     final String errorMessage = "content.type.must.be.json.or.form";
-                    baseDataValidator.reset()
-                            .failWithCodeNoParameterAddedToErrorCode(
-                                    errorMessage);
+                    baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(errorMessage);
                 }
             }
 
             if (conf.getFieldName().equals(payloadURLName)) {
                 try {
-                    final WebHookService service = ProcessorHelper
-                            .createWebHookService(fieldValue);
+                    final WebHookService service = ProcessorHelper.createWebHookService(fieldValue);
                     service.sendEmptyRequest();
-                } catch (RetrofitError re) {
+                } catch (final RetrofitError re) {
                     // Swallow error if it's because of method not supported or
                     // if url throws 404 - required for integration test,
                     // url generated on 1st POST request
                     if (re.getResponse() == null) {
-                        String errorMessage = "url.invalid";
-                        baseDataValidator.reset()
-                                .failWithCodeNoParameterAddedToErrorCode(
-                                        errorMessage);
+                        final String errorMessage = "url.invalid";
+                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(errorMessage);
                     }
                 }
             }
@@ -318,8 +289,7 @@ public class HookWritePlatformServiceJpaRepositoryImpl
 
         if (events == null || events.isEmpty()) {
             final String errorMessage = "registered.events.cannot.be.empty";
-            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(
-                    errorMessage);
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(errorMessage);
         }
 
         final Set<Schema> fields = template.getSchema();
@@ -332,35 +302,24 @@ public class HookWritePlatformServiceJpaRepositoryImpl
                     }
                 }
                 if (!found) {
-                    final String errorMessage = "required.config.field."
-                            + "not.provided";
-                    baseDataValidator
-                            .reset()
-                            .value(field.getFieldName())
-                            .failWithCodeNoParameterAddedToErrorCode(
-                                    errorMessage);
+                    final String errorMessage = "required.config.field." + "not.provided";
+                    baseDataValidator.reset().value(field.getFieldName()).failWithCodeNoParameterAddedToErrorCode(errorMessage);
                 }
             }
         }
 
-        if (!dataValidationErrors.isEmpty()) {
-            throw new PlatformApiDataValidationException(dataValidationErrors);
-        }
+        if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
 
-    private void handleHookDataIntegrityIssues(final JsonCommand command,
-            final DataIntegrityViolationException dve) {
+    private void handleHookDataIntegrityIssues(final JsonCommand command, final DataIntegrityViolationException dve) {
         final Throwable realCause = dve.getMostSpecificCause();
         if (realCause.getMessage().contains("hook_name")) {
             final String name = command.stringValueOfParameterNamed("name");
-            throw new PlatformDataIntegrityException(
-                    "error.msg.hook.duplicate.name", "A hook with name '"
-                            + name + "' already exists", "name", name);
+            throw new PlatformDataIntegrityException("error.msg.hook.duplicate.name", "A hook with name '" + name + "' already exists",
+                    "name", name);
         }
 
-        throw new PlatformDataIntegrityException(
-                "error.msg.unknown.data.integrity.issue",
-                "Unknown data integrity issue with resource: "
-                        + realCause.getMessage());
+        throw new PlatformDataIntegrityException("error.msg.unknown.data.integrity.issue",
+                "Unknown data integrity issue with resource: " + realCause.getMessage());
     }
 }

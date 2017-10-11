@@ -27,13 +27,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Cacheable;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -42,13 +44,19 @@ import javax.persistence.UniqueConstraint;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.security.domain.PlatformUser;
 import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerator;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.service.AppUserConstants;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -57,6 +65,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
 @Entity
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "AppUser")
 @Table(name = "m_appuser", uniqueConstraints = @UniqueConstraint(columnNames = { "username" }, name = "username_org"))
 public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
 
@@ -77,11 +87,14 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     @Column(name = "password", nullable = false)
     private String password;
 
+    @Column(name = "password_new", nullable = false)
+    private String passwordNew;
+
     @Column(name = "nonexpired", nullable = false)
     private boolean accountNonExpired;
 
     @Column(name = "nonlocked", nullable = false)
-    private final boolean accountNonLocked;
+    private boolean accountNonLocked;
 
     @Column(name = "nonexpired_credentials", nullable = false)
     private final boolean credentialsNonExpired;
@@ -103,7 +116,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     @JoinColumn(name = "staff_id", nullable = true)
     private Staff staff;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @ManyToMany
+    @Cache(usage = CacheConcurrencyStrategy.READ_ONLY, region = "Role")
     @JoinTable(name = "m_appuser_role", joinColumns = @JoinColumn(name = "appuser_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
@@ -114,7 +129,26 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     @Column(name = "password_never_expires", nullable = false)
     private boolean passwordNeverExpires;
 
-    public static AppUser fromJson(final Office userOffice, final Staff linkedStaff, final Set<Role> allRoles, final JsonCommand command) {
+    @Column(name = "is_self_service_user", nullable = false)
+    private boolean isSelfServiceUser;
+
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "appuser_id", referencedColumnName = "id", nullable = false)
+    private Set<AppUserClientMapping> appUserClientMappings = new HashSet<>();
+
+    @Column(name = "latest_successful_login")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date lastLoginDate;
+
+    @Column(name = "failed_login_attempt")
+    private Integer failedLoginAttempt;
+
+    @Column(name = "system_user", nullable = false)
+    private boolean systemUser;
+
+    public static AppUser fromJson(final Office userOffice, final Staff linkedStaff, final Set<Role> allRoles,
+            final Collection<Client> clients, final JsonCommand command) {
 
         final String username = command.stringValueOfParameterNamed("username");
         String password = command.stringValueOfParameterNamed("password");
@@ -134,7 +168,6 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         final boolean userAccountNonExpired = true;
         final boolean userCredentialsNonExpired = true;
         final boolean userAccountNonLocked = true;
-
         final Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("DUMMY_ROLE_NOT_USED_OR_PERSISTED_TO_AVOID_EXCEPTION"));
 
@@ -145,7 +178,10 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         final String firstname = command.stringValueOfParameterNamed("firstname");
         final String lastname = command.stringValueOfParameterNamed("lastname");
 
-        return new AppUser(userOffice, user, allRoles, email, firstname, lastname, linkedStaff, passwordNeverExpire);
+        final boolean isSelfServiceUser = command.booleanPrimitiveValueOfParameterNamed(AppUserConstants.IS_SELF_SERVICE_USER);
+
+        return new AppUser(userOffice, user, allRoles, email, firstname, lastname, linkedStaff, passwordNeverExpire, isSelfServiceUser,
+                clients);
     }
 
     protected AppUser() {
@@ -155,7 +191,8 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     }
 
     public AppUser(final Office office, final User user, final Set<Role> roles, final String email, final String firstname,
-            final String lastname, final Staff staff, final boolean passwordNeverExpire) {
+            final String lastname, final Staff staff, final boolean passwordNeverExpire, final boolean isSelfServiceUser,
+            final Collection<Client> clients) {
         this.office = office;
         this.email = email.trim();
         this.username = user.getUsername().trim();
@@ -171,6 +208,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         this.lastTimePasswordUpdated = DateUtils.getDateOfTenant();
         this.staff = staff;
         this.passwordNeverExpires = passwordNeverExpire;
+        this.isSelfServiceUser = isSelfServiceUser;
+        this.appUserClientMappings = createAppUserClientMappings(clients);
+        this.failedLoginAttempt = 0;
     }
 
     public EnumOptionData organisationalRoleData() {
@@ -203,7 +243,8 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         }
     }
 
-    public Map<String, Object> update(final JsonCommand command, final PlatformPasswordEncoder platformPasswordEncoder) {
+    public Map<String, Object> update(final JsonCommand command, final PlatformPasswordEncoder platformPasswordEncoder,
+            final Collection<Client> clients) {
 
         final Map<String, Object> actualChanges = new LinkedHashMap<>(7);
 
@@ -211,10 +252,10 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         final String passwordParamName = "password";
         final String passwordEncodedParamName = "passwordEncoded";
         if (command.hasParameter(passwordParamName)) {
-            if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getId())) {
+            if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getSaltKey())) {
                 final String passwordEncodedValue = command.passwordValueOfParameterNamed(passwordParamName, platformPasswordEncoder,
-                        getId());
-                actualChanges.put(passwordEncodedParamName, passwordEncodedValue);
+                        getSaltKey());
+                actualChanges.put(passwordEncodedParamName, "***");
                 updatePassword(passwordEncodedValue);
             }
         }
@@ -222,7 +263,7 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         if (command.hasParameter(passwordEncodedParamName)) {
             if (command.isChangeInStringParameterNamed(passwordEncodedParamName, this.password)) {
                 final String newValue = command.stringValueOfParameterNamed(passwordEncodedParamName);
-                actualChanges.put(passwordEncodedParamName, newValue);
+                actualChanges.put(passwordEncodedParamName, "***");
                 updatePassword(newValue);
             }
         }
@@ -284,6 +325,30 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
             }
         }
 
+        if (command.hasParameter(AppUserConstants.IS_SELF_SERVICE_USER)) {
+            if (command.isChangeInBooleanParameterNamed(AppUserConstants.IS_SELF_SERVICE_USER, this.isSelfServiceUser)) {
+                final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(AppUserConstants.IS_SELF_SERVICE_USER);
+                actualChanges.put(AppUserConstants.IS_SELF_SERVICE_USER, newValue);
+                this.isSelfServiceUser = newValue;
+            }
+        }
+
+        if (this.isSelfServiceUser && command.hasParameter(AppUserConstants.CLIENTS)) {
+            actualChanges.put(AppUserConstants.CLIENTS, command.arrayValueOfParameterNamed(AppUserConstants.CLIENTS));
+            final Set<AppUserClientMapping> newClients = createAppUserClientMappings(clients);
+            if (this.appUserClientMappings == null) {
+                this.appUserClientMappings = new HashSet<>();
+            } else {
+                this.appUserClientMappings.retainAll(newClients);
+            }
+            this.appUserClientMappings.addAll(newClients);
+        } else if (!this.isSelfServiceUser && actualChanges.containsKey(AppUserConstants.IS_SELF_SERVICE_USER)) {
+            actualChanges.put(AppUserConstants.CLIENTS, new ArrayList<>());
+            if (this.appUserClientMappings != null) {
+                this.appUserClientMappings.clear();
+            }
+        }
+
         return actualChanges;
     }
 
@@ -300,7 +365,7 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     /**
      * Delete is a <i>soft delete</i>. Updates flag so it wont appear in
      * query/report results.
-     * 
+     *
      * Any fields with unique constraints and prepended with id of record.
      */
     public void delete() {
@@ -309,6 +374,7 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         this.accountNonExpired = false;
         this.firstTimeLoginRemaining = true;
         this.username = getId() + "_DELETED_" + this.username;
+        this.roles.clear();
     }
 
     public boolean isDeleted() {
@@ -540,8 +606,8 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     }
 
     public void validateHasDatatableReadPermission(final String datatable) {
-        if (hasNotPermissionForDatatable(datatable, "READ")) { throw new NoAuthorizationException("Not authorised to read datatable: "
-                + datatable); }
+        if (hasNotPermissionForDatatable(datatable,
+                "READ")) { throw new NoAuthorizationException("Not authorised to read datatable: " + datatable); }
     }
 
     public Long getStaffId() {
@@ -566,9 +632,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         String passwordEncodedValue = null;
 
         if (command.hasParameter(passwordParamName)) {
-            if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getId())) {
+            if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getSaltKey())) {
 
-                passwordEncodedValue = command.passwordValueOfParameterNamed(passwordParamName, platformPasswordEncoder, getId());
+                passwordEncodedValue = command.passwordValueOfParameterNamed(passwordParamName, platformPasswordEncoder, getSaltKey());
 
             }
         } else if (command.hasParameter(passwordEncodedParamName)) {
@@ -585,4 +651,82 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     public boolean isNotEnabled() {
         return !isEnabled();
     }
+
+    public boolean isSelfServiceUser() {
+        return this.isSelfServiceUser;
+    }
+
+    public Set<AppUserClientMapping> getAppUserClientMappings() {
+        return this.appUserClientMappings;
+    }
+
+    private Set<AppUserClientMapping> createAppUserClientMappings(final Collection<Client> clients) {
+        Set<AppUserClientMapping> newAppUserClientMappings = null;
+        if (clients != null && clients.size() > 0) {
+            newAppUserClientMappings = new HashSet<>();
+            for (final Client client : clients) {
+                newAppUserClientMappings.add(new AppUserClientMapping(client));
+            }
+        }
+        return newAppUserClientMappings;
+    }
+
+    public void validateHasThesePermission(final String... permissionCodes) {
+        for (final String resourceType : permissionCodes) {
+            final String authorizationMessage = "User has no authority for " + resourceType.toLowerCase() + "s";
+            final String matchPermission = resourceType.toUpperCase();
+            if (hasNotPermissionForAnyOf("ALL_FUNCTIONS", "ALL_FUNCTIONS_READ",
+                    matchPermission)) { throw new NoAuthorizationException(authorizationMessage); }
+        }
+    }
+
+    public Date getLastLoginDate() {
+        return this.lastLoginDate;
+    }
+
+    public void setLastLoginDate(final Date lastLoginDate) {
+        this.lastLoginDate = lastLoginDate;
+    }
+
+    public void updateFailure(final int maxCount) {
+        this.failedLoginAttempt++;
+        if (this.failedLoginAttempt >= maxCount) {
+            this.accountNonLocked = false;
+        }
+    }
+
+    public void unLockAccount() {
+        this.accountNonLocked = true;
+        this.failedLoginAttempt = 0;
+    }
+
+    public void resetFailureAttempts() {
+        this.failedLoginAttempt = 0;
+    }
+
+    public Integer getFailedLoginAttempts() {
+        return this.failedLoginAttempt;
+    }
+
+    public Object getSaltKey() {
+        return getId();
+        // return constructSaltKey();
+    }
+
+    public Object constructSaltKey() {
+        return getId() + ThreadLocalContextUtil.getTenant().getTenantKey() + getOffice().getId();
+    }
+
+    public String getPasswordNew() {
+        return this.passwordNew;
+    }
+
+    public void setPasswordNew(final String passwordNew) {
+        this.passwordNew = passwordNew;
+    }
+
+    public boolean isSystemUser() {
+        return this.systemUser;
+    }
+
 }

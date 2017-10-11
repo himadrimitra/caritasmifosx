@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.calendar.service;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
@@ -46,8 +47,15 @@ public interface CalendarReadPlatformService {
 
     CalendarData retrieveLoanCalendar(final Long loanId);
 
+    CalendarData retrieveCalendarByEntityIdAndEntityType(final Long entityId, Integer entityType);
+
     CalendarData retrieveCollctionCalendarByEntity(final Long entityId, final Integer entityTypeId);
 
     LocalDate generateNextEligibleMeetingDateForCollection(CalendarData calendarData, MeetingData lastMeetingData);
 
+    Boolean isCalendarAssociatedWithEntity(final Long entityId, final Long calendarId, Long entityTypeId);
+    
+    CalendarData retrieveCalendarHistoryByCalendarInstanceAndDueDate(final Date dueDate, final Long calendatInstanceId);
+    
+    Collection<CalendarData> retrieveAllCalendarsForNextRecurringDate();
 }

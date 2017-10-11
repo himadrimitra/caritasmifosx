@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.client.api;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -31,6 +32,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -42,11 +44,14 @@ import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.data.ClientIdentifierData;
+import org.apache.fineract.portfolio.client.domain.ClientEnumerations;
+import org.apache.fineract.portfolio.client.domain.ClientIdentifierStatus;
 import org.apache.fineract.portfolio.client.exception.DuplicateClientIdentifierException;
 import org.apache.fineract.portfolio.client.service.ClientIdentifierReadPlatformService;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
@@ -59,8 +64,8 @@ import org.springframework.stereotype.Component;
 @Scope("singleton")
 public class ClientIdentifiersApiResource {
 
-    private static final Set<String> CLIENT_IDENTIFIER_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "clientId",
-            "documentType", "documentKey", "description", "allowedDocumentTypes"));
+    private static final Set<String> CLIENT_IDENTIFIER_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList("id", "clientId", "documentType", "documentKey", "description", "allowedDocumentTypes"));
 
     private final String resourceNameForPermissions = "CLIENTIDENTIFIER";
 
@@ -91,15 +96,21 @@ public class ClientIdentifiersApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAllClientIdentifiers(@Context final UriInfo uriInfo, @PathParam("clientId") final Long clientId) {
+    public String retrieveAllClientIdentifiers(@Context final UriInfo uriInfo, @PathParam("clientId") final Long clientId,
+            @QueryParam("type") final String systemIdentifier) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<ClientIdentifierData> clientIdentifiers = this.clientIdentifierReadPlatformService
-                .retrieveClientIdentifiers(clientId);
-
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, clientIdentifiers, CLIENT_IDENTIFIER_DATA_PARAMETERS);
+
+        if (null == systemIdentifier) {
+            final Collection<ClientIdentifierData> clientIdentifiers = this.clientIdentifierReadPlatformService
+                    .retrieveClientIdentifiers(clientId);
+            return this.toApiJsonSerializer.serialize(settings, clientIdentifiers, CLIENT_IDENTIFIER_DATA_PARAMETERS);
+        } else {
+            final ClientIdentifierData clientIdentifierData = this.clientIdentifierReadPlatformService.retrieveClientIdentifier(clientId,
+                    systemIdentifier);
+            return this.toApiJsonSerializer.serialize(settings, clientIdentifierData, CLIENT_IDENTIFIER_DATA_PARAMETERS);
+        }
     }
 
     @GET
@@ -111,7 +122,9 @@ public class ClientIdentifiersApiResource {
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
         final Collection<CodeValueData> codeValues = this.codeValueReadPlatformService.retrieveCodeValuesByCode("Customer Identifier");
-        final ClientIdentifierData clientIdentifierData = ClientIdentifierData.template(codeValues);
+        final List<EnumOptionData> clientIdentifierStatusOptions = ClientEnumerations
+                .clientIdentifierStatus(ClientIdentifierStatus.values());
+        final ClientIdentifierData clientIdentifierData = ClientIdentifierData.template(codeValues, clientIdentifierStatusOptions);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, clientIdentifierData, CLIENT_IDENTIFIER_DATA_PARAMETERS);
@@ -135,8 +148,8 @@ public class ClientIdentifiersApiResource {
                 // need to fetch client info
                 final ClientData clientInfo = this.clientReadPlatformService.retrieveClientByIdentifier(e.getDocumentTypeId(),
                         e.getIdentifierKey());
-                rethrowas = new DuplicateClientIdentifierException(clientInfo.displayName(), clientInfo.officeName(),
-                        e.getIdentifierType(), e.getIdentifierKey());
+                rethrowas = new DuplicateClientIdentifierException(clientInfo.displayName(), clientInfo.officeName(), e.getIdentifierType(),
+                        e.getIdentifierKey());
             }
             throw rethrowas;
         }
@@ -157,7 +170,9 @@ public class ClientIdentifiersApiResource {
                 clientIdentifierId);
         if (settings.isTemplate()) {
             final Collection<CodeValueData> codeValues = this.codeValueReadPlatformService.retrieveCodeValuesByCode("Customer Identifier");
-            clientIdentifierData = ClientIdentifierData.template(clientIdentifierData, codeValues);
+            final List<EnumOptionData> clientIdentifierStatusOptions = ClientEnumerations
+                    .clientIdentifierStatus(ClientIdentifierStatus.values());
+            clientIdentifierData = ClientIdentifierData.template(clientIdentifierData, codeValues, clientIdentifierStatusOptions);
         }
 
         return this.toApiJsonSerializer.serialize(settings, clientIdentifierData, CLIENT_IDENTIFIER_DATA_PARAMETERS);
@@ -182,8 +197,8 @@ public class ClientIdentifiersApiResource {
             if (e.getDocumentTypeId() != null) {
                 final ClientData clientInfo = this.clientReadPlatformService.retrieveClientByIdentifier(e.getDocumentTypeId(),
                         e.getIdentifierKey());
-                reThrowAs = new DuplicateClientIdentifierException(clientInfo.displayName(), clientInfo.officeName(),
-                        e.getIdentifierType(), e.getIdentifierKey());
+                reThrowAs = new DuplicateClientIdentifierException(clientInfo.displayName(), clientInfo.officeName(), e.getIdentifierType(),
+                        e.getIdentifierKey());
             }
             throw reThrowAs;
         }

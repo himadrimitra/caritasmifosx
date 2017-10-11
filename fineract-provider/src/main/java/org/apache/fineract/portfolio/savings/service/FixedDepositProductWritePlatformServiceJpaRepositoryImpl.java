@@ -18,16 +18,23 @@
  */
 package org.apache.fineract.portfolio.savings.service;
 
+import static org.apache.fineract.portfolio.savings.DepositsApiConstants.FIXED_DEPOSIT_PRODUCT_RESOURCE_NAME;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accountingRuleParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargesParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroupIdParamName;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.charge.domain.Charge;
@@ -38,6 +45,7 @@ import org.apache.fineract.portfolio.savings.domain.DepositProductAssembler;
 import org.apache.fineract.portfolio.savings.domain.FixedDepositProduct;
 import org.apache.fineract.portfolio.savings.domain.FixedDepositProductRepository;
 import org.apache.fineract.portfolio.savings.exception.FixedDepositProductNotFoundException;
+import org.apache.fineract.portfolio.tax.domain.TaxGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,11 +118,24 @@ public class FixedDepositProductWritePlatformServiceJpaRepositoryImpl implements
             final Map<String, Object> changes = product.update(command);
 
             if (changes.containsKey(chargesParamName)) {
-                final Set<Charge> savingsProductCharges = this.depositProductAssembler.assembleListOfSavingsProductCharges(command, product
-                        .currency().getCode());
+                final Set<Charge> savingsProductCharges = this.depositProductAssembler.assembleListOfSavingsProductCharges(command,
+                        product.currency().getCode());
                 final boolean updated = product.update(savingsProductCharges);
                 if (!updated) {
                     changes.remove(chargesParamName);
+                }
+            }
+
+            if (changes.containsKey(taxGroupIdParamName)) {
+                final TaxGroup taxGroup = this.depositProductAssembler.assembleTaxGroup(command);
+                product.setTaxGroup(taxGroup);
+                if (product.withHoldTax() && product.getTaxGroup() == null) {
+                    final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+                    final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                            .resource(FIXED_DEPOSIT_PRODUCT_RESOURCE_NAME);
+                    final Long taxGroupId = null;
+                    baseDataValidator.reset().parameter(taxGroupIdParamName).value(taxGroupId).notBlank();
+                    throw new PlatformApiDataValidationException(dataValidationErrors);
                 }
             }
 
@@ -160,16 +181,21 @@ public class FixedDepositProductWritePlatformServiceJpaRepositoryImpl implements
     private void handleDataIntegrityIssues(final JsonCommand command, final DataAccessException dae) {
 
         final Throwable realCause = dae.getMostSpecificCause();
-        if (realCause.getMessage().contains("sp_unq_name")) {
+        if (realCause.getMessage().contains("external_id")) {
+
+            final String externalId = command.stringValueOfParameterNamed("externalId");
+            throw new PlatformDataIntegrityException("error.msg.product.FD.duplicate.externalId",
+                    "FD Product with externalId `" + externalId + "` already exists", "externalId", externalId);
+        } else if (realCause.getMessage().contains("sp_unq_name")) {
 
             final String name = command.stringValueOfParameterNamed("name");
-            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.name", "Savings product with name `" + name
-                    + "` already exists", "name", name);
+            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.name",
+                    "Savings product with name `" + name + "` already exists", "name", name);
         } else if (realCause.getMessage().contains("sp_unq_short_name")) {
 
             final String shortName = command.stringValueOfParameterNamed("shortName");
-            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.short.name", "Savings product with short name `"
-                    + shortName + "` already exists", "shortName", shortName);
+            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.short.name",
+                    "Savings product with short name `" + shortName + "` already exists", "shortName", shortName);
         }
 
         logAsErrorUnexpectedDataIntegrityException(dae);

@@ -40,16 +40,19 @@ public class CompoundInterestHelper {
      * @return
      */
     public Money calculateInterestForAllPostingPeriods(final MonetaryCurrency currency, final List<PostingPeriod> allPeriods,
-            LocalDate lockUntil, Boolean interestTransferEnabled) {
+            final LocalDate lockUntil, final Boolean interestTransferEnabled) {
 
         // sum up the 'rounded' values that are posted each posting period
         Money interestEarned = Money.zero(currency);
 
         // total interest earned in previous periods but not yet recognised
-        BigDecimal interestEarnedButNotPosted = BigDecimal.ZERO;
+        final BigDecimal compoundedInterest = BigDecimal.ZERO;
+        final BigDecimal unCompoundedInterest = BigDecimal.ZERO;
+        final CompoundInterestValues compoundInterestValues = new CompoundInterestValues(compoundedInterest, unCompoundedInterest);
+
         for (final PostingPeriod postingPeriod : allPeriods) {
 
-            final BigDecimal interestEarnedThisPeriod = postingPeriod.calculateInterest(interestEarnedButNotPosted);
+            final BigDecimal interestEarnedThisPeriod = postingPeriod.calculateInterest(compoundInterestValues);
 
             final Money moneyToBePostedForPeriod = Money.of(currency, interestEarnedThisPeriod);
 
@@ -58,9 +61,9 @@ public class CompoundInterestHelper {
             // interest for accounts which has post interest to linked savings
             // account and if already transfered then it includes in interest
             // calculation.
-            if (postingPeriod.isInterestTransfered() || !interestTransferEnabled
-                    || (lockUntil != null && !postingPeriod.dateOfPostingTransaction().isAfter(lockUntil))) {
-                interestEarnedButNotPosted = interestEarnedButNotPosted.add(moneyToBePostedForPeriod.getAmount());
+            if (!(postingPeriod.isInterestTransfered() || !interestTransferEnabled
+                    || (lockUntil != null && !postingPeriod.dateOfPostingTransaction().isAfter(lockUntil)))) {
+                compoundInterestValues.setcompoundedInterest(BigDecimal.ZERO);
             }
         }
 

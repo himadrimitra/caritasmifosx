@@ -19,31 +19,37 @@
 package org.apache.fineract.portfolio.charge.service;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.apache.fineract.accounting.glaccount.domain.GLAccount;
+import org.apache.fineract.accounting.glaccount.domain.GLAccountRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
-import org.apache.fineract.infrastructure.entityaccess.domain.MifosEntityAccessType;
-import org.apache.fineract.infrastructure.entityaccess.domain.MifosEntityType;
-import org.apache.fineract.infrastructure.entityaccess.service.MifosEntityAccessUtil;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
 import org.apache.fineract.portfolio.charge.domain.Charge;
+import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepository;
+import org.apache.fineract.portfolio.charge.domain.ChargeSlab;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeDeletedException;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeUpdatedException;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
 import org.apache.fineract.portfolio.charge.serialization.ChargeDefinitionCommandFromApiJsonDeserializer;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
+import org.apache.fineract.portfolio.tax.domain.TaxGroup;
+import org.apache.fineract.portfolio.tax.domain.TaxGroupRepositoryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -59,40 +65,59 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
     private final DataSource dataSource;
     private final ChargeRepository chargeRepository;
     private final LoanProductRepository loanProductRepository;
-    private final MifosEntityAccessUtil mifosEntityAccessUtil;
+    private final FineractEntityAccessUtil fineractEntityAccessUtil;
+    private final GLAccountRepositoryWrapper gLAccountRepository;
+    private final TaxGroupRepositoryWrapper taxGroupRepository;
 
     @Autowired
     public ChargeWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
-    		final ChargeDefinitionCommandFromApiJsonDeserializer fromApiJsonDeserializer,
-            final ChargeRepository chargeRepository, final LoanProductRepository loanProductRepository, final RoutingDataSource dataSource,
-            final MifosEntityAccessUtil mifosEntityAccessUtil
-            ) {
-    	this.context = context;
+            final ChargeDefinitionCommandFromApiJsonDeserializer fromApiJsonDeserializer, final ChargeRepository chargeRepository,
+            final LoanProductRepository loanProductRepository, final RoutingDataSource dataSource,
+            final FineractEntityAccessUtil fineractEntityAccessUtil, final GLAccountRepositoryWrapper glAccountRepository,
+            final TaxGroupRepositoryWrapper taxGroupRepository) {
+        this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.dataSource = dataSource;
         this.jdbcTemplate = new JdbcTemplate(this.dataSource);
         this.chargeRepository = chargeRepository;
         this.loanProductRepository = loanProductRepository;
-        this.mifosEntityAccessUtil = mifosEntityAccessUtil;
+        this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.gLAccountRepository = glAccountRepository;
+        this.taxGroupRepository = taxGroupRepository;
     }
 
     @Transactional
     @Override
-    @CacheEvict(value = "charges", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('ch')")
+    // @CacheEvict(value = "charges", key =
+    // "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('ch')")
     public CommandProcessingResult createCharge(final JsonCommand command) {
         try {
-        	this.context.authenticatedUser();
+            this.context.authenticatedUser();
             this.fromApiJsonDeserializer.validateForCreate(command.json());
 
-            final Charge charge = Charge.fromJson(command);
+            // Retrieve linked GLAccount for Client charges (if present)
+            final Long glAccountId = command.longValueOfParameterNamed(ChargesApiConstants.glAccountIdParamName);
+
+            GLAccount glAccount = null;
+            if (glAccountId != null) {
+                glAccount = this.gLAccountRepository.findOneWithNotFoundDetection(glAccountId);
+            }
+
+            final Long taxGroupId = command.longValueOfParameterNamed(ChargesApiConstants.taxGroupIdParamName);
+            TaxGroup taxGroup = null;
+            if (taxGroupId != null) {
+                taxGroup = this.taxGroupRepository.findOneWithNotFoundDetection(taxGroupId);
+            }
+
+            final Charge charge = Charge.fromJson(command, glAccount, taxGroup);
+            this.fromApiJsonDeserializer.validateOverdueChargeDetails(charge);
             this.chargeRepository.save(charge);
 
-            // check if the office specific products are enabled. If yes, then save this savings product against a specific office
+            // check if the office specific products are enabled. If yes, then
+            // save this savings product against a specific office
             // i.e. this savings product is specific for this office.
-            mifosEntityAccessUtil.checkConfigurationAndAddProductResrictionsForUserOffice(
-            		MifosEntityAccessType.OFFICE_ACCESS_TO_CHARGES, 
-            		MifosEntityType.CHARGE, 
-            		charge.getId());
+            this.fineractEntityAccessUtil.checkConfigurationAndAddProductResrictionsForUserOffice(
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, charge.getId());
 
             return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withEntityId(charge.getId()).build();
         } catch (final DataIntegrityViolationException dve) {
@@ -103,7 +128,8 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
 
     @Transactional
     @Override
-    @CacheEvict(value = "charges", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('ch')")
+    // @CacheEvict(value = "charges", key =
+    // "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('ch')")
     public CommandProcessingResult updateCharge(final Long chargeId, final JsonCommand command) {
 
         try {
@@ -113,6 +139,9 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             if (chargeForUpdate == null) { throw new ChargeNotFoundException(chargeId); }
 
             final Map<String, Object> changes = chargeForUpdate.update(command);
+
+            this.fromApiJsonDeserializer.validateChargeTimeNCalculationType(chargeForUpdate.getChargeTimeType(),
+                    chargeForUpdate.getChargeCalculation(), chargeForUpdate.isGlimCharge());
 
             // MIFOSX-900: Check if the Charge has been active before and now is
             // deactivated:
@@ -127,14 +156,52 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
                     if (isChargeExistWithLoans || isChargeExistWithSavings) { throw new ChargeCannotBeUpdatedException(
                             "error.msg.charge.cannot.be.updated.it.is.used.in.loan", "This charge cannot be updated, it is used in loan"); }
                 }
-            }else if((changes.containsKey("feeFrequency") || changes.containsKey("feeInterval")) && chargeForUpdate.isLoanCharge()){
+            } else if ((changes.containsKey("feeFrequency") || changes.containsKey("feeInterval")) && chargeForUpdate.isLoanCharge()) {
                 final Boolean isChargeExistWithLoans = isAnyLoanProductsAssociateWithThisCharge(chargeId);
                 if (isChargeExistWithLoans) { throw new ChargeCannotBeUpdatedException(
-                        "error.msg.charge.frequency.cannot.be.updated.it.is.used.in.loan", "This charge frequency cannot be updated, it is used in loan"); }
+                        "error.msg.charge.frequency.cannot.be.updated.it.is.used.in.loan",
+                        "This charge frequency cannot be updated, it is used in loan"); }
             }
 
-            if (!changes.isEmpty()) {
+            // Has account Id been changed ?
+            if (changes.containsKey(ChargesApiConstants.glAccountIdParamName)) {
+                final Long newValue = command.longValueOfParameterNamed(ChargesApiConstants.glAccountIdParamName);
+                GLAccount newIncomeAccount = null;
+                if (newValue != null) {
+                    newIncomeAccount = this.gLAccountRepository.findOneWithNotFoundDetection(newValue);
+                }
+                chargeForUpdate.setAccount(newIncomeAccount);
+            }
 
+            if (ChargeCalculationType.fromInt(chargeForUpdate.getChargeCalculation().intValue()).isSlabBased()) {
+                final List<ChargeSlab> slabList = Charge.assambleSlabsFromJson(command);
+                changes.put("isSlabChanged", true);
+                chargeForUpdate.updateSlabCharges(slabList);
+            }
+
+            if (changes.containsKey(ChargesApiConstants.taxGroupIdParamName)) {
+                final Long newValue = command.longValueOfParameterNamed(ChargesApiConstants.taxGroupIdParamName);
+                TaxGroup taxGroup = null;
+                if (newValue != null) {
+                    taxGroup = this.taxGroupRepository.findOneWithNotFoundDetection(newValue);
+                }
+                chargeForUpdate.setTaxGroup(taxGroup);
+            }
+
+            if (changes.containsKey(ChargesApiConstants.emiRoundingGoalSeekParamName)) {
+                final boolean emiRoundingGoalSeek = command
+                        .booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.emiRoundingGoalSeekParamName);
+                chargeForUpdate.setEmiRoundingGoalSeek(emiRoundingGoalSeek);
+            }
+
+            if (changes.containsKey(ChargesApiConstants.glimChargeCalculation)) {
+                final Integer glimChargeCalculation = command.integerValueOfParameterNamed(ChargesApiConstants.glimChargeCalculation);
+                chargeForUpdate.setGlimChargeCalculation(glimChargeCalculation);
+            }
+
+            this.fromApiJsonDeserializer.validateOverdueChargeDetails(chargeForUpdate);
+
+            if (!changes.isEmpty()) {
                 this.chargeRepository.save(chargeForUpdate);
             }
 
@@ -147,7 +214,8 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
 
     @Transactional
     @Override
-    @CacheEvict(value = "charges", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('ch')")
+    // @CacheEvict(value = "charges", key =
+    // "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('ch')")
     public CommandProcessingResult deleteCharge(final Long chargeId) {
 
         final Charge chargeForDelete = this.chargeRepository.findOne(chargeId);
@@ -158,9 +226,10 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
         final Boolean isChargeExistWithSavings = isAnySavingsAssociateWithThisCharge(chargeId);
 
         // TODO: Change error messages around:
-        if (!loanProducts.isEmpty() || isChargeExistWithLoans || isChargeExistWithSavings) { throw new ChargeCannotBeDeletedException(
-                "error.msg.charge.cannot.be.deleted.it.is.already.used.in.loan",
-                "This charge cannot be deleted, it is already used in loan"); }
+        if (!loanProducts.isEmpty() || isChargeExistWithLoans
+                || isChargeExistWithSavings) { throw new ChargeCannotBeDeletedException(
+                        "error.msg.charge.cannot.be.deleted.it.is.already.used.in.loan",
+                        "This charge cannot be deleted, it is already used in loan"); }
 
         chargeForDelete.delete();
 
@@ -189,14 +258,14 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
 
     private boolean isAnyLoansAssociateWithThisCharge(final Long chargeId) {
 
-        final String sql = "select if((exists (select 1 from m_loan_charge lc where lc.charge_id = ?)) = 1, 'true', 'false')";
+        final String sql = "select if((exists (select 1 from m_loan_charge lc where lc.charge_id = ? and lc.is_active = 1)) = 1, 'true', 'false')";
         final String isLoansUsingCharge = this.jdbcTemplate.queryForObject(sql, String.class, new Object[] { chargeId });
         return new Boolean(isLoansUsingCharge);
     }
 
     private boolean isAnySavingsAssociateWithThisCharge(final Long chargeId) {
 
-        final String sql = "select if((exists (select 1 from m_savings_account_charge sc where sc.charge_id = ?)) = 1, 'true', 'false')";
+        final String sql = "select if((exists (select 1 from m_savings_account_charge sc where sc.charge_id = ? and sc.is_active = 1)) = 1, 'true', 'false')";
         final String isSavingsUsingCharge = this.jdbcTemplate.queryForObject(sql, String.class, new Object[] { chargeId });
         return new Boolean(isSavingsUsingCharge);
     }

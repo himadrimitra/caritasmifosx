@@ -25,15 +25,20 @@ import org.joda.time.LocalDate;
  * {@link AbstractPlatformDomainRuleException} thrown when a number of days
  * between disbursal date and firstRepayment is less than
  * minimumDaysBetweenDisbursalAndFirstRepayment
- * 
+ *
  */
 public class MinDaysBetweenDisbursalAndFirstRepaymentViolationException extends AbstractPlatformDomainRuleException {
 
     public MinDaysBetweenDisbursalAndFirstRepaymentViolationException(final LocalDate disbursalDate, final LocalDate firstRepaymentDate,
-            Integer minimumDaysBetweenDisbursalAndFirstRepayment) {
+            final Integer minimumDaysBetweenDisbursalAndFirstRepayment) {
         super("error.msg.loan.days.between.first.repayment.and.disbursal.are.less.than.minimum.allowed",
                 "Number of days between loan disbursal  (" + disbursalDate + ") and first repayment (" + firstRepaymentDate
-                        + ") can't be less than (" + minimumDaysBetweenDisbursalAndFirstRepayment + ").", disbursalDate,
-                firstRepaymentDate, minimumDaysBetweenDisbursalAndFirstRepayment);
+                        + ") can't be less than (" + minimumDaysBetweenDisbursalAndFirstRepayment + ").",
+                disbursalDate, firstRepaymentDate, minimumDaysBetweenDisbursalAndFirstRepayment);
+    }
+
+    public MinDaysBetweenDisbursalAndFirstRepaymentViolationException(final String errorMessage, final String developerMessage,
+            final LocalDate disbursalDate, final LocalDate firstRepaymentDate, final Integer minimumDaysBetweenDisbursalAndFirstRepayment) {
+        super(errorMessage, developerMessage, disbursalDate, firstRepaymentDate, minimumDaysBetweenDisbursalAndFirstRepayment);
     }
 }

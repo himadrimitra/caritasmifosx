@@ -19,13 +19,14 @@
 package org.apache.fineract.portfolio.accountdetails.service;
 
 import java.util.Collection;
-import java.util.Date;
+import java.util.List;
 
 import org.apache.fineract.portfolio.accountdetails.PaymentDetailCollectionData;
 import org.apache.fineract.portfolio.accountdetails.SharesAccountBalanceCollectionData;
 import org.apache.fineract.portfolio.accountdetails.data.AccountSummaryCollectionData;
 import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
 import org.apache.fineract.portfolio.accountdetails.data.MpesaTransactionSummaryData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 
 public interface AccountDetailsReadPlatformService {
 
@@ -37,12 +38,15 @@ public interface AccountDetailsReadPlatformService {
 
     public Collection<LoanAccountSummaryData> retrieveGroupLoanAccountsByLoanOfficerId(final Long groupId, final Long loanOfficerId);
 
-    public Collection<PaymentDetailCollectionData> retrivePaymentDetail(final Long clientId); 
+    public Collection<PaymentDetailCollectionData> retrivePaymentDetail(final Long clientId);
 
     public Collection<SharesAccountBalanceCollectionData> retriveSharesBalance(final Long clientId);
 
-    public Collection<MpesaTransactionSummaryData>retriveMpesaTransactionDetail(Long clientId,String TxnDate,String ReceiptNo);
+    public Collection<MpesaTransactionSummaryData> retriveMpesaTransactionDetail(Long clientId, String TxnDate, String ReceiptNo);
 
-    public AccountSummaryCollectionData retriveClientAccountAndChargeDetails(final Long clientId,final String chargeonDate);
+    public AccountSummaryCollectionData retriveClientAccountAndChargeDetails(final Long clientId, final String chargeonDate);
 
+    public List<LoanAccountData> retrieveAllTransactionsForCenterId(final Long centerId, final String transactionDate);
+
+    public Collection<LoanAccountSummaryData> retrieveClientActiveLoanAccountSummary(final Long clientId);
 }

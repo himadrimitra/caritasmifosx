@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 public class PaginationHelper<E> {
 
@@ -33,6 +35,18 @@ public class PaginationHelper<E> {
         // determine how many rows are available
         @SuppressWarnings("deprecation")
         final int totalFilteredRecords = jt.queryForInt(sqlCountRows);
+
+        return new Page<>(items, totalFilteredRecords);
+    }
+
+    public Page<E> fetchPage(final NamedParameterJdbcTemplate jt, final String sqlCountRows, final String sqlFetchRows,
+            final MapSqlParameterSource args, final RowMapper<E> rowMapper) {
+
+        final List<E> items = jt.query(sqlFetchRows, args, rowMapper);
+
+        // determine how many rows are available
+        @SuppressWarnings("deprecation")
+        final int totalFilteredRecords = jt.queryForInt(sqlCountRows, args);
 
         return new Page<>(items, totalFilteredRecords);
     }

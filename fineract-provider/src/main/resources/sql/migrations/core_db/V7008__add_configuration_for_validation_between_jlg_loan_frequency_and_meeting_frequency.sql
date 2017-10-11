@@ -1,0 +1,1 @@
+INSERT INTO `c_configuration` (`name`,`enabled`, `description` ) VALUES ('force-loan-repayment-frequency-match-with-meeting-frequency', 0, 'configuration for validation between exact meeting interval match with and loan frequency');	

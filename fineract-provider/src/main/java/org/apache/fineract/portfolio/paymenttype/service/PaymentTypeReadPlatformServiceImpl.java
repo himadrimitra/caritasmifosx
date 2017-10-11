@@ -20,8 +20,11 @@ package org.apache.fineract.portfolio.paymenttype.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
@@ -48,13 +51,13 @@ public class PaymentTypeReadPlatformServiceImpl implements PaymentTypeReadPlatfo
         this.context.authenticatedUser();
 
         final PaymentTypeMapper ptm = new PaymentTypeMapper();
-        final String sql = "select " + ptm.schema() + "order by position";
+        final String sql = "select " + ptm.schema() + "order by case when position is null then 1 else 0 end, position";
 
         return this.jdbcTemplate.query(sql, ptm, new Object[] {});
     }
 
     @Override
-    public PaymentTypeData retrieveOne(Long paymentTypeId) {
+    public PaymentTypeData retrieveOne(final Long paymentTypeId) {
         // TODO Auto-generated method stub
         this.context.authenticatedUser();
 
@@ -64,10 +67,27 @@ public class PaymentTypeReadPlatformServiceImpl implements PaymentTypeReadPlatfo
         return this.jdbcTemplate.queryForObject(sql, ptm, new Object[] { paymentTypeId });
     }
 
+    @Override
+    public List<String> retrieveAllPaymentTypeNames() {
+        this.context.authenticatedUser();
+        final String sql = "select group_concat(value separator ', ')  from m_payment_type";
+        final String paymntNamesAsString= this.jdbcTemplate.queryForObject(sql, String.class);
+
+        final List<String> strary =new ArrayList<>();
+        if(paymntNamesAsString!=null){
+        for(final String s:paymntNamesAsString.split(",")){
+            strary.add(s.trim());
+        }
+        return strary;
+        }
+        return  strary;
+    }
+
     private static final class PaymentTypeMapper implements RowMapper<PaymentTypeData> {
 
         public String schema() {
-            return " pt.id as id, pt.value as name, pt.description as description,pt.is_cash_payment as isCashPayment,pt.order_position as position from m_payment_type pt ";
+            return " pt.id as id, pt.value as name, pt.description as description,pt.is_cash_payment as isCashPayment,pt.order_position as position, "
+                    + "pt.external_service_id as externalServiceId from m_payment_type pt ";
         }
 
         @Override
@@ -78,8 +98,9 @@ public class PaymentTypeReadPlatformServiceImpl implements PaymentTypeReadPlatfo
             final String description = rs.getString("description");
             final boolean isCashPayment = rs.getBoolean("isCashPayment");
             final Long position = rs.getLong("position");
+            final Long externalServiceId = JdbcSupport.getLongDefaultToNullIfZero(rs, "externalServiceId");
 
-            return PaymentTypeData.instance(id, name, description, isCashPayment, position);
+            return PaymentTypeData.instance(id, name, description, isCashPayment, position, externalServiceId);
         }
 
     }

@@ -26,5 +26,15 @@ public class SavingsAccountTransactionNotFoundException extends AbstractPlatform
         super("error.msg.saving.account.trasaction.id.invalid", "Savings account with savings identifier " + savingsId
                 + " and trasaction identifier " + transactionId + " does not exist", savingsId, transactionId);
     }
+    
+    public SavingsAccountTransactionNotFoundException(final Long transactionId) {
+        super("error.msg.saving.account.trasaction.id.invalid",
+                "Savings account with savings  trasaction identifier " + transactionId + " does not exist", transactionId);
+    }
+    
+    public SavingsAccountTransactionNotFoundException(final String savingsAccountNumber, final Long transactionId) {
+        super("error.msg.saving.account.trasaction.id.invalid", "Savings account with savings account number " + savingsAccountNumber
+                + " and trasaction identifier " + transactionId + " does not exist", savingsAccountNumber, transactionId);
+    }
 
 }

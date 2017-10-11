@@ -30,8 +30,6 @@ import org.apache.fineract.infrastructure.documentmanagement.data.ImageData;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
 import org.apache.fineract.infrastructure.documentmanagement.exception.ContentManagementException;
 import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentNotFoundException;
-import org.apache.fineract.portfolio.client.exception.ImageNotFoundException;
-import org.apache.poi.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +43,7 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.finflux.common.util.FinfluxFileUtils;
 import com.lowagie.text.pdf.codec.Base64;
 
 public class S3ContentRepository implements ContentRepository {
@@ -61,15 +60,20 @@ public class S3ContentRepository implements ContentRepository {
 
     @Override
     public String saveFile(final InputStream toUpload, final DocumentCommand documentCommand) {
+        return saveFile(toUpload, documentCommand, true);
+    }
+
+    @Override
+    public String saveFile(final InputStream toUpload, final DocumentCommand documentCommand, boolean checkUploadSize) {
         final String fileName = documentCommand.getFileName();
-        ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+
+        if(checkUploadSize){
+            ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+        }
 
         final String uploadDocFolder = generateFileParentDirectory(documentCommand.getParentEntityType(),
                 documentCommand.getParentEntityId());
-        final String uploadDocFullPath = uploadDocFolder + File.separator + fileName;
-
-        uploadDocument(fileName, toUpload, uploadDocFullPath);
-        return uploadDocFullPath;
+        return saveFile(fileName, uploadDocFolder, toUpload);
     }
 
     @Override
@@ -82,9 +86,9 @@ public class S3ContentRepository implements ContentRepository {
     }
 
     @Override
-    public String saveImage(final InputStream toUploadInputStream, final Long resourceId, final String imageName, final Long fileSize) {
+    public String saveImage(final InputStream toUploadInputStream, final Long resourceId, final String imageName, final Long fileSize,String entityName) {
         ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(fileSize, imageName);
-        final String uploadImageLocation = generateClientImageParentDirectory(resourceId);
+        final String uploadImageLocation = generateClientImageParentDirectory(resourceId,entityName);
         final String fileLocation = uploadImageLocation + File.separator + imageName;
 
         uploadDocument(imageName, toUploadInputStream, fileLocation);
@@ -92,8 +96,8 @@ public class S3ContentRepository implements ContentRepository {
     }
 
     @Override
-    public String saveImage(final Base64EncodedImage base64EncodedImage, final Long resourceId, final String imageName) {
-        final String uploadImageLocation = generateClientImageParentDirectory(resourceId);
+    public String saveImage(final Base64EncodedImage base64EncodedImage, final Long resourceId, final String imageName,String entityName) {
+        final String uploadImageLocation = generateClientImageParentDirectory(resourceId,entityName);
         final String fileLocation = uploadImageLocation + File.separator + imageName + base64EncodedImage.getFileExtension();
         final InputStream toUploadInputStream = new ByteArrayInputStream(Base64.decode(base64EncodedImage.getBase64EncodedString()));
 
@@ -136,13 +140,8 @@ public class S3ContentRepository implements ContentRepository {
 
     @Override
     public ImageData fetchImage(final ImageData imageData) {
-    	 try {
-    		    final S3Object s3object = this.s3Client.getObject(new GetObjectRequest(this.s3BucketName, imageData.location()));
-    		    imageData.updateContent(IOUtils.toByteArray(s3object.getObjectContent()));
-    		 } catch (Exception e) {
-    		    logger.error(e.getMessage());
-    		    throw new ImageNotFoundException(imageData.getEntityDisplayName(), imageData.getImageId());
-    		 }
+        final S3Object s3object = this.s3Client.getObject(new GetObjectRequest(this.s3BucketName, imageData.location()));
+        imageData.updateContent(s3object.getObjectContent());
         return imageData;
     }
 
@@ -163,8 +162,8 @@ public class S3ContentRepository implements ContentRepository {
                 + ContentRepositoryUtils.generateRandomString();
     }
 
-    private String generateClientImageParentDirectory(final Long resourceId) {
-        return "images" + File.separator + "clients" + File.separator + resourceId;
+    private String generateClientImageParentDirectory(final Long resourceId,String entityName) {
+        return "images" + File.separator + entityName + File.separator + resourceId;
     }
 
     private void deleteObjectFromS3(final String location) {
@@ -180,5 +179,19 @@ public class S3ContentRepository implements ContentRepository {
             final String message = ace.getMessage();
             throw new ContentManagementException(filename, message);
         }
+    }
+
+    @Override
+    public String saveFile(final InputStream toUpload, final DocumentCommand documentCommand, final String parentDirectoryPath,
+            final String... childDirectoriesPaths) {
+        final String fileName = documentCommand.getFileName();
+        final String uploadDocFolder = FinfluxFileUtils.generateFileLocation(parentDirectoryPath, childDirectoriesPaths);
+        return saveFile(fileName, uploadDocFolder, toUpload);
+    }
+
+    private String saveFile(final String fileName, final String uploadDocFolder, final InputStream toUpload) {
+        final String uploadDocFullPath = uploadDocFolder + File.separator + fileName;
+        uploadDocument(fileName, toUpload, uploadDocFullPath);
+        return uploadDocFullPath;
     }
 }

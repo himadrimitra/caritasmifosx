@@ -19,6 +19,8 @@
 package org.apache.fineract.portfolio.savings.api;
 
 import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -41,6 +43,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
@@ -53,6 +56,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
+
+import com.finflux.common.util.FinfluxStringUtils;
 
 @Path("/savingsaccounts/{savingsId}/transactions")
 @Component
@@ -72,7 +77,7 @@ public class SavingsAccountTransactionsApiResource {
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final SavingsAccountReadPlatformService savingsAccountReadPlatformService,
-            PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
@@ -90,7 +95,7 @@ public class SavingsAccountTransactionsApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveTemplate(@PathParam("savingsId") final Long savingsId,
-    // @QueryParam("command") final String commandParam,
+            // @QueryParam("command") final String commandParam,
             @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
@@ -104,6 +109,25 @@ public class SavingsAccountTransactionsApiResource {
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, savingsAccount,
+                SavingsApiConstants.SAVINGS_TRANSACTION_RESPONSE_DATA_PARAMETERS);
+    }
+
+    @GET
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAll(@PathParam("savingsId") final Long savingsId, @QueryParam("searchConditions") final String searchConditions,
+            @QueryParam("transactionsCount") final Integer transactionsCount, @QueryParam("fromDate") final Date fromDate,
+            @QueryParam("toDate") final Date toDate, @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder, @Context final UriInfo uriInfo) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
+        this.context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
+        final SearchParameters searchParameters = SearchParameters.forTransactions(searchConditionsMap, transactionsCount, fromDate, toDate,
+                offset, limit, orderBy, sortOrder);
+        final Collection<SavingsAccountTransactionData> transactionData = this.savingsAccountReadPlatformService
+                .retrieveAllTransactions(savingsId, DepositAccountType.SAVINGS_DEPOSIT, searchParameters);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.toApiJsonSerializer.serialize(settings, transactionData,
                 SavingsApiConstants.SAVINGS_TRANSACTION_RESPONSE_DATA_PARAMETERS);
     }
 
@@ -136,24 +160,29 @@ public class SavingsAccountTransactionsApiResource {
             final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
 
             CommandProcessingResult result = null;
-            if (is(commandParam, "deposit")) {
+            if (is(commandParam, SavingsApiConstants.COMMAND_DEPOSIT)) {
                 final CommandWrapper commandRequest = builder.savingsAccountDeposit(savingsId).build();
                 result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-            } else if (is(commandParam, "withdrawal")) {
+            } else if (is(commandParam, SavingsApiConstants.COMMAND_WITHDRAWL)) {
                 final CommandWrapper commandRequest = builder.savingsAccountWithdrawal(savingsId).build();
+                result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+            } else if (is(commandParam, SavingsApiConstants.COMMAND_POST_INTEREST_AS_ON)) {
+                final CommandWrapper commandRequest = builder.savingsAccountInterestPostingAsOnDate(savingsId).build();
+                result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+            } else if (is(commandParam, SavingsApiConstants.COMMAND_HOLD_AMOUNT)) {
+                final CommandWrapper commandRequest = builder.holdAmount(savingsId).build();
                 result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
             }
 
-            if (result == null) {
-                //
-                throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { "deposit", "withdrawal" });
-            }
+            if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam,
+                    new Object[] { SavingsApiConstants.COMMAND_DEPOSIT, SavingsApiConstants.COMMAND_WITHDRAWL,
+                            SavingsApiConstants.COMMAND_POST_INTEREST_AS_ON, SavingsApiConstants.COMMAND_HOLD_AMOUNT }); }
 
             return this.toApiJsonSerializer.serialize(result);
-        } catch (ObjectOptimisticLockingFailureException lockingFailureException) {
+        } catch (final ObjectOptimisticLockingFailureException lockingFailureException) {
             throw new PlatformDataIntegrityException("error.msg.savings.concurrent.operations",
                     "Concurrent Transactions being made on this savings account: " + lockingFailureException.getMessage());
-        } catch (CannotAcquireLockException cannotAcquireLockException) {
+        } catch (final CannotAcquireLockException cannotAcquireLockException) {
             throw new PlatformDataIntegrityException("error.msg.savings.concurrent.operations.unable.to.acquire.lock",
                     "Unable to acquir lock for this transaction: " + cannotAcquireLockException.getMessage());
         }
@@ -180,11 +209,15 @@ public class SavingsAccountTransactionsApiResource {
         } else if (is(commandParam, SavingsApiConstants.COMMAND_ADJUST_TRANSACTION)) {
             final CommandWrapper commandRequest = builder.adjustSavingsAccountTransaction(savingsId, transactionId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, SavingsApiConstants.COMMAND_RELEASE_AMOUNT)) {
+            final CommandWrapper commandRequest = builder.releaseAmount(savingsId, transactionId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
 
         if (result == null) {
             //
-            throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { "undo" });
+            throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { SavingsApiConstants.COMMAND_UNDO_TRANSACTION,
+                    SavingsApiConstants.COMMAND_ADJUST_TRANSACTION, SavingsApiConstants.COMMAND_RELEASE_AMOUNT });
         }
 
         return this.toApiJsonSerializer.serialize(result);

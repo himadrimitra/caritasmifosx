@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.savings.data;
 
+import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
@@ -33,8 +34,9 @@ public class SavingsAccountDataDTO {
     private final LocalDate applicationDate;
     private final AppUser appliedBy;
     private final DateTimeFormatter fmt;
+    private final Staff staff;
 
-    public SavingsAccountDataDTO(final Client client, final Group group, final SavingsProduct savingsProduct,
+    public SavingsAccountDataDTO(final Client client, final Group group, final SavingsProduct savingsProduct, final Staff staff,
             final LocalDate applicationDate, final AppUser appliedBy, final DateTimeFormatter fmt) {
         this.client = client;
         this.group = group;
@@ -42,6 +44,7 @@ public class SavingsAccountDataDTO {
         this.applicationDate = applicationDate;
         this.appliedBy = appliedBy;
         this.fmt = fmt;
+        this.staff = staff;
     }
 
     public Client getClient() {
@@ -50,6 +53,10 @@ public class SavingsAccountDataDTO {
 
     public Group getGroup() {
         return this.group;
+    }
+
+    public Staff getStaff() {
+        return this.staff;
     }
 
     public SavingsProduct getSavingsProduct() {

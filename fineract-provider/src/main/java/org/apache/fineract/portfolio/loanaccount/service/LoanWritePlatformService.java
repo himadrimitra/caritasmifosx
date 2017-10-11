@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -30,7 +31,12 @@ import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkDisbursalCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkRepaymentCommand;
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
+import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
+import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.joda.time.LocalDate;
 
 public interface LoanWritePlatformService {
@@ -38,13 +44,14 @@ public interface LoanWritePlatformService {
     CommandProcessingResult disburseLoan(Long loanId, JsonCommand command, Boolean isAccountTransfer);
 
     Map<String, Object> bulkLoanDisbursal(JsonCommand command, CollectionSheetBulkDisbursalCommand bulkDisbursalCommand,
-            Boolean isAccountTransfer);
+            Boolean isAccountTransfer, final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetails);
 
     CommandProcessingResult undoLoanDisbursal(Long loanId, JsonCommand command);
 
     CommandProcessingResult makeLoanRepayment(Long loanId, JsonCommand command, boolean isRecoveryRepayment);
 
-    Map<String, Object> makeLoanBulkRepayment(CollectionSheetBulkRepaymentCommand bulkRepaymentCommand);
+    Map<String, Object> makeLoanBulkRepayment(CollectionSheetBulkRepaymentCommand bulkRepaymentCommand,
+            final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetails);
 
     CommandProcessingResult adjustLoanTransaction(Long loanId, Long transactionId, JsonCommand command);
 
@@ -73,8 +80,6 @@ public interface LoanWritePlatformService {
     void applyMeetingDateChanges(Calendar calendar, Collection<CalendarInstance> loanCalendarInstances,
             Boolean reschedulebasedOnMeetingDates, LocalDate presentMeetingDate, LocalDate newMeetingDate);
 
-    void applyHolidaysToLoans();
-
     LoanTransaction initiateLoanTransfer(Long accountId, LocalDate transferDate);
 
     LoanTransaction withdrawLoanTransfer(Long accountId, LocalDate transferDate);
@@ -87,20 +92,39 @@ public interface LoanWritePlatformService {
 
     void transferFeeCharges() throws JobExecutionException;
 
-    void applyChargeForOverdueLoans() throws JobExecutionException;
-
     CommandProcessingResult undoWriteOff(Long loanId);
 
     CommandProcessingResult updateDisbursementDateAndAmountForTranche(Long loanId, Long disbursementId, JsonCommand command);
 
-    void recalculateInterest();
-
-    CommandProcessingResult recoverFromGuarantor(Long loanId , LocalDate guarantorRecoveryDate);
+    CommandProcessingResult recoverFromGuarantor(Long loanId,final LocalDate guarantorRecoveryDate);
 
     void applyMeetingDateChanges(Calendar calendar, Collection<CalendarInstance> loanCalendarInstances);
 
     CommandProcessingResult makeLoanRefund(Long loanId, JsonCommand command);
 
-	CommandProcessingResult addAndDeleteLoanDisburseDetails(Long loanId, JsonCommand command);
+    CommandProcessingResult addAndDeleteLoanDisburseDetails(Long loanId, JsonCommand command);
+
+    void recalculateInterest(final long loanId, final LocalDate penaltiesRunOnDate, final LocalDate penaltiesBrokenPeriodOnDate);
+
+    CommandProcessingResult undoLastLoanDisbursal(Long loanId, JsonCommand command);
+
+    CommandProcessingResult addLoanSubsidy(Long loanId, JsonCommand command);
+
+    CommandProcessingResult revokeLoanSubsidy(Long loanId, JsonCommand command);
+
+    CommandProcessingResult forecloseLoan(final Long loanId, JsonCommand command);
+
+    CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command);
+
+    CommandProcessingResult makeLoanPreRepayment(Long loanId, JsonCommand command);
+
+    void updateScheduleDates(Long loanId, HolidayDetailDTO holidayDetailDTO, LocalDate recalculateFrom);
+
+    void updateScheduleDates(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO, final LoanApplicationTerms loanApplicationTerms,
+            LocalDate currentDate);
+
+    void updateLoanAsNPA(Long loanId);
+
+    void updateLoanAsNonNPA(Long loanId);
 
 }

@@ -24,7 +24,10 @@ public enum ChargeCalculationType {
     FLAT(1, "chargeCalculationType.flat"), //
     PERCENT_OF_AMOUNT(2, "chargeCalculationType.percent.of.amount"), //
     PERCENT_OF_AMOUNT_AND_INTEREST(3, "chargeCalculationType.percent.of.amount.and.interest"), //
-    PERCENT_OF_INTEREST(4, "chargeCalculationType.percent.of.interest");
+    PERCENT_OF_INTEREST(4, "chargeCalculationType.percent.of.interest"), //
+    PERCENT_OF_DISBURSEMENT_AMOUNT(5, "chargeCalculationType.percent.of.disbursement.amount"), //
+    SLAB_BASED(6, "chargeCalculationType.slab"), //
+    PERCENT_OF_AMOUNT_INTEREST_AND_FEES(7, "chargeCalculartionType.percent.of.amount.interest.and.fees");
 
     private final Integer value;
     private final String code;
@@ -44,11 +47,33 @@ public enum ChargeCalculationType {
 
     public static Object[] validValuesForLoan() {
         return new Integer[] { ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.PERCENT_OF_AMOUNT.getValue(),
-                ChargeCalculationType.PERCENT_OF_AMOUNT_AND_INTEREST.getValue(), ChargeCalculationType.PERCENT_OF_INTEREST.getValue() };
+                ChargeCalculationType.PERCENT_OF_AMOUNT_AND_INTEREST.getValue(), ChargeCalculationType.PERCENT_OF_INTEREST.getValue(),
+                ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue(), ChargeCalculationType.SLAB_BASED.getValue(),
+                ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES.getValue() };
     }
 
     public static Object[] validValuesForSavings() {
         return new Integer[] { ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.PERCENT_OF_AMOUNT.getValue() };
+    }
+
+    public static Object[] validValuesForShares() {
+        return new Integer[] { ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.PERCENT_OF_AMOUNT.getValue() };
+    }
+
+    public static Object[] validValuesForClients() {
+        return new Integer[] { ChargeCalculationType.FLAT.getValue() };
+    }
+
+    public static Object[] validValuesForShareAccountActivation() {
+        return new Integer[] { ChargeCalculationType.FLAT.getValue() };
+    }
+
+    public static Object[] validValuesForTrancheDisbursement() {
+        return new Integer[] { ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue() };
+    }
+
+    public static Object[] validValuesForGlimLoan() {
+        return new Integer[] { ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue(), ChargeCalculationType.FLAT.getValue() };
     }
 
     public static ChargeCalculationType fromInt(final Integer chargeCalculation) {
@@ -65,6 +90,15 @@ public enum ChargeCalculationType {
             break;
             case 4:
                 chargeCalculationType = PERCENT_OF_INTEREST;
+            break;
+            case 5:
+                chargeCalculationType = PERCENT_OF_DISBURSEMENT_AMOUNT;
+            break;
+            case 6:
+                chargeCalculationType = SLAB_BASED;
+            break;
+            case 7:
+                chargeCalculationType = PERCENT_OF_AMOUNT_INTEREST_AND_FEES;
             break;
         }
         return chargeCalculationType;
@@ -90,7 +124,24 @@ public enum ChargeCalculationType {
         return isFlat() || isPercentageOfAmount();
     }
 
+    public boolean isAllowedClientChargeCalculationType() {
+        return isFlat();
+    }
+
     public boolean isPercentageBased() {
-        return isPercentageOfAmount() || isPercentageOfAmountAndInterest() || isPercentageOfInterest();
+        return isPercentageOfAmount() || isPercentageOfAmountAndInterest() || isPercentageOfInterest() || isPercentageOfDisbursementAmount()
+                || isPercentageOfAmountInterestAndFees();
+    }
+
+    public boolean isPercentageOfDisbursementAmount() {
+        return this.value.equals(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue());
+    }
+
+    public boolean isSlabBased() {
+        return this.value.equals(ChargeCalculationType.SLAB_BASED.getValue());
+    }
+
+    public boolean isPercentageOfAmountInterestAndFees() {
+        return this.value.equals(ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES.getValue());
     }
 }

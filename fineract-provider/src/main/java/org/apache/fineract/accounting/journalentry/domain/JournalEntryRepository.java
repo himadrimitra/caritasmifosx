@@ -25,15 +25,15 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface JournalEntryRepository extends JpaRepository<JournalEntry, Long>, JpaSpecificationExecutor<JournalEntry>,
-        JournalEntryRepositoryCustom {
+public interface JournalEntryRepository extends JpaRepository<JournalEntry, Long>, JpaSpecificationExecutor<JournalEntry> {
 
-    @Query("from JournalEntry journalEntry where journalEntry.transactionId= :transactionId and journalEntry.reversed is false and journalEntry.manualEntry is true")
-    List<JournalEntry> findUnReversedManualJournalEntriesByTransactionId(@Param("transactionId") String transactionId);
+    @Query("from JournalEntry journalEntry where journalEntry.transactionIdentifier= :transactionIdentifier and journalEntry.reversed is false and journalEntry.manualEntry is true")
+    List<JournalEntry> findUnReversedManualJournalEntriesByTransactionId(@Param("transactionIdentifier") String transactionIdentifier);
 
-    @Query("select DISTINCT j.transactionId from JournalEntry j where j.transactionId not in (select DISTINCT je.transactionId from JournalEntry je where je.glAccount.id = :contraId)")
-    List<String> findNonContraTansactionIds(@Param("contraId") Long contraId);
+    @Query("from JournalEntry journalEntry where journalEntry.entityId= :entityId and journalEntry.entityType = :entityType")
+    List<JournalEntry> findProvisioningJournalEntriesByEntityId(@Param("entityId") Long entityId, @Param("entityType") Integer entityType);
 
-    @Query("select DISTINCT j.transactionId from JournalEntry j where j.office.id = :officeId and j.glAccount.id = :contraId and j.reversed is false and j.transactionId not in (select DISTINCT je.reversalJournalEntry.transactionId from JournalEntry je where je.reversed is true)")
-    List<String> findNonReversedContraTansactionIds(@Param("contraId") Long contraId, @Param("officeId") Long officeId);
+    @Query("from JournalEntry journalEntry where journalEntry.transactionIdentifier= :transactionId and journalEntry.reversed is false and journalEntry.entityType = :entityType")
+    JournalEntry findJournalEntries(@Param("transactionId") String transactionId, @Param("entityType") Integer entityType);
+
 }

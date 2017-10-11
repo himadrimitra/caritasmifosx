@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.client.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public class ClientEnumerations {
@@ -46,7 +49,8 @@ public class ClientEnumerations {
                 optionData = new EnumOptionData(ClientStatus.REJECTED.getValue().longValue(), ClientStatus.REJECTED.getCode(), "Rejected");
             break;
             case WITHDRAWN:
-                optionData = new EnumOptionData(ClientStatus.WITHDRAWN.getValue().longValue(), ClientStatus.WITHDRAWN.getCode(), "Withdrawn");
+                optionData = new EnumOptionData(ClientStatus.WITHDRAWN.getValue().longValue(), ClientStatus.WITHDRAWN.getCode(),
+                        "Withdrawn");
             break;
             case TRANSFER_IN_PROGRESS:
                 optionData = new EnumOptionData(ClientStatus.TRANSFER_IN_PROGRESS.getValue().longValue(),
@@ -62,4 +66,56 @@ public class ClientEnumerations {
 
         return optionData;
     }
+
+    public static EnumOptionData legalForm(final Integer statusId) {
+        return legalForm(LegalForm.fromInt(statusId));
+    }
+
+    public static EnumOptionData legalForm(final LegalForm legalForm) {
+        final EnumOptionData optionData = new EnumOptionData(legalForm.getValue().longValue(), legalForm.getCode(), legalForm.toString());
+        return optionData;
+    }
+
+    public static List<EnumOptionData> legalForm(final LegalForm[] legalForms) {
+        final List<EnumOptionData> optionDatas = new ArrayList<>();
+        for (final LegalForm legalForm : legalForms) {
+            optionDatas.add(legalForm(legalForm));
+        }
+        return optionDatas;
+    }
+
+    public static EnumOptionData clientTransactionType(final int id) {
+        return clientTransactionType(ClientTransactionType.fromInt(id));
+    }
+
+    public static EnumOptionData clientTransactionType(final ClientTransactionType clientTransactionType) {
+        final EnumOptionData optionData = new EnumOptionData(clientTransactionType.getValue().longValue(), clientTransactionType.getCode(),
+                clientTransactionType.toString());
+        return optionData;
+    }
+
+    public static List<EnumOptionData> clientTransactionType(final ClientTransactionType[] clientTransactionTypes) {
+        final List<EnumOptionData> optionDatas = new ArrayList<>();
+        for (final ClientTransactionType clientTransaction : clientTransactionTypes) {
+            optionDatas.add(clientTransactionType(clientTransaction));
+        }
+        return optionDatas;
+    }
+
+    public static List<EnumOptionData> clientIdentifierStatus(final ClientIdentifierStatus[] clientIdentifierStatus) {
+        final List<EnumOptionData> optionDatas = new ArrayList<>();
+        for (final ClientIdentifierStatus clientIdentifier : clientIdentifierStatus) {
+            if (clientIdentifier != ClientIdentifierStatus.INVALID) {
+                optionDatas.add(clientIdentifierStatus(clientIdentifier));
+            }
+        }
+        return optionDatas;
+    }
+
+    public static EnumOptionData clientIdentifierStatus(final ClientIdentifierStatus clientIdentifierStatus) {
+        final EnumOptionData optionData = new EnumOptionData(clientIdentifierStatus.getValue().longValue(),
+                clientIdentifierStatus.getCode(), clientIdentifierStatus.toString());
+        return optionData;
+    }
+
 }

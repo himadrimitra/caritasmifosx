@@ -30,10 +30,13 @@ import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.organisation.workingdays.api.WorkingDaysApiConstants;
+import org.apache.fineract.organisation.workingdays.domain.RepaymentRescheduleType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 @Component
@@ -65,7 +68,70 @@ public class WorkingDayValidator {
         final Integer repaymentRescheduleType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("repaymentRescheduleType", element);
         baseDataValidator.reset().parameter("repaymentRescheduleType").value(repaymentRescheduleType).ignoreIfNull().inMinMaxRange(1, 4);
 
+        final Boolean extendTermForDailyRepayments = this.fromApiJsonHelper.extractBooleanNamed("extendTermForDailyRepayments", element);
+        baseDataValidator.reset().parameter(WorkingDaysApiConstants.extendTermForDailyRepayments).value(extendTermForDailyRepayments).ignoreIfNull().validateForBooleanValue();
+        
+        validateNonWorkingDayRescheduleDetail(element, baseDataValidator);
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+
+    }
+    
+    private void validateNonWorkingDayRescheduleDetail(final JsonElement element, final DataValidatorBuilder baseDataValidator) {
+
+        if (this.fromApiJsonHelper.parameterExists(WorkingDaysApiConstants.advancedRescheduleDetail, element)) {
+            JsonArray advancedRescheduleDetail = this.fromApiJsonHelper.extractJsonArrayNamed(
+                    WorkingDaysApiConstants.advancedRescheduleDetail, element);
+            if (advancedRescheduleDetail != null && advancedRescheduleDetail.size() > 0) {
+                for (int i = 0; i < advancedRescheduleDetail.size(); i++) {
+                    final JsonObject jsonObject = advancedRescheduleDetail.get(i).getAsJsonObject();
+                    Long id = this.fromApiJsonHelper.extractLongNamed(WorkingDaysApiConstants.idParamName, jsonObject);
+
+                    final Integer repaymentRescheduleType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(
+                            WorkingDaysApiConstants.repayment_rescheduling_enum, jsonObject);
+                    baseDataValidator
+                            .reset()
+                            .parameter(
+                                    WorkingDaysApiConstants.advancedRescheduleDetail + "."
+                                            + WorkingDaysApiConstants.repayment_rescheduling_enum).value(repaymentRescheduleType)
+                            .ignoreIfNull().inMinMaxRange(1, 7)
+                            .isNotOneOfTheseValues(RepaymentRescheduleType.MOVE_TO_NEXT_MEETING_DAY.getValue());
+
+                    final String fromWeekDay = this.fromApiJsonHelper.extractStringNamed(WorkingDaysApiConstants.fromWeekDay, jsonObject);
+                    baseDataValidator.reset()
+                            .parameter(WorkingDaysApiConstants.advancedRescheduleDetail + "." + WorkingDaysApiConstants.fromWeekDay)
+                            .value(fromWeekDay).ignoreIfNull().isOneOfTheseStringValues("su", "mo", "tu", "we", "th", "fr", "sa");
+                    if (id == null) {
+                        baseDataValidator
+                                .reset()
+                                .parameter(
+                                        WorkingDaysApiConstants.advancedRescheduleDetail + "."
+                                                + WorkingDaysApiConstants.repayment_rescheduling_enum).value(repaymentRescheduleType)
+                                .notNull();
+
+                        baseDataValidator.reset()
+                                .parameter(WorkingDaysApiConstants.advancedRescheduleDetail + "." + WorkingDaysApiConstants.fromWeekDay)
+                                .value(fromWeekDay).notBlank();
+                    }
+
+                    if (repaymentRescheduleType != null) {
+                        RepaymentRescheduleType type = RepaymentRescheduleType.fromInt(repaymentRescheduleType);
+                        final String toWeekDay = this.fromApiJsonHelper.extractStringNamed(WorkingDaysApiConstants.toWeekDay, jsonObject);
+                        if (type.isMoveToNextWorkingWeektDay() || type.isMoveToPreviousWorkingWeektDay()) {
+                            baseDataValidator.reset()
+                                    .parameter(WorkingDaysApiConstants.advancedRescheduleDetail + "." + WorkingDaysApiConstants.toWeekDay)
+                                    .value(toWeekDay).notBlank();
+                        } else if (toWeekDay != null) {
+                            baseDataValidator.reset()
+                                    .parameter(WorkingDaysApiConstants.advancedRescheduleDetail + "." + WorkingDaysApiConstants.toWeekDay)
+                                    .value(toWeekDay).failWithCode("not.supported.for.selected.repaymentRescheduleType");
+                        }
+                        baseDataValidator.reset()
+                                .parameter(WorkingDaysApiConstants.advancedRescheduleDetail + "." + WorkingDaysApiConstants.toWeekDay)
+                                .value(toWeekDay).ignoreIfNull().isOneOfTheseStringValues("su", "mo", "tu", "we", "th", "fr", "sa");
+                    }
+                }
+            }
+        }
 
     }
 

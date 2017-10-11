@@ -18,18 +18,27 @@
  */
 package org.apache.fineract.portfolio.charge.service;
 
+import static org.apache.fineract.portfolio.charge.service.ChargeEnumerations.chargeCalculationType;
+import static org.apache.fineract.portfolio.charge.service.ChargeEnumerations.chargePaymentMode;
+import static org.apache.fineract.portfolio.charge.service.ChargeEnumerations.chargeTimeType;
+import static org.apache.fineract.portfolio.charge.service.ChargeEnumerations.glimChargeCalculationType;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
+import org.apache.fineract.portfolio.charge.domain.ChargePercentagePeriodType;
+import org.apache.fineract.portfolio.charge.domain.ChargePercentageType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.PenaltyGraceType;
+import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.springframework.stereotype.Service;
-
-import static org.apache.fineract.portfolio.charge.service.ChargeEnumerations.*;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @Service
 public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownReadPlatformService {
@@ -40,7 +49,10 @@ public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownRead
         return Arrays.asList(chargeCalculationType(ChargeCalculationType.FLAT),
                 chargeCalculationType(ChargeCalculationType.PERCENT_OF_AMOUNT),
                 chargeCalculationType(ChargeCalculationType.PERCENT_OF_AMOUNT_AND_INTEREST),
-                chargeCalculationType(ChargeCalculationType.PERCENT_OF_INTEREST));
+                chargeCalculationType(ChargeCalculationType.PERCENT_OF_INTEREST),
+                chargeCalculationType(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT),
+                chargeCalculationType(ChargeCalculationType.SLAB_BASED),
+                chargeCalculationType(ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES));
     }
 
     @Override
@@ -77,13 +89,17 @@ public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownRead
         return Arrays.asList(chargeCalculationType(ChargeCalculationType.FLAT),
                 chargeCalculationType(ChargeCalculationType.PERCENT_OF_AMOUNT),
                 chargeCalculationType(ChargeCalculationType.PERCENT_OF_AMOUNT_AND_INTEREST),
-                chargeCalculationType(ChargeCalculationType.PERCENT_OF_INTEREST));
+                chargeCalculationType(ChargeCalculationType.PERCENT_OF_INTEREST),
+                chargeCalculationType(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT),
+                chargeCalculationType(ChargeCalculationType.SLAB_BASED),
+                chargeCalculationType(ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES));
     }
 
     @Override
     public List<EnumOptionData> retrieveLoanCollectionTimeTypes() {
         return Arrays.asList(chargeTimeType(ChargeTimeType.DISBURSEMENT), chargeTimeType(ChargeTimeType.SPECIFIED_DUE_DATE),
-                chargeTimeType(ChargeTimeType.INSTALMENT_FEE), chargeTimeType(ChargeTimeType.OVERDUE_INSTALLMENT));
+                chargeTimeType(ChargeTimeType.INSTALMENT_FEE), chargeTimeType(ChargeTimeType.OVERDUE_INSTALLMENT),
+                chargeTimeType(ChargeTimeType.TRANCHE_DISBURSEMENT), chargeTimeType(ChargeTimeType.UPFRONT_FEE));
     }
 
     @Override
@@ -94,11 +110,63 @@ public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownRead
 
     @Override
     public List<EnumOptionData> retrieveSavingsCollectionTimeTypes() {
-        return Arrays.asList(chargeTimeType(ChargeTimeType.SPECIFIED_DUE_DATE),
-                chargeTimeType(ChargeTimeType.SAVINGS_ACTIVATION),
+        return Arrays.asList(chargeTimeType(ChargeTimeType.SPECIFIED_DUE_DATE), chargeTimeType(ChargeTimeType.SAVINGS_ACTIVATION),
                 // chargeTimeType(ChargeTimeType.SAVINGS_CLOSURE),
                 chargeTimeType(ChargeTimeType.WITHDRAWAL_FEE), chargeTimeType(ChargeTimeType.ANNUAL_FEE),
                 chargeTimeType(ChargeTimeType.MONTHLY_FEE), chargeTimeType(ChargeTimeType.WEEKLY_FEE),
-                chargeTimeType(ChargeTimeType.OVERDRAFT_FEE), chargeTimeType(ChargeTimeType.LATE_DEPOSITE_FEE));
+                chargeTimeType(ChargeTimeType.OVERDRAFT_FEE), chargeTimeType(ChargeTimeType.SAVINGS_NOACTIVITY_FEE),
+                chargeTimeType(ChargeTimeType.LATE_DEPOSITE_FEE));
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveClientCalculationTypes() {
+        return Arrays.asList(chargeCalculationType(ChargeCalculationType.FLAT));
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveClientCollectionTimeTypes() {
+        return Arrays.asList(chargeTimeType(ChargeTimeType.SPECIFIED_DUE_DATE), chargeTimeType(ChargeTimeType.ANNUAL_FEE),
+                chargeTimeType(ChargeTimeType.MONTHLY_FEE), chargeTimeType(ChargeTimeType.WEEKLY_FEE));
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveSharesCalculationTypes() {
+        return Arrays.asList(chargeCalculationType(ChargeCalculationType.FLAT),
+                chargeCalculationType(ChargeCalculationType.PERCENT_OF_AMOUNT));
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveSharesCollectionTimeTypes() {
+        return Arrays.asList(chargeTimeType(ChargeTimeType.SHAREACCOUNT_ACTIVATION), chargeTimeType(ChargeTimeType.SHARE_PURCHASE),
+                chargeTimeType(ChargeTimeType.SHARE_REDEEM));
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveGlimChargeCalculationTypes() {
+
+        return Arrays.asList(glimChargeCalculationType(GlimChargeCalculationType.ROUND),
+                glimChargeCalculationType(GlimChargeCalculationType.ROUND_WITH_MAX_CHARGE),
+                glimChargeCalculationType(GlimChargeCalculationType.ROUND_WITHOUT_MAX_CHARGE));
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveSlabChargeTypes() {
+        return Arrays.asList(SlabChargeType.fromInt(SlabChargeType.INSTALLMENT_AMOUNT.getValue()),
+                SlabChargeType.fromInt(SlabChargeType.INSTALLMENT_NUMBER.getValue()));
+    }
+
+    @Override
+    public Collection<EnumOptionData> retriveChargePercentageTypes() {
+        return ChargePercentageType.chargePercentageTypeOptions();
+    }
+
+    @Override
+    public Collection<EnumOptionData> retriveChargePercentagePeriodTypes() {
+        return ChargePercentagePeriodType.chargePercentagePeriodTypeOptions();
+    }
+
+    @Override
+    public Collection<EnumOptionData> retrivePenaltyGraceTypes() {
+        return PenaltyGraceType.penaltyGraceTypeOptions();
     }
 }

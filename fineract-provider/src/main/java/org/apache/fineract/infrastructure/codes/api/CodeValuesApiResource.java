@@ -31,6 +31,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -38,6 +39,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.codes.CodeConstants.CODEVALUE_JSON_INPUT_PARAMS;
 import org.apache.fineract.infrastructure.codes.data.CodeData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
@@ -58,7 +60,9 @@ public class CodeValuesApiResource {
     /**
      * The set of parameters that are supported in response for {@link CodeData}
      */
-    private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "name", "position", "description"));
+    private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(CODEVALUE_JSON_INPUT_PARAMS.CODEVALUE_ID.getValue(),
+            CODEVALUE_JSON_INPUT_PARAMS.NAME.getValue(), CODEVALUE_JSON_INPUT_PARAMS.POSITION.getValue(),
+            CODEVALUE_JSON_INPUT_PARAMS.IS_MANDATORY.getValue(), CODEVALUE_JSON_INPUT_PARAMS.DESCRIPTION.getValue()));
     private final String resourceNameForPermissions = "CODEVALUE";
 
     private final PlatformSecurityContext context;
@@ -81,13 +85,17 @@ public class CodeValuesApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAllCodeValues(@Context final UriInfo uriInfo, @PathParam("codeId") final Long codeId) {
+    public String retrieveAllCodeValues(@Context final UriInfo uriInfo, @PathParam("codeId") final Long codeId,
+            @QueryParam("type") final String systemIdentifier) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<CodeValueData> codeValues = this.readPlatformService.retrieveAllCodeValues(codeId);
-
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        if (null != systemIdentifier) {
+            final CodeValueData codeValue = this.readPlatformService.retrieveSystemIdentifierCodeValue(codeId, systemIdentifier);
+            return this.toApiJsonSerializer.serialize(settings, codeValue, this.RESPONSE_DATA_PARAMETERS);
+        }
+        final Collection<CodeValueData> codeValues = this.readPlatformService.retrieveAllCodeValues(codeId);
         return this.toApiJsonSerializer.serialize(settings, codeValues, this.RESPONSE_DATA_PARAMETERS);
     }
 

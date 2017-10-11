@@ -18,20 +18,28 @@
  */
 package org.apache.fineract.organisation.holiday.domain;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+
+import javax.persistence.QueryHint;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 public interface HolidayRepository extends JpaRepository<Holiday, Long>, JpaSpecificationExecutor<Holiday> {
 
     @Query("select holiday from Holiday holiday, IN(holiday.offices) office where (holiday.fromDate >= :date OR :date <= holiday.toDate) and holiday.status = :status and office.id = :officeId")
+    @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     List<Holiday> findByOfficeIdAndGreaterThanDate(@Param("officeId") Long officeId, @Param("date") Date date,
             @Param("status") Integer status);
 
-    @Query("from Holiday holiday where holiday.processed = false and holiday.status = :status")
-    List<Holiday> findUnprocessed(@Param("status") Integer status);
+    @Query("from Holiday holiday where holiday.processed = false and holiday.status in :status")
+    List<Holiday> findUnprocessed(@Param("status") Collection<Integer> status);
+
+    @Query("from Holiday holiday where holiday.fromDate >= :fromDate and holiday.status in :status order by holiday.fromDate")
+    List<Holiday> findHolidaysFromDate(@Param("fromDate") Date fromDate, @Param("status") Collection<Integer> statuses);
 }

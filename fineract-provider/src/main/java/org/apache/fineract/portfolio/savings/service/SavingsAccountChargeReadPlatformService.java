@@ -27,7 +27,6 @@ import org.apache.fineract.portfolio.savings.data.SavingsAccountChargeData;
 import org.apache.fineract.portfolio.savings.data.SavingsChargesSummaryData;
 import org.apache.fineract.portfolio.savings.data.SavingsIdOfChargeData;
 
-
 public interface SavingsAccountChargeReadPlatformService {
 
     ChargeData retrieveSavingsAccountChargeTemplate();
@@ -40,9 +39,7 @@ public interface SavingsAccountChargeReadPlatformService {
 
     Collection<SavingsAccountAnnualFeeData> retrieveChargesWithDue();
 
-    
-    Collection<SavingsChargesSummaryData> retriveCharge(Long savings_account_id,String chargeonDate);
-
+    Collection<SavingsChargesSummaryData> retriveCharge(Long savings_account_id, String chargeonDate);
 
     Collection<SavingsIdOfChargeData> retriveAllSavingIdHavingDepositCharge(String startDate);
 
@@ -51,7 +48,7 @@ public interface SavingsAccountChargeReadPlatformService {
     Collection<SavingIdListData> retriveAllSavingIdForApplyDepositeLateCharge();
 
     SavingsIdOfChargeData retriveOneWithMaxOfDueDate(Long savingId);
-    
-   SavingIdListData retriveMaxOfTransaction(Long savingId);
+
+    SavingIdListData retriveMaxOfTransaction(Long savingId);
 
 }

@@ -19,6 +19,7 @@
 package org.apache.fineract.organisation.office.service;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.organisation.office.data.OfficeData;
@@ -39,4 +40,8 @@ public interface OfficeReadPlatformService {
     Collection<OfficeTransactionData> retrieveAllOfficeTransactions();
 
     OfficeTransactionData retrieveNewOfficeTransactionDetails();
+    
+    List<OfficeData> retrieveOfficeForJournalEntry();
+    
+    List<Long> retrieveAllChildOfficesForDropdown(List<Long> ids);
 }

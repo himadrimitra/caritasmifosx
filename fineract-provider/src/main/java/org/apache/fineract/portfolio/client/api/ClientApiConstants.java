@@ -24,32 +24,72 @@ import java.util.Set;
 
 import org.apache.fineract.portfolio.client.data.ClientData;
 
+import com.finflux.familydetail.FamilyDetailsApiConstants;
+import com.finflux.kyc.address.api.AddressApiConstants;
+import com.finflux.risk.existingloans.api.ExistingLoanApiConstants;
+
 public class ClientApiConstants {
 
     public static final String CLIENT_RESOURCE_NAME = "client";
+    public static final String CLIENT_CHARGES_RESOURCE_NAME = "CLIENTCHARGE";
+    public static final String CLIENT_RECURRING_CHARGES_RESOURCE_NAME = "CLIENTRECURRINGCHARGE";
+
+    // Client Charge Action Names
+    public static final String CLIENT_CHARGE_ACTION_CREATE = "CREATE";
+    public static final String CLIENT_CHARGE_ACTION_DELETE = "DELETE";
+    public static final String CLIENT_CHARGE_ACTION_WAIVE = "WAIVE";
+    public static final String CLIENT_CHARGE_ACTION_PAY = "PAY";
+    public static final String CLIENT_CHARGE_ACTION_INACTIVATE = "INACTIVATE";
+
+    // Client charge associations and query parameters
+    public static final String CLIENT_CHARGE_QUERY_PARAM_STATUS = "chargeStatus";
+    public static final String CLIENT_CHARGE_QUERY_PARAM_STATUS_VALUE_ALL = "all";
+    public static final String CLIENT_CHARGE_QUERY_PARAM_STATUS_VALUE_ACTIVE = "active";
+    public static final String CLIENT_CHARGE_QUERY_PARAM_STATUS_VALUE_INACTIVE = "inactive";
+    public static final String CLIENT_CHARGE_ASSOCIATIONS_TRANSACTIONS = "transactions";
+
+    // Client transaction action names
+    public static final String CLIENT_TRANSACTION_ACTION_READ = "READTRANSACTION";
+    public static final String CLIENT_TRANSACTION_ACTION_UNDO = "UNDOTRANSACTION";
+
+    // Commands
+    public static final String CLIENT_CHARGE_COMMAND_WAIVE_CHARGE = "waive";
+    public static final String CLIENT_CHARGE_COMMAND_PAY_CHARGE = "paycharge";
+    public static final String CLIENT_CHARGE_COMMAND_INACTIVATE_CHARGE = "inactivate";
+    public static final String CLIENT_TRANSACTION_COMMAND_UNDO = "undo";
+
     public static final String CLIENT_CLOSURE_REASON = "ClientClosureReason";
     public static final String CLIENT_ACTION_REASON = "ClientActionReason";
     public static final String CLIENT_REJECT_REASON = "ClientRejectReason";
     public static final String CLIENT_WITHDRAW_REASON = "ClientWithdrawReason";
 
-	
     public static final String GENDER = "Gender";
     public static final String CLIENT_TYPE = "ClientType";
     public static final String CLIENT_CLASSIFICATION = "ClientClassification";
+    public static final String chargesynchmeetingParamName = "synchMeeting";
+
+    public static final String CLIENT_NON_PERSON_CONSTITUTION = "Constitution";
+    public static final String CLIENT_NON_PERSON_MAIN_BUSINESS_LINE = "Main Business Line";
+
     // general
     public static final String localeParamName = "locale";
     public static final String dateFormatParamName = "dateFormat";
 
+    public static final String CLIENT_TYPE_INDIVIDUAL = "Individual";
+
     // request parameters
     public static final String idParamName = "id";
     public static final String groupIdParamName = "groupId";
+    public static final String centerIdParamName = "centerId";
     public static final String accountNoParamName = "accountNo";
     public static final String externalIdParamName = "externalId";
     public static final String mobileNoParamName = "mobileNo";
-    public static final String firstnameParamName = "firstname";
-    public static final String middlenameParamName = "middlename";
-    public static final String lastnameParamName = "lastname";
+    public static final String alternateMobileNoParamName = "alternateMobileNo";
+    public static final String firstNameParamName = "firstname";
+    public static final String middleNameParamName = "middlename";
+    public static final String lastNameParamName = "lastname";
     public static final String fullnameParamName = "fullname";
+    public static final String displaynameParamName = "displayname";
     public static final String officeIdParamName = "officeId";
     public static final String transferOfficeIdParamName = "transferOfficeIdParamName";
     public static final String activeParamName = "active";
@@ -59,12 +99,14 @@ public class ClientApiConstants {
     public static final String closureDateParamName = "closureDate";
     public static final String closureReasonIdParamName = "closureReasonId";
     public static final String nationalId = "nationalId";
-    
+    public static final String reopenedDateParamName = "reopenedDate";
+    public static final String emailAddress = "email";
+
     public static final String rejectionDateParamName = "rejectionDate";
-    public static final String rejectionReasonIdParamName ="rejectionReasonId";
+    public static final String rejectionReasonIdParamName = "rejectionReasonId";
     public static final String withdrawalDateParamName = "withdrawalDate";
-    public static final String withdrawalReasonIdParamName ="withdrawalReasonId";
-        
+    public static final String withdrawalReasonIdParamName = "withdrawalReasonId";
+
     public static final String submittedOnDateParamName = "submittedOnDate";
     public static final String savingsProductIdParamName = "savingsProductId";
     public static final String savingsAccountIdParamName = "savingsAccountId";
@@ -75,6 +117,24 @@ public class ClientApiConstants {
     public static final String clientTypeParamName = "clientType";
     public static final String clientClassificationIdParamName = "clientClassificationId";
     public static final String clientClassificationParamName = "clientClassification";
+    public static final String legalFormIdParamName = "legalFormId";
+    public static final String legalFormParamName = "legalForm";
+    // request parameters for payment details
+    public static final String paymentTypeIdParamName = "paymentTypeId";
+    public static final String transactionAccountNumberParamName = "accountNumber";
+    public static final String checkNumberParamName = "checkNumber";
+    public static final String routingCodeParamName = "routingCode";
+    public static final String receiptNumberParamName = "receiptNumber";
+    public static final String bankNumberParamName = "bankNumber";
+
+    // request parameters for client non person
+    public static final String clientNonPersonDetailsParamName = "clientNonPersonDetails";
+    public static final String incorpNumberParamName = "incorpNumber";
+    public static final String remarksParamName = "remarks";
+    public static final String incorpValidityTillParamName = "incorpValidityTillDate";
+    public static final String constitutionIdParamName = "constitutionId";
+    public static final String mainBusinessLineIdParamName = "mainBusinessLineId";
+
     // response parameters
     public static final String statusParamName = "status";
     public static final String hierarchyParamName = "hierarchy";
@@ -89,6 +149,52 @@ public class ClientApiConstants {
     public static final String imagePresentParamName = "imagePresent";
     public static final String timelineParamName = "timeline";
 
+    // client charges response parameters
+    public static final String chargeIdParamName = "chargeId";
+    public static final String clientIdParamName = "clientId";
+    public static final String chargesParamName = "charges";
+    public static final String chargeNameParamName = "name";
+    public static final String penaltyParamName = "penalty";
+    public static final String chargeTimeTypeParamName = "chargeTimeType";
+    public static final String dueAsOfDateParamName = "dueDate";
+    public static final String transactionDateParamName = "transactionDate";
+    public static final String chargeCalculationTypeParamName = "chargeCalculationType";
+    public static final String currencyParamName = "currency";
+    public static final String amountWaivedParamName = "amountWaived";
+    public static final String amountWrittenOffParamName = "amountWrittenOff";
+    public static final String amountOutstandingParamName = "amountOutstanding";
+    public static final String amountOrPercentageParamName = "amountOrPercentage";
+    public static final String amountParamName = "amount";
+    public static final String amountPaidParamName = "amountPaid";
+    public static final String chargeOptionsParamName = "chargeOptions";
+    public static final String transactionsParamName = "transactions";
+
+    // client recurring charges responce parameters
+    public static final String recurringChargeIdParamName = "recurringChargeId";
+    public static final String chargeDueDateParamName = "chargeDueDate";
+    public static final String chargeAppliesToParamName = "chargeAppliesTo";
+    public static final String chargePaymentModeParamName = "chargePaymentMode";
+    public static final String feeOnDayParamName = "feeOnDay";
+    public static final String feeIntervalParamName = "feeInterval";
+    public static final String feeOnMonthParamName = "feeOnMonth";
+    public static final String deletedParamName = "deleted";
+    public static final String syncWithMeetingParamName = "synchMeeting";
+    public static final String mincapParamName = "mincap";
+    public static final String maxcapParamName = "maxcap";
+    public static final String feeFrequencyParamName = "feeFrequency";
+    public static final String inactivatedOnDateParamName = "inactivatedOnDate";
+
+    // client Recurring Charge Action Names
+    public static final String CLIENT_RECURRING_CHARGE_ACTION_INACTIVATE = "INACTIVATE";
+
+    // client transactions response parameters
+    public static final String transactionAmountParamName = "transactionAmount";
+    public static final String paymentDetailDataParamName = "paymentDetailData";
+    public static final String reversedParamName = "reversed";
+    public static final String dateParamName = "date";
+    private static final String transactionTypeParamName = "type";
+    private static final String transactionCurrencyParamName = "currency";
+
     // associations related part of response
     public static final String groupsParamName = "groups";
 
@@ -96,18 +202,41 @@ public class ClientApiConstants {
     public static final String officeOptionsParamName = "officeOptions";
     public static final String staffOptionsParamName = "staffOptions";
 
-    public static final Set<String> CLIENT_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, groupIdParamName, accountNoParamName, externalIdParamName, mobileNoParamName, firstnameParamName,
-            middlenameParamName, lastnameParamName, fullnameParamName, officeIdParamName, activeParamName, activationDateParamName,
-            staffIdParamName, submittedOnDateParamName, savingsProductIdParamName, dateOfBirthParamName, genderIdParamName,
-            clientTypeIdParamName, clientClassificationIdParamName,nationalId));
+    public static final String kycJson = "kycJson";
+    public static final String aadhaarId = "aadhaar-id";
+    public static final String kyc = "kyc";
+
+    public static final Set<String> CLIENT_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, groupIdParamName, accountNoParamName, externalIdParamName,
+                    mobileNoParamName, alternateMobileNoParamName, firstNameParamName, middleNameParamName, lastNameParamName,
+                    fullnameParamName, officeIdParamName, activeParamName, activationDateParamName, staffIdParamName,
+                    submittedOnDateParamName, savingsProductIdParamName, dateOfBirthParamName, genderIdParamName, clientTypeIdParamName,
+                    clientClassificationIdParamName, clientNonPersonDetailsParamName, displaynameParamName, legalFormIdParamName,
+                    AddressApiConstants.addressesParamName, FamilyDetailsApiConstants.familyMembersParamName,
+                    ExistingLoanApiConstants.existingLoansParamName, emailAddress, kycJson, centerIdParamName, nationalId));
+
+    public static final Set<String> CLIENT_NON_PERSON_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName,
+                    constitutionIdParamName, mainBusinessLineIdParamName));
 
     public static final Set<String> CLIENT_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, accountNoParamName, externalIdParamName, mobileNoParamName, firstnameParamName, middlenameParamName,
+            dateFormatParamName, accountNoParamName, externalIdParamName, mobileNoParamName, alternateMobileNoParamName, firstNameParamName,
+            middleNameParamName, lastNameParamName, fullnameParamName, activeParamName, activationDateParamName, staffIdParamName,
+            savingsProductIdParamName, dateOfBirthParamName, genderIdParamName, clientTypeIdParamName, clientClassificationIdParamName,
+            submittedOnDateParamName, clientNonPersonDetailsParamName, displaynameParamName, legalFormIdParamName,
+            AddressApiConstants.addressesParamName, FamilyDetailsApiConstants.familyMembersParamName,
+            ExistingLoanApiConstants.existingLoansParamName, emailAddress, nationalId));
 
-            lastnameParamName, fullnameParamName, activeParamName, activationDateParamName, staffIdParamName, savingsProductIdParamName,
-            dateOfBirthParamName, genderIdParamName, clientTypeIdParamName, clientClassificationIdParamName,submittedOnDateParamName,nationalId));
+    public static final Set<String> CLIENT_NON_PERSON_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName,
+                    constitutionIdParamName, mainBusinessLineIdParamName));
 
+    public static final Set<String> CLIENT_RECURRING_CHARGES_RESPONSE_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(recurringChargeIdParamName, clientIdParamName, chargeIdParamName, chargeNameParamName, chargeDueDateParamName,
+                    currencyParamName, chargeAppliesToParamName, chargeTimeTypeParamName, chargeCalculationTypeParamName,
+                    chargePaymentModeParamName, amountParamName, feeOnDayParamName, feeIntervalParamName, feeOnMonthParamName,
+                    penaltyParamName, activeParamName, deletedParamName, syncWithMeetingParamName, mincapParamName, maxcapParamName,
+                    feeFrequencyParamName, inactivatedOnDateParamName));
 
     /**
      * These parameters will match the class level parameters of
@@ -115,22 +244,52 @@ public class ClientApiConstants {
      * match those of request parameters.
      */
     public static final Set<String> CLIENT_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, accountNoParamName,
-            externalIdParamName, statusParamName, activeParamName, activationDateParamName, firstnameParamName, middlenameParamName,
-            lastnameParamName, fullnameParamName, displayNameParamName, mobileNoParamName, officeIdParamName, officeNameParamName,
-            transferToOfficeIdParamName, transferToOfficeNameParamName, hierarchyParamName, imageIdParamName, imagePresentParamName,
-            staffIdParamName, staffNameParamName, timelineParamName, groupsParamName, officeOptionsParamName, staffOptionsParamName,
-            dateOfBirthParamName, genderParamName,clientTypeParamName,clientClassificationParamName, nationalId));
+            externalIdParamName, statusParamName, activeParamName, activationDateParamName, firstNameParamName, middleNameParamName,
+            lastNameParamName, fullnameParamName, displayNameParamName, mobileNoParamName, alternateMobileNoParamName, officeIdParamName,
+            officeNameParamName, transferToOfficeIdParamName, transferToOfficeNameParamName, hierarchyParamName, imageIdParamName,
+            imagePresentParamName, staffIdParamName, staffNameParamName, timelineParamName, groupsParamName, officeOptionsParamName,
+            staffOptionsParamName, dateOfBirthParamName, genderParamName, clientTypeParamName, clientClassificationParamName,
+            legalFormParamName, clientNonPersonDetailsParamName, emailAddress, nationalId));
 
-    public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, activationDateParamName));
-    public static final Set<String> REACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, reactivationDateParamName));
+    public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, activationDateParamName));
+    public static final Set<String> REACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, reactivationDateParamName));
 
-    public static final Set<String> CLIENT_CLOSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, closureDateParamName, closureReasonIdParamName));
-	
-    public static final Set<String> CLIENT_REJECT_DATA_PARAMETERS =	new HashSet<>(Arrays.asList(localeParamName,dateFormatParamName,rejectionDateParamName,rejectionReasonIdParamName));
+    public static final Set<String> CLIENT_CLOSE_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, closureDateParamName, closureReasonIdParamName));
 
-    public static final Set<String> CLIENT_WITHDRAW_DATA_PARAMETERS =	new HashSet<>(Arrays.asList(localeParamName,dateFormatParamName,withdrawalDateParamName,withdrawalReasonIdParamName));
+    public static final Set<String> CLIENT_REJECT_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, rejectionDateParamName, rejectionReasonIdParamName));
+
+    public static final Set<String> CLIENT_WITHDRAW_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, withdrawalDateParamName, withdrawalReasonIdParamName));
+
+    public static final Set<String> UNDOREJECTION_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, reopenedDateParamName));
+
+    public static final Set<String> UNDOWITHDRAWN_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, reopenedDateParamName));
+
+    public static final Set<String> CLIENT_CHARGES_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(chargeIdParamName,
+            clientIdParamName, chargeNameParamName, penaltyParamName, chargeTimeTypeParamName, dueAsOfDateParamName,
+            chargeCalculationTypeParamName, currencyParamName, amountWaivedParamName, amountWrittenOffParamName, amountOutstandingParamName,
+            amountOrPercentageParamName, amountParamName, amountPaidParamName, chargeOptionsParamName, transactionsParamName));
+
+    public static final Set<String> CLIENT_CHARGES_ADD_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(chargeIdParamName,
+            amountParamName, dueAsOfDateParamName, dateFormatParamName, localeParamName, chargesynchmeetingParamName));
+
+    public static final Set<String> CLIENT_CHARGES_PAY_CHARGE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(amountParamName,
+            transactionDateParamName, dateFormatParamName, localeParamName, paymentTypeIdParamName, transactionAccountNumberParamName,
+            checkNumberParamName, routingCodeParamName, receiptNumberParamName, bankNumberParamName));
+
+    public static final Set<String> CLIENT_TRANSACTION_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName,
+            transactionAmountParamName, paymentDetailDataParamName, reversedParamName, dateParamName, officeIdParamName,
+            officeNameParamName, transactionTypeParamName, transactionCurrencyParamName, externalIdParamName, submittedOnDateParamName));
+
+    // client actions
+    public static final String clientClose = "close";
+    public static final String clientTransfer = "transfer";
+    public static final String clientDisassociate = "disassociate";
 
 }

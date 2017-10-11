@@ -30,15 +30,14 @@ import org.joda.time.LocalDate;
 
 public class DailyCompoundingPeriod implements CompoundingPeriod {
 
-    @SuppressWarnings("unused")
     private final LocalDateInterval periodInterval;
     private final List<EndOfDayBalance> endOfDayBalances;
 
     public static DailyCompoundingPeriod create(final LocalDateInterval periodInterval, final List<EndOfDayBalance> allEndOfDayBalances,
             final LocalDate upToInterestCalculationDate) {
 
-        final List<EndOfDayBalance> endOfDayBalancesWithinPeriod = endOfDayBalancesWithinPeriodInterval(periodInterval,
-                allEndOfDayBalances, upToInterestCalculationDate);
+        final List<EndOfDayBalance> endOfDayBalancesWithinPeriod = endOfDayBalancesWithinPeriodInterval(periodInterval, allEndOfDayBalances,
+                upToInterestCalculationDate);
 
         return new DailyCompoundingPeriod(periodInterval, endOfDayBalancesWithinPeriod);
     }
@@ -75,12 +74,12 @@ public class DailyCompoundingPeriod implements CompoundingPeriod {
         this.endOfDayBalances = endOfDayBalances;
     }
 
+    @SuppressWarnings("unused")
     @Override
-    public BigDecimal calculateInterest(
-            @SuppressWarnings("unused") final SavingsCompoundingInterestPeriodType compoundingInterestPeriodType,
-            @SuppressWarnings("unused") final SavingsInterestCalculationType interestCalculationType,
-            final BigDecimal interestFromPreviousPostingPeriod, final BigDecimal interestRateAsFraction, final long daysInYear,
-            final BigDecimal minBalanceForInterestCalculation) {
+    public BigDecimal calculateInterest(final SavingsCompoundingInterestPeriodType compoundingInterestPeriodType,
+            final SavingsInterestCalculationType interestCalculationType, final BigDecimal interestFromPreviousPostingPeriod,
+            final BigDecimal interestRateAsFraction, final long daysInYear, final BigDecimal minBalanceForInterestCalculation,
+            final BigDecimal overdraftInterestRateAsFraction, final BigDecimal minOverdraftForInterestCalculation) {
         BigDecimal interestEarned = BigDecimal.ZERO;
 
         // for daily compounding - each interest calculated from previous daily
@@ -88,11 +87,17 @@ public class DailyCompoundingPeriod implements CompoundingPeriod {
         BigDecimal interestToCompound = interestFromPreviousPostingPeriod;
         for (final EndOfDayBalance balance : this.endOfDayBalances) {
             final BigDecimal interestOnBalanceUnrounded = balance.calculateInterestOnBalanceAndInterest(interestToCompound,
-                    interestRateAsFraction, daysInYear, minBalanceForInterestCalculation);
+                    interestRateAsFraction, daysInYear, minBalanceForInterestCalculation, overdraftInterestRateAsFraction,
+                    minOverdraftForInterestCalculation, compoundingInterestPeriodType);
             interestToCompound = interestToCompound.add(interestOnBalanceUnrounded, MathContext.DECIMAL64).setScale(9);
             interestEarned = interestEarned.add(interestOnBalanceUnrounded);
         }
 
         return interestEarned;
+    }
+
+    @Override
+    public LocalDateInterval getPeriodInterval() {
+        return this.periodInterval;
     }
 }

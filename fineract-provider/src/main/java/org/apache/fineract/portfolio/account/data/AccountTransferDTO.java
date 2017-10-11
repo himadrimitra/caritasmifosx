@@ -50,6 +50,8 @@ public class AccountTransferDTO {
     private final String noteText;
     private final String txnExternalId;
     private final Loan loan;
+    private final Loan fromLoan;
+    private final Loan toLoan;
     private final SavingsAccount toSavingsAccount;
     private final SavingsAccount fromSavingsAccount;
     private final Boolean isRegularTransaction;
@@ -59,9 +61,9 @@ public class AccountTransferDTO {
             final PortfolioAccountType fromAccountType, final PortfolioAccountType toAccountType, final Long fromAccountId,
             final Long toAccountId, final String description, final Locale locale, final DateTimeFormatter fmt,
             final PaymentDetail paymentDetail, final Integer fromTransferType, final Integer toTransferType, final Long chargeId,
-            Integer loanInstallmentNumber, Integer transferType, final AccountTransferDetails accountTransferDetails,
-            final String noteText, final String txnExternalId, final Loan loan, SavingsAccount toSavingsAccount,
-            final SavingsAccount fromSavingsAccount, final Boolean isRegularTransaction, Boolean isExceptionForBalanceCheck) {
+            final Integer loanInstallmentNumber, final Integer transferType, final AccountTransferDetails accountTransferDetails,
+            final String noteText, final String txnExternalId, final Loan loan, final SavingsAccount toSavingsAccount,
+            final SavingsAccount fromSavingsAccount, final Boolean isRegularTransaction, final Boolean isExceptionForBalanceCheck) {
         this.transactionDate = transactionDate;
         this.transactionAmount = transactionAmount;
         this.fromAccountType = fromAccountType;
@@ -81,10 +83,44 @@ public class AccountTransferDTO {
         this.noteText = noteText;
         this.txnExternalId = txnExternalId;
         this.loan = loan;
+        this.fromLoan = null;
+        this.toLoan = null;
         this.toSavingsAccount = toSavingsAccount;
         this.fromSavingsAccount = fromSavingsAccount;
         this.isRegularTransaction = isRegularTransaction;
         this.isExceptionForBalanceCheck = isExceptionForBalanceCheck;
+    }
+
+    public AccountTransferDTO(final LocalDate transactionDate, final BigDecimal transactionAmount,
+            final PortfolioAccountType fromAccountType, final PortfolioAccountType toAccountType, final Long fromAccountId,
+            final Long toAccountId, final String description, final Locale locale, final DateTimeFormatter fmt,
+            final Integer fromTransferType, final Integer toTransferType, final String txnExternalId, final Loan fromLoan,
+            final Loan toLoan) {
+        this.transactionDate = transactionDate;
+        this.transactionAmount = transactionAmount;
+        this.fromAccountType = fromAccountType;
+        this.toAccountType = toAccountType;
+        this.fromAccountId = fromAccountId;
+        this.toAccountId = toAccountId;
+        this.description = description;
+        this.locale = locale;
+        this.fmt = fmt;
+        this.paymentDetail = null;
+        this.fromTransferType = fromTransferType;
+        this.toTransferType = toTransferType;
+        this.chargeId = null;
+        this.loanInstallmentNumber = null;
+        this.transferType = null;
+        this.accountTransferDetails = null;
+        this.noteText = null;
+        this.txnExternalId = txnExternalId;
+        this.fromLoan = fromLoan;
+        this.toLoan = toLoan;
+        this.loan = null;
+        this.toSavingsAccount = null;
+        this.fromSavingsAccount = null;
+        this.isRegularTransaction = null;
+        this.isExceptionForBalanceCheck = null;
     }
 
     public LocalDate getTransactionDate() {
@@ -161,6 +197,14 @@ public class AccountTransferDTO {
 
     public Loan getLoan() {
         return this.loan;
+    }
+
+    public Loan getFromLoan() {
+        return this.fromLoan;
+    }
+
+    public Loan getToLoan() {
+        return this.toLoan;
     }
 
     public SavingsAccount getToSavingsAccount() {

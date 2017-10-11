@@ -50,8 +50,15 @@ public enum LoanTransactionType {
     WITHDRAW_TRANSFER(14, "loanTransactionType.withdrawTransfer"), //
     REJECT_TRANSFER(15, "loanTransactionType.rejectTransfer"), //
     REFUND(16, "loanTransactionType.refund"), //
-    CHARGE_PAYMENT(17, "loanTransactionType.chargePayment"),  //
-    REFUND_FOR_ACTIVE_LOAN(18, "loanTransactionType.refund");
+    CHARGE_PAYMENT(17, "loanTransactionType.chargePayment"), //
+    REFUND_FOR_ACTIVE_LOAN(18, "loanTransactionType.refund"), //
+    INCOME_POSTING(19, "loanTransactionType.incomePosting"), //
+    ADD_SUBSIDY(50, "loanTransactionType.addSubsidy"), //
+    REVOKE_SUBSIDY(51, "loanTransactionType.revokeSubsidy"), //
+    BROKEN_PERIOD_INTEREST_POSTING(52, "loanTransactionType.brokenPeriodInterestPosting"), ACCRUAL_SUSPENSE(53,
+            "loanTransactionType.accrualSuspense"), //
+    ACCRUAL_WRITEOFF(54, "loanTransactionType.accrualWriteOff"), //
+    ACCRUAL_SUSPENSE_REVERSE(55, "loanTransactionType.accrualSuspenseReverse");
 
     private final Integer value;
     private final String code;
@@ -126,6 +133,27 @@ public enum LoanTransactionType {
             case 18:
                 loanTransactionType = LoanTransactionType.REFUND_FOR_ACTIVE_LOAN;
             break;
+            case 19:
+                loanTransactionType = LoanTransactionType.INCOME_POSTING;
+            break;
+            case 50:
+                loanTransactionType = LoanTransactionType.ADD_SUBSIDY;
+            break;
+            case 51:
+                loanTransactionType = LoanTransactionType.REVOKE_SUBSIDY;
+            break;
+            case 52:
+                loanTransactionType = LoanTransactionType.BROKEN_PERIOD_INTEREST_POSTING;
+            break;
+            case 53:
+                loanTransactionType = LoanTransactionType.ACCRUAL_SUSPENSE;
+            break;
+            case 54:
+                loanTransactionType = LoanTransactionType.ACCRUAL_WRITEOFF;
+            break;
+            case 55:
+                loanTransactionType = LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE;
+            break;
             default:
                 loanTransactionType = LoanTransactionType.INVALID;
             break;
@@ -168,8 +196,36 @@ public enum LoanTransactionType {
     public boolean isChargePayment() {
         return this.value.equals(LoanTransactionType.CHARGE_PAYMENT.getValue());
     }
-    
+
     public boolean isRefundForActiveLoan() {
         return this.value.equals(LoanTransactionType.REFUND_FOR_ACTIVE_LOAN.getValue());
+    }
+
+    public boolean isIncomePosting() {
+        return this.value.equals(LoanTransactionType.INCOME_POSTING.getValue());
+    }
+
+    public boolean isAddSubsidy() {
+        return this.value.equals(LoanTransactionType.ADD_SUBSIDY.getValue());
+    }
+
+    public boolean isRevokeSubsidy() {
+        return this.value.equals(LoanTransactionType.REVOKE_SUBSIDY.getValue());
+    }
+
+    public boolean isBrokenPeriodInterestPosting() {
+        return this.value.equals(LoanTransactionType.BROKEN_PERIOD_INTEREST_POSTING.getValue());
+    }
+
+    public boolean isAccrualSuspense() {
+        return this.value.equals(LoanTransactionType.ACCRUAL_SUSPENSE.getValue());
+    }
+
+    public boolean isAccrualWrittenOff() {
+        return this.value.equals(LoanTransactionType.ACCRUAL_WRITEOFF.getValue());
+    }
+
+    public boolean isAccrualSuspenseReverse() {
+        return this.value.equals(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue());
     }
 }

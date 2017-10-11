@@ -35,32 +35,45 @@ import org.apache.fineract.infrastructure.documentmanagement.exception.ContentMa
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.finflux.common.util.FinfluxFileUtils;
 import com.lowagie.text.pdf.codec.Base64;
 
 public class FileSystemContentRepository implements ContentRepository {
 
     private final static Logger logger = LoggerFactory.getLogger(FileSystemContentRepository.class);
 
-    public static final String MIFOSX_BASE_DIR = System.getProperty("user.home") + File.separator + ".mifosx";
+    public static final String FINERACT_BASE_DIR = System.getProperty("user.home") + File.separator + ".fineract";
 
     @Override
     public String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand) {
+        return saveFile(uploadedInputStream, documentCommand, true);
+    }
+
+    @Override
+    public String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand, boolean checkUploadSize) {
         final String fileName = documentCommand.getFileName();
         final String uploadDocumentLocation = generateFileParentDirectory(documentCommand.getParentEntityType(),
                 documentCommand.getParentEntityId());
 
-        ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+        if(checkUploadSize){
+            ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+        }
+        return saveFile(fileName, uploadDocumentLocation, uploadedInputStream);
+    }
+
+    private String saveFile(final String fileName, final String uploadDocumentLocation, final InputStream uploadedInputStream) {
         makeDirectories(uploadDocumentLocation);
 
         final String fileLocation = uploadDocumentLocation + File.separator + fileName;
 
         writeFileToFileSystem(fileName, uploadedInputStream, fileLocation);
+
         return fileLocation;
     }
 
     @Override
-    public String saveImage(final InputStream uploadedInputStream, final Long resourceId, final String imageName, final Long fileSize) {
-        final String uploadImageLocation = generateClientImageParentDirectory(resourceId);
+    public String saveImage(final InputStream uploadedInputStream, final Long resourceId, final String imageName, final Long fileSize,String entityName) {
+        final String uploadImageLocation = generateClientImageParentDirectory(resourceId,entityName);
 
         ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(fileSize, imageName);
         makeDirectories(uploadImageLocation);
@@ -72,8 +85,8 @@ public class FileSystemContentRepository implements ContentRepository {
     }
 
     @Override
-    public String saveImage(final Base64EncodedImage base64EncodedImage, final Long resourceId, final String imageName) {
-        final String uploadImageLocation = generateClientImageParentDirectory(resourceId);
+    public String saveImage(final Base64EncodedImage base64EncodedImage, final Long resourceId, final String imageName,String entityName) {
+        final String uploadImageLocation = generateClientImageParentDirectory(resourceId,entityName);
 
         makeDirectories(uploadImageLocation);
 
@@ -136,7 +149,7 @@ public class FileSystemContentRepository implements ContentRepository {
      * @return
      */
     private String generateFileParentDirectory(final String entityType, final Long entityId) {
-        return FileSystemContentRepository.MIFOSX_BASE_DIR + File.separator
+        return FileSystemContentRepository.FINERACT_BASE_DIR + File.separator
                 + ThreadLocalContextUtil.getTenant().getName().replaceAll(" ", "").trim() + File.separator + "documents" + File.separator
                 + entityType + File.separator + entityId + File.separator + ContentRepositoryUtils.generateRandomString();
     }
@@ -144,10 +157,10 @@ public class FileSystemContentRepository implements ContentRepository {
     /**
      * Generate directory path for storing new Image
      */
-    private String generateClientImageParentDirectory(final Long resourceId) {
-        return FileSystemContentRepository.MIFOSX_BASE_DIR + File.separator
+    private String generateClientImageParentDirectory(final Long resourceId,String entityName) {
+        return FileSystemContentRepository.FINERACT_BASE_DIR + File.separator
                 + ThreadLocalContextUtil.getTenant().getName().replaceAll(" ", "").trim() + File.separator + "images" + File.separator
-                + "clients" + File.separator + resourceId;
+                + entityName + File.separator + resourceId;
     }
 
     /**
@@ -174,4 +187,13 @@ public class FileSystemContentRepository implements ContentRepository {
             throw new ContentManagementException(fileName, ioException.getMessage());
         }
     }
+
+    @Override
+    public String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand, final String parentDirectoryPath,
+            final String... childDirectoriesPaths) {
+        final String fileName = documentCommand.getFileName();
+        final String uploadDocumentLocation = FinfluxFileUtils.generateFileLocation(parentDirectoryPath, childDirectoriesPaths);
+        return saveFile(fileName, uploadDocumentLocation, uploadedInputStream);
+    }
+    
 }

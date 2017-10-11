@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.charge.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -27,19 +28,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@CommandType(entity = "CHARGE", action = "CREATE")
 public class CreateChargeDefinitionCommandHandler implements NewCommandSourceHandler {
 
-    private final ChargeWritePlatformService clientWritePlatformService;
+    private final ChargeWritePlatformService chargeWritePlatformService;
 
     @Autowired
-    public CreateChargeDefinitionCommandHandler(final ChargeWritePlatformService clientWritePlatformService) {
-        this.clientWritePlatformService = clientWritePlatformService;
+    public CreateChargeDefinitionCommandHandler(final ChargeWritePlatformService chargeWritePlatformService) {
+        this.chargeWritePlatformService = chargeWritePlatformService;
     }
 
     @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
 
-        return this.clientWritePlatformService.createCharge(command);
+        return this.chargeWritePlatformService.createCharge(command);
     }
 }

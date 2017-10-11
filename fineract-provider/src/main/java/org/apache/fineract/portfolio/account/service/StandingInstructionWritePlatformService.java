@@ -24,7 +24,6 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
-import org.apache.fineract.portfolio.account.domain.StandingInstructionType;
 
 public interface StandingInstructionWritePlatformService {
 
@@ -36,5 +35,5 @@ public interface StandingInstructionWritePlatformService {
 
     CommandProcessingResult delete(Long id);
 
-	Collection<Long> delete(Long loanId, PortfolioAccountType loan);
+    Collection<Long> delete(Long accountId, PortfolioAccountType type);
 }

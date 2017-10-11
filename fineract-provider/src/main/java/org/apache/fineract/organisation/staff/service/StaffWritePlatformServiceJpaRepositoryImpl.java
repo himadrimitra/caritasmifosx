@@ -32,6 +32,7 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepository;
 import org.apache.fineract.organisation.staff.exception.StaffNotFoundException;
 import org.apache.fineract.organisation.staff.serialization.StaffCommandFromApiJsonDeserializer;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +71,8 @@ public class StaffWritePlatformServiceJpaRepositoryImpl implements StaffWritePla
 
             final Staff staff = Staff.fromJson(staffOffice, command);
 
+            validateInputDates(staff);
+
             this.staffRepository.save(staff);
 
             return new CommandProcessingResultBuilder() //
@@ -82,12 +85,22 @@ public class StaffWritePlatformServiceJpaRepositoryImpl implements StaffWritePla
         }
     }
 
+    private void validateInputDates(final Staff staff) {
+        final LocalDate officeOpenDate = staff.office().getOpeningLocalDate();
+        final LocalDate staffJoinDate = staff.getJoiningLocalDate();
+
+        if (officeOpenDate != null && staffJoinDate != null) {
+            if (staffJoinDate
+                    .isBefore(officeOpenDate)) { throw new StaffJoinDateException(officeOpenDate.toString(), staffJoinDate.toString()); }
+        }
+    }
+
     @Transactional
     @Override
     public CommandProcessingResult updateStaff(final Long staffId, final JsonCommand command) {
 
         try {
-            this.fromApiJsonDeserializer.validateForUpdate(command.json());
+            this.fromApiJsonDeserializer.validateForUpdate(command.json(), staffId);
 
             final Staff staffForUpdate = this.staffRepository.findOne(staffId);
             if (staffForUpdate == null) { throw new StaffNotFoundException(staffId); }
@@ -101,7 +114,7 @@ public class StaffWritePlatformServiceJpaRepositoryImpl implements StaffWritePla
 
                 staffForUpdate.changeOffice(newOffice);
             }
-
+            validateInputDates(staffForUpdate);
             if (!changesOnly.isEmpty()) {
                 this.staffRepository.saveAndFlush(staffForUpdate);
             }
@@ -124,8 +137,8 @@ public class StaffWritePlatformServiceJpaRepositoryImpl implements StaffWritePla
         if (realCause.getMessage().contains("external_id")) {
 
             final String externalId = command.stringValueOfParameterNamed("externalId");
-            throw new PlatformDataIntegrityException("error.msg.staff.duplicate.externalId", "Staff with externalId `" + externalId
-                    + "` already exists", "externalId", externalId);
+            throw new PlatformDataIntegrityException("error.msg.staff.duplicate.externalId",
+                    "Staff with externalId `" + externalId + "` already exists", "externalId", externalId);
         } else if (realCause.getMessage().contains("display_name")) {
             final String lastname = command.stringValueOfParameterNamed("lastname");
             String displayName = lastname;
@@ -133,8 +146,8 @@ public class StaffWritePlatformServiceJpaRepositoryImpl implements StaffWritePla
                 final String firstname = command.stringValueOfParameterNamed("firstname");
                 displayName = lastname + ", " + firstname;
             }
-            throw new PlatformDataIntegrityException("error.msg.staff.duplicate.displayName", "A staff with the given display name '"
-                    + displayName + "' already exists", "displayName", displayName);
+            throw new PlatformDataIntegrityException("error.msg.staff.duplicate.displayName",
+                    "A staff with the given display name '" + displayName + "' already exists", "displayName", displayName);
         }
 
         logger.error(dve.getMessage(), dve);

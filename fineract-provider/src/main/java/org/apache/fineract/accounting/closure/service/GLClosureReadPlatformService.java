@@ -21,11 +21,19 @@ package org.apache.fineract.accounting.closure.service;
 import java.util.List;
 
 import org.apache.fineract.accounting.closure.data.GLClosureData;
+import org.apache.fineract.infrastructure.core.data.PaginationParameters;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 
 public interface GLClosureReadPlatformService {
 
-    List<GLClosureData> retrieveAllGLClosures(Long OfficeId);
+    Page<GLClosureData> retrieveAllGLClosures(Long OfficeId, boolean limitToOne, PaginationParameters parameters,
+            final SearchParameters searchParameters);
+
+    List<GLClosureData> retrieveAllGLClosures(Long OfficeId, boolean limitToOne);
 
     GLClosureData retrieveGLClosureById(long glClosureId);
+
+    GLClosureData retrieveGLClosureByOfficeId(Long officeId);
 
 }

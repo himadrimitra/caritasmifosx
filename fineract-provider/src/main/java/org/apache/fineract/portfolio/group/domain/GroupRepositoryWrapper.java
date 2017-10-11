@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.group.domain;
 
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,13 +41,24 @@ public class GroupRepositoryWrapper {
     }
 
     public Group findOneWithNotFoundDetection(final Long id) {
+        return findOneWithNotFoundDetection(id, false);
+    }
+
+    public Group findOneWithNotFoundDetection(final Long id, final boolean loadLazyEntities) {
         final Group entity = this.repository.findOne(id);
         if (entity == null) { throw new GroupNotFoundException(id); }
+        if (loadLazyEntities) {
+            Hibernate.initialize(entity.getClientMembers());
+            Hibernate.initialize(entity.getGroupMembers());
+            Hibernate.initialize(entity.getStaffHistory());
+            Hibernate.initialize(entity.getParent());
+            Hibernate.initialize(entity.getGroupRoles());
+        }
         return entity;
     }
 
     public Group findByOfficeWithNotFoundDetection(final Long id, final Office office) {
-        final Group group = findOneWithNotFoundDetection(id);
+        final Group group = findOneWithNotFoundDetection(id, true);
         if (group.getOffice().getId() != office.getId()) { throw new GroupNotFoundException(id); }
         return group;
     }

@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.client.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@CommandType(entity = "CLIENT", action = "ACTIVATE")
 public class ActivateClientCommandHandler implements NewCommandSourceHandler {
 
     private final ClientWritePlatformService clientWritePlatformService;
@@ -40,6 +42,7 @@ public class ActivateClientCommandHandler implements NewCommandSourceHandler {
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
 
-        return this.clientWritePlatformService.activateClient(command.entityId(), command);
+        final boolean forceActivate = false;
+        return this.clientWritePlatformService.activateClient(command.entityId(), forceActivate, command);
     }
 }

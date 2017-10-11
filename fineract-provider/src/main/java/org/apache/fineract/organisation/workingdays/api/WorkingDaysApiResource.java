@@ -53,10 +53,10 @@ public class WorkingDaysApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
 
     @Autowired
-    public WorkingDaysApiResource(DefaultToApiJsonSerializer<WorkingDaysData> toApiJsonSerializer,
-            WorkingDaysReadPlatformService workingDaysReadPlatformService,
-            PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService, PlatformSecurityContext context,
-            ApiRequestParameterHelper apiRequestParameterHelper) {
+    public WorkingDaysApiResource(final DefaultToApiJsonSerializer<WorkingDaysData> toApiJsonSerializer,
+            final WorkingDaysReadPlatformService workingDaysReadPlatformService,
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService, final PlatformSecurityContext context,
+            final ApiRequestParameterHelper apiRequestParameterHelper) {
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.workingDaysReadPlatformService = workingDaysReadPlatformService;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;

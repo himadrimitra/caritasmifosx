@@ -25,13 +25,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.data.PortfolioAccountDTO;
 import org.apache.fineract.portfolio.account.data.PortfolioAccountData;
 import org.apache.fineract.portfolio.account.exception.AccountTransferNotFoundException;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,6 +51,7 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
     private final PortfolioSavingsAccountMapper savingsAccountMapper;
     private final PortfolioLoanAccountMapper loanAccountMapper;
     private final PortfolioLoanAccountRefundByTransferMapper accountRefundByTransferMapper;
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     public PortfolioAccountReadPlatformServiceImpl(final RoutingDataSource dataSource) {
@@ -104,7 +109,7 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
     @Override
     public Collection<PortfolioAccountData> retrieveAllForLookup(final PortfolioAccountDTO portfolioAccountDTO) {
 
-        List<Object> sqlParams = new ArrayList<>();
+        final List<Object> sqlParams = new ArrayList<>();
         sqlParams.add(portfolioAccountDTO.getClientId());
         Collection<PortfolioAccountData> accounts = null;
         String sql = null;
@@ -138,11 +143,11 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
                 }
 
                 if (portfolioAccountDTO.getDepositType() != null) {
-                    sql += " and sa.deposit_type_enum = ?";
-                    sqlParams.add(portfolioAccountDTO.getDepositType());
+                    final String depositTyprStr = StringUtils.join(portfolioAccountDTO.getDepositType(), ',');
+                    sql += " and sa.deposit_type_enum IN(" + depositTyprStr + ") ";
                 }
-                
-                if(portfolioAccountDTO.isExcludeOverDraftAccounts()){
+
+                if (portfolioAccountDTO.isExcludeOverDraftAccounts()) {
                     sql += " and sa.allow_overdraft = 0";
                 }
 
@@ -170,7 +175,8 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
             sqlBuilder.append("sa.currency_code as currencyCode, sa.currency_digits as currencyDigits,");
             sqlBuilder.append("sa.currency_multiplesof as inMultiplesOf, ");
             sqlBuilder.append("curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ");
-            sqlBuilder.append("curr.display_symbol as currencyDisplaySymbol ");
+            sqlBuilder.append("curr.display_symbol as currencyDisplaySymbol, ");
+            sqlBuilder.append("sa.account_balance_derived as balance ");
             sqlBuilder.append("from m_savings_account sa ");
             sqlBuilder.append("join m_savings_product sp ON sa.product_id = sp.id ");
             sqlBuilder.append("join m_currency curr on curr.code = sa.currency_code ");
@@ -209,11 +215,13 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
             final String currencyDisplaySymbol = rs.getString("currencyDisplaySymbol");
             final Integer currencyDigits = JdbcSupport.getInteger(rs, "currencyDigits");
             final Integer inMulitplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
-            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf,
-                    currencyDisplaySymbol, currencyNameCode);
+            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf, currencyDisplaySymbol,
+                    currencyNameCode);
 
-            return new PortfolioAccountData(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
-                    fieldOfficerId, fieldOfficerName, currency);
+            final BigDecimal balance = rs.getBigDecimal("balance");
+
+            return PortfolioAccountData.instance(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId,
+                    productName, fieldOfficerId, fieldOfficerName, currency, null, balance);
         }
     }
 
@@ -273,32 +281,32 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
             final Integer currencyDigits = JdbcSupport.getInteger(rs, "currencyDigits");
             final Integer inMulitplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
             final BigDecimal amtForTransfer = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "totalOverpaid");
-            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf,
-                    currencyDisplaySymbol, currencyNameCode);
+            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf, currencyDisplaySymbol,
+                    currencyNameCode);
 
-            return new PortfolioAccountData(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
-                    fieldOfficerId, fieldOfficerName, currency, amtForTransfer);
+            return PortfolioAccountData.instance(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId,
+                    productName, fieldOfficerId, fieldOfficerName, currency, amtForTransfer, null);
         }
     }
-    
+
     private static final class PortfolioLoanAccountRefundByTransferMapper implements RowMapper<PortfolioAccountData> {
 
         private final String schemaSql;
 
         public PortfolioLoanAccountRefundByTransferMapper() {
-            
+
             final StringBuilder amountQueryString = new StringBuilder(400);
-            amountQueryString.append("(select (SUM(ifnull(mr.principal_completed_derived, 0)) +"); 
-            amountQueryString.append("SUM(ifnull(mr.interest_completed_derived, 0)) + "); 
-             amountQueryString.append("SUM(ifnull(mr.fee_charges_completed_derived, 0)) + "); 
-             amountQueryString.append(" SUM(ifnull(mr.penalty_charges_completed_derived, 0))) as total_in_advance_derived"); 
-             amountQueryString.append(" from m_loan ml INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id"); 
-             amountQueryString.append(" where ml.id=? and ml.loan_status_id = 300"); 
-             amountQueryString.append("  and  mr.duedate >= CURDATE() group by ml.id having"); 
-             amountQueryString.append(" (SUM(ifnull(mr.principal_completed_derived, 0)) + "); 
-             amountQueryString.append(" SUM(ifnull(mr.interest_completed_derived, 0)) + "); 
-             amountQueryString.append("SUM(ifnull(mr.fee_charges_completed_derived, 0)) + "); 
-             amountQueryString.append("SUM(ifnull(mr.penalty_charges_completed_derived, 0))) > 0) as totalOverpaid ");
+            amountQueryString.append("(select (SUM(ifnull(mr.principal_completed_derived, 0)) +");
+            amountQueryString.append("SUM(ifnull(mr.interest_completed_derived, 0)) + ");
+            amountQueryString.append("SUM(ifnull(mr.fee_charges_completed_derived, 0)) + ");
+            amountQueryString.append(" SUM(ifnull(mr.penalty_charges_completed_derived, 0))) as total_in_advance_derived");
+            amountQueryString.append(" from m_loan ml INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id");
+            amountQueryString.append(" where ml.id=? and ml.loan_status_id = 300");
+            amountQueryString.append("  and  mr.duedate >=? group by ml.id having");
+            amountQueryString.append(" (SUM(ifnull(mr.principal_completed_derived, 0)) + ");
+            amountQueryString.append(" SUM(ifnull(mr.interest_completed_derived, 0)) + ");
+            amountQueryString.append("SUM(ifnull(mr.fee_charges_completed_derived, 0)) + ");
+            amountQueryString.append("SUM(ifnull(mr.penalty_charges_completed_derived, 0))) > 0) as totalOverpaid ");
 
             final StringBuilder sqlBuilder = new StringBuilder(400);
             sqlBuilder.append("la.id as id, la.account_no as accountNo, la.external_id as externalId, ");
@@ -351,32 +359,34 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
             final Integer currencyDigits = JdbcSupport.getInteger(rs, "currencyDigits");
             final Integer inMulitplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
             final BigDecimal amtForTransfer = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "totalOverpaid");
-            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf,
-                    currencyDisplaySymbol, currencyNameCode);
+            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf, currencyDisplaySymbol,
+                    currencyNameCode);
 
-            return new PortfolioAccountData(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
-                    fieldOfficerId, fieldOfficerName, currency, amtForTransfer);
+            return PortfolioAccountData.instance(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId,
+                    productName, fieldOfficerId, fieldOfficerName, currency, amtForTransfer, null);
         }
     }
-    
+
     @Override
-    public PortfolioAccountData retrieveOneByPaidInAdvance(Long accountId, Integer accountTypeId) {
+    public PortfolioAccountData retrieveOneByPaidInAdvance(final Long accountId, final Integer accountTypeId) {
         // TODO Auto-generated method stub
-        Object[] sqlParams = new Object[] { accountId , accountId};
+        final String currentdate = this.formatter.print(DateUtils.getLocalDateOfTenant());
+        final Object[] sqlParams = new Object[] { accountId, accountId, currentdate };
         PortfolioAccountData accountData = null;
-        //String currencyCode = null;
+        // String currencyCode = null;
         try {
             String sql = null;
-            //final PortfolioAccountType accountType = PortfolioAccountType.fromInt(accountTypeId);
-           
-                    sql = "select " + this.accountRefundByTransferMapper.schema() + " where la.id = ?";
-                  /*  if (currencyCode != null) {
-                        sql += " and la.currency_code = ?";
-                        sqlParams = new Object[] {accountId , accountId,currencyCode };
-                    }*/
+            // final PortfolioAccountType accountType =
+            // PortfolioAccountType.fromInt(accountTypeId);
 
-                    accountData = this.jdbcTemplate.queryForObject(sql, this.accountRefundByTransferMapper, sqlParams);
-         
+            sql = "select " + this.accountRefundByTransferMapper.schema() + " where la.id = ?";
+            /*
+             * if (currencyCode != null) { sql += " and la.currency_code = ?";
+             * sqlParams = new Object[] {accountId , accountId,currencyCode }; }
+             */
+
+            accountData = this.jdbcTemplate.queryForObject(sql, this.accountRefundByTransferMapper, sqlParams);
+
         } catch (final EmptyResultDataAccessException e) {
             throw new AccountTransferNotFoundException(accountId);
         }

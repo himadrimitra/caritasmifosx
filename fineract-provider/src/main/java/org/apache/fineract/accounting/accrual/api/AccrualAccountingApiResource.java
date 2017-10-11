@@ -56,7 +56,7 @@ public class AccrualAccountingApiResource {
 
         final CommandWrapper commandRequest = new CommandWrapperBuilder().excuteAccrualAccounting().withJson(jsonRequestBody).build();
 
-        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest, false);
 
         return this.apiJsonSerializerService.serialize(result);
     }

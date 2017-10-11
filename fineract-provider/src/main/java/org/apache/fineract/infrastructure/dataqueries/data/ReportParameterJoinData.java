@@ -29,6 +29,7 @@ final public class ReportParameterJoinData {
     private final String reportSql;
     private final Boolean coreReport;
     private final Boolean useReport;
+    private final Boolean trackUsage;
 
     private final Long reportParameterId;
     private final Long parameterId;
@@ -38,7 +39,7 @@ final public class ReportParameterJoinData {
     public ReportParameterJoinData(final Long reportId, final String reportName, final String reportType, final String reportSubType,
             final String reportCategory, final String description, final String reportSql, final Boolean coreReport,
             final Boolean useReport, final Long reportParameterId, final Long parameterId, final String reportParameterName,
-            final String parameterName) {
+            final String parameterName, final Boolean trackUsage) {
         this.reportId = reportId;
         this.reportName = reportName;
         this.reportType = reportType;
@@ -52,6 +53,7 @@ final public class ReportParameterJoinData {
         this.parameterId = parameterId;
         this.reportParameterName = reportParameterName;
         this.parameterName = parameterName;
+        this.trackUsage = trackUsage;
     }
 
     public Long getReportId() {
@@ -105,4 +107,9 @@ final public class ReportParameterJoinData {
     public String getDescription() {
         return this.description;
     }
+
+    public Boolean getTrackUsage() {
+        return this.trackUsage;
+    }
+
 }

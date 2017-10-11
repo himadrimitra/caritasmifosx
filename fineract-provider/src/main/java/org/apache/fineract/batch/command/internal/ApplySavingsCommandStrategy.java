@@ -33,9 +33,9 @@ import org.springframework.stereotype.Component;
  * Implements {@link org.apache.fineract.batch.command.CommandStrategy} and
  * applies a new savings on an existing client. It passes the contents of the
  * body from the BatchRequest to
- * {@link org.mifosplatform.portfolio.client.api.SavingsAccountsApiResource} and
+ * {@link org.apache.fineract.portfolio.client.api.SavingsAccountsApiResource} and
  * gets back the response. This class will also catch any errors raised by
- * {@link org.mifosplatform.portfolio.client.api.SavingsAccountsApiResource} and
+ * {@link org.apache.fineract.portfolio.client.api.SavingsAccountsApiResource} and
  * map those errors to appropriate status codes in BatchResponse.
  * 
  * @author Rishabh Shukla
@@ -65,11 +65,11 @@ public class ApplySavingsCommandStrategy implements CommandStrategy {
 
         // Try-catch blocks to map exceptions to appropriate status codes
         try {
-
+            String defaultValues = null;
             // Calls 'submitApplication' function from
             // 'SavingsAccountsApiResource' to Apply Savings to an existing
             // client
-            responseBody = savingsAccountsApiResource.submitApplication(request.getBody());
+            responseBody = savingsAccountsApiResource.submitApplication(defaultValues, request.getBody());
 
             response.setStatusCode(200);
             // Sets the body of the response after savings is successfully

@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.portfolio.account.api;
 
+import java.util.Map;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -77,12 +79,12 @@ public class AccountTransfersApiResource {
             @QueryParam("fromAccountId") final Long fromAccountId, @QueryParam("fromAccountType") final Integer fromAccountType,
             @QueryParam("toOfficeId") final Long toOfficeId, @QueryParam("toClientId") final Long toClientId,
             @QueryParam("toAccountId") final Long toAccountId, @QueryParam("toAccountType") final Integer toAccountType,
-            @Context final UriInfo uriInfo) {
+            @QueryParam("transferType") final Byte transferType, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(AccountTransfersApiConstants.ACCOUNT_TRANSFER_RESOURCE_NAME);
 
         final AccountTransferData transferData = this.accountTransfersReadPlatformService.retrieveTemplate(fromOfficeId, fromClientId,
-                fromAccountId, fromAccountType, toOfficeId, toClientId, toAccountId, toAccountType);
+                fromAccountId, fromAccountType, toOfficeId, toClientId, toAccountId, toAccountType, transferType);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, transferData, AccountTransfersApiConstants.RESPONSE_DATA_PARAMETERS);
@@ -103,18 +105,15 @@ public class AccountTransfersApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
-            @QueryParam("externalId") final String externalId, @QueryParam("offset") final Integer offset,
-            @QueryParam("limit") final Integer limit, @QueryParam("orderBy") final String orderBy,
-            @QueryParam("sortOrder") final String sortOrder,@QueryParam("accountDetailId") final Long accountDetailId) {
-
+    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("externalId") final String externalId,
+            @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
+            @QueryParam("accountDetailId") final Long accountDetailId) {
+        final Map<String, String> searchConditionsMap = null;
         this.context.authenticatedUser().validateHasReadPermission(AccountTransfersApiConstants.ACCOUNT_TRANSFER_RESOURCE_NAME);
-
-        final SearchParameters searchParameters = SearchParameters.forAccountTransfer(sqlSearch, externalId, offset, limit, orderBy,
-                sortOrder);
-
+        final SearchParameters searchParameters = SearchParameters.forAccountTransfer(searchConditionsMap, externalId, offset, limit,
+                orderBy, sortOrder);
         final Page<AccountTransferData> transfers = this.accountTransfersReadPlatformService.retrieveAll(searchParameters, accountDetailId);
-
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, transfers, AccountTransfersApiConstants.RESPONSE_DATA_PARAMETERS);
     }
@@ -132,26 +131,26 @@ public class AccountTransfersApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, transfer, AccountTransfersApiConstants.RESPONSE_DATA_PARAMETERS);
     }
-    
+
     @GET
     @Path("templateRefundByTransfer")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String templateRefundByTransfer(@QueryParam("fromOfficeId") final Long fromOfficeId, @QueryParam("fromClientId") final Long fromClientId,
-            @QueryParam("fromAccountId") final Long fromAccountId, @QueryParam("fromAccountType") final Integer fromAccountType,
-            @QueryParam("toOfficeId") final Long toOfficeId, @QueryParam("toClientId") final Long toClientId,
-            @QueryParam("toAccountId") final Long toAccountId, @QueryParam("toAccountType") final Integer toAccountType,
-            @Context final UriInfo uriInfo) {
+    public String templateRefundByTransfer(@QueryParam("fromOfficeId") final Long fromOfficeId,
+            @QueryParam("fromClientId") final Long fromClientId, @QueryParam("fromAccountId") final Long fromAccountId,
+            @QueryParam("fromAccountType") final Integer fromAccountType, @QueryParam("toOfficeId") final Long toOfficeId,
+            @QueryParam("toClientId") final Long toClientId, @QueryParam("toAccountId") final Long toAccountId,
+            @QueryParam("toAccountType") final Integer toAccountType, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(AccountTransfersApiConstants.ACCOUNT_TRANSFER_RESOURCE_NAME);
 
-        final AccountTransferData transferData = this.accountTransfersReadPlatformService.retrieveRefundByTransferTemplate(fromOfficeId, fromClientId,
-                fromAccountId, fromAccountType, toOfficeId, toClientId, toAccountId, toAccountType);
+        final AccountTransferData transferData = this.accountTransfersReadPlatformService.retrieveRefundByTransferTemplate(fromOfficeId,
+                fromClientId, fromAccountId, fromAccountType, toOfficeId, toClientId, toAccountId, toAccountType);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, transferData, AccountTransfersApiConstants.RESPONSE_DATA_PARAMETERS);
     }
-    
+
     @POST
     @Path("refundByTransfer")
     @Consumes({ MediaType.APPLICATION_JSON })

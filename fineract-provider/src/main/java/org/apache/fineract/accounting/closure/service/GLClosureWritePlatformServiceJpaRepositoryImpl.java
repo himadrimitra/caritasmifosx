@@ -19,6 +19,7 @@
 package org.apache.fineract.accounting.closure.service;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.fineract.accounting.closure.api.GLClosureJsonInputParams;
@@ -28,8 +29,8 @@ import org.apache.fineract.accounting.closure.domain.GLClosureRepository;
 import org.apache.fineract.accounting.closure.exception.GLClosureDuplicateException;
 import org.apache.fineract.accounting.closure.exception.GLClosureInvalidDeleteException;
 import org.apache.fineract.accounting.closure.exception.GLClosureInvalidException;
-import org.apache.fineract.accounting.closure.exception.GLClosureNotFoundException;
 import org.apache.fineract.accounting.closure.exception.GLClosureInvalidException.GL_CLOSURE_INVALID_REASON;
+import org.apache.fineract.accounting.closure.exception.GLClosureNotFoundException;
 import org.apache.fineract.accounting.closure.serialization.GLClosureCommandFromApiJsonDeserializer;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -38,6 +39,9 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
 import org.apache.fineract.organisation.office.exception.OfficeNotFoundException;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,13 +58,16 @@ public class GLClosureWritePlatformServiceJpaRepositoryImpl implements GLClosure
     private final GLClosureRepository glClosureRepository;
     private final OfficeRepository officeRepository;
     private final GLClosureCommandFromApiJsonDeserializer fromApiJsonDeserializer;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public GLClosureWritePlatformServiceJpaRepositoryImpl(final GLClosureRepository glClosureRepository,
-            final OfficeRepository officeRepository, final GLClosureCommandFromApiJsonDeserializer fromApiJsonDeserializer) {
+            final OfficeRepository officeRepository, final GLClosureCommandFromApiJsonDeserializer fromApiJsonDeserializer,
+            final BusinessEventNotifierService businessEventNotifierService) {
         this.glClosureRepository = glClosureRepository;
         this.officeRepository = officeRepository;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Transactional
@@ -83,12 +90,15 @@ public class GLClosureWritePlatformServiceJpaRepositoryImpl implements GLClosure
             // shouldn't be before an existing accounting closure
             final GLClosure latestGLClosure = this.glClosureRepository.getLatestGLClosureByBranch(officeId);
             if (latestGLClosure != null) {
-                if (latestGLClosure.getClosingDate().after(closureDate)) { throw new GLClosureInvalidException(
+                if (!latestGLClosure.getClosingDate().before(closureDate)) { throw new GLClosureInvalidException(
                         GL_CLOSURE_INVALID_REASON.ACCOUNTING_CLOSED, latestGLClosure.getClosingDate()); }
             }
             final GLClosure glClosure = GLClosure.fromJson(office, command);
 
             this.glClosureRepository.saveAndFlush(glClosure);
+            final Map<BUSINESS_ENTITY, Object> businessEventEntity = new HashMap<>(1);
+            businessEventEntity.put(BUSINESS_ENTITY.GL_CLOSURE, glClosure);
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.GL_ACCOUNT_CLOSURE, businessEventEntity);
 
             return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withOfficeId(officeId)
                     .withEntityId(glClosure.getId()).build();
@@ -131,10 +141,11 @@ public class GLClosureWritePlatformServiceJpaRepositoryImpl implements GLClosure
          **/
         final Date closureDate = glClosure.getClosingDate();
         final GLClosure latestGLClosure = this.glClosureRepository.getLatestGLClosureByBranch(glClosure.getOffice().getId());
-        if (latestGLClosure.getClosingDate().after(closureDate)) { throw new GLClosureInvalidDeleteException(latestGLClosure.getOffice()
-                .getId(), latestGLClosure.getOffice().getName(), latestGLClosure.getClosingDate()); }
+        if (latestGLClosure.getClosingDate()
+                .after(closureDate)) { throw new GLClosureInvalidDeleteException(latestGLClosure.getOffice().getId(),
+                        latestGLClosure.getOffice().getName(), latestGLClosure.getClosingDate()); }
 
-        this.glClosureRepository.delete(glClosure);
+        this.glClosureRepository.deleteGLClosure(glClosure.getId());
 
         return new CommandProcessingResultBuilder().withOfficeId(glClosure.getOffice().getId()).withEntityId(glClosure.getId()).build();
     }
@@ -145,9 +156,10 @@ public class GLClosureWritePlatformServiceJpaRepositoryImpl implements GLClosure
      */
     private void handleGLClosureIntegrityIssues(final JsonCommand command, final DataIntegrityViolationException dve) {
         final Throwable realCause = dve.getMostSpecificCause();
-        if (realCause.getMessage().contains("office_id_closing_date")) { throw new GLClosureDuplicateException(
-                command.longValueOfParameterNamed(GLClosureJsonInputParams.OFFICE_ID.getValue()), new LocalDate(
-                        command.DateValueOfParameterNamed(GLClosureJsonInputParams.CLOSING_DATE.getValue()))); }
+        if (realCause.getMessage()
+                .contains("office_id_closing_date")) { throw new GLClosureDuplicateException(
+                        command.longValueOfParameterNamed(GLClosureJsonInputParams.OFFICE_ID.getValue()),
+                        new LocalDate(command.DateValueOfParameterNamed(GLClosureJsonInputParams.CLOSING_DATE.getValue()))); }
 
         logger.error(dve.getMessage(), dve);
         throw new PlatformDataIntegrityException("error.msg.glClosure.unknown.data.integrity.issue",

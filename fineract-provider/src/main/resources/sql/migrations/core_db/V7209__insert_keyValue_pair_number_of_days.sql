@@ -1,0 +1,1 @@
+INSERT INTO `c_configuration` (`name`, `value`, `date_value`, `enabled`, `is_trap_door`, `description`) VALUES ('number-of-days-for-ACH-failed-transactions', '5', NULL, 1, 0, 'Represents number of days to be considered while fetching ACH failed transactions');

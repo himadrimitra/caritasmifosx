@@ -18,30 +18,40 @@
  */
 package org.apache.fineract.portfolio.savings.service;
 
+import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionData;
+import org.joda.time.LocalDate;
 
 public interface SavingsAccountReadPlatformService {
 
     Page<SavingsAccountData> retrieveAll(SearchParameters searchParameters);
+
     Long getIsReleaseGuarantor(Long savingId);
 
     Collection<SavingsAccountData> retrieveAllForLookup(Long clientId);
 
     Collection<SavingsAccountData> retrieveActiveForLookup(Long clientId, DepositAccountType depositAccountType);
 
+    Collection<SavingsAccountTransactionData> retrieveAllTransactions(Long savingsId, DepositAccountType depositAccountType);
+
+    public Collection<SavingsAccountData> retrieveActiveForLookup(final Long clientId, DepositAccountType depositAccountType,
+            String currencyCode);
+
     SavingsAccountData retrieveOne(Long savingsId);
 
-    SavingsAccountData retrieveTemplate(Long clientId, Long groupId, Long productId, boolean staffInSelectedOfficeOnly);
+    SavingsAccountData retrieveTemplate(Long clientId, Long groupId, Long productId, boolean staffInSelectedOfficeOnly,
+            SavingsAccountDpDetailsData savingsAccountDpDetailsData);
 
     SavingsAccountTransactionData retrieveDepositTransactionTemplate(Long savingsId, DepositAccountType depositAccountType);
-
-    Collection<SavingsAccountTransactionData> retrieveAllTransactions(Long savingsId, DepositAccountType depositAccountType);
 
     // Collection<SavingsAccountAnnualFeeData>
     // retrieveAccountsWithAnnualFeeDue();
@@ -49,4 +59,27 @@ public interface SavingsAccountReadPlatformService {
     SavingsAccountTransactionData retrieveSavingsTransaction(Long savingsId, Long transactionId, DepositAccountType depositAccountType);
 
     Collection<SavingsAccountData> retrieveForLookup(Long clientId, Boolean overdraft);
+
+    List<Long> retrieveSavingsIdsPendingInactive(LocalDate tenantLocalDate);
+
+    List<Long> retrieveSavingsIdsPendingDormant(LocalDate tenantLocalDate);
+
+    List<Long> retrieveSavingsIdsPendingEscheat(LocalDate tenantLocalDate);
+
+    boolean isAccountBelongsToClient(final Long clientId, final Long accountId, final DepositAccountType depositAccountType,
+            final String currencyCode);
+
+    Collection<SavingsAccountDpDetailsData> retriveSavingsAccountDpDetailsDatas();
+
+    void updateSavingsAccountDpLimit(BigDecimal dpLimitAmount, Long savingsAccountId);
+
+    SavingsAccountDpDetailsData retrieveSavingsDpDetailsBySavingsId(Long accountId);
+
+    Collection<SavingsAccountTransactionData> retrieveAllTransactions(Long savingsId, DepositAccountType depositAccountType,
+            SearchParameters searchParameters);
+
+    Collection<Long> retrieveRecurringDepositsIdByOfficesAndHoliday(final Long officeId, final List<Holiday> holidays,
+            final Collection<Integer> status, final LocalDate recalculateFrom);
+
+    Long retrivePaymentDetailsIdWithSavingsAccountNumberAndTransactioId(final long transactionId, final String savingsAccountNumber);
 }

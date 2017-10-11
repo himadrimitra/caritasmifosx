@@ -33,15 +33,19 @@ import org.apache.fineract.infrastructure.security.domain.BasicPasswordEncodable
 import org.apache.fineract.infrastructure.security.domain.PlatformUser;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.joda.time.MonthDay;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
+import com.sun.jersey.multipart.FormDataMultiPart;
 
 /**
  * Immutable representation of a command.
- * 
+ *
  * Wraps the provided JSON with convenience functions for extracting parameter
  * values and checking for changes against an existing value.
  */
@@ -61,42 +65,72 @@ public final class JsonCommand {
     private final String transactionId;
     private final String url;
     private final Long productId;
+    private final Integer entityTypeId;
+    private final FormDataMultiPart formDataMultiPart;
 
     public static JsonCommand from(final String jsonCommand, final JsonElement parsedCommand, final FromJsonHelper fromApiJsonHelper,
             final String entityName, final Long resourceId, final Long subresourceId, final Long groupId, final Long clientId,
-            final Long loanId, final Long savingsId, final String transactionId, final String url, final Long productId) {
+            final Long loanId, final Long savingsId, final String transactionId, final String url, final Long productId,
+            final Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
         return new JsonCommand(null, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
-                clientId, loanId, savingsId, transactionId, url, productId);
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId, formDataMultiPart);
 
     }
 
     public static JsonCommand fromExistingCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
-            final String url, final Long productId) {
+            final String url, final Long productId, final Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
         return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, null, null,
-                null, null, null, url, productId);
+                null, null, null, url, productId, entityTypeId, formDataMultiPart);
     }
 
     public static JsonCommand fromExistingCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
             final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId, final String url,
-            final Long productId) {
+            final Long productId, final Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
         return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
-                clientId, loanId, savingsId, transactionId, url, productId);
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId, formDataMultiPart);
 
     }
 
-    public static JsonCommand fromExistingCommand(JsonCommand command, final JsonElement parsedCommand) {
+    public static JsonCommand fromExistingCommand(final JsonCommand command, final JsonElement parsedCommand) {
         final String jsonCommand = command.fromApiJsonHelper.toJson(parsedCommand);
+        return fromExistingCommand(command, parsedCommand, jsonCommand);
+    }
+
+    public static JsonCommand fromExistingCommand(final JsonCommand command, final String jsonCommand) {
+        final JsonElement parsedCommand = command.fromApiJsonHelper.parse(jsonCommand);
+        return fromExistingCommand(command, parsedCommand, jsonCommand);
+    }
+
+    private static JsonCommand fromExistingCommand(final JsonCommand command, final JsonElement parsedCommand, final String jsonCommand) {
         return new JsonCommand(command.commandId, jsonCommand, parsedCommand, command.fromApiJsonHelper, command.entityName,
                 command.resourceId, command.subresourceId, command.groupId, command.clientId, command.loanId, command.savingsId,
-                command.transactionId, command.url, command.productId);
+                command.transactionId, command.url, command.productId, command.entityTypeId, command.formDataMultiPart);
+    }
+
+    public static JsonCommand from(final FromJsonHelper fromApiJsonHelper, final JsonElement parsedCommand, final Long resourceId) {
+        final String jsonCommand = fromApiJsonHelper.toJson(parsedCommand);
+        final Long commandId = null;
+        final Long subresourceId = null;
+        final Long groupId = null;
+        final Long clientId = null;
+        final Long loanId = null;
+        final Long savingsId = null;
+        final String entityName = null;
+        final String transactionId = null;
+        final String url = null;
+        final Long productId = null;
+        final Integer entityTypeId = null;
+        final FormDataMultiPart formDataMultiPart = null;
+        return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId, formDataMultiPart);
     }
 
     public JsonCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
             final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId, final String url,
-            final Long productId) {
+            final Long productId, final Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
 
         this.commandId = commandId;
         this.jsonCommand = jsonCommand;
@@ -112,6 +146,8 @@ public final class JsonCommand {
         this.transactionId = transactionId;
         this.url = url;
         this.productId = productId;
+        this.entityTypeId = entityTypeId;
+        this.formDataMultiPart = formDataMultiPart;
     }
 
     public String json() {
@@ -173,6 +209,18 @@ public final class JsonCommand {
 
     public Long getProductId() {
         return this.productId;
+    }
+
+    private boolean differenceExistsTime(final LocalDateTime baseValue, final LocalDateTime workingCopyValue) {
+        boolean differenceExists = false;
+
+        if (baseValue != null) {
+            differenceExists = !baseValue.equals(workingCopyValue);
+        } else {
+            differenceExists = workingCopyValue != null;
+        }
+
+        return differenceExists;
     }
 
     private boolean differenceExists(final LocalDate baseValue, final LocalDate workingCopyValue) {
@@ -252,7 +300,6 @@ public final class JsonCommand {
     public boolean parameterExists(final String parameterName) {
         return this.fromApiJsonHelper.parameterExists(parameterName, this.parsedCommand);
     }
-    
 
     public boolean hasParameter(final String parameterName) {
         return parameterExists(parameterName);
@@ -287,6 +334,24 @@ public final class JsonCommand {
         return isChangeInLocalDateParameterNamed(parameterName, localDate);
     }
 
+    public boolean isChangeInTimeParameterNamed(final String parameterName, final Date existingValue, final String timeFormat) {
+        LocalDateTime time = null;
+        if (existingValue != null) {
+            final DateTimeFormatter timeFormtter = DateTimeFormat.forPattern(timeFormat);
+            time = LocalDateTime.parse(existingValue.toString(), timeFormtter);
+        }
+        return isChangeInLocalTimeParameterNamed(parameterName, time);
+    }
+
+    public boolean isChangeInLocalTimeParameterNamed(final String parameterName, final LocalDateTime existingValue) {
+        boolean isChanged = false;
+        if (parameterExists(parameterName)) {
+            final LocalDateTime workingValue = localTimeValueOfParameterNamed(parameterName);
+            isChanged = differenceExistsTime(existingValue, workingValue);
+        }
+        return isChanged;
+    }
+
     public boolean isChangeInLocalDateParameterNamed(final String parameterName, final LocalDate existingValue) {
         boolean isChanged = false;
         if (parameterExists(parameterName)) {
@@ -298,6 +363,10 @@ public final class JsonCommand {
 
     public LocalDate localDateValueOfParameterNamed(final String parameterName) {
         return this.fromApiJsonHelper.extractLocalDateNamed(parameterName, this.parsedCommand);
+    }
+
+    public LocalDateTime localTimeValueOfParameterNamed(final String parameterName) {
+        return this.fromApiJsonHelper.extractLocalTimeNamed(parameterName, this.parsedCommand);
     }
 
     public MonthDay extractMonthDayNamed(final String parameterName) {
@@ -487,8 +556,11 @@ public final class JsonCommand {
      * always returns true or false
      */
     public boolean booleanPrimitiveValueOfParameterNamed(final String parameterName) {
-        final Boolean value = this.fromApiJsonHelper.extractBooleanNamed(parameterName, this.parsedCommand);
-        return (Boolean) ObjectUtils.defaultIfNull(value, Boolean.FALSE);
+        if (this.fromApiJsonHelper.parameterExists(parameterName, this.parsedCommand)) {
+            final Boolean value = this.fromApiJsonHelper.extractBooleanNamed(parameterName, this.parsedCommand);
+            return (Boolean) ObjectUtils.defaultIfNull(value, Boolean.FALSE);
+        }
+        return false;
     }
 
     public boolean isChangeInArrayParameterNamed(final String parameterName, final String[] existingValue) {
@@ -504,12 +576,16 @@ public final class JsonCommand {
         return this.fromApiJsonHelper.extractArrayNamed(parameterName, this.parsedCommand);
     }
 
+    public Integer[] arrayIntegerValueOfParameterNamed(final String parameterName) {
+        return this.fromApiJsonHelper.extractIntegerArrayNamed(parameterName, this.parsedCommand);
+    }
+
     public JsonArray arrayOfParameterNamed(final String parameterName) {
         return this.fromApiJsonHelper.extractJsonArrayNamed(parameterName, this.parsedCommand);
     }
 
     public boolean isChangeInPasswordParameterNamed(final String parameterName, final String existingValue,
-            final PlatformPasswordEncoder platformPasswordEncoder, final Long saltValue) {
+            final PlatformPasswordEncoder platformPasswordEncoder, final Object saltValue) {
         boolean isChanged = false;
         if (parameterExists(parameterName)) {
             final String workingValue = passwordValueOfParameterNamed(parameterName, platformPasswordEncoder, saltValue);
@@ -519,7 +595,7 @@ public final class JsonCommand {
     }
 
     public String passwordValueOfParameterNamed(final String parameterName, final PlatformPasswordEncoder platformPasswordEncoder,
-            final Long saltValue) {
+            final Object saltValue) {
         final String passwordPlainText = stringValueOfParameterNamed(parameterName);
 
         final PlatformUser dummyPlatformUser = new BasicPasswordEncodablePlatformUser(saltValue, "", passwordPlainText);
@@ -532,6 +608,19 @@ public final class JsonCommand {
 
     public void checkForUnsupportedParameters(final Type typeOfMap, final String json, final Set<String> requestDataParameters) {
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, requestDataParameters);
+    }
+
+    public Integer getEntityTypeId() {
+        return this.entityTypeId;
+    }
+
+    public FormDataMultiPart getFormDataMultiPart() {
+        return this.formDataMultiPart;
+    }
+
+    public Map<String, Object> extractObjectMap() {
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        return this.fromApiJsonHelper.extractObjectMap(typeOfMap, json());
     }
 
 }

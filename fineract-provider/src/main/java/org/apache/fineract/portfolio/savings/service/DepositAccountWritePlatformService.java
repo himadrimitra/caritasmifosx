@@ -18,11 +18,15 @@
  */
 package org.apache.fineract.portfolio.savings.service;
 
+import java.util.Collection;
+
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.portfolio.calendar.domain.Calendar;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
@@ -90,4 +94,8 @@ public interface DepositAccountWritePlatformService {
     void transferInterestToSavings() throws JobExecutionException;
 
     SavingsAccountTransaction mandatorySavingsAccountDeposit(final SavingsAccountTransactionDTO accountTransactionDTO);
+
+    void applyMeetingDateChanges(Calendar calendar, Collection<CalendarInstance> savingCalendarInstances,
+            Boolean reschedulebasedOnMeetingDates, LocalDate presentMeetingDate, LocalDate newMeetingDate);
+
 }

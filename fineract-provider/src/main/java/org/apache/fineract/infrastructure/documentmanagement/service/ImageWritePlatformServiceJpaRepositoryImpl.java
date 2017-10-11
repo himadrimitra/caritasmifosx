@@ -20,9 +20,11 @@ package org.apache.fineract.infrastructure.documentmanagement.service;
 
 import java.io.InputStream;
 
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
-import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiResource.ENTITY_TYPE_FOR_IMAGES;
+import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiConstants;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryFactory;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Image;
@@ -32,9 +34,13 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 @Service
 public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePlatformService {
@@ -47,7 +53,7 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
     @Autowired
     public ImageWritePlatformServiceJpaRepositoryImpl(final ContentRepositoryFactory documentStoreFactory,
             final ClientRepositoryWrapper clientRepositoryWrapper, final ImageRepository imageRepository,
-            StaffRepositoryWrapper staffRepositoryWrapper) {
+            final StaffRepositoryWrapper staffRepositoryWrapper) {
         this.contentRepositoryFactory = documentStoreFactory;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
         this.imageRepository = imageRepository;
@@ -56,41 +62,56 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
 
     @Transactional
     @Override
-    public CommandProcessingResult saveOrUpdateImage(String entityName, final Long clientId, final String imageName,
-            final InputStream inputStream, final Long fileSize) {
-        Object owner = deletePreviousImage(entityName, clientId);
+    public CommandProcessingResult saveOrUpdateImage(final JsonCommand command) {
+        Object owner = null;
+        final JsonElement json = command.parsedJson();
+        String entityName = null;
+        Long entityId = null;
+        entityName = json.getAsJsonObject().get(ImagesApiConstants.entityNameParam).getAsString();
+        entityId = json.getAsJsonObject().get(ImagesApiConstants.entityIdParam).getAsLong();
+        if (entityName.equalsIgnoreCase(EntityType.CLIENT.getDisplayName())
+                || entityName.equalsIgnoreCase(EntityType.STAFF.getDisplayName())) {
+            owner = deletePreviousImage(entityName, entityId);
+        }
 
+        return updateImage(owner, json.getAsJsonObject().get(ImagesApiConstants.imageLocationParam).getAsString(),
+                StorageType.fromInt(json.getAsJsonObject().get(ImagesApiConstants.storageTypeParam).getAsInt()), command);
+    }
+
+    @Override
+    @Transactional
+    public String saveImageInRepository(final String imageName, final InputStream inputStream, final Long fileSize,
+            final Base64EncodedImage encodedImage, final Long entityId, final String entityName) {
         final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository();
-        final String imageLocation = contentRepository.saveImage(inputStream, clientId, imageName, fileSize);
-        return updateImage(owner, imageLocation, contentRepository.getStorageType());
+        String imageLocation = null;
+        if (encodedImage != null) {
+            imageLocation = contentRepository.saveImage(encodedImage, entityId, imageName, entityName);
+        } else {
+            imageLocation = contentRepository.saveImage(inputStream, entityId, imageName, fileSize, entityName);
+        }
+        final JsonObject json = new JsonObject();
+        json.addProperty(ImagesApiConstants.imageLocationParam, imageLocation);
+        json.addProperty(ImagesApiConstants.storageTypeParam, contentRepository.getStorageType().getValue());
+        json.addProperty(ImagesApiConstants.entityNameParam, entityName);
+        json.addProperty(ImagesApiConstants.entityIdParam, entityId);
+        return json.toString();
     }
 
     @Transactional
     @Override
-    public CommandProcessingResult saveOrUpdateImage(String entityName, final Long clientId, final Base64EncodedImage encodedImage) {
-        Object owner = deletePreviousImage(entityName, clientId);
-
-        final ContentRepository contenRepository = this.contentRepositoryFactory.getRepository();
-        final String imageLocation = contenRepository.saveImage(encodedImage, clientId, "image");
-
-        return updateImage(owner, imageLocation, contenRepository.getStorageType());
-    }
-
-    @Transactional
-    @Override
-    public CommandProcessingResult deleteImage(String entityName, final Long clientId) {
+    public CommandProcessingResult deleteImage(final String entityName, final Long clientId) {
         Object owner = null;
         Image image = null;
-        if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equals(entityName)) {
-            owner = this.clientRepositoryWrapper.findOneWithNotFoundDetection(clientId);
-            Client client = (Client) owner;
+        if (EntityType.CLIENT.getDisplayName().equalsIgnoreCase(entityName)) {
+            owner = this.clientRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
+            final Client client = (Client) owner;
             image = client.getImage();
             client.setImage(null);
             this.clientRepositoryWrapper.save(client);
 
-        } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equals(entityName)) {
-            owner = this.staffRepositoryWrapper.findOneWithNotFoundDetection(clientId);
-            Staff staff = (Staff) owner;
+        } else if (EntityType.STAFF.getDisplayName().equalsIgnoreCase(entityName)) {
+            owner = this.staffRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
+            final Staff staff = (Staff) owner;
             image = staff.getImage();
             staff.setImage(null);
             this.staffRepositoryWrapper.save(staff);
@@ -98,8 +119,8 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
         }
         // delete image from the file system
         if (image != null) {
-            final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository(StorageType.fromInt(image
-                    .getStorageType()));
+            final ContentRepository contentRepository = this.contentRepositoryFactory
+                    .getRepository(StorageType.fromInt(image.getStorageType()));
             contentRepository.deleteImage(clientId, image.getLocation());
             this.imageRepository.delete(image);
         }
@@ -112,55 +133,59 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
      * @param entityId
      * @return
      */
-    private Object deletePreviousImage(String entityName, final Long entityId) {
+    private Object deletePreviousImage(final String entityName, final Long entityId) {
         Object owner = null;
         Image image = null;
-        if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equals(entityName)) {
-            Client client = this.clientRepositoryWrapper.findOneWithNotFoundDetection(entityId);
+        if (EntityType.CLIENT.getDisplayName().equalsIgnoreCase(entityName)) {
+            final Client client = this.clientRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(entityId);
             image = client.getImage();
             owner = client;
-        } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equals(entityName)) {
-            Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetection(entityId);
+        } else if (EntityType.STAFF.getDisplayName().equalsIgnoreCase(entityName)) {
+            final Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(entityId);
             image = staff.getImage();
             owner = staff;
         }
         if (image != null) {
-            final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository(StorageType.fromInt(image
-                    .getStorageType()));
+            final ContentRepository contentRepository = this.contentRepositoryFactory
+                    .getRepository(StorageType.fromInt(image.getStorageType()));
             contentRepository.deleteImage(entityId, image.getLocation());
         }
         return owner;
     }
 
-    private CommandProcessingResult updateImage(final Object owner, final String imageLocation, final StorageType storageType) {
+    private CommandProcessingResult updateImage(final Object owner, final String imageLocation, final StorageType storageType,
+            final JsonCommand command) {
         Image image = null;
-        Long clientId = null;
         if (owner instanceof Client) {
-            Client client = (Client) owner;
+            final Client client = (Client) owner;
             image = client.getImage();
-            clientId = client.getId();
-            image = createImage(image, imageLocation, storageType);
+
+            image = createImage(image, imageLocation, storageType, command);
             client.setImage(image);
             this.clientRepositoryWrapper.save(client);
         } else if (owner instanceof Staff) {
-            Staff staff = (Staff) owner;
+            final Staff staff = (Staff) owner;
             image = staff.getImage();
-            clientId = staff.getId();
-            image = createImage(image, imageLocation, storageType);
+            image = createImage(image, imageLocation, storageType, command);
             staff.setImage(image);
             this.staffRepositoryWrapper.save(staff);
+        } else {
+            image = createImage(image, imageLocation, storageType, command);
         }
 
-        this.imageRepository.save(image);
-        return new CommandProcessingResult(clientId);
+        return new CommandProcessingResult(this.imageRepository.save(image).getId());
     }
 
-    private Image createImage(Image image, final String imageLocation, final StorageType storageType) {
+    private Image createImage(Image image, final String imageLocation, final StorageType storageType, final JsonCommand command) {
         if (image == null) {
-            image = new Image(imageLocation, storageType);
+            image = new Image(imageLocation, storageType, command);
         } else {
+            final JsonElement json = command.parsedJson();
             image.setLocation(imageLocation);
             image.setStorageType(storageType.getValue());
+            if (json.getAsJsonObject().has(ImagesApiConstants.geoTagParam)) {
+                image.setGeoTag(GeoTag.from(json.getAsJsonObject().get(ImagesApiConstants.geoTagParam).getAsString()));
+            }
         }
         return image;
     }

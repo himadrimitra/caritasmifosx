@@ -25,6 +25,8 @@ import java.util.Map;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.data.JobDetailDataValidator;
 import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobDetail;
 import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobDetailRepository;
@@ -33,6 +35,7 @@ import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobRunHistoryRepo
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetail;
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetailRepository;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
+import org.joda.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,14 +51,17 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
 
     private final JobDetailDataValidator dataValidator;
 
+    private final SchedulerJobRunnerReadService schedulerJobRunnerReadService;
+
     @Autowired
     public SchedularWritePlatformServiceJpaRepositoryImpl(final ScheduledJobDetailRepository scheduledJobDetailsRepository,
             final ScheduledJobRunHistoryRepository scheduledJobRunHistoryRepository, final JobDetailDataValidator dataValidator,
-            final SchedulerDetailRepository schedulerDetailRepository) {
+            final SchedulerDetailRepository schedulerDetailRepository, final SchedulerJobRunnerReadService schedulerJobRunnerReadService) {
         this.scheduledJobDetailsRepository = scheduledJobDetailsRepository;
         this.scheduledJobRunHistoryRepository = scheduledJobRunHistoryRepository;
         this.schedulerDetailRepository = schedulerDetailRepository;
         this.dataValidator = dataValidator;
+        this.schedulerJobRunnerReadService = schedulerJobRunnerReadService;
     }
 
     @Override
@@ -82,18 +88,13 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
     }
 
     @Override
-    public Long fetchMaxVersionBy(final String jobKey) {
-        Long version = 0L;
-        final Long versionFromDB = this.scheduledJobRunHistoryRepository.findMaxVersionByJobKey(jobKey);
-        if (versionFromDB != null) {
-            version = versionFromDB;
-        }
-        return version;
+    public ScheduledJobDetail findByJobId(final Long jobId) {
+        return this.scheduledJobDetailsRepository.findByJobId(jobId);
     }
 
     @Override
-    public ScheduledJobDetail findByJobId(final Long jobId) {
-        return this.scheduledJobDetailsRepository.findByJobId(jobId);
+    public ScheduledJobDetail findByJobName(final String jobName) {
+        return this.scheduledJobDetailsRepository.findByJobName(jobName);
     }
 
     @Override
@@ -132,22 +133,55 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
 
     @Transactional
     @Override
-    public boolean processJobDetailForExecution(final String jobKey, final String triggerType) {
+    public boolean processJobDetailForExecution(final String jobKey, final String triggerType, final Map<String, Object> jobParams) {
         boolean isStopExecution = false;
         final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobKeyWithLock(jobKey);
-        if (scheduledJobDetail.isCurrentlyRunning()
-                || (triggerType == SchedulerServiceConstants.TRIGGER_TYPE_CRON && (scheduledJobDetail.getNextRunTime().after(new Date())))) {
+        if (scheduledJobDetail.isCurrentlyRunning() || (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON)
+                && !(new LocalDateTime(scheduledJobDetail.getNextRunTime()).isBefore(new LocalDateTime())))) {
             isStopExecution = true;
         }
+
+        final String dependentJobs = scheduledJobDetail.getDependsOn();
+        if (dependentJobs != null) {
+            final String[] dependentJobList = dependentJobs.split(":");
+
+            for (final String job : dependentJobList) {
+                final Map<String, Object> dependentDetail = this.schedulerJobRunnerReadService.getDependentJobStatusAndLastRunDate(job);
+                final Boolean isActive = (Boolean) dependentDetail.get("active");
+                if (isActive) {
+                    final Date lastRunDate = (Date) dependentDetail.get("lastSuccessRunDate");
+                    if ((lastRunDate == null || lastRunDate.before(DateUtils.getLocalDateOfTenant().toDate()))) {
+                        isStopExecution = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         final SchedulerDetail schedulerDetail = retriveSchedulerDetail();
-        if (triggerType == SchedulerServiceConstants.TRIGGER_TYPE_CRON && schedulerDetail.isSuspended()) {
+        if (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && schedulerDetail.isSuspended()) {
             scheduledJobDetail.updateTriggerMisfired(true);
             isStopExecution = true;
         } else if (!isStopExecution) {
             scheduledJobDetail.updateCurrentlyRunningStatus(true);
         }
+        jobParams.putAll(this.schedulerJobRunnerReadService.getJobParams(scheduledJobDetail.getId()));
+        ThreadLocalContextUtil.setJobParams(jobParams);
         this.scheduledJobDetailsRepository.save(scheduledJobDetail);
         return isStopExecution;
+    }
+
+    @Transactional
+    @Override
+    public boolean updateCurrentlyRunningStatus(final String jobName, final boolean status) {
+        final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobName(jobName);
+        boolean updated = false;
+        if (scheduledJobDetail.isCurrentlyRunning() != status) {
+            scheduledJobDetail.updateCurrentlyRunningStatus(status);
+            this.scheduledJobDetailsRepository.save(scheduledJobDetail);
+            updated = true;
+        }
+        return updated;
     }
 
 }

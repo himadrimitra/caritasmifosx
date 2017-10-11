@@ -20,7 +20,12 @@ package org.apache.fineract.portfolio.paymenttype.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface PaymentTypeRepository extends JpaRepository<PaymentType, Long>, JpaSpecificationExecutor<PaymentType> {
+
+    @Query("from PaymentType paymentType where paymentType.name = :name")
+    PaymentType findByPaymentTypeName(@Param("name") String name);
 
 }

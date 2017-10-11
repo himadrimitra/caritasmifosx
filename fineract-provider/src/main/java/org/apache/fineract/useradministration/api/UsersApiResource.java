@@ -31,15 +31,18 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -63,7 +66,7 @@ public class UsersApiResource {
      * {@link AppUserData}.
      */
     private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "officeId", "officeName", "username",
-            "firstname", "lastname", "email", "allowedOffices", "availableRoles", "selectedRoles", "staff"));
+            "firstname", "lastname", "email", "allowedOffices", "availableRoles", "selectedRoles", "staff","systemUser"));
 
     private final String resourceNameForPermissions = "USER";
 
@@ -139,6 +142,23 @@ public class UsersApiResource {
 
         return this.toApiJsonSerializer.serialize(result);
     }
+    
+    @POST
+    @Path("{userId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String adjustLoanTransaction(@PathParam("userId") final Long userId, @QueryParam("command") final String commandParam,
+            final String apiRequestBodyAsJson) {
+
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
+        CommandProcessingResult result = null;
+        if (is(commandParam, "unlock")) {
+            final CommandWrapper commandRequest = builder.unlockUser(userId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }
+        if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam); }
+        return this.toApiJsonSerializer.serialize(result);
+    }
 
     @PUT
     @Path("{userId}")
@@ -165,5 +185,9 @@ public class UsersApiResource {
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
+    }
+    
+    private boolean is(final String commandParam, final String commandValue) {
+        return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
     }
 }

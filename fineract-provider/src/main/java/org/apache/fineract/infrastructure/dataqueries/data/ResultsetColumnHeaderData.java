@@ -26,40 +26,61 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 /**
  * Immutable data object representing a resultset column.
  */
-public final class ResultsetColumnHeaderData {
+public final class ResultsetColumnHeaderData implements Comparable<ResultsetColumnHeaderData> {
 
     private final String columnName;
-    private final String columnType;
+    private String columnType;
     private final Long columnLength;
     private final String columnDisplayType;
     private final boolean isColumnNullable;
     @SuppressWarnings("unused")
     private final boolean isColumnPrimaryKey;
 
+    @SuppressWarnings("unused")
+    private final String displayName;
+    @SuppressWarnings("unused")
+    private final String dependsOnColumnName;
+    @SuppressWarnings("unused")
+    private final Long orderPosition;
+    @SuppressWarnings("unused")
+    private final Boolean visible;
+    @SuppressWarnings("unused")
+    private final Boolean mandatoryIfVisible;
+    private final Long sectionId;
+    
     private final List<ResultsetColumnValueData> columnValues;
     private final String columnCode;
+    List<ResultsetVisibilityCriteriaData> visibilityCriteria;
 
     public static ResultsetColumnHeaderData basic(final String columnName, final String columnType) {
 
         final Long columnLength = null;
         final boolean columnNullable = false;
         final boolean columnIsPrimaryKey = false;
+        final String displayName = null;
         final List<ResultsetColumnValueData> columnValues = new ArrayList<>();
         final String columnCode = null;
+        final Long orderPosition = null;
+        final String dependsOnColumnName = null;
+        final Boolean visible = null;
+        final Boolean mandatoryIfVisible = null;
+        final Long sectionId = null;
+        final List<ResultsetVisibilityCriteriaData> visibilityCriteria = new ArrayList<>();
         return new ResultsetColumnHeaderData(columnName, columnType, columnLength, columnNullable, columnIsPrimaryKey, columnValues,
-                columnCode);
+                columnCode, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria, sectionId);
     }
 
     public static ResultsetColumnHeaderData detailed(final String columnName, final String columnType, final Long columnLength,
             final boolean columnNullable, final boolean columnIsPrimaryKey, final List<ResultsetColumnValueData> columnValues,
-            final String columnCode) {
+            final String columnCode, final String displayName, final String dependsOnColumnName, final Long orderPosition, final  Boolean visible, final Boolean mandatoryIfVisible, List<ResultsetVisibilityCriteriaData> visibilityCriteria, final Long sectionId) {
         return new ResultsetColumnHeaderData(columnName, columnType, columnLength, columnNullable, columnIsPrimaryKey, columnValues,
-                columnCode);
+                columnCode, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria, sectionId);
     }
 
     private ResultsetColumnHeaderData(final String columnName, final String columnType, final Long columnLength,
             final boolean columnNullable, final boolean columnIsPrimaryKey, final List<ResultsetColumnValueData> columnValues,
-            final String columnCode) {
+            final String columnCode, final String displayName, final String dependsOnColumnName, final Long orderPosition, final Boolean visible,
+            final Boolean mandatoryIfVisible, List<ResultsetVisibilityCriteriaData> visibilityCriteria,  final Long sectionId) {
         this.columnName = columnName;
         this.columnType = columnType;
         this.columnLength = columnLength;
@@ -67,6 +88,16 @@ public final class ResultsetColumnHeaderData {
         this.isColumnPrimaryKey = columnIsPrimaryKey;
         this.columnValues = columnValues;
         this.columnCode = columnCode;
+        this.displayName = displayName;
+        this.dependsOnColumnName = dependsOnColumnName;
+        this.orderPosition = orderPosition;
+        this.visible = visible;
+        this.mandatoryIfVisible = mandatoryIfVisible;
+        this.visibilityCriteria = visibilityCriteria;
+        this.sectionId = sectionId;
+
+        // Refer org.drizzle.jdbc.internal.mysql.MySQLType.java
+        adjustColumnTypes();
 
         String displayType = null;
         if (this.columnCode == null) {
@@ -82,7 +113,7 @@ public final class ResultsetColumnHeaderData {
                 displayType = "DECIMAL";
             } else if (isAnyText()) {
                 displayType = "TEXT";
-            } else if(isBit()) {
+            } else if (isBit()) {
                 displayType = "BOOLEAN";
             } else {
                 throw new PlatformDataIntegrityException("error.msg.invalid.lookup.type", "Invalid Lookup Type:" + this.columnType
@@ -99,8 +130,41 @@ public final class ResultsetColumnHeaderData {
                         + " - Column Name: " + this.columnName);
             }
         }
+        
+        /**TODO: Dirty Quick fix for Chaitanya**/
+        if(this.columnName.equals("Village Name")){
+        	displayType = "CODEVALUE";
+        }
+
 
         this.columnDisplayType = displayType;
+    }
+
+    private void adjustColumnTypes() {
+        switch (this.columnType) {
+            case "NEWDECIMAL":
+                this.columnType = "DECIMAL";
+            break;
+            case "CLOB":
+            case "ENUM":
+            case "SET":
+                this.columnType = "varchar";
+            break;
+            case "LONGLONG":
+                this.columnType = "bigint";
+            break;
+            case "SHORT":
+                this.columnType = "smallint";
+            break;
+            case "TINY":
+                this.columnType = "tinyint";
+            break;
+            case "INT24":
+                this.columnType = "int";
+            break;
+            default:
+            break;
+        }
     }
 
     public boolean isNamed(final String columnName) {
@@ -128,7 +192,8 @@ public final class ResultsetColumnHeaderData {
     }
 
     private boolean isDecimal() {
-        return "decimal".equalsIgnoreCase(this.columnType);
+        return "decimal".equalsIgnoreCase(this.columnType) || "NEWDECIMAL".equalsIgnoreCase(this.columnType);
+        // Refer org.drizzle.jdbc.internal.mysql.MySQLType.java
     }
 
     private boolean isDate() {
@@ -152,7 +217,7 @@ public final class ResultsetColumnHeaderData {
     }
 
     private boolean isAnyInteger() {
-        return isInt() || isSmallInt() || isTinyInt() || isMediumInt() || isBigInt();
+        return isInt() || isSmallInt() || isTinyInt() || isMediumInt() || isBigInt() || isLong();
     }
 
     private boolean isInt() {
@@ -173,6 +238,11 @@ public final class ResultsetColumnHeaderData {
 
     private boolean isBigInt() {
         return "bigint".equalsIgnoreCase(this.columnType);
+    }
+
+    private boolean isLong() {
+        return "LONG".equalsIgnoreCase(this.columnType) || "LONGLONG".equalsIgnoreCase(this.columnType);
+        // Refer org.drizzle.jdbc.internal.mysql.MySQLType.java
     }
 
     private boolean isBit() {
@@ -265,5 +335,14 @@ public final class ResultsetColumnHeaderData {
 
     public String getColumnCode() {
         return this.columnCode;
+    }
+
+    @Override
+    public int compareTo(ResultsetColumnHeaderData rh) {
+        return (this.orderPosition.intValue() - rh.orderPosition.intValue());
+    }
+
+    public Long getSectionId() {
+        return this.sectionId;
     }
 }

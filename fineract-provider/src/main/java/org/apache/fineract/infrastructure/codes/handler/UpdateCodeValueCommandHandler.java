@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.codes.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.codes.service.CodeValueWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@CommandType(entity = "CODEVALUE", action = "UPDATE")
 public class UpdateCodeValueCommandHandler implements NewCommandSourceHandler {
 
     private final CodeValueWritePlatformService writePlatformService;

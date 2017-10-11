@@ -18,63 +18,56 @@
  */
 package org.apache.fineract.accounting.journalentry.domain;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.accounting.glaccount.domain.GLAccount;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
-import org.apache.fineract.organisation.office.domain.Office;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
-import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
+import org.joda.time.LocalDate;
 
 @Entity
-@Table(name = "acc_gl_journal_entry")
+@Table(name = "f_journal_entry")
 public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
 
-    @ManyToOne
-    @JoinColumn(name = "office_id", nullable = false)
-    private Office office;
+    @Column(name = "office_id", nullable = false)
+    private Long officeId;
 
-    @ManyToOne(optional = true)
-    @JoinColumn(name = "payment_details_id", nullable = true)
-    private PaymentDetail paymentDetail;
-
-    @ManyToOne
-    @JoinColumn(name = "account_id", nullable = false)
-    private GLAccount glAccount;
+    @Column(name = "payment_details_id", nullable = true)
+    private Long paymentDetailId;
 
     @Column(name = "currency_code", length = 3, nullable = false)
     private String currencyCode;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reversal_id")
-    private JournalEntry reversalJournalEntry;
+    @Column(name = "transaction_identifier", nullable = false, length = 50)
+    private String transactionIdentifier;
 
-    @Column(name = "transaction_id", nullable = false, length = 50)
-    private String transactionId;
-
-    @ManyToOne
-    @JoinColumn(name = "loan_transaction_id", nullable = false)
-    private LoanTransaction loanTransaction;
-
-    @ManyToOne
-    @JoinColumn(name = "savings_transaction_id", nullable = false)
-    private SavingsAccountTransaction savingsTransaction;
+    @Column(name = "entity_transaction_id", nullable = false)
+    private Long entityTransactionId;
 
     @Column(name = "reversed", nullable = false)
     private boolean reversed = false;
+
+    @Column(name = "is_reversal_entry", nullable = false)
+    private boolean isReversalEntry = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reversal_id")
+    private JournalEntry reversalJournalEntry;
 
     @Column(name = "manual_entry", nullable = false)
     private boolean manualEntry = false;
@@ -83,11 +76,13 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
     @Temporal(TemporalType.DATE)
     private Date transactionDate;
 
-    @Column(name = "type_enum", nullable = false)
-    private Integer type;
+    @Column(name = "value_date")
+    @Temporal(TemporalType.DATE)
+    private Date valueDate;
 
-    @Column(name = "amount", scale = 6, precision = 19, nullable = false)
-    private BigDecimal amount;
+    @Column(name = "effective_date")
+    @Temporal(TemporalType.DATE)
+    private Date effectiveDate;
 
     @Column(name = "description", length = 500)
     private String description;
@@ -101,65 +96,53 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "ref_num")
     private String referenceNumber;
 
-    public static JournalEntry createNew(final Office office, final PaymentDetail paymentDetail, final GLAccount glAccount,
-            final String currencyCode, final String transactionId, final boolean manualEntry, final Date transactionDate,
-            final JournalEntryType journalEntryType, final BigDecimal amount, final String description, final Integer entityType,
-            final Long entityId, final String referenceNumber, final LoanTransaction loanTransaction,
-            final SavingsAccountTransaction savingsTransaction) {
-        return new JournalEntry(office, paymentDetail, glAccount, currencyCode, transactionId, manualEntry, transactionDate,
-                journalEntryType.getValue(), amount, description, entityType, entityId, referenceNumber, loanTransaction,
-                savingsTransaction);
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "journal_entry_id", referencedColumnName = "id", nullable = false)
+    private final List<JournalEntryDetail> journalEntryDetails = new ArrayList<>();
+
+    public static JournalEntry createNew(final Long officeId, final Long paymentDetailId, final String currencyCode,
+            final String transactionIdentifier, final boolean manualEntry, final Date transactionDate, final Date valueDate,
+            final Date effectiveDate, final String description, final Integer entityType, final Long entityId, final String referenceNumber,
+            final Long entityTransactionId) {
+        return new JournalEntry(officeId, paymentDetailId, currencyCode, transactionIdentifier, manualEntry, transactionDate, valueDate,
+                effectiveDate, description, entityType, entityId, referenceNumber, entityTransactionId);
+    }
+
+    public static JournalEntry createNewForSystemEntries(final Long officeId, final String currencyCode, final String transactionIdentifier,
+            final Date transactionDate, final Date valueDate, final Date effectiveDate, final Integer entityType, final Long entityId,
+            final Long entityTransactionId) {
+        final Long paymentDetailId = null;
+        final boolean manualEntry = false;
+        final String description = null;
+        final String referenceNumber = null;
+        return new JournalEntry(officeId, paymentDetailId, currencyCode, transactionIdentifier, manualEntry, transactionDate, valueDate,
+                effectiveDate, description, entityType, entityId, referenceNumber, entityTransactionId);
     }
 
     protected JournalEntry() {
         //
     }
 
-    public JournalEntry(final Office office, final PaymentDetail paymentDetail, final GLAccount glAccount, final String currencyCode,
-            final String transactionId, final boolean manualEntry, final Date transactionDate, final Integer type, final BigDecimal amount,
-            final String description, final Integer entityType, final Long entityId, final String referenceNumber,
-            final LoanTransaction loanTransaction, final SavingsAccountTransaction savingsTransaction) {
-        this.office = office;
-        this.glAccount = glAccount;
+    private JournalEntry(final Long officeId, final Long paymentDetailId, final String currencyCode, final String transactionIdentifier,
+            final boolean manualEntry, final Date transactionDate, final Date valueDate, final Date effectiveDate, final String description,
+            final Integer entityType, final Long entityId, final String referenceNumber, final Long entityTransactionId) {
+        this.officeId = officeId;
+        this.paymentDetailId = paymentDetailId;
         this.reversalJournalEntry = null;
-        this.transactionId = transactionId;
+        this.transactionIdentifier = transactionIdentifier;
         this.reversed = false;
         this.manualEntry = manualEntry;
         this.transactionDate = transactionDate;
-        this.type = type;
-        this.amount = amount;
+        this.valueDate = valueDate;
+        this.effectiveDate = effectiveDate;
         this.description = StringUtils.defaultIfEmpty(description, null);
         this.entityType = entityType;
         this.entityId = entityId;
         this.referenceNumber = referenceNumber;
         this.currencyCode = currencyCode;
-        this.loanTransaction = loanTransaction;
-        this.savingsTransaction = savingsTransaction;
-        this.paymentDetail = paymentDetail;
-    }
-
-    public boolean isDebitEntry() {
-        return JournalEntryType.DEBIT.getValue().equals(this.type);
-    }
-
-    public Integer getType() {
-        return this.type;
-    }
-
-    public Office getOffice() {
-        return this.office;
-    }
-
-    public GLAccount getGlAccount() {
-        return this.glAccount;
-    }
-
-    public Date getTransactionDate() {
-        return this.transactionDate;
-    }
-
-    public BigDecimal getAmount() {
-        return this.amount;
+        this.entityTransactionId = entityTransactionId;
+        this.isReversalEntry = false;
     }
 
     public void setReversalJournalEntry(final JournalEntry reversalJournalEntry) {
@@ -170,28 +153,96 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
         this.reversed = reversed;
     }
 
+    public void setIsReversalEntry(final boolean isReversalEntry) {
+        this.isReversalEntry = isReversalEntry;
+    }
+
+    public void addJournalEntryDetail(final JournalEntryDetail journalEntryDetail) {
+        this.journalEntryDetails.add(journalEntryDetail);
+    }
+
+    public void addAllJournalEntryDetail(final List<JournalEntryDetail> journalEntryDetails) {
+        this.journalEntryDetails.addAll(journalEntryDetails);
+    }
+
+    public List<JournalEntryDetail> getJournalEntryDetails() {
+        return this.journalEntryDetails;
+    }
+
+    public Long getOfficeId() {
+        return this.officeId;
+    }
+
     public String getReferenceNumber() {
         return this.referenceNumber;
+    }
+
+    public Date getTransactionDate() {
+        return this.transactionDate;
+    }
+
+    public Long getPaymentDetailId() {
+        return this.paymentDetailId;
     }
 
     public String getCurrencyCode() {
         return this.currencyCode;
     }
 
-    public LoanTransaction getLoanTransaction() {
-        return this.loanTransaction;
+    public String getTransactionIdentifier() {
+        return this.transactionIdentifier;
     }
 
-    public SavingsAccountTransaction getSavingsTransaction() {
-        return this.savingsTransaction;
+    public Long getEntityTransactionId() {
+        return this.entityTransactionId;
     }
 
-    public PaymentDetail getPaymentDetails() {
-        return this.paymentDetail;
+    public boolean isReversed() {
+        return this.reversed;
     }
 
-    public String getTransactionId() {
-        return transactionId;
+    public boolean isReversalEntry() {
+        return this.isReversalEntry;
+    }
+
+    public JournalEntry getReversalJournalEntry() {
+        return this.reversalJournalEntry;
+    }
+
+    public boolean isManualEntry() {
+        return this.manualEntry;
+    }
+
+    public Date getValueDate() {
+        return this.valueDate;
+    }
+
+    public Date getEffectiveDate() {
+        return this.effectiveDate;
+    }
+
+    public LocalDate getEffectiveDateAsLocalDate() {
+        LocalDate effectiveDate = null;
+        if (this.effectiveDate != null) {
+            effectiveDate = new LocalDate(this.effectiveDate);
+        }
+        return effectiveDate;
+    }
+
+    public String getDescription() {
+        return this.description;
+    }
+
+    public Integer getEntityType() {
+        return this.entityType;
+    }
+
+    public Long getEntityId() {
+        return this.entityId;
+    }
+
+    public void setPaymentDetailId(final Long paymentDetailId) {
+        this.paymentDetailId = paymentDetailId;
     }
 
 }

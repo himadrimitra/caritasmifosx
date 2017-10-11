@@ -43,8 +43,8 @@ import com.google.gson.JsonObject;
  * {@link CollectionSheetBulkRepaymentCommand}'s.
  */
 @Component
-public final class CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer extends
-        AbstractFromApiJsonDeserializer<CollectionSheetBulkRepaymentCommand> {
+public final class CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer
+        extends AbstractFromApiJsonDeserializer<CollectionSheetBulkRepaymentCommand> {
 
     private final FromJsonHelper fromApiJsonHelper;
     private final PaymentDetailAssembler paymentDetailAssembler;
@@ -81,7 +81,8 @@ public final class CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer ex
         SingleRepaymentCommand[] loanRepaymentTransactions = null;
 
         if (element.isJsonObject()) {
-            if (topLevelJsonElement.has("bulkRepaymentTransactions") && topLevelJsonElement.get("bulkRepaymentTransactions").isJsonArray()) {
+            if (topLevelJsonElement.has("bulkRepaymentTransactions")
+                    && topLevelJsonElement.get("bulkRepaymentTransactions").isJsonArray()) {
                 final JsonArray array = topLevelJsonElement.get("bulkRepaymentTransactions").getAsJsonArray();
                 loanRepaymentTransactions = new SingleRepaymentCommand[array.size()];
                 for (int i = 0; i < array.size(); i++) {
@@ -94,8 +95,9 @@ public final class CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer ex
                     if (paymentDetail == null) {
                         detail = this.paymentDetailAssembler.fetchPaymentDetail(loanTransactionElement);
                     }
-
-                    loanRepaymentTransactions[i] = new SingleRepaymentCommand(loanId, transactionAmount, transactionDate, detail);
+                    if (transactionAmount != null && transactionAmount.intValue() > 0) {
+                        loanRepaymentTransactions[i] = new SingleRepaymentCommand(loanId, transactionAmount, transactionDate, detail);
+                    }
                 }
             }
         }

@@ -31,16 +31,20 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 public class AccountNumberFormatEnumerations {
 
     public final static Set<AccountNumberPrefixType> accountNumberPrefixesForClientAccounts = new HashSet<>(Arrays.asList(
-            AccountNumberPrefixType.OFFICE_NAME, AccountNumberPrefixType.CLIENT_TYPE));
+            AccountNumberPrefixType.OFFICE_CODE, AccountNumberPrefixType.CLIENT_TYPE));
     public final static Set<AccountNumberPrefixType> accountNumberPrefixesForLoanAccounts = new HashSet<>(Arrays.asList(
-            AccountNumberPrefixType.OFFICE_NAME, AccountNumberPrefixType.LOAN_PRODUCT_SHORT_NAME));
+            AccountNumberPrefixType.OFFICE_CODE, AccountNumberPrefixType.LOAN_PRODUCT_SHORT_NAME));
     public final static Set<AccountNumberPrefixType> accountNumberPrefixesForSavingsAccounts = new HashSet<>(Arrays.asList(
-            AccountNumberPrefixType.OFFICE_NAME, AccountNumberPrefixType.SAVINGS_PRODUCT_SHORT_NAME));
+            AccountNumberPrefixType.OFFICE_CODE, AccountNumberPrefixType.SAVINGS_PRODUCT_SHORT_NAME));
+    public final static Set<AccountNumberPrefixType> accountNumberPrefixesForCenters = new HashSet<>(
+            Arrays.asList(AccountNumberPrefixType.OFFICE_CODE));
+    public final static Set<AccountNumberPrefixType> accountNumberPrefixesForGroups = new HashSet<>(
+            Arrays.asList(AccountNumberPrefixType.OFFICE_CODE));
 
     public enum AccountNumberPrefixType {
-        OFFICE_NAME(1, "accountNumberPrefixType.officeName"), CLIENT_TYPE(101, "accountNumberPrefixType.clientType"), LOAN_PRODUCT_SHORT_NAME(
+        OFFICE_CODE(1, "accountNumberPrefixType.officeCode"), CLIENT_TYPE(101, "accountNumberPrefixType.clientType"), LOAN_PRODUCT_SHORT_NAME(
                 201, "accountNumberPrefixType.loanProductShortName"), SAVINGS_PRODUCT_SHORT_NAME(301,
-                "accountNumberPrefixType.savingsProductShortName");
+                "accountNumberPrefixType.savingsProductShortName"), CUSTOM(701,"accountNumberPrefixType.custom");
 
         private final Integer value;
         private final String code;
@@ -92,6 +96,34 @@ public class AccountNumberFormatEnumerations {
         }
 
     }
+    
+    public enum AccountNumberCustomPrefixType {
+        NCC(1);
+
+        private final Integer value;
+
+        private AccountNumberCustomPrefixType(final Integer value) {
+            this.value = value;
+        }
+
+        public Integer getValue() {
+            return this.value;
+        }
+
+         private static final Map<Integer, AccountNumberCustomPrefixType> intToEnumMap = new HashMap<>();
+        static {
+            for (final AccountNumberCustomPrefixType type : AccountNumberCustomPrefixType.values()) {
+                intToEnumMap.put(type.value, type);
+            }
+        }
+
+        public static AccountNumberCustomPrefixType fromInt(final int i) {
+            final AccountNumberCustomPrefixType type = intToEnumMap.get(Integer.valueOf(i));
+            return type;
+        }
+
+    }
+
 
     public static EnumOptionData entityAccountType(final Integer accountTypeId) {
         return AccountNumberFormatEnumerations.entityAccountType(EntityAccountType.fromInt(accountTypeId));

@@ -1,0 +1,1 @@
+INSERT INTO `c_configuration` (`name`, `value`, `description`) VALUES ('include-client-charges-in-collection-sheet', '0', 'client-charges-included-in-collection-sheet');

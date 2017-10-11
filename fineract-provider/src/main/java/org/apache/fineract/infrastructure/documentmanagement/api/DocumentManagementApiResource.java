@@ -33,6 +33,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -53,6 +54,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.loan.mandate.exception.InvalidCommandQueryParamException;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataParam;
@@ -62,10 +64,12 @@ import com.sun.jersey.multipart.FormDataParam;
 @Scope("singleton")
 public class DocumentManagementApiResource {
 
-    private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "parentEntityType", "parentEntityId",
-            "name", "fileName", "size", "type", "description"));
+    private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList("id", "parentEntityType", "parentEntityId", "name", "fileName", "size", "type", "description"));
 
     private final String SystemEntityType = "DOCUMENT";
+    private final String GENERATE_COMMAND = "generate";
+    private final String REGENERATE_COMMAND = "regenerate";
 
     private final PlatformSecurityContext context;
     private final DocumentReadPlatformService documentReadPlatformService;
@@ -104,7 +108,8 @@ public class DocumentManagementApiResource {
     public String createDocument(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
             @HeaderParam("Content-Length") final Long fileSize, @FormDataParam("file") final InputStream inputStream,
             @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart,
-            @FormDataParam("name") final String name, @FormDataParam("description") final String description) {
+            @FormDataParam("name") final String name, @FormDataParam("description") final String description,
+            @FormDataParam("tagIdentifier") final Long tagIdentifier) {
 
         /**
          * TODO: also need to have a backup and stop reading from stream after
@@ -115,8 +120,9 @@ public class DocumentManagementApiResource {
          * TODO: need to extract the actual file type and determine if they are
          * permissable
          **/
+        final Long reportIdentifier = null;
         final DocumentCommand documentCommand = new DocumentCommand(null, null, entityType, entityId, name, fileDetails.getFileName(),
-                fileSize, bodyPart.getMediaType().toString(), description, null);
+                fileSize, bodyPart.getMediaType().toString(), description, null, reportIdentifier, tagIdentifier);
 
         final Long documentId = this.documentWritePlatformService.createDocument(documentCommand, inputStream);
 
@@ -136,7 +142,8 @@ public class DocumentManagementApiResource {
         final Set<String> modifiedParams = new HashSet<>();
         modifiedParams.add("name");
         modifiedParams.add("description");
-
+        final Long reportIdentifier = null;
+        final Long tagIdentifier = null;
         /***
          * Populate Document command based on whether a file has also been
          * passed in as a part of the update
@@ -147,11 +154,12 @@ public class DocumentManagementApiResource {
             modifiedParams.add("size");
             modifiedParams.add("type");
             modifiedParams.add("location");
+
             documentCommand = new DocumentCommand(modifiedParams, documentId, entityType, entityId, name, fileDetails.getFileName(),
-                    fileSize, bodyPart.getMediaType().toString(), description, null);
+                    fileSize, bodyPart.getMediaType().toString(), description, null, reportIdentifier, tagIdentifier);
         } else {
             documentCommand = new DocumentCommand(modifiedParams, documentId, entityType, entityId, name, null, null, null, description,
-                    null);
+                    null, reportIdentifier, tagIdentifier);
         }
         /***
          * TODO: does not return list of changes, should be done for consistency
@@ -177,6 +185,28 @@ public class DocumentManagementApiResource {
         return this.toApiJsonSerializer.serialize(settings, documentData, this.RESPONSE_DATA_PARAMETERS);
     }
 
+    @POST
+    @Path("generate/{identifier}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String generateDocument(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
+            @PathParam("identifier") final Long identifier, @QueryParam("command") final String commandParam,
+            @Context final UriInfo uriInfo) {
+        Long documentId = null;
+        this.context.authenticatedUser().validateHasReadPermission(this.SystemEntityType);
+        if (this.GENERATE_COMMAND.equals(commandParam)) {
+            // identifier is report identifier
+            documentId = this.documentWritePlatformService.generateDocument(entityType, entityId, identifier, uriInfo.getQueryParameters());
+        } else if (this.REGENERATE_COMMAND.equals(commandParam)) {
+            // identifier is document identifier
+            documentId = this.documentWritePlatformService.reGenerateDocument(entityType, entityId, identifier,
+                    uriInfo.getQueryParameters());
+        } else {
+            throw new InvalidCommandQueryParamException(commandParam);
+        }
+        return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(documentId, null));
+    }
+
     @GET
     @Path("{documentId}/attachment")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -200,9 +230,10 @@ public class DocumentManagementApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String deleteDocument(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
             @PathParam("documentId") final Long documentId) {
-
+        final Long reportIdentifier = null;
+        final Long tagIdentifier = null;
         final DocumentCommand documentCommand = new DocumentCommand(null, documentId, entityType, entityId, null, null, null, null, null,
-                null);
+                null, reportIdentifier, tagIdentifier);
 
         final CommandProcessingResult documentIdentifier = this.documentWritePlatformService.deleteDocument(documentCommand);
 

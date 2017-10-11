@@ -21,7 +21,6 @@ package org.apache.fineract.portfolio.common.service;
 import java.util.Map;
 
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 
 /**
  * The interface to be implemented by classes that want to be informed when a
@@ -40,8 +39,5 @@ public interface BusinessEventListner {
      * Implement this method for notifications after executing Business Event
      */
     public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity);
-    
-    void businessEventToBeExecuted(AbstractPersistable<Long> businessEventEntity);
-    
-    void businessEventWasExecuted(AbstractPersistable<Long> businessEventEntity);
+
 }

@@ -18,9 +18,14 @@
  */
 package org.apache.fineract.organisation.workingdays.domain;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.organisation.workingdays.exception.WorkingDaysNotFoundException;
+import org.apache.fineract.organisation.workingdays.service.WorkingDaysUtil;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,17 +39,34 @@ import org.springframework.stereotype.Service;
 public class WorkingDaysRepositoryWrapper {
 
     private final WorkingDaysRepository repository;
+    private final NonWorkingDayRescheduleDetailRepository nonWorkingDayRescheduleDetailRepository;
 
     @Autowired
-    public WorkingDaysRepositoryWrapper(final WorkingDaysRepository repository) {
+    public WorkingDaysRepositoryWrapper(final WorkingDaysRepository repository,
+            final NonWorkingDayRescheduleDetailRepository nonWorkingDayRescheduleDetailRepository) {
         this.repository = repository;
+        this.nonWorkingDayRescheduleDetailRepository = nonWorkingDayRescheduleDetailRepository;
     }
 
     public WorkingDays findOne() {
+        final boolean loadNonWorkingDayRescheduleDetail = true;
+        return findOne(loadNonWorkingDayRescheduleDetail);
+    }
+
+    public WorkingDays findOne(final boolean loadNonWorkingDayRescheduleDetail) {
         final List<WorkingDays> workingDaysList = this.repository.findAll();
 
         if (workingDaysList == null || workingDaysList.isEmpty()) { throw new WorkingDaysNotFoundException(); }
-        return workingDaysList.get(0);
+        final WorkingDays workingDays = workingDaysList.get(0);
+        if (loadNonWorkingDayRescheduleDetail) {
+            final List<NonWorkingDayRescheduleDetail> nonWorkingDayRescheduleDetails = this.nonWorkingDayRescheduleDetailRepository
+                    .findAll();
+            for (final NonWorkingDayRescheduleDetail nonWorkingDayRescheduleDetail : nonWorkingDayRescheduleDetails) {
+                workingDays.getNonWorkingDayRescheduleDetails()
+                        .put(CalendarUtils.getWeekDayAsInt(nonWorkingDayRescheduleDetail.getFromWeekDay()), nonWorkingDayRescheduleDetail);
+            }
+        }
+        return workingDays;
     }
 
     public void save(final WorkingDays workingDays) {
@@ -58,4 +80,19 @@ public class WorkingDaysRepositoryWrapper {
     public void delete(final WorkingDays workingDays) {
         this.repository.delete(workingDays);
     }
+
+    public boolean isWorkingDay(final LocalDate transactionDate) {
+        final WorkingDays workingDays = findOne();
+        return WorkingDaysUtil.isWorkingDay(workingDays, transactionDate);
+    }
+
+    public Map<Long, NonWorkingDayRescheduleDetail> fetchAllNonWorkingDayRescheduleDetail() {
+        final List<NonWorkingDayRescheduleDetail> nonWorkingDayRescheduleDetails = this.nonWorkingDayRescheduleDetailRepository.findAll();
+        final Map<Long, NonWorkingDayRescheduleDetail> detailMap = new HashMap<>();
+        for (final NonWorkingDayRescheduleDetail nonWorkingDayRescheduleDetail : nonWorkingDayRescheduleDetails) {
+            detailMap.put(nonWorkingDayRescheduleDetail.getId(), nonWorkingDayRescheduleDetail);
+        }
+        return detailMap;
+    }
+
 }

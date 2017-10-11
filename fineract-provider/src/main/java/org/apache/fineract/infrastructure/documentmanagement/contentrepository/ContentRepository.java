@@ -39,18 +39,23 @@ public interface ContentRepository {
 
     public abstract String saveFile(InputStream uploadedInputStream, DocumentCommand documentCommand);
 
+    public abstract String saveFile(InputStream uploadedInputStream, DocumentCommand documentCommand, boolean checkUploadSize);
+
     public abstract void deleteFile(String fileName, String documentPath);
 
     public abstract FileData fetchFile(DocumentData documentData);
 
-    public abstract String saveImage(InputStream uploadedInputStream, Long resourceId, String imageName, Long fileSize);
+    public abstract String saveImage(InputStream uploadedInputStream, Long resourceId, String imageName, Long fileSize,String entityName);
 
-    public abstract String saveImage(Base64EncodedImage base64EncodedImage, Long resourceId, String imageName);
+    public abstract String saveImage(Base64EncodedImage base64EncodedImage, Long resourceId, String imageName,String entityName);
 
     public abstract void deleteImage(final Long resourceId, final String location);
 
     public abstract ImageData fetchImage(ImageData imageData);
 
     public abstract StorageType getStorageType();
+
+    public abstract String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand,
+            final String parentDirectoryPath, final String... childDirectoriesPaths);
 
 }

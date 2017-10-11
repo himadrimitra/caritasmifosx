@@ -33,7 +33,6 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +56,8 @@ public class CodeWritePlatformServiceJpaRepositoryImpl implements CodeWritePlatf
 
     @Transactional
     @Override
-    @CacheEvict(value = "codes", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('cv')")
+    // @CacheEvict(value = "codes", key =
+    // "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('cv')")
     public CommandProcessingResult createCode(final JsonCommand command) {
 
         try {
@@ -77,7 +77,8 @@ public class CodeWritePlatformServiceJpaRepositoryImpl implements CodeWritePlatf
 
     @Transactional
     @Override
-    @CacheEvict(value = "codes", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('cv')")
+    // @CacheEvict(value = "codes", key =
+    // "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('cv')")
     public CommandProcessingResult updateCode(final Long codeId, final JsonCommand command) {
 
         try {
@@ -105,7 +106,8 @@ public class CodeWritePlatformServiceJpaRepositoryImpl implements CodeWritePlatf
 
     @Transactional
     @Override
-    @CacheEvict(value = "codes", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('cv')")
+    // @CacheEvict(value = "codes", key =
+    // "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('cv')")
     public CommandProcessingResult deleteCode(final Long codeId) {
 
         this.context.authenticatedUser();

@@ -18,7 +18,10 @@
  */
 package org.apache.fineract.infrastructure.configuration.domain;
 
+import java.util.Date;
+
 import org.apache.fineract.infrastructure.cache.domain.CacheType;
+import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
 
 public interface ConfigurationDomainService {
 
@@ -59,5 +62,91 @@ public interface ConfigurationDomainService {
     public Integer retrieveMaxAllowedClientsInGroup();
 
     boolean isMeetingMandatoryForJLGLoans();
+
+    int getRoundingMode();
+
+    boolean isOrganisationstartDateEnabled();
+
+    Date retrieveOrganisationStartDate();
+
+    boolean isPaymnetypeApplicableforDisbursementCharge();
+
+    boolean isInterestChargedFromDateSameAsDisbursementDate();
+
+    boolean isSkippingMeetingOnFirstDayOfMonthEnabled();
+
+    Long retreivePeroidInNumberOfDaysForSkipMeetingDate();
+
+    boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
+
+    boolean isDailyTPTLimitEnabled();
+
+    Long getDailyTPTLimit();
+
+    int getAdjustedAmountRoundingMode();
+
+    boolean isDefaultCurrencyEnabled();
+
+    String retreiveDefaultCurrency();
+
+    boolean isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled();
+
+    boolean isShowLoanDetailsInCenterPageEnabled();
+
+    boolean isSavingAccountsInculdedInCollectionSheet();
+
+    boolean isWithDrawForSavingsIncludedInCollectionSheet();
+
+    boolean isSearchIncludeGroupInfo();
+
+    GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(String propertyName);
+
+    boolean isCustomerDeDuplicationEnabled();
+
+    boolean isJlgLoansIncludedInIndividualCollectionSheet();
+
+    boolean isGlimLoanInClientProfileShown();
+
+    boolean isWorkFlowEnabled();
+
+    boolean isCgtEnabled();
+
+    boolean isMaxCgtDaysEnabled();
+
+    boolean isMinCgtDaysEnabled();
+
+    Long getMinCgtDays();
+
+    Long getMaxCgtDays();
+
+    boolean isMaxLoginAttemptsEnable();
+
+    Integer retrieveMaxLoginAttempts();
+
+    boolean isLoanOfficerToCenterHierarchyEnabled();
+
+    String getMaskedRegex();
+
+    String getMaskedCharacter();
+    
+    boolean isMonthlyLoansSyncWithWeeklyMeetings();
+
+    boolean isGlimPaymentAsGroup();
+
+    boolean isOfficeSpecificProductsEnabled();
+    
+    public Integer retrieveNumberOfDays();
+
+    boolean allowClientsInMultipleGroups();
+
+    boolean includeClientChargesInCollectionSheet();
+
+    boolean isEnabledEncryptLoginPasswordForAuthentication();
+
+    boolean isEnabledEveryUserLoginGenerateNewCryptographicKeyPair();
+
+    int getInstallmentAmountRoundingMode();
+    
+    boolean isAllowPaymentsOnClosedLoansEnabled();
 
 }

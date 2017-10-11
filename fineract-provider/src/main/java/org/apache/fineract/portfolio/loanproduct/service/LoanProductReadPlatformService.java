@@ -19,6 +19,8 @@
 package org.apache.fineract.portfolio.loanproduct.service;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductBorrowerCycleVariationData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
@@ -30,6 +32,14 @@ public interface LoanProductReadPlatformService {
     Collection<LoanProductData> retrieveAllLoanProductsForLookup();
 
     Collection<LoanProductData> retrieveAllLoanProductsForLookup(boolean activeOnly);
+
+    Collection<LoanProductData> retrieveAllLoanProductsForLookup(final String inClass);
+
+    Collection<LoanProductData> retrieveAllLoanProductsForLookup(final Integer productApplicableForLoanType, final Integer entityType,
+            final Long entityId);
+
+    Collection<LoanProductData> retrieveAllLoanProductsForLookup(final boolean activeOnly, final Integer productApplicableForLoanType,
+            final Integer entityType, final Long entityId);
 
     LoanProductData retrieveLoanProduct(Long productId);
 
@@ -44,4 +54,14 @@ public interface LoanProductReadPlatformService {
     Collection<LoanProductData> retrieveAllowedProductsForMix(Long productId);
 
     Collection<LoanProductBorrowerCycleVariationData> retrieveLoanProductBorrowerCycleVariations(Long loanProductId);
+
+    LoanProductData retrieveLoanProductFloatingDetails(Long loanProductId);
+    
+    List<Map<String, Object>> getLoanProductMandatoryCharges(final Long productId, final Boolean isPenalty);
+    
+    void checkLoanProductByIdExists(final Long productId);
+    
+    LoanProductData retrieveLoanProductNameById(final Long productId);
+    
+    void checkLoanProductByIdIsActive(final Long productId, final boolean activeOnly);
 }

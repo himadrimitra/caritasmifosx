@@ -18,7 +18,10 @@
  */
 package org.apache.fineract.portfolio.client.domain;
 
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,15 +35,25 @@ import org.springframework.stereotype.Service;
 public class ClientRepositoryWrapper {
 
     private final ClientRepository repository;
+    private final PlatformSecurityContext context;
 
     @Autowired
-    public ClientRepositoryWrapper(final ClientRepository repository) {
+    public ClientRepositoryWrapper(final ClientRepository repository, final PlatformSecurityContext context) {
         this.repository = repository;
+        this.context = context;
     }
 
     public Client findOneWithNotFoundDetection(final Long id) {
         final Client client = this.repository.findOne(id);
         if (client == null) { throw new ClientNotFoundException(id); }
+        return client;
+    }
+
+    public Client findOneWithNotFoundDetectionAndLazyInitialize(final Long id) {
+        final Client client = this.repository.findOne(id);
+        if (client == null) { throw new ClientNotFoundException(id); }
+        Hibernate.initialize(client.getImage());
+        Hibernate.initialize(client.getGroups());
         return client;
     }
 
@@ -55,4 +68,12 @@ public class ClientRepositoryWrapper {
     public void delete(final Client client) {
         this.repository.delete(client);
     }
+
+    public Client getActiveClientInUserScope(final Long clientId) {
+        final Client client = findOneWithNotFoundDetection(clientId);
+        if (client.isNotActive()) { throw new ClientNotActiveException(client.getId()); }
+        this.context.validateAccessRights(client.getOffice().getHierarchy());
+        return client;
+    }
+
 }

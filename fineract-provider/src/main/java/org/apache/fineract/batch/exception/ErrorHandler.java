@@ -23,12 +23,14 @@ import org.apache.fineract.infrastructure.core.exception.AbstractPlatformResourc
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.exception.PlatformInternalServerException;
+import org.apache.fineract.infrastructure.core.exception.PlatformMultipleDomainValidationException;
 import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.exceptionmapper.AbstractPlatformDomainRuleExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformApiDataValidationExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformDataIntegrityExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformDomainRuleExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformInternalServerExceptionMapper;
+import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformMultipleDomainValidationExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformResourceNotFoundExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.UnsupportedParameterExceptionMapper;
 import org.apache.fineract.portfolio.loanaccount.exception.MultiDisbursementDataRequiredException;
@@ -44,9 +46,9 @@ import com.google.gson.GsonBuilder;
  * class uses various subclasses of RuntimeException to check the kind of
  * exception raised and provide appropriate status and error codes for each one
  * of the raised exception.
- * 
+ *
  * @author Rishabh Shukla
- * 
+ *
  * @see org.apache.fineract.batch.command.CommandStrategy
  * @see org.apache.fineract.batch.command.internal.CreateClientCommandStrategy
  */
@@ -64,7 +66,7 @@ public class ErrorHandler extends RuntimeException {
     /**
      * Returns an object of ErrorInfo type containing the information regarding
      * the raised error.
-     * 
+     *
      * @param exception
      * @return ErrorInfo
      */
@@ -92,6 +94,14 @@ public class ErrorHandler extends RuntimeException {
 
             return new ErrorInfo(400, 2002, errorBody);
 
+        } else if (exception instanceof PlatformMultipleDomainValidationException) {
+
+            final PlatformMultipleDomainValidationExceptionMapper mapper = new PlatformMultipleDomainValidationExceptionMapper();
+            final String errorBody = jsonHelper
+                    .toJson(mapper.toResponse((PlatformMultipleDomainValidationException) exception).getEntity());
+
+            return new ErrorInfo(400, 6001, errorBody);
+
         } else if (exception instanceof PlatformDataIntegrityException) {
 
             final PlatformDataIntegrityExceptionMapper mapper = new PlatformDataIntegrityExceptionMapper();
@@ -105,16 +115,16 @@ public class ErrorHandler extends RuntimeException {
             final String errorBody = jsonHelper.toJson(mapper.toResponse((LinkedAccountRequiredException) exception).getEntity());
 
             return new ErrorInfo(403, 3002, errorBody);
-            
+
         } else if (exception instanceof MultiDisbursementDataRequiredException) {
 
             final PlatformDomainRuleExceptionMapper mapper = new PlatformDomainRuleExceptionMapper();
             final String errorBody = jsonHelper.toJson(mapper.toResponse((MultiDisbursementDataRequiredException) exception).getEntity());
 
             return new ErrorInfo(403, 3003, errorBody);
-            
+
         } else if (exception instanceof TransactionException) {
-            return new ErrorInfo(400, 4001, "{\"Exception\": " + exception.getMessage()+"}");
+            return new ErrorInfo(400, 4001, "{\"Exception\": " + exception.getMessage() + "}");
 
         } else if (exception instanceof PlatformInternalServerException) {
 
@@ -122,11 +132,18 @@ public class ErrorHandler extends RuntimeException {
             final String errorBody = jsonHelper.toJson(mapper.toResponse((PlatformInternalServerException) exception).getEntity());
 
             return new ErrorInfo(500, 5001, errorBody);
-        }else if (exception instanceof AbstractPlatformDomainRuleException){
-       	 final AbstractPlatformDomainRuleExceptionMapper mapper = new AbstractPlatformDomainRuleExceptionMapper();
-         final String errorBody = jsonHelper.toJson(mapper.toResponse((AbstractPlatformDomainRuleException) exception).getEntity());
-         return new ErrorInfo(403, 3003, errorBody);             
-    }
+        } else if (exception instanceof AbstractPlatformDomainRuleException) {
+            final AbstractPlatformDomainRuleExceptionMapper mapper = new AbstractPlatformDomainRuleExceptionMapper();
+            final String errorBody = jsonHelper.toJson(mapper.toResponse((AbstractPlatformDomainRuleException) exception).getEntity());
+
+            return new ErrorInfo(403, 3003, errorBody);
+        } else if (exception instanceof PlatformInternalServerException) {
+
+            final PlatformInternalServerExceptionMapper mapper = new PlatformInternalServerExceptionMapper();
+            final String errorBody = jsonHelper.toJson(mapper.toResponse((PlatformInternalServerException) exception).getEntity());
+
+            return new ErrorInfo(500, 5001, errorBody);
+        }
 
         return new ErrorInfo(500, 9999, "{\"Exception\": " + exception.toString() + "}");
     }

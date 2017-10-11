@@ -19,8 +19,10 @@
 package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalcualtionAdditionalDetails;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.joda.time.LocalDate;
 
@@ -104,7 +106,8 @@ public final class LoanScheduleModelDisbursementPeriod implements LoanScheduleMo
     }
 
     @Override
-    public void addLoanCharges(@SuppressWarnings("unused") BigDecimal feeCharge, @SuppressWarnings("unused") BigDecimal penaltyCharge) {
+    public void addLoanCharges(@SuppressWarnings("unused") final BigDecimal feeCharge,
+            @SuppressWarnings("unused") final BigDecimal penaltyCharge) {
         return;
     }
 
@@ -114,12 +117,42 @@ public final class LoanScheduleModelDisbursementPeriod implements LoanScheduleMo
     }
 
     @Override
-    public void addPrincipalAmount(@SuppressWarnings("unused") Money principalDue) {
+    public void addPrincipalAmount(@SuppressWarnings("unused") final Money principalDue) {
         return;
     }
 
     @Override
-    public void addInterestAmount(@SuppressWarnings("unused") Money principalDue) {
+    public void addInterestAmount(@SuppressWarnings("unused") final Money principalDue) {
+        return;
+    }
+
+    @Override
+    public List<LoanInterestRecalcualtionAdditionalDetails> getLoanCompoundingDetails() {
+        return null;
+    }
+
+    @Override
+    public void adjustInterestForCurrentPeriod(@SuppressWarnings("unused") final Money adjustedInterestForCurrentPeriod) {
+        return;
+    }
+
+    @Override
+    public BigDecimal advancePayment() {
+        return null;
+    }
+
+    @Override
+    public void setAdvancePayment(@SuppressWarnings("unused") final Money advancePayment) {
+        return;
+    }
+
+    @Override
+    public BigDecimal capitalChargeDue() {
+        return null;
+    }
+
+    @Override
+    public void setCapitalChargeDue(@SuppressWarnings("unused") final Money capitalChargeDue) {
         return;
     }
 }

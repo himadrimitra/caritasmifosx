@@ -22,6 +22,7 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -30,6 +31,7 @@ import javax.persistence.TemporalType;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.DateTime;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -68,10 +70,10 @@ public class CommandSource extends AbstractPersistable<Long> {
     @Column(name = "subresource_id")
     private Long subresourceId;
 
-    @Column(name = "command_as_json")
+    @Column(name = "command_as_json", length = 1000)
     private String commandAsJson;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "maker_id", nullable = false)
     private AppUser maker;
 
@@ -79,7 +81,7 @@ public class CommandSource extends AbstractPersistable<Long> {
     @Temporal(TemporalType.TIMESTAMP)
     private Date madeOnDate;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "checker_id", nullable = true)
     private AppUser checker;
 
@@ -92,13 +94,19 @@ public class CommandSource extends AbstractPersistable<Long> {
 
     @Column(name = "product_id")
     private Long productId;
-    
+
     @Column(name = "transaction_id", length = 100)
     private String transactionId;
 
+    @Column(name = "option_type")
+    private String option;
+
+    @Column(name = "entity_type_id", nullable = false)
+    private Integer entityTypeId;
+
     public static CommandSource fullEntryFrom(final CommandWrapper wrapper, final JsonCommand command, final AppUser maker) {
         return new CommandSource(wrapper.actionName(), wrapper.entityName(), wrapper.getHref(), command.entityId(), command.subentityId(),
-                command.json(), maker, DateTime.now());
+                command.json(), maker, DateUtils.getLocalDateTimeOfTenant().toDateTime(), wrapper.getOption(), wrapper.getEntityTypeId());
     }
 
     protected CommandSource() {
@@ -106,7 +114,8 @@ public class CommandSource extends AbstractPersistable<Long> {
     }
 
     private CommandSource(final String actionName, final String entityName, final String href, final Long resourceId,
-            final Long subresourceId, final String commandSerializedAsJson, final AppUser maker, final DateTime madeOnDateTime) {
+            final Long subresourceId, final String commandSerializedAsJson, final AppUser maker, final DateTime madeOnDateTime,
+            final String option, final Integer entityTypeId) {
         this.actionName = actionName;
         this.entityName = entityName;
         this.resourceGetUrl = href;
@@ -116,6 +125,8 @@ public class CommandSource extends AbstractPersistable<Long> {
         this.maker = maker;
         this.madeOnDate = madeOnDateTime.toDate();
         this.processingResult = CommandProcessingResultType.PROCESSED.getValue();
+        this.option = option;
+        this.entityTypeId = entityTypeId;
     }
 
     public void markAsChecked(final AppUser checker, final DateTime checkedOnDate) {
@@ -124,7 +135,7 @@ public class CommandSource extends AbstractPersistable<Long> {
         this.processingResult = CommandProcessingResultType.PROCESSED.getValue();
     }
 
-    public void markAsRejected(final AppUser checker, final DateTime checkedOnDate){
+    public void markAsRejected(final AppUser checker, final DateTime checkedOnDate) {
         this.checker = checker;
         this.checkedOnDate = checkedOnDate.toDate();
         this.processingResult = CommandProcessingResultType.REJECTED.getValue();
@@ -211,35 +222,35 @@ public class CommandSource extends AbstractPersistable<Long> {
      * @return the clientId
      */
     public Long getClientId() {
-        return clientId;
+        return this.clientId;
     }
 
     /**
      * @return the groupId
      */
     public Long getGroupId() {
-        return groupId;
+        return this.groupId;
     }
 
     /**
      * @return the loanId
      */
     public Long getLoanId() {
-        return loanId;
+        return this.loanId;
     }
 
     /**
      * @return the officeId
      */
     public Long getOfficeId() {
-        return officeId;
+        return this.officeId;
     }
 
     /**
      * @return the savingsId
      */
     public Long getSavingsId() {
-        return savingsId;
+        return this.savingsId;
     }
 
     /**
@@ -253,4 +264,15 @@ public class CommandSource extends AbstractPersistable<Long> {
         this.transactionId = transactionId;
     }
 
+    public String getOption() {
+        return this.option;
+    }
+
+    public Integer getEntityTypeId() {
+        return this.entityTypeId;
+    }
+
+    public AppUser getMaker() {
+        return this.maker;
+    }
 }

@@ -20,6 +20,9 @@ package org.apache.fineract.portfolio.loanproduct;
 
 import java.math.BigDecimal;
 
+import org.apache.fineract.portfolio.loanproduct.domain.ClientProfileType;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductApplicableForLoanType;
+
 public interface LoanProductConstants {
 
     public static final String useBorrowerCycleParameterName = "useBorrowerCycle";
@@ -34,6 +37,7 @@ public interface LoanProductConstants {
     public static final String valueConditionTypeParamName = "valueConditionType";
     public static final String borrowerCycleNumberParamName = "borrowerCycleNumber";
     public static final String borrowerCycleIdParameterName = "id";
+    public static final String interestRatesListPerCycleParameterName = "interestRatesListPerCycle";
 
     public static final String principalPerCycleParameterName = "principalPerCycle";
     public static final String minPrincipalPerCycleParameterName = "minPrincipalPerCycle";
@@ -60,6 +64,7 @@ public interface LoanProductConstants {
     public static final String interestRatePerPeriod = "interestRatePerPeriod";
     public static final String minInterestRatePerPeriod = "minInterestRatePerPeriod";
     public static final String maxInterestRatePerPeriod = "maxInterestRatePerPeriod";
+    public static final String interestRatesListPerPeriod = "interestRatesListPerPeriod";
 
     public static final String numberOfRepayments = "numberOfRepayments";
     public static final String minNumberOfRepayments = "minNumberOfRepayments";
@@ -76,6 +81,8 @@ public interface LoanProductConstants {
     public static final String graceOnArrearsAgeingParameterName = "graceOnArrearsAgeing";
     public static final String overdueDaysForNPAParameterName = "overdueDaysForNPA";
     public static final String minimumDaysBetweenDisbursalAndFirstRepayment = "minimumDaysBetweenDisbursalAndFirstRepayment";
+    public static final String minimumPeriodsBetweenDisbursalAndFirstRepayment = "minimumPeriodsBetweenDisbursalAndFirstRepayment";
+    public static final String isMinDurationApplicableForAllDisbursementsParamName = "isMinDurationApplicableForAllDisbursements";
     public static final String accountMovesOutOfNPAOnlyOnArrearsCompletionParamName = "accountMovesOutOfNPAOnlyOnArrearsCompletion";
 
     // Interest recalculation related
@@ -86,12 +93,17 @@ public interface LoanProductConstants {
     public static final String rescheduleStrategyMethodParameterName = "rescheduleStrategyMethod";
     public static final String recalculationRestFrequencyTypeParameterName = "recalculationRestFrequencyType";
     public static final String recalculationRestFrequencyIntervalParameterName = "recalculationRestFrequencyInterval";
-    public static final String recalculationRestFrequencyDateParamName = "recalculationRestFrequencyDate";
+    public static final String recalculationRestFrequencyWeekdayParamName = "recalculationRestFrequencyDayOfWeekType";
+    public static final String recalculationRestFrequencyNthDayParamName = "recalculationRestFrequencyNthDayType";
+    public static final String recalculationRestFrequencyOnDayParamName = "recalculationRestFrequencyOnDayType";
     public static final String isArrearsBasedOnOriginalScheduleParamName = "isArrearsBasedOnOriginalSchedule";
     public static final String preClosureInterestCalculationStrategyParamName = "preClosureInterestCalculationStrategy";
     public static final String recalculationCompoundingFrequencyTypeParameterName = "recalculationCompoundingFrequencyType";
     public static final String recalculationCompoundingFrequencyIntervalParameterName = "recalculationCompoundingFrequencyInterval";
-    public static final String recalculationCompoundingFrequencyDateParamName = "recalculationCompoundingFrequencyDate";
+    public static final String recalculationCompoundingFrequencyWeekdayParamName = "recalculationCompoundingFrequencyDayOfWeekType";
+    public static final String recalculationCompoundingFrequencyNthDayParamName = "recalculationCompoundingFrequencyNthDayType";
+    public static final String recalculationCompoundingFrequencyOnDayParamName = "recalculationCompoundingFrequencyOnDayType";
+    public static final String isCompoundingToBePostedAsTransactionParamName = "isCompoundingToBePostedAsTransaction";
 
     // Guarantee related
     public static final String holdGuaranteeFundsParamName = "holdGuaranteeFunds";
@@ -105,6 +117,9 @@ public interface LoanProductConstants {
     // Fixed installment configuration related
     public static final String canDefineEmiAmountParamName = "canDefineInstallmentAmount";
     public static final String installmentAmountInMultiplesOfParamName = "installmentAmountInMultiplesOf";
+    public static final String adjustedInstallmentInMultiplesOfParamName = "adjustedInstallmentInMultiplesOf";
+    public static final String adjustFirstEMIAmountParamName = "adjustFirstEMIAmount";
+    public static final String adjustInterestForRoundingParamName = "adjustInterestForRounding";
     
     //Loan Configurable Attributes
     public static final String allowAttributeOverridesParamName = "allowAttributeOverrides";
@@ -115,5 +130,70 @@ public interface LoanProductConstants {
     public static final String inArrearsToleranceParamName = "inArrearsTolerance";
     public static final String repaymentEveryParamName = "repaymentEvery";
     public static final String graceOnPrincipalAndInterestPaymentParamName = "graceOnPrincipalAndInterestPayment";
+    public static final String allowCompoundingOnEodParamName = "allowCompoundingOnEod";
+    public static final String syncExpectedWithDisbursementDate = "syncExpectedWithDisbursementDate";
+    
+    //Variable Installments Settings
+    public static final String allowVariableInstallmentsParamName = "allowVariableInstallments" ;
+    public static final String minimumGapBetweenInstallments = "minimumGap" ;
+    public static final String maximumGapBetweenInstallments = "maximumGap" ;
+    public static final String minLoanTerm = "minLoanTerm";
+    public static final String maxLoanTerm = "maxLoanTerm";
+    public static final String loanTenureFrequencyType = "loanTenureFrequencyType";
+    
+    public static final String allowPartialPeriodInterestCalcualtionParamName = "allowPartialPeriodInterestCalcualtion";
 
+    public static final String isEmiBasedOnDisbursements = "isEmiBasedOnDisbursements" ;
+    
+    public static final String installmentCalculationPeriodTypeParamName = "installmentCalculationPeriodType";
+    public static final String brokenPeriodMethodTypeParamName = "brokenPeriodMethodType";
+    
+    public static final String canUseForTopup = "canUseForTopup";
+    
+    public static final String allowUpfrontCollection = "allowUpfrontCollection";
+    
+    //Subsidy related constants
+    public static final String isSubsidyApplicableParamName = "isSubsidyApplicable";
+    public static final String createSubsidyAccountMappingsParamName = "createSubsidyAccountMappings";
+    
+    public static final String closeLoanOnOverpayment = "closeLoanOnOverpayment";
+    
+    public static final String weeksInYearType = "weeksInYearType";
+    public static final String isFlatInterestRateParamName = "isFlatInterestRate";
+    
+    public static final String allowNegativeLoanBalance = "allowNegativeLoanBalance";
+    public static final String considerFutureDisbursementsInSchedule = "considerFutureDisbursementsInSchedule";
+    public static final String considerAllDisbursementsInSchedule = "considerAllDisbursementsInSchedule";
+    
+    public static final String percentageOfDisbursementToBeTransferred = "percentageOfDisbursementToBeTransferred";
+
+    public static final String applicableForLoanTypeParamName = "applicableForLoanType";
+    public static final String isEnableRestrictionForClientProfileParamName = "isEnableRestrictionForClientProfile";
+    public static final String profileTypeParamName = "profileType";
+    public static final String selectedProfileTypeValuesParamName = "selectedProfileTypeValues";
+    
+    /**
+     * {@link LoanProductApplicableForLoanType}
+     */
+    public static final String ALL_TYPES = "All Customers";
+    public static final String INDIVIDUAL_CLIENT = "Individual Client";
+    public static final String GROUP = "Group";
+
+    /**
+     * {@link ClientProfileType}
+     */
+    public static final String LEGAL_FORM = "Legal Form";
+    public static final String CLIENT_TYPE = "Client Type";
+    public static final String CODE_CLIENT_TYPE = "ClientType";
+    public static final String CLIENT_CLASSIFICATION = "Client Classification";
+    public static final String CODE_CLIENT_CLASSIFICATION = "ClientClassification";
+    public static final String CLIENT_TYPE_CODE = "ClientType";
+    public static final String CLIENT_CLASSIFICATION_CODE = "ClientClassification";
+
+    public static final String localeParamName = "locale";
+
+    public static final String ERROR_CODE_EMPTY_LIST_CLIENT_TYPE = "not.supported.for.client.type";
+    public static final String ERROR_CODE_EMPTY_LIST_CLIENT_CLASSIFICATION = "not.supported.for.client.classification";
+    public static final String ERROR_CODE_SELECTED_PROFILE_TYPE_NOT_BELONGS_TO_CLIENT_TYPE = "not.belongs.to.client.type";
+    public static final String ERROR_CODE_SELECTED_PROFILE_TYPE_NOT_BELONGS_TO_CLIENT_CLASSIFICATION = "not.belongs.to.client.classification";
 }

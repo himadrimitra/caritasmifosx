@@ -29,11 +29,11 @@ import org.apache.fineract.commands.exception.RollbackTransactionAsCommandIsNotA
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.service.SchedulerJobRunnerReadService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.JsonElement;
+import com.sun.jersey.multipart.FormDataMultiPart;
 
 @Service
 public class PortfolioCommandSourceWritePlatformServiceImpl implements PortfolioCommandSourceWritePlatformService {
@@ -67,6 +68,14 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
 
     @Override
     public CommandProcessingResult logCommandSource(final CommandWrapper wrapper) {
+        // By default we should set the
+        // isTransactionalScopeRequiredInprocessAndLogCommand to true
+        return logCommandSource(wrapper, true);
+    }
+
+    @Override
+    public CommandProcessingResult logCommandSource(final CommandWrapper wrapper,
+            final boolean isTransactionalScopeRequiredInprocessAndLogCommand) {
 
         boolean isApprovedByChecker = false;
         // check if is update of own account details
@@ -87,15 +96,22 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
         CommandProcessingResult result = null;
         JsonCommand command = null;
         Integer numberOfRetries = 0;
-        Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getMaxRetriesOnDeadlock();
-        Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getMaxIntervalBetweenRetries();
+        final Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
+        final Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(json);
         command = JsonCommand.from(json, parsedCommand, this.fromApiJsonHelper, wrapper.getEntityName(), wrapper.getEntityId(),
                 wrapper.getSubentityId(), wrapper.getGroupId(), wrapper.getClientId(), wrapper.getLoanId(), wrapper.getSavingsId(),
-                wrapper.getTransactionId(), wrapper.getHref(), wrapper.getProductId());
+                wrapper.getTransactionId(), wrapper.getHref(), wrapper.getProductId(), wrapper.getEntityTypeId(),
+                wrapper.getFormDataMultiPart());
         while (numberOfRetries <= maxNumberOfRetries) {
             try {
-                result = this.processAndLogCommandService.processAndLogCommand(wrapper, command, isApprovedByChecker);
+                if (isTransactionalScopeRequiredInprocessAndLogCommand) {
+                    result = this.processAndLogCommandService.processAndLogCommandWithTransactionalScope(wrapper, command,
+                            isApprovedByChecker);
+                } else {
+                    result = this.processAndLogCommandService.processAndLogCommandWithoutTransactionalScope(wrapper, command,
+                            isApprovedByChecker);
+                }
                 numberOfRetries = maxNumberOfRetries + 1;
             } catch (CannotAcquireLockException | ObjectOptimisticLockingFailureException exception) {
                 logger.info("The following command " + command.json() + " has been retried  " + numberOfRetries + " time(s)");
@@ -113,11 +129,11 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
                  * continue
                  **/
                 try {
-                    Random random = new Random();
-                    int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
+                    final Random random = new Random();
+                    final int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
                     Thread.sleep(1000 + (randomNum * 1000));
                     numberOfRetries = numberOfRetries + 1;
-                } catch (InterruptedException e) {
+                } catch (final InterruptedException e) {
                     throw (exception);
                 }
             } catch (final RollbackTransactionAsCommandIsNotApprovedByCheckerException e) {
@@ -139,16 +155,19 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
                 commandSourceInput.getEntityName(), commandSourceInput.resourceId(), commandSourceInput.subresourceId(),
                 commandSourceInput.getResourceGetUrl(), commandSourceInput.getProductId(), commandSourceInput.getOfficeId(),
                 commandSourceInput.getGroupId(), commandSourceInput.getClientId(), commandSourceInput.getLoanId(),
-                commandSourceInput.getSavingsId(), commandSourceInput.getTransactionId());
+                commandSourceInput.getSavingsId(), commandSourceInput.getTransactionId(), commandSourceInput.getOption(),
+                commandSourceInput.getEntityTypeId());
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(commandSourceInput.json());
+        final FormDataMultiPart formDataMultiPart = null;
         final JsonCommand command = JsonCommand.fromExistingCommand(makerCheckerId, commandSourceInput.json(), parsedCommand,
                 this.fromApiJsonHelper, commandSourceInput.getEntityName(), commandSourceInput.resourceId(),
                 commandSourceInput.subresourceId(), commandSourceInput.getGroupId(), commandSourceInput.getClientId(),
                 commandSourceInput.getLoanId(), commandSourceInput.getSavingsId(), commandSourceInput.getTransactionId(),
-                commandSourceInput.getResourceGetUrl(), commandSourceInput.getProductId());
+                commandSourceInput.getResourceGetUrl(), commandSourceInput.getProductId(), commandSourceInput.getEntityTypeId(),
+                formDataMultiPart);
 
         final boolean makerCheckerApproval = true;
-        return this.processAndLogCommandService.processAndLogCommand(wrapper, command, makerCheckerApproval);
+        return this.processAndLogCommandService.processAndLogCommandWithTransactionalScope(wrapper, command, makerCheckerApproval);
     }
 
     @Transactional
@@ -184,7 +203,7 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
         final CommandSource commandSourceInput = validateMakerCheckerTransaction(makerCheckerId);
         validateIsUpdateAllowed();
         final AppUser maker = this.context.authenticatedUser();
-        commandSourceInput.markAsRejected(maker, DateTime.now());
+        commandSourceInput.markAsRejected(maker, DateUtils.getLocalDateTimeOfTenant().toDateTime());
         this.commandSourceRepository.save(commandSourceInput);
         return makerCheckerId;
     }

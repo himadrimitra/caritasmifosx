@@ -19,12 +19,19 @@
 package org.apache.fineract.infrastructure.sms.service;
 
 import java.util.Collection;
+import java.util.List;
 
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.sms.data.SmsData;
 
 public interface SmsReadPlatformService {
 
-    Collection<SmsData> retrieveAll();
+    Page<SmsData> retrieveAll(SearchParameters searchParameters);
 
     SmsData retrieveOne(Long resourceId);
+
+    Collection<SmsData> retrieveAllPending(Integer limit);
+
+    List<Long> retrieveExternalIdsOfAllSent(Integer limit);
 }

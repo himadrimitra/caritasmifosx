@@ -19,6 +19,7 @@
 package org.apache.fineract.accounting.journalentry.handler;
 
 import org.apache.fineract.accounting.journalentry.service.JournalEntryWritePlatformService;
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@CommandType(entity = "JOURNALENTRY", action = "REVERSE")
 public class ReverseJournalEntryCommandHandler implements NewCommandSourceHandler {
 
     private final JournalEntryWritePlatformService writePlatformService;

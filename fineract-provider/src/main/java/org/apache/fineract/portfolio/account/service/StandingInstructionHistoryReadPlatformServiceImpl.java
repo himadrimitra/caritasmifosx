@@ -242,12 +242,12 @@ public class StandingInstructionHistoryReadPlatformServiceImpl implements Standi
             PortfolioAccountData fromAccount = null;
             EnumOptionData fromAccountType = null;
             if (fromSavingsAccountId != null) {
-                fromAccount = new PortfolioAccountData(fromSavingsAccountId, fromSavingsAccountNo, null, null, null, null, null,
-                        fromProductId, fromProductName, null, null, null);
+                fromAccount = PortfolioAccountData.instance(fromSavingsAccountId, fromSavingsAccountNo, null, null, null, null, null,
+                        fromProductId, fromProductName, null, null, null,null,null);
                 fromAccountType = accountType(PortfolioAccountType.SAVINGS);
             } else if (fromLoanAccountId != null) {
-                fromAccount = new PortfolioAccountData(fromLoanAccountId, fromLoanAccountNo, null, null, null, null, null,
-                        fromLoanProductId, fromLoanProductName, null, null, null);
+                fromAccount = PortfolioAccountData.instance(fromLoanAccountId, fromLoanAccountNo, null, null, null, null, null,
+                        fromLoanProductId, fromLoanProductName, null, null, null, null, null);
                 fromAccountType = accountType(PortfolioAccountType.LOAN);
             }
 
@@ -263,12 +263,12 @@ public class StandingInstructionHistoryReadPlatformServiceImpl implements Standi
             final String toLoanProductName = rs.getString("toLoanProductName");
 
             if (toSavingsAccountId != null) {
-                toAccount = new PortfolioAccountData(toSavingsAccountId, toSavingsAccountNo, null, null, null, null, null, toProductId,
-                        toProductName, null, null, null);
+                toAccount = PortfolioAccountData.instance(toSavingsAccountId, toSavingsAccountNo, null, null, null, null, null, toProductId,
+                        toProductName, null, null, null,null, null);
                 toAccountType = accountType(PortfolioAccountType.SAVINGS);
             } else if (toLoanAccountId != null) {
-                toAccount = new PortfolioAccountData(toLoanAccountId, toLoanAccountNo, null, null, null, null, null, toLoanProductId,
-                        toLoanProductName, null, null, null);
+                toAccount = PortfolioAccountData.instance(toLoanAccountId, toLoanAccountNo, null, null, null, null, null, toLoanProductId,
+                        toLoanProductName, null, null, null, null, null);
                 toAccountType = accountType(PortfolioAccountType.LOAN);
             }
 

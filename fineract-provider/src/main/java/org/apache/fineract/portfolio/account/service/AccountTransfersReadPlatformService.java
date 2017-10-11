@@ -18,17 +18,19 @@
  */
 package org.apache.fineract.portfolio.account.service;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.data.AccountTransferData;
+import org.joda.time.LocalDate;
 
 public interface AccountTransfersReadPlatformService {
 
-    AccountTransferData retrieveTemplate(Long fromOfficeId, Long fromClientId, Long fromAccountId, Integer fromAccountType,
-            Long toOfficeId, Long toClientId, Long toAccountId, Integer toAccountType);
+    AccountTransferData retrieveTemplate(Long fromOfficeId, Long fromClientId, Long fromAccountId, Integer fromAccountType, Long toOfficeId,
+            Long toClientId, Long toAccountId, Integer toAccountType, final Byte transferType);
 
     Page<AccountTransferData> retrieveAll(SearchParameters searchParameters, Long accountDetailId);
 
@@ -39,7 +41,11 @@ public interface AccountTransfersReadPlatformService {
     Page<AccountTransferData> retrieveByStandingInstruction(Long id, SearchParameters searchParameters);
 
     Collection<Long> fetchPostInterestTransactionIds(Long accountId);
-    
+
     AccountTransferData retrieveRefundByTransferTemplate(Long fromOfficeId, Long fromClientId, Long fromAccountId, Integer fromAccountType,
             Long toOfficeId, Long toClientId, Long toAccountId, Integer toAccountType);
+
+    BigDecimal getTotalTransactionAmount(Long accountId, Integer accountType, LocalDate transactionDate);
+
+    Collection<Long> retrivePortfolioTransactionIds(Long entityId, PortfolioAccountType accountType);
 }

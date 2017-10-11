@@ -91,7 +91,7 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
     }
 
     public SavingsAccount getLinkedSavingsAccount() {
-        return accountAssociations.linkedSavingsAccount();
+        return this.accountAssociations.linkedSavingsAccount();
     }
 
     public Loan getLoanAccount() {
@@ -102,11 +102,11 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
         return this.amount;
     }
 
-    public void setAmountRemaining(BigDecimal amountRemaining) {
-		this.amountRemaining = amountRemaining;
-	}
+    public void setAmountRemaining(final BigDecimal amountRemaining) {
+        this.amountRemaining = amountRemaining;
+    }
 
-	public BigDecimal getAmountReleased() {
+    public BigDecimal getAmountReleased() {
         return this.amountReleased == null ? BigDecimal.ZERO : this.amountReleased;
     }
 
@@ -122,8 +122,8 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
         this.amountReleased = getAmountReleased().add(amount);
         this.amountRemaining = getAmountRemaining().subtract(amount);
         if (this.amountRemaining.setScale(2, RoundingMode.FLOOR).compareTo(BigDecimal.ZERO) == 0) {
-            this.updateStatus(GuarantorFundStatusType.COMPLETED);
-           accountAssociations.setActive(false);  
+            updateStatus(GuarantorFundStatusType.COMPLETED);
+            this.accountAssociations.setActive(false);
         }
     }
 
@@ -131,8 +131,8 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
         this.amountReleased = getAmountReleased().subtract(amount);
         this.amountRemaining = getAmountRemaining().add(amount);
         if (getStatus().isCompleted() && this.amountRemaining.setScale(2, RoundingMode.FLOOR).compareTo(BigDecimal.ZERO) == 1) {
-            this.updateStatus(GuarantorFundStatusType.ACTIVE);
-            accountAssociations.setActive(true);
+            updateStatus(GuarantorFundStatusType.ACTIVE);
+            this.accountAssociations.setActive(true);
         }
     }
 
@@ -145,35 +145,33 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
     }
 
     public void undoAllTransactions() {
-        for (GuarantorFundingTransaction fundingTransaction : this.guarantorFundingTransactions) {
+        for (final GuarantorFundingTransaction fundingTransaction : this.guarantorFundingTransactions) {
             fundingTransaction.reverseTransaction();
         }
-        accountAssociations.setActive(false);
+        this.accountAssociations.setActive(false);
     }
 
-  
+    public void addSelfAmmount(final BigDecimal amount, final BigDecimal loanAmount) {
+        final BigDecimal remainingAmount = getAmountRemaining();
+        BigDecimal amountDiff = BigDecimal.ZERO;
+        if (remainingAmount.compareTo(loanAmount) < 1) {
+            final BigDecimal tempRemainingAmount = getAmountRemaining().add(amount);
+            if (tempRemainingAmount.compareTo(loanAmount) == 1) {
+                amountDiff = loanAmount.subtract(remainingAmount);
+                this.amountRemaining = loanAmount;
+            } else {
+                this.amountRemaining = getAmountRemaining().add(amount);
+                amountDiff = amount;
+            }
+            this.amount = this.amount.add(amountDiff);
+        }
+    }
 
-	public void addSelfAmmount(BigDecimal amount, BigDecimal loanAmount) {
-		BigDecimal remainingAmount = getAmountRemaining();
-		BigDecimal amountDiff = BigDecimal.ZERO;
-		if(remainingAmount.compareTo(loanAmount) < 1){
-			BigDecimal tempRemainingAmount = getAmountRemaining().add(amount);
-			if(tempRemainingAmount.compareTo(loanAmount) == 1){
-				amountDiff = loanAmount.subtract(remainingAmount);
-				this.amountRemaining = loanAmount;
-			} else {
-				this.amountRemaining = getAmountRemaining().add(amount);
-				amountDiff = amount;
-			}
-			this.amount = this.amount.add(amountDiff);            
-	        	}
-	     }
+    public AccountAssociations getAccountAssociations() {
+        return this.accountAssociations;
+    }
 
-	public AccountAssociations getAccountAssociations() {
-		return this.accountAssociations;
-	}
-
-	public void setAccountAssociations(AccountAssociations accountAssociations) {
-		this.accountAssociations = accountAssociations;
-	}
+    public void setAccountAssociations(final AccountAssociations accountAssociations) {
+        this.accountAssociations = accountAssociations;
+    }
 }

@@ -18,20 +18,27 @@
  */
 package org.apache.fineract.portfolio.savings.service;
 
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_PRODUCT_RESOURCE_NAME;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accountingRuleParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargesParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroupIdParamName;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
-import org.apache.fineract.infrastructure.entityaccess.domain.MifosEntityAccessType;
-import org.apache.fineract.infrastructure.entityaccess.domain.MifosEntityType;
-import org.apache.fineract.infrastructure.entityaccess.service.MifosEntityAccessUtil;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
@@ -40,12 +47,16 @@ import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
 import org.apache.fineract.portfolio.savings.domain.SavingsProductAssembler;
 import org.apache.fineract.portfolio.savings.domain.SavingsProductRepository;
 import org.apache.fineract.portfolio.savings.exception.SavingsProductNotFoundException;
+import org.apache.fineract.portfolio.tax.domain.TaxGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 
 @Service
 public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements SavingsProductWritePlatformService {
@@ -56,22 +67,21 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
     private final SavingsProductDataValidator fromApiJsonDataValidator;
     private final SavingsProductAssembler savingsProductAssembler;
     private final ProductToGLAccountMappingWritePlatformService accountMappingWritePlatformService;
-    private final MifosEntityAccessUtil mifosEntityAccessUtil;
+    private final FineractEntityAccessUtil fineractEntityAccessUtil;
 
     @Autowired
     public SavingsProductWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final SavingsProductRepository savingProductRepository, final SavingsProductDataValidator fromApiJsonDataValidator,
             final SavingsProductAssembler savingsProductAssembler,
             final ProductToGLAccountMappingWritePlatformService accountMappingWritePlatformService,
-            final MifosEntityAccessUtil mifosEntityAccessUtil
-            ) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil) {
         this.context = context;
         this.savingProductRepository = savingProductRepository;
         this.fromApiJsonDataValidator = fromApiJsonDataValidator;
         this.savingsProductAssembler = savingsProductAssembler;
         this.logger = LoggerFactory.getLogger(SavingsProductWritePlatformServiceJpaRepositoryImpl.class);
         this.accountMappingWritePlatformService = accountMappingWritePlatformService;
-        this.mifosEntityAccessUtil = mifosEntityAccessUtil;
+        this.fineractEntityAccessUtil = fineractEntityAccessUtil;
     }
 
     /*
@@ -81,16 +91,21 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
     private void handleDataIntegrityIssues(final JsonCommand command, final DataAccessException dae) {
 
         final Throwable realCause = dae.getMostSpecificCause();
-        if (realCause.getMessage().contains("sp_unq_name")) {
+        if (realCause.getMessage().contains("external_id")) {
+
+            final String externalId = command.stringValueOfParameterNamed("externalId");
+            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.externalId",
+                    "Savings Product with externalId `" + externalId + "` already exists", "externalId", externalId);
+        } else if (realCause.getMessage().contains("sp_unq_name")) {
 
             final String name = command.stringValueOfParameterNamed("name");
-            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.name", "Savings product with name `" + name
-                    + "` already exists", "name", name);
+            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.name",
+                    "Savings product with name `" + name + "` already exists", "name", name);
         } else if (realCause.getMessage().contains("sp_unq_short_name")) {
 
             final String shortName = command.stringValueOfParameterNamed("shortName");
-            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.short.name", "Savings product with short name `"
-                    + shortName + "` already exists", "shortName", shortName);
+            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.short.name",
+                    "Savings product with short name `" + shortName + "` already exists", "shortName", shortName);
         }
 
         logAsErrorUnexpectedDataIntegrityException(dae);
@@ -109,20 +124,23 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
         try {
             this.fromApiJsonDataValidator.validateForCreate(command.json());
 
-            final SavingsProduct product = this.savingsProductAssembler.assemble(command);
+            final Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil.checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
+
+            final SavingsProduct product = this.savingsProductAssembler.createAssemble(command);
 
             this.savingProductRepository.save(product);
 
             // save accounting mappings
             this.accountMappingWritePlatformService.createSavingProductToGLAccountMapping(product.getId(), command,
                     DepositAccountType.SAVINGS_DEPOSIT);
-            
-            // check if the office specific products are enabled. If yes, then save this savings product against a specific office
+
+            // check if the office specific products are enabled. If yes, then
+            // save this savings product against a specific office
             // i.e. this savings product is specific for this office.
-            mifosEntityAccessUtil.checkConfigurationAndAddProductResrictionsForUserOffice(
-            		MifosEntityAccessType.OFFICE_ACCESS_TO_SAVINGS_PRODUCTS, 
-            		MifosEntityType.SAVINGS_PRODUCT, 
-            		product.getId());
+            this.fineractEntityAccessUtil.checkConfigurationAndAddProductResrictionsForUserOffice(
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_SAVINGS_PRODUCTS, product.getId());
 
             return new CommandProcessingResultBuilder() //
                     .withEntityId(product.getId()) //
@@ -139,19 +157,36 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
 
         try {
             this.context.authenticatedUser();
-            this.fromApiJsonDataValidator.validateForUpdate(command.json());
-
             final SavingsProduct product = this.savingProductRepository.findOne(productId);
             if (product == null) { throw new SavingsProductNotFoundException(productId); }
 
+            this.fromApiJsonDataValidator.validateForUpdate(command.json(), product);
+            final Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil.checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
+
             final Map<String, Object> changes = product.update(command);
+            this.savingsProductAssembler.updateFloatingInterestRateChart(product, changes, command.json());
 
             if (changes.containsKey(chargesParamName)) {
-                final Set<Charge> savingsProductCharges = this.savingsProductAssembler.assembleListOfSavingsProductCharges(command, product
-                        .currency().getCode());
+                final Set<Charge> savingsProductCharges = this.savingsProductAssembler.assembleListOfSavingsProductCharges(command,
+                        product.currency().getCode());
                 final boolean updated = product.update(savingsProductCharges);
                 if (!updated) {
                     changes.remove(chargesParamName);
+                }
+            }
+
+            if (changes.containsKey(taxGroupIdParamName)) {
+                final TaxGroup taxGroup = this.savingsProductAssembler.assembleTaxGroup(command);
+                product.setTaxGroup(taxGroup);
+                if (product.withHoldTax() && product.getTaxGroup() == null) {
+                    final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+                    final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                            .resource(SAVINGS_PRODUCT_RESOURCE_NAME);
+                    final Long taxGroupId = null;
+                    baseDataValidator.reset().parameter(taxGroupIdParamName).value(taxGroupId).notBlank();
+                    throw new PlatformApiDataValidationException(dataValidationErrors);
                 }
             }
 
@@ -188,6 +223,17 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
         return new CommandProcessingResultBuilder() //
                 .withEntityId(product.getId()) //
                 .build();
+    }
+
+    private Collection<Long> extractChargeIds(final JsonCommand command) {
+        final Collection<Long> chargeIds = new ArrayList<>();
+        final JsonArray charges = command.arrayOfParameterNamed("charges");
+        if (null != charges && charges.size() > 0) {
+            for (final JsonElement charge : charges) {
+                chargeIds.add(charge.getAsJsonObject().get("id").getAsLong());
+            }
+        }
+        return chargeIds;
     }
 
 }

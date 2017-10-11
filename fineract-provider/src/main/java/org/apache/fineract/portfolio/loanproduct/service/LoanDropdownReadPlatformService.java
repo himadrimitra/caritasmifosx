@@ -35,9 +35,9 @@ public interface LoanDropdownReadPlatformService {
     List<EnumOptionData> retrieveLoanTermFrequencyTypeOptions();
 
     List<EnumOptionData> retrieveRepaymentFrequencyTypeOptions();
-    
+
     List<EnumOptionData> retrieveRepaymentFrequencyOptionsForNthDayOfMonth();
-    
+
     List<EnumOptionData> retrieveRepaymentFrequencyOptionsForDaysOfWeek();
 
     List<EnumOptionData> retrieveInterestRateFrequencyTypeOptions();
@@ -48,10 +48,18 @@ public interface LoanDropdownReadPlatformService {
 
     List<EnumOptionData> retrieveInterestRecalculationCompoundingTypeOptions();
 
+    List<EnumOptionData> retrieveInterestRecalculationNthDayTypeOptions();
+
+    List<EnumOptionData> retrieveInterestRecalculationDayOfWeekTypeOptions();
+
     List<EnumOptionData> retrieveRescheduleStrategyTypeOptions();
-    
+
     List<EnumOptionData> retrieveInterestRecalculationFrequencyTypeOptions();
-    
+
     List<EnumOptionData> retrivePreCloseInterestCalculationStrategyOptions();
+
+    public List<EnumOptionData> retrieveWeeksInYearTypeOptions();
+
+    List<EnumOptionData> retrieveBrokenPeriodMethodTypeOptions();
 
 }

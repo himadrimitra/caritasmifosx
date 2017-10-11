@@ -18,10 +18,15 @@
  */
 package org.apache.fineract.organisation.holiday.domain;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.organisation.holiday.exception.HolidayNotFoundException;
+import org.apache.fineract.organisation.holiday.service.HolidayUtil;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -68,6 +73,18 @@ public class HolidayRepositoryWrapper {
     }
 
     public List<Holiday> findUnprocessed() {
-        return this.repository.findUnprocessed(HolidayStatusType.ACTIVE.getValue());
+        final Collection<Integer> statuses = new ArrayList<>(Arrays.asList(HolidayStatusType.ACTIVE.getValue(),
+                HolidayStatusType.DELETED.getValue()));
+        return this.repository.findUnprocessed(statuses);
+    }
+
+    public boolean isHoliday(Long officeId, LocalDate transactionDate) {
+        final List<Holiday> holidays = findByOfficeIdAndGreaterThanDate(officeId, transactionDate.toDate());
+        return HolidayUtil.isHoliday(transactionDate, holidays);
+    }
+
+    public List<Holiday> findHolidaysFromDate(final LocalDate fromDate) {
+        final Collection<Integer> statuses = new ArrayList<>(Arrays.asList(HolidayStatusType.ACTIVE.getValue()));
+        return this.repository.findHolidaysFromDate(fromDate.toDate(), statuses);
     }
 }

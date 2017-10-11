@@ -31,12 +31,12 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavailableException;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.guarantor.domain.GuarantorFundingTransaction;
 import org.apache.fineract.portfolio.savings.DepositAccountOnHoldTransactionType;
 import org.joda.time.LocalDate;
-import org.joda.time.base.AbstractPartial;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -81,14 +81,14 @@ public class DepositAccountOnHoldTransaction extends AbstractPersistable<Long> {
 
     public static DepositAccountOnHoldTransaction hold(final SavingsAccount savingsAccount, final BigDecimal amount,
             final LocalDate transactionDate) {
-        boolean reversed = false;
+        final boolean reversed = false;
         return new DepositAccountOnHoldTransaction(savingsAccount, amount, DepositAccountOnHoldTransactionType.HOLD, transactionDate,
                 reversed);
     }
 
     public static DepositAccountOnHoldTransaction release(final SavingsAccount savingsAccount, final BigDecimal amount,
             final LocalDate transactionDate) {
-        boolean reversed = false;
+        final boolean reversed = false;
         return new DepositAccountOnHoldTransaction(savingsAccount, amount, DepositAccountOnHoldTransactionType.RELEASE, transactionDate,
                 reversed);
     }
@@ -97,11 +97,20 @@ public class DepositAccountOnHoldTransaction extends AbstractPersistable<Long> {
         return this.amount;
     }
 
+    public Money getAmountMoney(final MonetaryCurrency currency) {
+        return Money.of(currency, this.amount);
+    }
+
     public void reverseTransaction() {
         this.reversed = true;
-        if (this.getTransactionType().isHold()) {
+        if (getTransactionType().isHold()) {
             this.savingsAccount.releaseFunds(this.amount);
         } else {
+            if (this.amount.compareTo(this.savingsAccount.getSummary().getAccountBalance()
+                    .subtract(this.savingsAccount.getOnHoldFunds())) > 0) { throw new PlatformServiceUnavailableException(
+                            "error.msg.loan.undo.transaction.not.allowed",
+                            "Loan transaction:" + this.amount + " undo transaction not allowed as account balance is insufficient",
+                            this.amount); }
             this.savingsAccount.holdFunds(this.amount);
         }
     }
@@ -110,48 +119,45 @@ public class DepositAccountOnHoldTransaction extends AbstractPersistable<Long> {
         return DepositAccountOnHoldTransactionType.fromInt(this.transactionType);
 
     }
-    
+
     public boolean isReversed() {
-    		return this.reversed;
-    }
-    
-    public void setReversed(boolean reversed) {
-    		this.reversed = reversed;
-   	}
-    	
-    
-    public void reverseTxnIfUndoDepositTxn(BigDecimal releaseAmount){
-       	this.reversed = true;
-      //following if self saving account undo deposit then other guarantor has to be undo release and onhond has to be increase
-      //other guarantor onhod amount
-       	this.savingsAccount.undoOnHoldAmountIfDepositTxnUndo(releaseAmount);
-       }
-        
-    //following code change if undo the saving deposit on hold transaction self saving account onhold
-    
-    public void removedOnholdsFundsWithTxnAmount(BigDecimal releaseAmount){
-    	this.reversed = true;
-    	this.savingsAccount.removedOnholdsFundsWithTxnAmount(releaseAmount);
+        return this.reversed;
     }
 
-	public SavingsAccount getSavingsAccount() {
-		return this.savingsAccount;
-	}
+    public void setReversed(final boolean reversed) {
+        this.reversed = reversed;
+    }
 
-	public void setSavingsAccount(SavingsAccount savingsAccount) {
-		this.savingsAccount = savingsAccount;
-	}
+    public void reverseTxnIfUndoDepositTxn(final BigDecimal releaseAmount) {
+        this.reversed = true;
+        // following if self saving account undo deposit then other guarantor
+        // has to be undo release and onhond has to be increase
+        // other guarantor onhod amount
+        this.savingsAccount.undoOnHoldAmountIfDepositTxnUndo(releaseAmount);
+    }
 
-	 public LocalDate getTransactionDate() {
+    // following code change if undo the saving deposit on hold transaction self
+    // saving account onhold
+
+    public void removedOnholdsFundsWithTxnAmount(final BigDecimal releaseAmount) {
+        this.reversed = true;
+        this.savingsAccount.removedOnholdsFundsWithTxnAmount(releaseAmount);
+    }
+
+    public SavingsAccount getSavingsAccount() {
+        return this.savingsAccount;
+    }
+
+    public void setSavingsAccount(final SavingsAccount savingsAccount) {
+        this.savingsAccount = savingsAccount;
+    }
+
+    public LocalDate getTransactionDate() {
         LocalDate transactionDate = null;
-        if(this.transactionDate !=null){
+        if (this.transactionDate != null) {
             transactionDate = LocalDate.fromDateFields(this.transactionDate);
         }
         return transactionDate;
-    }
-
-	 public Money getAmountMoney(final MonetaryCurrency currency) {
-        return Money.of(currency, this.amount);
     }
 
 }

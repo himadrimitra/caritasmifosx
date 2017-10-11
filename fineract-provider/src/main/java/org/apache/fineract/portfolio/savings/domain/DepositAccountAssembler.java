@@ -48,10 +48,12 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.minRequi
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.nominalAnnualInterestRateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.productIdParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.submittedOnDateParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHoldTaxParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
@@ -60,6 +62,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
+import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -173,7 +176,7 @@ public class DepositAccountAssembler {
         AccountType accountType = AccountType.INVALID;
         final Long clientId = this.fromApiJsonHelper.extractLongNamed(clientIdParamName, element);
         if (clientId != null) {
-            client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+            client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
             accountType = AccountType.INDIVIDUAL;
             if (client.isNotActive()) { throw new ClientNotActiveException(clientId); }
         }
@@ -276,7 +279,7 @@ public class DepositAccountAssembler {
         InterestRateChart productChart = null;
 
         if (command.parameterExists(chartIdParamName)) {
-            Long chartId = command.longValueOfParameterNamed(chartIdParamName);
+            final Long chartId = command.longValueOfParameterNamed(chartIdParamName);
             productChart = product.findChart(chartId);
 
         } else {
@@ -287,35 +290,42 @@ public class DepositAccountAssembler {
             accountChart = DepositAccountInterestRateChart.from(productChart);
         }
 
+        boolean withHoldTax = product.withHoldTax();
+        if (command.parameterExists(withHoldTaxParamName)) {
+            withHoldTax = command.booleanPrimitiveValueOfParameterNamed(withHoldTaxParamName);
+            if (withHoldTax
+                    && product.getTaxGroup() == null) { throw new UnsupportedParameterException(Arrays.asList(withHoldTaxParamName)); }
+        }
+
         SavingsAccount account = null;
         if (depositAccountType.isFixedDeposit()) {
             final DepositProductTermAndPreClosure prodTermAndPreClosure = ((FixedDepositProduct) product).depositProductTermAndPreClosure();
-            final DepositAccountTermAndPreClosure accountTermAndPreClosure = this.assembleAccountTermAndPreClosure(command,
+            final DepositAccountTermAndPreClosure accountTermAndPreClosure = assembleAccountTermAndPreClosure(command,
                     prodTermAndPreClosure);
 
-            FixedDepositAccount fdAccount = FixedDepositAccount.createNewApplicationForSubmittal(client, group, product, fieldOfficer,
+            final FixedDepositAccount fdAccount = FixedDepositAccount.createNewApplicationForSubmittal(client, group, product, fieldOfficer,
                     accountNo, externalId, accountType, submittedOnDate, submittedBy, interestRate, interestCompoundingPeriodType,
                     interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
                     lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, charges,
-                    accountTermAndPreClosure, accountChart);
+                    accountTermAndPreClosure, accountChart, withHoldTax);
             accountTermAndPreClosure.updateAccountReference(fdAccount);
             fdAccount.validateDomainRules();
             account = fdAccount;
         } else if (depositAccountType.isRecurringDeposit()) {
             final DepositProductTermAndPreClosure prodTermAndPreClosure = ((RecurringDepositProduct) product)
                     .depositProductTermAndPreClosure();
-            final DepositAccountTermAndPreClosure accountTermAndPreClosure = this.assembleAccountTermAndPreClosure(command,
+            final DepositAccountTermAndPreClosure accountTermAndPreClosure = assembleAccountTermAndPreClosure(command,
                     prodTermAndPreClosure);
 
             final DepositProductRecurringDetail prodRecurringDetail = ((RecurringDepositProduct) product).depositRecurringDetail();
-            final DepositAccountRecurringDetail accountRecurringDetail = this.assembleAccountRecurringDetail(command,
+            final DepositAccountRecurringDetail accountRecurringDetail = assembleAccountRecurringDetail(command,
                     prodRecurringDetail.recurringDetail());
 
-            RecurringDepositAccount rdAccount = RecurringDepositAccount.createNewApplicationForSubmittal(client, group, product,
+            final RecurringDepositAccount rdAccount = RecurringDepositAccount.createNewApplicationForSubmittal(client, group, product,
                     fieldOfficer, accountNo, externalId, accountType, submittedOnDate, submittedBy, interestRate,
                     interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                     minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer,
-                    charges, accountTermAndPreClosure, accountRecurringDetail, accountChart);
+                    charges, accountTermAndPreClosure, accountRecurringDetail, accountChart, withHoldTax);
 
             accountTermAndPreClosure.updateAccountReference(rdAccount);
             accountRecurringDetail.updateAccountReference(rdAccount);
@@ -331,7 +341,7 @@ public class DepositAccountAssembler {
         return account;
     }
 
-    public SavingsAccount assembleFrom(final Long savingsId, DepositAccountType depositAccountType) {
+    public SavingsAccount assembleFrom(final Long savingsId, final DepositAccountType depositAccountType) {
         final SavingsAccount account = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsId, depositAccountType);
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
         return account;
@@ -343,8 +353,8 @@ public class DepositAccountAssembler {
 
     public DepositAccountTermAndPreClosure assembleAccountTermAndPreClosure(final JsonCommand command,
             final DepositProductTermAndPreClosure productTermAndPreclosure) {
-        final DepositPreClosureDetail productPreClosure = (productTermAndPreclosure == null) ? null : productTermAndPreclosure
-                .depositPreClosureDetail();
+        final DepositPreClosureDetail productPreClosure = (productTermAndPreclosure == null) ? null
+                : productTermAndPreclosure.depositPreClosureDetail();
         final DepositTermDetail productTerm = (productTermAndPreclosure == null) ? null : productTermAndPreclosure.depositTermDetail();
 
         final DepositPreClosureDetail updatedProductPreClosure = this.depositProductAssembler.assemblePreClosureDetail(command,
@@ -409,8 +419,9 @@ public class DepositAccountAssembler {
         return depositAccountRecurringDetail;
     }
 
-    public Collection<SavingsAccountTransactionDTO> assembleBulkMandatorySavingsAccountTransactionDTOs(final JsonCommand command,final PaymentDetail paymentDetail) {
-        AppUser user = getAppUserIfPresent();
+    public Collection<SavingsAccountTransactionDTO> assembleBulkMandatorySavingsAccountTransactionDTOs(final JsonCommand command,
+            final PaymentDetail paymentDetail) {
+        final AppUser user = getAppUserIfPresent();
         final String json = command.json();
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
         final JsonElement element = this.fromApiJsonHelper.parse(json);
@@ -436,7 +447,7 @@ public class DepositAccountAssembler {
                         detail = this.paymentDetailAssembler.fetchPaymentDetail(savingsTransactionElement);
                     }
                     final SavingsAccountTransactionDTO savingsAccountTransactionDTO = new SavingsAccountTransactionDTO(formatter,
-                            transactionDate, dueAmount, detail, new Date(), savingsId, user);
+                            transactionDate, dueAmount, detail, new Date(), savingsId, user, true);
                     savingsAccountTransactions.add(savingsAccountTransactionDTO);
                 }
             }

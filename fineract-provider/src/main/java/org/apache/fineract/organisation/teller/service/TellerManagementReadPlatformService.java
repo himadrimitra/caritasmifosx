@@ -18,15 +18,17 @@
  */
 package org.apache.fineract.organisation.teller.service;
 
-import java.util.Collection;
-import java.util.Date;
-
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.organisation.teller.data.CashierData;
 import org.apache.fineract.organisation.teller.data.CashierTransactionData;
 import org.apache.fineract.organisation.teller.data.CashierTransactionsWithSummaryData;
 import org.apache.fineract.organisation.teller.data.TellerData;
 import org.apache.fineract.organisation.teller.data.TellerJournalData;
 import org.apache.fineract.organisation.teller.data.TellerTransactionData;
+
+import java.util.Collection;
+import java.util.Date;
 
 public interface TellerManagementReadPlatformService {
 
@@ -39,9 +41,9 @@ public interface TellerManagementReadPlatformService {
     public Collection<CashierData> getCashierData(Long officeId, Long tellerId, Long staffId, Date date);
 
     public Collection<CashierData> getTellerCashiers(Long tellerId, Date date);
-    
-    public CashierData retrieveCashierTemplate (Long officeId, Long tellerId, boolean staffInSelectedOfficeOnly);
-    
+
+    public CashierData retrieveCashierTemplate(Long officeId, Long tellerId, boolean staffInSelectedOfficeOnly);
+
     public CashierTransactionData retrieveCashierTxnTemplate(Long cashierId);
 
     public TellerTransactionData findTellerTransaction(Long transactionId);
@@ -58,14 +60,12 @@ public interface TellerManagementReadPlatformService {
 
     public Collection<CashierData> getCashiersForTeller(Long tellerId, Date fromDate, Date toDate);
 
-    public Collection<CashierData> retrieveCashiersForTellers(String sqlSearch,
-			Long tellerId);
+    public Collection<CashierData> retrieveCashiersForTellers(String sqlSearch, Long tellerId);
 
-    public Collection<CashierTransactionData> retrieveCashierTransactions(
-			Long cashierId, boolean includeAllTellers, Date fromDate,
-			Date toDate);
-    
-    public CashierTransactionsWithSummaryData retrieveCashierTransactionsWithSummary (
-			Long cashierId, boolean includeAllTellers, Date fromDate, Date toDate);
+    public Page<CashierTransactionData> retrieveCashierTransactions(Long cashierId, boolean includeAllTellers, Date fromDate,
+            Date toDate, String currencyCode, final SearchParameters searchParameters);
+
+    public CashierTransactionsWithSummaryData retrieveCashierTransactionsWithSummary(Long cashierId, boolean includeAllTellers,
+            Date fromDate, Date toDate, String currencyCode, final SearchParameters searchParameters);
 
 }

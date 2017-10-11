@@ -114,8 +114,8 @@ public class LoanProductMinMaxConstraints {
         }
 
         final String minInterestRatePerPeriodParamName = "minInterestRatePerPeriod";
-        if (command
-                .isChangeInBigDecimalParameterNamedWithNullCheck(minInterestRatePerPeriodParamName, this.minNominalInterestRatePerPeriod)) {
+        if (command.isChangeInBigDecimalParameterNamedWithNullCheck(minInterestRatePerPeriodParamName,
+                this.minNominalInterestRatePerPeriod)) {
             final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(minInterestRatePerPeriodParamName);
             actualChanges.put(minInterestRatePerPeriodParamName, newValue);
             actualChanges.put("locale", localeAsInput);
@@ -123,8 +123,8 @@ public class LoanProductMinMaxConstraints {
         }
 
         final String maxInterestRatePerPeriodParamName = "maxInterestRatePerPeriod";
-        if (command
-                .isChangeInBigDecimalParameterNamedWithNullCheck(maxInterestRatePerPeriodParamName, this.maxNominalInterestRatePerPeriod)) {
+        if (command.isChangeInBigDecimalParameterNamedWithNullCheck(maxInterestRatePerPeriodParamName,
+                this.maxNominalInterestRatePerPeriod)) {
             final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(maxInterestRatePerPeriodParamName);
             actualChanges.put(maxInterestRatePerPeriodParamName, newValue);
             actualChanges.put("locale", localeAsInput);
@@ -143,13 +143,13 @@ public class LoanProductMinMaxConstraints {
     }
 
     public BigDecimal getMinNominalInterestRatePerPeriod() {
-        return this.minNominalInterestRatePerPeriod == null ? null : BigDecimal.valueOf(Double.valueOf(this.minNominalInterestRatePerPeriod
-                .stripTrailingZeros().toString()));
+        return this.minNominalInterestRatePerPeriod == null ? null
+                : BigDecimal.valueOf(Double.valueOf(this.minNominalInterestRatePerPeriod.stripTrailingZeros().toString()));
     }
 
     public BigDecimal getMaxNominalInterestRatePerPeriod() {
-        return this.maxNominalInterestRatePerPeriod == null ? null : BigDecimal.valueOf(Double.valueOf(this.maxNominalInterestRatePerPeriod
-                .stripTrailingZeros().toString()));
+        return this.maxNominalInterestRatePerPeriod == null ? null
+                : BigDecimal.valueOf(Double.valueOf(this.maxNominalInterestRatePerPeriod.stripTrailingZeros().toString()));
     }
 
     public Integer getMinNumberOfRepayments() {
@@ -158,6 +158,11 @@ public class LoanProductMinMaxConstraints {
 
     public Integer getMaxNumberOfRepayments() {
         return this.maxNumberOfRepayments;
+    }
+
+    public void updateForFloatingInterestRates() {
+        this.minNominalInterestRatePerPeriod = null;
+        this.maxNominalInterestRatePerPeriod = null;
     }
 
 }

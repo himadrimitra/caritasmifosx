@@ -23,8 +23,11 @@ import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Date;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -32,6 +35,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.portfolio.client.domain.ClientEnumerations;
+import org.apache.fineract.portfolio.collaterals.api.PledgeApiConstants;
 import org.apache.fineract.portfolio.group.domain.GroupingTypeEnumerations;
 import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
@@ -42,12 +46,15 @@ import org.apache.fineract.portfolio.search.data.AdHocQuerySearchConditions;
 import org.apache.fineract.portfolio.search.data.AdHocSearchQueryData;
 import org.apache.fineract.portfolio.search.data.SearchConditions;
 import org.apache.fineract.portfolio.search.data.SearchData;
+import org.apache.fineract.portfolio.village.domain.VillageTypeEnumerations;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+
+import com.finflux.reconcilation.bank.data.BankData;
 
 @Service
 public class SearchReadPlatformServiceImpl implements SearchReadPlatformService {
@@ -56,14 +63,17 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
     private final PlatformSecurityContext context;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final OfficeReadPlatformService officeReadPlatformService;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public SearchReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final LoanProductReadPlatformService loanProductReadPlatformService, final OfficeReadPlatformService officeReadPlatformService) {
+            final LoanProductReadPlatformService loanProductReadPlatformService, final OfficeReadPlatformService officeReadPlatformService,
+            final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.namedParameterjdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.officeReadPlatformService = officeReadPlatformService;
+        this.configurationDomainService = configurationDomainService;
     }
 
     @Override
@@ -71,123 +81,206 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
 
-        final SearchMapper rm = new SearchMapper();
+        final SearchMapper rm = new SearchMapper(this.configurationDomainService);
 
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("hierarchy", hierarchy + "%");
-        params.addValue("search", searchConditions.getSearchQuery());
-        params.addValue("partialSearch", "%" + searchConditions.getSearchQuery() + "%");
-
-        @SuppressWarnings("unused")
-        String sql = rm.searchSchema(searchConditions);
-
+        if (searchConditions.getExactMatch()) {
+            params.addValue("search", searchConditions.getSearchQuery());
+        } else {
+            params.addValue("search", "%" + searchConditions.getSearchQuery() + "%");
+        }
         return this.namedParameterjdbcTemplate.query(rm.searchSchema(searchConditions), params, rm);
     }
 
     private static final class SearchMapper implements RowMapper<SearchData> {
 
+        private final ConfigurationDomainService configurationDomainService;
+
+        public SearchMapper(final ConfigurationDomainService configurationDomainService) {
+            this.configurationDomainService = configurationDomainService;
+        }
+
         public String searchSchema(final SearchConditions searchConditions) {
+            final StringBuilder sqlBuilder = new StringBuilder(200);
 
-            final String union = " union ";
-            final String clientExactMatchSql = " (select 'CLIENT' as entityType, c.id as entityId, c.display_name as entityName, c.external_id as entityExternalId, c.account_no as entityAccountNo "
-                    + " , c.office_id as parentId, o.name as parentName, c.mobile_no as entityMobileNo,c.status_enum as entityStatusEnum,c.national_id as entityNationalId "
-                    + " from m_client c join m_office o on o.id = c.office_id where o.hierarchy like :hierarchy and (c.account_no like :search or c.display_name like :search or c.external_id like :search or c.mobile_no like :search or c.national_id like :search)) ";
+            boolean searchUnderOfficeHierarchy = false;
+            String officeHierarchy = null;
+            if (searchConditions.getofficeId() != null) {
+                final Long officeId = searchConditions.getofficeId();
+                searchUnderOfficeHierarchy = true;
+                /** For Head Office, reset the search hierarchy **/
+                if (officeId == 1) {
+                    officeHierarchy = "'%.%'";
+                } else {
+                    officeHierarchy = "'%" + officeId + ".%'";
+                }
 
-            final String clientMatchSql = " (select 'CLIENT' as entityType, c.id as entityId, c.display_name as entityName, c.external_id as entityExternalId, c.account_no as entityAccountNo "
-                    + " , c.office_id as parentId, o.name as parentName,c.mobile_no as entityMobileNo, c.status_enum as entityStatusEnum,c.national_id as entityNationalId  "
-                    + " from m_client c join m_office o on o.id = c.office_id where o.hierarchy like :hierarchy and ((c.account_no like :partialSearch and c.account_no not like :search) or "
-                    + "(c.display_name like :partialSearch and c.display_name not like :search) or "
-                    + "(c.external_id like :partialSearch and c.external_id not like :search)or "
-                    + "(c.mobile_no like :partialSearch and c.mobile_no not like :search) or "
-                    + "(c.national_id like :partialSearch and c.national_id not like :search)))";
-                   
+            }
 
-            final String loanExactMatchSql = " (select 'LOAN' as entityType, l.id as entityId, pl.name as entityName, l.external_id as entityExternalId, l.account_no as entityAccountNo "
-                    + " , c.id as parentId, c.display_name as parentName,null as entityMobileNo, l.loan_status_id as entityStatusEnum ,null as entityNationalId "
-                    + " from m_loan l join m_client c on l.client_id = c.id join m_office o on o.id = c.office_id join m_product_loan pl on pl.id=l.product_id where o.hierarchy like :hierarchy and (l.account_no like :search or l.external_id like :search)) ";
-
-            final String loanMatchSql = " (select 'LOAN' as entityType, l.id as entityId, pl.name as entityName, l.external_id as entityExternalId, l.account_no as entityAccountNo "
-                    + " , c.id as parentId, c.display_name as parentName, null as entityMobileNo,l.loan_status_id as entityStatusEnum,null as entityNationalId "
-                    + " from m_loan l join m_client c on l.client_id = c.id join m_office o on o.id = c.office_id join m_product_loan pl on pl.id=l.product_id where o.hierarchy like :hierarchy and "
-                    + " ((l.account_no like :partialSearch and l.account_no not like :search) or (l.external_id like :partialSearch and l.external_id not like :search))) ";
-
-            final String savingExactMatchSql = " (select 'SAVING' as entityType, s.id as entityId, sp.name as entityName, s.external_id as entityExternalId, s.account_no as entityAccountNo "
-                    + " , c.id as parentId, c.display_name as parentName,null as entityMobileNo, s.status_enum as entityStatusEnum ,null as entityNationalId "
-                    + " from m_savings_account s join m_client c on s.client_id = c.id join m_office o on o.id = c.office_id join m_savings_product sp on sp.id=s.product_id "
-                    + " where o.hierarchy like :hierarchy and (s.account_no like :search or s.external_id like :search)) ";
-
-            final String savingMatchSql = " (select 'SAVING' as entityType, s.id as entityId, sp.name as entityName, s.external_id as entityExternalId, s.account_no as entityAccountNo "
-                    + " , c.id as parentId, c.display_name as parentName,null as entityMobileNo, s.status_enum as entityStatusEnum,null as entityNationalId  "
-                    + " from m_savings_account s join m_client c on s.client_id = c.id join m_office o on o.id = c.office_id join m_savings_product sp on sp.id=s.product_id "
-                    + " where o.hierarchy like :hierarchy and ((s.account_no like :partialSearch and s.account_no not like :search) or "
-                    + "(s.external_id like :partialSearch and s.external_id not like :search))) ";
-
-            final String clientIdentifierExactMatchSql = " (select 'CLIENTIDENTIFIER' as entityType, ci.id as entityId, ci.document_key as entityName, "
-                    + " null as entityExternalId, null as entityAccountNo, c.id as parentId, c.display_name as parentName,null as entityMobileNo, c.status_enum as entityStatusEnum ,null as entityNationalId "
-                    + " from m_client_identifier ci join m_client c on ci.client_id=c.id join m_office o on o.id = c.office_id "
-                    + " where o.hierarchy like :hierarchy and ci.document_key like :search ) ";
-
-            final String clientIdentifierMatchSql = " (select 'CLIENTIDENTIFIER' as entityType, ci.id as entityId, ci.document_key as entityName, "
-                    + " null as entityExternalId, null as entityAccountNo, c.id as parentId, c.display_name as parentName,null as entityMobileNo,c.status_enum as entityStatusEnum ,null as entityNationalId "
-                    + " from m_client_identifier ci join m_client c on ci.client_id=c.id join m_office o on o.id = c.office_id "
-                    + " where o.hierarchy like :hierarchy and (ci.document_key like :partialSearch and ci.document_key not like :search))";
-
-            final String groupExactMatchSql = " (select IF(g.level_id=1,'CENTER','GROUP') as entityType, g.id as entityId, g.display_name as entityName, g.external_id as entityExternalId, NULL as entityAccountNo "
-                    + " , g.office_id as parentId, o.name as parentName,null as entityMobileNo, g.status_enum as entityStatusEnum ,null as entityNationalId "
-                    + " from m_group g join m_office o on o.id = g.office_id  join m_client c on c.office_id=g.office_id where o.hierarchy like :hierarchy and (g.display_name like :search or g.external_id like :search or g.id like :search )) ";
-
-            final String groupMatchSql = " (select IF(g.level_id=1,'CENTER','GROUP') as entityType, g.id as entityId, g.display_name as entityName, g.external_id as entityExternalId, NULL as entityAccountNo "
-                    + " , g.office_id as parentId, o.name as parentName,null as entityMobileNo, g.status_enum as entityStatusEnum,null as entityNationalId  "
-                    + " from m_group g join m_office o on o.id = g.office_id  join m_client c on c.office_id=g.office_id where o.hierarchy like :hierarchy and ((g.display_name like :partialSearch and g.display_name not like :search) or(g.external_id like :partialSearch and g.external_id not like :search) or (g.id like :partialSearch and g.id not like :search))) ";
-
-            final StringBuffer sql = new StringBuffer();
-
-            // first include all exact matches
             if (searchConditions.isClientSearch()) {
-                sql.append(clientExactMatchSql).append(union);
-            }
+                sqlBuilder.append(
+                        " (select 'CLIENT' as entityType, c.id as entityId, c.display_name as entityName, c.external_id as entityExternalId, c.account_no as entityAccountNo "
+                                + " , c.office_id as parentId, o.name as parentName, c.mobile_no as entityMobileNo,c.status_enum as entityStatusEnum, null as parentType,"
+                                + " c.closure_reason_cv_id AS reasonId, cvclosurereason.code_description AS reasonValue, c.national_id as entityNationalId ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(",g.display_name as groupName, ce.display_name as centerName, null as officeName ");
+                } else {
+                    sqlBuilder.append(",null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder.append(
+                        " from m_client c join m_office o on o.id = c.office_id left join m_code_value cvclosurereason ON cvclosurereason.id = c.closure_reason_cv_id ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(
+                            " left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
+                }
+                sqlBuilder.append(
+                        " where o.hierarchy like :hierarchy and (c.account_no like :search or c.display_name like :search or c.external_id like :search or c.mobile_no like :search ))");
 
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+
+                sqlBuilder.append(" union ");
+
+            }
             if (searchConditions.isLoanSeach()) {
-                sql.append(loanExactMatchSql).append(union);
-            }
+                sqlBuilder.append(
+                        " (select 'LOAN' as entityType, l.id as entityId, pl.name as entityName, l.external_id as entityExternalId, l.account_no as entityAccountNo "
+                                + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, l.loan_status_id as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType,"
+                                + " null AS reasonId, null AS reasonValue, null as entityNationalId ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(",gr.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
+                } else {
+                    sqlBuilder.append(",null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder.append(
+                        " from m_loan l left join m_client c on l.client_id = c.id left join m_group g ON l.group_id = g.id left join m_office o on o.id = c.office_id left join m_product_loan pl on pl.id=l.product_id ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(
+                            " left join m_group_client as gc on gc.client_id = l.client_id left join m_group as gr on gr.id = gc.group_id  left join m_group as ce on ce.id = gr.parent_id ");
+                }
+                sqlBuilder.append(
+                        " where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (l.account_no like :search or l.external_id like :search))");
 
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+
+                sqlBuilder.append(" union ");
+            }
             if (searchConditions.isSavingSeach()) {
-                sql.append(savingExactMatchSql).append(union);
+                sqlBuilder.append(
+                        " (select 'SAVING' as entityType, s.id as entityId, sp.name as entityName, s.external_id as entityExternalId, s.account_no as entityAccountNo "
+                                + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, s.status_enum as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType,"
+                                + " null AS reasonId, null AS reasonValue, null as entityNationalId ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(", gr.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
+                } else {
+                    sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder.append(
+                        " from m_savings_account s left join m_client c on s.client_id = c.id left join m_group g ON s.group_id = g.id left join m_office o on o.id = c.office_id left join m_savings_product sp on sp.id=s.product_id ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(
+                            " left join m_group_client as gc on gc.client_id = s.client_id left join m_group as gr on gr.id = gc.group_id  left join m_group as ce on ce.id = gr.parent_id ");
+                }
+                sqlBuilder.append(
+                        " where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (s.account_no like :search or s.external_id like :search))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
             }
-
             if (searchConditions.isClientIdentifierSearch()) {
-                sql.append(clientIdentifierExactMatchSql).append(union);
+                sqlBuilder.append(" (select 'CLIENTIDENTIFIER' as entityType, ci.id as entityId, ci.document_key as entityName, "
+                        + " null as entityExternalId, null as entityAccountNo, c.id as parentId, c.display_name as parentName,null as entityMobileNo, c.status_enum as entityStatusEnum, null as parentType,"
+                        + " c.closure_reason_cv_id AS reasonId, cvclosurereason.code_description AS reasonValue, null as entityNationalId ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(", g.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
+                } else {
+                    sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder.append(
+                        " from m_client_identifier ci join m_client c on ci.client_id=c.id join m_office o on o.id = c.office_id left join m_code_value cvclosurereason ON cvclosurereason.id = c.closure_reason_cv_id ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(
+                            " left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
+                }
+                sqlBuilder.append(" where o.hierarchy like :hierarchy and ci.document_key like :search ) ");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
             }
-
             if (searchConditions.isGroupSearch()) {
-                sql.append(groupExactMatchSql).append(union);
+                sqlBuilder.append(
+                        " (select IF(g.level_id=1,'CENTER','GROUP') as entityType, g.id as entityId, g.display_name as entityName, g.external_id as entityExternalId, g.account_no as entityAccountNo "
+                                + " , g.office_id as parentId, o.name as parentName, null as entityMobileNo, g.status_enum as entityStatusEnum, null as parentType,"
+                                + " null AS reasonId, null AS reasonValue, null as entityNationalId ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(", g.display_name as groupName, ce.display_name as centerName, null as officeName ");
+                } else {
+                    sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder.append("  from m_group g join m_office o on o.id = g.office_id ");
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(" left join m_group as ce on ce.id = g.parent_id ");
+                }
+                sqlBuilder.append(
+                        " where o.hierarchy like :hierarchy and (g.account_no like :search or g.display_name like :search or g.external_id like :search or g.id like :search ))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
+            }
+            if (searchConditions.isPledgeSearch()) {
+                sqlBuilder.append(
+                        "(select 'PLEDGE' as entityType, p.id as entityId, c.display_name as entityName, p.pledge_number as entityExternalId, p.seal_number as entityAccountNo "
+                                + " , c.id as parentId, o.name as parentName, p.status as status, p.system_value as systemValue, p.user_value as userValue, null as entityMobileNo, null as entityStatusEnum, null as parentType  ");
+                sqlBuilder.append(", null as groupName, null as centerName,null as officeName, null as entityNationalId ");
+                sqlBuilder.append(
+                        " from m_pledge p left join m_client c on p.client_id = c.id left join m_office o on c.office_id = o.id where (p.seal_number like :search or p.pledge_number like :search or p.status like :search))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
+            }
+            if (searchConditions.isVillageSearch()) {
+                sqlBuilder.append(
+                        " (select 'VILLAGE' as entityType, v.id as entityId, v.village_name as entityName, v.external_id as entityExternalId, NULL as entityAccountNo "
+                                + ", v.office_id as parentId, o.name as parentName,null as entityMobileNo,null as parentType, v.status as entityStatusEnum ");
+                sqlBuilder.append(", null as groupName, null as centerName,null as officeName, null as entityNationalId ");
+                sqlBuilder.append(
+                        " from chai_villages v join m_office o on o.id = v.office_id where o.hierarchy like :hierarchy and (v.village_name like :search or v.external_id like :search))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
             }
 
-            // include all matching records
-            if (searchConditions.isClientSearch()) {
-                sql.append(clientMatchSql).append(union);
+            if (searchConditions.isStaffSearch()) {
+                sqlBuilder.append(
+                        " (select 'STAFF' as entityType, ms.id as entityId,  ms.external_id as entityExternalId, NULL as entityAccountNo, "
+                                + "ms.display_name as entityName, NULL as entityType, NULL as parentId, NULL as parentName, NULL as entityMobileNo, "
+                                + "ms.is_active as isActive, ms.is_loan_officer as isLoanOfficer, NULL as entityStatusEnum, NULL as parentType, "
+                                + "NULL as groupName, NUll as centerName, o.name as officeName, NULL as  reasonId, null as entityNationalId "
+                                + "from m_staff ms join  m_office o  on o.id = ms.office_id "
+                                + "where o.hierarchy like :hierarchy and (ms.display_name like :search or ms.external_id like :search or ms.firstname like :search or ms.lastname like :search ))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
             }
 
-            if (searchConditions.isLoanSeach()) {
-                sql.append(loanMatchSql).append(union);
+            if (searchConditions.getBankStatementSearch()) {
+                sqlBuilder.append(
+                        " (SELECT 'BANKSTATEMENT' AS entityType,fbs.id AS entityId,fbs.name as entityName,NULL AS entityExternalId, NULL AS entityAccountNo,NULL AS entityType, "
+                                + "NULL AS parentId,NULL AS parentName, NULL AS entityMobileNo,NULL AS entityStatusEnum,NULL AS parentType,NULL AS groupName,NULL AS centerName,NULL AS officeName,NULL AS  reasonId, "
+                                + "NULL AS isActive, NULL AS isLoanOfficer,fbs.description AS description,fbs.created_date AS lastModifiedDate,fbs.bank As bank, b.name AS bankName,u.username lastModifiedByName,fbs.is_reconciled AS isReconciled, "
+                                + "fbs.cif_key_document_id AS cpifKeyDocumentId,fbs.org_statement_key_document_id AS orgStatementKeyDocumentId,d.file_name AS cpifFileName,d2.file_name AS orgFileName, null as entityNationalId "
+                                + "FROM f_bank_statement fbs JOIN m_document d ON d.id = fbs.cif_key_document_id "
+                                + "LEFT JOIN m_document d2 ON d2.id = fbs.org_statement_key_document_id "
+                                + "JOIN f_bank b  ON b.id = fbs.bank " + "JOIN m_appuser u ON u.id = fbs.createdby_id "
+                                + "WHERE fbs.name LIKE :search OR b.name LIKE :search)");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
             }
-
-            if (searchConditions.isSavingSeach()) {
-                sql.append(savingMatchSql).append(union);
-            }
-
-            if (searchConditions.isClientIdentifierSearch()) {
-                sql.append(clientIdentifierMatchSql).append(union);
-            }
-
-            if (searchConditions.isGroupSearch()) {
-                sql.append(groupMatchSql).append(union);
-            }
-
-            sql.replace(sql.lastIndexOf(union), sql.length(), "");
-
+            sqlBuilder.replace(sqlBuilder.lastIndexOf("union"), sqlBuilder.length(), "");
             // remove last occurrence of "union all" string
-            return sql.toString();
+            return sqlBuilder.toString();
+        }
+
+        private void scopeSearchUnderBranchHierarchy(final StringBuilder sqlBuilder, final boolean searchUnderOfficeHierarchy,
+                final String officeHierarchy) {
+            if (searchUnderOfficeHierarchy) {
+                final String append = " and o.hierarchy like " + officeHierarchy + ")";
+                sqlBuilder.replace(sqlBuilder.lastIndexOf(")"), sqlBuilder.length(), append);
+            }
         }
 
         @Override
@@ -202,7 +295,33 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             final String entityMobileNo = rs.getString("entityMobileNo");
             final String entityNationalId = rs.getString("entityNationalId");
             final Integer entityStatusEnum = JdbcSupport.getInteger(rs, "entityStatusEnum");
+            final String parentType = rs.getString("parentType");
+            final String groupName = rs.getString("groupName");
+            final String centerName = rs.getString("centerName");
+            final String officeName = rs.getString("officeName");
+            Integer status = null;
+            BigDecimal userValue = null;
+            BigDecimal systemValue = null;
+            CodeValueData reason = null;
+            Boolean isActive = null;
+            Boolean isLoanOfficer = null;
+            String description = null;
+            Long cpifKeyDocumentId = null;
+            Long orgStatementKeyDocumentId = null;
+            String lastModifiedByName = null;
+            Date lastModifiedDate = null;
+            Boolean isReconciled = null;
+            String bankName = null;
+            Long bank = null;
+            BankData bankData = null;
+            String cpifFileName = null;
+            String orgFileName = null;
 
+            final Long closurereasonId = JdbcSupport.getLong(rs, "reasonId");
+            if (closurereasonId != null) {
+                final String closurereasonValue = rs.getString("reasonValue");
+                reason = CodeValueData.instance(closurereasonId, closurereasonValue);
+            }
             EnumOptionData entityStatus = new EnumOptionData(0L, "", "");
 
             if (entityType.equalsIgnoreCase("client") || entityType.equalsIgnoreCase("clientidentifier")) {
@@ -213,14 +332,46 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 entityStatus = GroupingTypeEnumerations.status(entityStatusEnum);
             }
 
+            else if (entityType.equalsIgnoreCase("village")) {
+                entityStatus = VillageTypeEnumerations.status(entityStatusEnum);
+            }
+
             else if (entityType.equalsIgnoreCase("loan")) {
-                LoanStatusEnumData loanStatusEnumData = LoanEnumerations.status(entityStatusEnum);
+                final LoanStatusEnumData loanStatusEnumData = LoanEnumerations.status(entityStatusEnum);
 
                 entityStatus = LoanEnumerations.status(loanStatusEnumData);
             }
 
-            return new SearchData(entityId, entityAccountNo, entityExternalId, entityName, entityType, parentId, parentName,
-                    entityMobileNo, entityStatus,entityNationalId);
+            else if (entityType.equalsIgnoreCase("pledge")) {
+                status = rs.getInt("status");
+                entityStatus = PledgeApiConstants.PLEDGE_STATUS_PARAMS.status(status);
+                userValue = rs.getBigDecimal("userValue");
+                systemValue = rs.getBigDecimal("systemValue");
+            }
+
+            else if (entityType.equalsIgnoreCase("staff")) {
+                isActive = rs.getBoolean("isActive");
+                isLoanOfficer = rs.getBoolean("isLoanOfficer");
+            }
+
+            else if (entityType.equalsIgnoreCase("bankstatement")) {
+                description = rs.getString("description");
+                cpifKeyDocumentId = rs.getLong("cpifKeyDocumentId");
+                orgStatementKeyDocumentId = rs.getLong("orgStatementKeyDocumentId");
+                lastModifiedByName = rs.getString("lastModifiedByName");
+                lastModifiedDate = rs.getDate("lastModifiedDate");
+                isReconciled = rs.getBoolean("isReconciled");
+                cpifFileName = rs.getString("cpifFileName");
+                orgFileName = rs.getString("orgFileName");
+                bank = rs.getLong("bank");
+                bankName = rs.getString("bankName");
+                bankData = BankData.instance(bank, bankName, null, null, false);
+            }
+
+            return new SearchData(entityId, entityAccountNo, entityExternalId, entityName, entityType, parentId, parentName, parentType,
+                    entityMobileNo, entityStatus, systemValue, userValue, groupName, centerName, officeName, reason, isActive,
+                    isLoanOfficer, description, cpifKeyDocumentId, orgStatementKeyDocumentId, lastModifiedByName, lastModifiedDate,
+                    isReconciled, bankData, cpifFileName, orgFileName, entityNationalId);
         }
 
     }
@@ -229,8 +380,11 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
     public AdHocSearchQueryData retrieveAdHocQueryTemplate() {
 
         this.context.authenticatedUser();
-
-        final Collection<LoanProductData> loanProducts = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup();
+        final Integer productApplicableForLoanType = null;
+        final Integer entityType = null;
+        final Long entityId = null;
+        final Collection<LoanProductData> loanProducts = this.loanProductReadPlatformService
+                .retrieveAllLoanProductsForLookup(productApplicableForLoanType, entityType, entityId);
         final Collection<OfficeData> offices = this.officeReadPlatformService.retrieveAllOfficesForDropdown();
 
         return AdHocSearchQueryData.template(loanProducts, offices);
@@ -308,7 +462,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
 
             // update isWhereClauseAdded to false to add filters for derived
             // table
-            isWhereClauseAdded = false;
+            this.isWhereClauseAdded = false;
 
             if (searchConditions.getIncludeOutStandingAmountPercentage()) {
                 if (searchConditions.getOutStandingAmountPercentageCondition().equals("between")) {
@@ -350,16 +504,16 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
         }
 
         private void checkAndUpdateWhereClause(final StringBuffer sql) {
-            if (isWhereClauseAdded) {
+            if (this.isWhereClauseAdded) {
                 sql.append(" and ");
             } else {
                 sql.append(" where ");
-                isWhereClauseAdded = true;
+                this.isWhereClauseAdded = true;
             }
         }
 
         @Override
-        public AdHocSearchQueryData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+        public AdHocSearchQueryData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
 
             final String officeName = rs.getString("officeName");
             final String loanProductName = rs.getString("productName");

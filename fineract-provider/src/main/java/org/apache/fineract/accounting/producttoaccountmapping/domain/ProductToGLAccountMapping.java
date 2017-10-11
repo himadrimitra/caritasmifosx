@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.accounting.producttoaccountmapping.domain;
 
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -27,11 +28,16 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.accounting.glaccount.domain.GLAccount;
+import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "ProductToGLAccountMapping")
 @Table(name = "acc_product_mapping", uniqueConstraints = { @UniqueConstraint(columnNames = { "product_id", "product_type",
         "financial_account_type", "payment_type" }, name = "financial_action") })
 public class ProductToGLAccountMapping extends AbstractPersistable<Long> {
@@ -57,6 +63,10 @@ public class ProductToGLAccountMapping extends AbstractPersistable<Long> {
     @Column(name = "financial_account_type", nullable = false)
     private int financialAccountType;
 
+    @ManyToOne
+    @JoinColumn(name = "code_value_cv_id", nullable = true)
+    private CodeValue codeValue;
+
     public static ProductToGLAccountMapping createNew(final GLAccount glAccount, final Long productId, final int productType,
             final int financialAccountType) {
         return new ProductToGLAccountMapping(glAccount, productId, productType, financialAccountType);
@@ -66,28 +76,35 @@ public class ProductToGLAccountMapping extends AbstractPersistable<Long> {
         //
     }
 
-    public ProductToGLAccountMapping(final GLAccount glAccount, final Long productId, final int productType, final int financialAccountType) {
-        this(glAccount, productId, productType, financialAccountType, null, null);
+    public ProductToGLAccountMapping(final GLAccount glAccount, final Long productId, final int productType,
+            final int financialAccountType) {
+        this(glAccount, productId, productType, financialAccountType, null, null, null);
     }
 
-    public ProductToGLAccountMapping(final GLAccount glAccount, final Long productId, final int productType,
-            final int financialAccountType, final Charge charge) {
-        this(glAccount, productId, productType, financialAccountType, null, charge);
+    public ProductToGLAccountMapping(final GLAccount glAccount, final Long productId, final int productType, final int financialAccountType,
+            final Charge charge) {
+        this(glAccount, productId, productType, financialAccountType, null, charge, null);
     }
 
-    public ProductToGLAccountMapping(final GLAccount glAccount, final Long productId, final int productType,
-            final int financialAccountType, final PaymentType paymentType) {
-        this(glAccount, productId, productType, financialAccountType, paymentType, null);
+    public ProductToGLAccountMapping(final GLAccount glAccount, final Long productId, final int productType, final int financialAccountType,
+            final PaymentType paymentType) {
+        this(glAccount, productId, productType, financialAccountType, paymentType, null, null);
+    }
+
+    public ProductToGLAccountMapping(final GLAccount glAccount, final Long productId, final int productType, final int financialAccountType,
+            final CodeValue codeValue) {
+        this(glAccount, productId, productType, financialAccountType, null, null, codeValue);
     }
 
     private ProductToGLAccountMapping(final GLAccount glAccount, final Long productId, final int productType,
-            final int financialAccountType, final PaymentType paymentType, final Charge charge) {
+            final int financialAccountType, final PaymentType paymentType, final Charge charge, final CodeValue codeValue) {
         this.glAccount = glAccount;
         this.productId = productId;
         this.productType = productType;
         this.financialAccountType = financialAccountType;
         this.paymentType = paymentType;
         this.charge = charge;
+        this.codeValue = codeValue;
     }
 
     public GLAccount getGlAccount() {
@@ -136,6 +153,14 @@ public class ProductToGLAccountMapping extends AbstractPersistable<Long> {
 
     public void setCharge(final Charge charge) {
         this.charge = charge;
+    }
+
+    public CodeValue getCodeValue() {
+        return this.codeValue;
+    }
+
+    public void setCodeValue(final CodeValue codeValue) {
+        this.codeValue = codeValue;
     }
 
 }

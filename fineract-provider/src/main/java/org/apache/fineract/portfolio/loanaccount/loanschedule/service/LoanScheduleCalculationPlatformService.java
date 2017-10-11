@@ -20,11 +20,18 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.service;
 
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleData;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 
 public interface LoanScheduleCalculationPlatformService {
 
-    LoanScheduleModel calculateLoanSchedule(JsonQuery query, Boolean validateParams);
+    LoanScheduleModel calculateLoanSchedule(JsonQuery query, Boolean validateParams, boolean considerAllDisbursmentsInSchedule);
 
+    LoanScheduleModel calculateLoanSchedule(JsonQuery query, Boolean validateParams, final LoanApplicationTerms terms);
+    
     void updateFutureSchedule(LoanScheduleData loanScheduleData, Long loanId);
+
+    LoanScheduleData generateLoanScheduleForVariableInstallmentRequest(Long loanId, String json);
+
+    LoanScheduleModel generateLoanScheduleWithCurrentStatus(Long loanId);
 }

@@ -59,6 +59,7 @@ import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYea
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
 import org.apache.fineract.portfolio.savings.SavingsPostingInterestPeriodType;
+import org.apache.fineract.portfolio.tax.domain.TaxGroup;
 import org.joda.time.LocalDate;
 
 import com.google.gson.JsonArray;
@@ -89,17 +90,20 @@ public class FixedDepositProduct extends SavingsProduct {
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final Integer lockinPeriodFrequency,
             final SavingsPeriodFrequencyType lockinPeriodFrequencyType, final AccountingRuleType accountingRuleType,
             final Set<Charge> charges, final DepositProductTermAndPreClosure productTermAndPreClosure, final Set<InterestRateChart> charts,
-            BigDecimal minBalanceForInterestCalculation) {
+            final BigDecimal minBalanceForInterestCalculation, final boolean withHoldTax, final TaxGroup taxGroup,
+            final String externalId) {
 
         final BigDecimal minRequiredOpeningBalance = null;
         final boolean withdrawalFeeApplicableForTransfer = false;
         final boolean allowOverdraft = false;
         final BigDecimal overdraftLimit = null;
+        final boolean releaseguarantor = false;
 
         return new FixedDepositProduct(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
-                productTermAndPreClosure, charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation);
+                productTermAndPreClosure, charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation, withHoldTax, taxGroup,
+                externalId, releaseguarantor);
     }
 
     protected FixedDepositProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
@@ -109,12 +113,13 @@ public class FixedDepositProduct extends SavingsProduct {
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
             final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
             final DepositProductTermAndPreClosure productTermAndPreClosure, final Set<InterestRateChart> charts,
-            final boolean allowOverdraft, final BigDecimal overdraftLimit, final BigDecimal minBalanceForInterestCalculation) {
+            final boolean allowOverdraft, final BigDecimal overdraftLimit, final BigDecimal minBalanceForInterestCalculation,
+            final boolean withHoldTax, final TaxGroup taxGroup, final String externalId, final boolean releaseguarantor) {
 
         super(name, shortName, description, currency, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
                 lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges, allowOverdraft, overdraftLimit,
-                minBalanceForInterestCalculation);
+                minBalanceForInterestCalculation, withHoldTax, taxGroup, externalId, releaseguarantor);
 
         if (charts != null) {
             this.charts = charts;
@@ -174,7 +179,8 @@ public class FixedDepositProduct extends SavingsProduct {
         return actualChanges;
     }
 
-    private void updateCharts(JsonCommand command, Map<String, Object> actualChanges, final DataValidatorBuilder baseDataValidator) {
+    private void updateCharts(final JsonCommand command, final Map<String, Object> actualChanges,
+            final DataValidatorBuilder baseDataValidator) {
         final Map<String, Object> deletedCharts = new HashMap<>();
         final Map<String, Object> chartsChanges = new HashMap<>();
 
@@ -183,23 +189,24 @@ public class FixedDepositProduct extends SavingsProduct {
             if (array != null) {
                 for (int i = 0; i < array.size(); i++) {
                     final JsonObject chartElement = array.get(i).getAsJsonObject();
-                    JsonCommand chartCommand = JsonCommand.fromExistingCommand(command, chartElement);
+                    final JsonCommand chartCommand = JsonCommand.fromExistingCommand(command, chartElement);
                     if (chartCommand.parameterExists(idParamName)) {
                         final Long chartId = chartCommand.longValueOfParameterNamed(idParamName);
-                        final InterestRateChart chart = this.findChart(chartId);
+                        final InterestRateChart chart = findChart(chartId);
                         if (chart == null) {
                             baseDataValidator.parameter(idParamName).value(chartId).failWithCode("no.chart.associated.with.id");
                         } else if (chartCommand.parameterExists(deleteParamName)) {
-                            if (this.removeChart(chart)) {
+                            if (removeChart(chart)) {
                                 deletedCharts.put(idParamName, chartId);
                             }
                         } else {
-                            chart.update(chartCommand, chartsChanges, baseDataValidator, this.setOfCharts(), this.currency().getCode());
+                            chart.update(chartCommand, chartsChanges, baseDataValidator, setOfCharts(), currency().getCode());
                         }
                     } else {
                         // assemble chart
-                        final InterestRateChart newChart = this.chartAssembler.assembleFrom(chartElement, this.currency().getCode());
-                        this.addChart(newChart);
+                        final InterestRateChart newChart = this.chartAssembler.assembleFrom(chartElement, currency().getCode(),
+                                baseDataValidator);
+                        addChart(newChart);
                     }
                 }
             }
@@ -223,17 +230,17 @@ public class FixedDepositProduct extends SavingsProduct {
     }
 
     @Override
-    public InterestRateChart findChart(Long chartId) {
+    public InterestRateChart findChart(final Long chartId) {
         final Set<InterestRateChart> charts = setOfCharts();
 
-        for (InterestRateChart chart : charts) {
+        for (final InterestRateChart chart : charts) {
             if (chart.getId().equals(chartId)) { return chart; }
         }
         return null;
     }
 
-    private boolean removeChart(InterestRateChart chart) {
-        Set<InterestRateChart> charts = setOfCharts();
+    private boolean removeChart(final InterestRateChart chart) {
+        final Set<InterestRateChart> charts = setOfCharts();
         return charts.remove(chart);
     }
 
@@ -242,15 +249,15 @@ public class FixedDepositProduct extends SavingsProduct {
     }
 
     public void validateCharts(final DataValidatorBuilder baseDataValidator) {
-        final Set<InterestRateChart> charts = this.setOfCharts();
-        for (InterestRateChart existingChart : charts) {
-            this.validateChart(baseDataValidator, existingChart);
+        final Set<InterestRateChart> charts = setOfCharts();
+        for (final InterestRateChart existingChart : charts) {
+            validateChart(baseDataValidator, existingChart);
         }
     }
 
     public void validateChart(final DataValidatorBuilder baseDataValidator, final InterestRateChart comparingChart) {
-        final Set<InterestRateChart> charts = this.setOfCharts();
-        for (InterestRateChart existingChart : charts) {
+        final Set<InterestRateChart> charts = setOfCharts();
+        for (final InterestRateChart existingChart : charts) {
             if (!existingChart.equals(comparingChart)) {
                 if (existingChart.chartFields().isOverlapping(comparingChart.chartFields())) {
                     baseDataValidator.failWithCodeNoParameterAddedToErrorCode("chart.overlapping.from.and.end.dates",
@@ -265,7 +272,7 @@ public class FixedDepositProduct extends SavingsProduct {
     public InterestRateChart applicableChart(final LocalDate target) {
         InterestRateChart applicableChart = null;
         if (this.charts != null) {
-            for (InterestRateChart chart : this.charts) {
+            for (final InterestRateChart chart : this.charts) {
                 if (chart.isApplicableChartFor(target)) {
                     applicableChart = chart;
                     break;
@@ -280,33 +287,28 @@ public class FixedDepositProduct extends SavingsProduct {
     }
 
     public void validateInterestPostingAndCompoundingPeriodTypes(final DataValidatorBuilder baseDataValidator) {
-        Map<SavingsPostingInterestPeriodType, List<SavingsCompoundingInterestPeriodType>> postingtoCompoundMap = new HashMap<>();
-        postingtoCompoundMap.put(
-                SavingsPostingInterestPeriodType.MONTHLY,
-                Arrays.asList(new SavingsCompoundingInterestPeriodType[] { SavingsCompoundingInterestPeriodType.DAILY,
-                        SavingsCompoundingInterestPeriodType.MONTHLY }));
+        final Map<SavingsPostingInterestPeriodType, List<SavingsCompoundingInterestPeriodType>> postingtoCompoundMap = new HashMap<>();
+        postingtoCompoundMap.put(SavingsPostingInterestPeriodType.MONTHLY, Arrays.asList(new SavingsCompoundingInterestPeriodType[] {
+                SavingsCompoundingInterestPeriodType.DAILY, SavingsCompoundingInterestPeriodType.MONTHLY }));
 
-        postingtoCompoundMap.put(
-                SavingsPostingInterestPeriodType.QUATERLY,
+        postingtoCompoundMap.put(SavingsPostingInterestPeriodType.QUATERLY,
                 Arrays.asList(new SavingsCompoundingInterestPeriodType[] { SavingsCompoundingInterestPeriodType.DAILY,
                         SavingsCompoundingInterestPeriodType.MONTHLY, SavingsCompoundingInterestPeriodType.QUATERLY }));
 
-        postingtoCompoundMap.put(
-                SavingsPostingInterestPeriodType.BIANNUAL,
+        postingtoCompoundMap.put(SavingsPostingInterestPeriodType.BIANNUAL,
                 Arrays.asList(new SavingsCompoundingInterestPeriodType[] { SavingsCompoundingInterestPeriodType.DAILY,
                         SavingsCompoundingInterestPeriodType.MONTHLY, SavingsCompoundingInterestPeriodType.QUATERLY,
                         SavingsCompoundingInterestPeriodType.BI_ANNUAL }));
 
-        postingtoCompoundMap.put(
-                SavingsPostingInterestPeriodType.ANNUAL,
+        postingtoCompoundMap.put(SavingsPostingInterestPeriodType.ANNUAL,
                 Arrays.asList(new SavingsCompoundingInterestPeriodType[] { SavingsCompoundingInterestPeriodType.DAILY,
                         SavingsCompoundingInterestPeriodType.MONTHLY, SavingsCompoundingInterestPeriodType.QUATERLY,
                         SavingsCompoundingInterestPeriodType.BI_ANNUAL, SavingsCompoundingInterestPeriodType.ANNUAL }));
 
-        SavingsPostingInterestPeriodType savingsPostingInterestPeriodType = SavingsPostingInterestPeriodType
-                .fromInt(interestPostingPeriodType);
-        SavingsCompoundingInterestPeriodType savingsCompoundingInterestPeriodType = SavingsCompoundingInterestPeriodType
-                .fromInt(interestCompoundingPeriodType);
+        final SavingsPostingInterestPeriodType savingsPostingInterestPeriodType = SavingsPostingInterestPeriodType
+                .fromInt(this.interestPostingPeriodType);
+        final SavingsCompoundingInterestPeriodType savingsCompoundingInterestPeriodType = SavingsCompoundingInterestPeriodType
+                .fromInt(this.interestCompoundingPeriodType);
 
         if (postingtoCompoundMap.get(savingsPostingInterestPeriodType) == null
                 || !postingtoCompoundMap.get(savingsPostingInterestPeriodType).contains(savingsCompoundingInterestPeriodType)) {
@@ -326,7 +328,7 @@ public class FixedDepositProduct extends SavingsProduct {
 
     private void validateDomainRules(final DataValidatorBuilder baseDataValidator) {
 
-        final DepositTermDetail termDetails = this.depositProductTermAndPreClosure().depositTermDetail();
+        final DepositTermDetail termDetails = depositProductTermAndPreClosure().depositTermDetail();
         final boolean isMinTermGreaterThanMax = termDetails.isMinDepositTermGreaterThanMaxDepositTerm();
         if (isMinTermGreaterThanMax) {
             final Integer maxTerm = termDetails.maxDepositTerm();
@@ -337,11 +339,12 @@ public class FixedDepositProduct extends SavingsProduct {
         if (this.charts != null) {
             validateCharts(baseDataValidator);
         } else if (this.nominalAnnualInterestRate == null || this.nominalAnnualInterestRate.compareTo(BigDecimal.ZERO) == 0) {
-            baseDataValidator.reset().parameter(DepositsApiConstants.nominalAnnualInterestRateParamName).value(nominalAnnualInterestRate)
+            baseDataValidator.reset().parameter(DepositsApiConstants.nominalAnnualInterestRateParamName)
+                    .value(this.nominalAnnualInterestRate)
                     .failWithCodeNoParameterAddedToErrorCode("interest.chart.or.nominal.interest.rate.required");
         }
 
-        this.validateInterestPostingAndCompoundingPeriodTypes(baseDataValidator);
+        validateInterestPostingAndCompoundingPeriodTypes(baseDataValidator);
     }
 
 }

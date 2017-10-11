@@ -18,8 +18,14 @@
  */
 package org.apache.fineract.portfolio.loanaccount.data;
 
+import java.math.BigDecimal;
+
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
+import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
+import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.floatingrates.data.FloatingRateDTO;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
 import org.joda.time.LocalDate;
 
@@ -27,32 +33,31 @@ public class ScheduleGeneratorDTO {
 
     final LoanScheduleGeneratorFactory loanScheduleFactory;
     final ApplicationCurrency applicationCurrency;
-    final LocalDate calculatedRepaymentsStartingFromDate;
+    LocalDate calculatedRepaymentsStartingFromDate;
     final HolidayDetailDTO holidayDetailDTO;
     final CalendarInstance calendarInstanceForInterestRecalculation;
     final CalendarInstance compoundingCalendarInstance;
     LocalDate recalculateFrom;
-    final Long overdurPenaltyWaitPeriod;
-
-    public ScheduleGeneratorDTO(final LoanScheduleGeneratorFactory loanScheduleFactory, final ApplicationCurrency applicationCurrency,
-            final LocalDate calculatedRepaymentsStartingFromDate, final HolidayDetailDTO holidayDetailDTO,
-            final CalendarInstance calendarInstanceForInterestRecalculation, final CalendarInstance compoundingCalendarInstance) {
-
-        this.loanScheduleFactory = loanScheduleFactory;
-        this.applicationCurrency = applicationCurrency;
-        this.calculatedRepaymentsStartingFromDate = calculatedRepaymentsStartingFromDate;
-        this.calendarInstanceForInterestRecalculation = calendarInstanceForInterestRecalculation;
-        this.compoundingCalendarInstance = compoundingCalendarInstance;
-        this.recalculateFrom = null;
-        this.overdurPenaltyWaitPeriod = null;
-        this.holidayDetailDTO = holidayDetailDTO;
-
-    }
+    final FloatingRateDTO floatingRateDTO;
+    final Calendar calendar;
+    final CalendarHistoryDataWrapper calendarHistoryDataWrapper;
+    final Boolean isInterestChargedFromDateAsDisbursementDateEnabled;
+    final Integer numberOfdays;
+    final boolean isSkipRepaymentOnFirstDayofMonth;
+    final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled;
+    final boolean considerFutureDisbursmentsInSchedule;
+    final boolean considerAllDisbursmentsInSchedule;
+    BigDecimal calculatedInstallmentAmount;
+    BUSINESS_EVENTS businessEvent;
 
     public ScheduleGeneratorDTO(final LoanScheduleGeneratorFactory loanScheduleFactory, final ApplicationCurrency applicationCurrency,
             final LocalDate calculatedRepaymentsStartingFromDate, final HolidayDetailDTO holidayDetailDTO,
             final CalendarInstance calendarInstanceForInterestRecalculation, final CalendarInstance compoundingCalendarInstance,
-            final LocalDate recalculateFrom, final Long overdurPenaltyWaitPeriod) {
+            final LocalDate recalculateFrom, final FloatingRateDTO floatingRateDTO, final Calendar calendar,
+            final CalendarHistoryDataWrapper calendarHistoryDataWrapper, final Boolean isInterestChargedFromDateAsDisbursementDateEnabled,
+            final Integer numberOfdays, final boolean isSkipRepaymentOnFirstDayofMonth,
+            final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, final boolean considerFutureDisbursmentsInSchedule,
+            final boolean considerAllDisbursmentsInSchedule) {
 
         this.loanScheduleFactory = loanScheduleFactory;
         this.applicationCurrency = applicationCurrency;
@@ -60,9 +65,16 @@ public class ScheduleGeneratorDTO {
         this.calendarInstanceForInterestRecalculation = calendarInstanceForInterestRecalculation;
         this.compoundingCalendarInstance = compoundingCalendarInstance;
         this.recalculateFrom = recalculateFrom;
-        this.overdurPenaltyWaitPeriod = overdurPenaltyWaitPeriod;
         this.holidayDetailDTO = holidayDetailDTO;
-
+        this.floatingRateDTO = floatingRateDTO;
+        this.calendar = calendar;
+        this.calendarHistoryDataWrapper = calendarHistoryDataWrapper;
+        this.isInterestChargedFromDateAsDisbursementDateEnabled = isInterestChargedFromDateAsDisbursementDateEnabled;
+        this.numberOfdays = numberOfdays;
+        this.isSkipRepaymentOnFirstDayofMonth = isSkipRepaymentOnFirstDayofMonth;
+        this.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled;
+        this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
+        this.considerAllDisbursmentsInSchedule = considerAllDisbursmentsInSchedule;
     }
 
     public LoanScheduleGeneratorFactory getLoanScheduleFactory() {
@@ -85,23 +97,11 @@ public class ScheduleGeneratorDTO {
         return this.recalculateFrom;
     }
 
-    public Long getOverdurPenaltyWaitPeriod() {
-        return this.overdurPenaltyWaitPeriod;
-    }
-
-    public int getPenaltyWaitPeriod() {
-        int penaltyWaitPeriod = 0;
-        if (this.overdurPenaltyWaitPeriod != null) {
-            penaltyWaitPeriod = this.overdurPenaltyWaitPeriod.intValue();
-        }
-        return penaltyWaitPeriod;
-    }
-
     public HolidayDetailDTO getHolidayDetailDTO() {
         return this.holidayDetailDTO;
     }
 
-    public void setRecalculateFrom(LocalDate recalculateFrom) {
+    public void setRecalculateFrom(final LocalDate recalculateFrom) {
         this.recalculateFrom = recalculateFrom;
     }
 
@@ -109,4 +109,59 @@ public class ScheduleGeneratorDTO {
         return this.compoundingCalendarInstance;
     }
 
+    public FloatingRateDTO getFloatingRateDTO() {
+        return this.floatingRateDTO;
+    }
+
+    public Calendar getCalendar() {
+        return this.calendar;
+    }
+
+    public CalendarHistoryDataWrapper getCalendarHistoryDataWrapper() {
+        return this.calendarHistoryDataWrapper;
+    }
+
+    public Boolean isInterestChargedFromDateAsDisbursementDateEnabled() {
+        return this.isInterestChargedFromDateAsDisbursementDateEnabled;
+    }
+
+    public Integer getNumberOfdays() {
+        return this.numberOfdays;
+    }
+
+    public boolean isSkipRepaymentOnFirstDayofMonth() {
+        return this.isSkipRepaymentOnFirstDayofMonth;
+    }
+
+    public Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled() {
+        return this.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled;
+    }
+
+    public boolean isConsiderFutureDisbursmentsInSchedule() {
+        return this.considerFutureDisbursmentsInSchedule;
+    }
+
+    public boolean isConsiderAllDisbursmentsInSchedule() {
+        return this.considerAllDisbursmentsInSchedule;
+    }
+
+    public BigDecimal getCalculatedInstallmentAmount() {
+        return this.calculatedInstallmentAmount;
+    }
+
+    public void setCalculatedInstallmentAmount(final BigDecimal calculatedInstallmentAmount) {
+        this.calculatedInstallmentAmount = calculatedInstallmentAmount;
+    }
+
+    public BUSINESS_EVENTS getBusinessEvent() {
+        return this.businessEvent;
+    }
+
+    public void setBusinessEvent(final BUSINESS_EVENTS businessEvent) {
+        this.businessEvent = businessEvent;
+    }
+
+    public void setCalculatedRepaymentsStartingFromDate(final LocalDate calculatedRepaymentsStartingFromDate) {
+        this.calculatedRepaymentsStartingFromDate = calculatedRepaymentsStartingFromDate;
+    }
 }

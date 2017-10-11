@@ -1,0 +1,1 @@
+INSERT INTO `f_authentication` (`name`,`description`, `auth_service_class_name`,`is_active`) VALUES ('Aadhaar Iris','Aadhaar iris services','SecondLevelAuthenticationServiceUsingAadhaarIris',1);

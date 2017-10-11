@@ -18,16 +18,16 @@
  */
 package org.apache.fineract.portfolio.common.service;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
-import org.springframework.data.jpa.domain.AbstractPersistable;
-
-import java.util.Map;
 
 /**
  * Implemented class is responsible for notifying the business event to
  * registered listeners.
- * 
+ *
  */
 public interface BusinessEventNotifierService {
 
@@ -35,8 +35,6 @@ public interface BusinessEventNotifierService {
      * Method should be called to notify listeners before Business event
      * execution for any pre-processing of event
      */
-    public void notifyBusinessEventsToBeExecuted(BUSINESS_EVENTS businessEvent, AbstractPersistable<Long> businessEventEntity);
-    
     public void notifyBusinessEventToBeExecuted(BUSINESS_EVENTS businessEvent, Map<BUSINESS_ENTITY, Object> businessEventEntity);
 
     /**
@@ -56,5 +54,15 @@ public interface BusinessEventNotifierService {
      * Business event
      */
     public void addBusinessEventPostListners(BUSINESS_EVENTS businessEvent, BusinessEventListner businessEventListner);
+
+    /**
+     * Method is to register tenant based event listners
+     */
+    void addBusinessEventTenantBasedPreListners(Map<BUSINESS_EVENTS, List<BusinessEventListner>> businessEventListnerMap);
+
+    /**
+     * Method is to register tenant based event listners
+     */
+    void addBusinessEventTenantBasedPostListners(Map<BUSINESS_EVENTS, List<BusinessEventListner>> businessEventListnerMap);
 
 }

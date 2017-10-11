@@ -19,8 +19,12 @@
 package org.apache.fineract.portfolio.common.domain;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public enum PeriodFrequencyType {
     DAYS(0, "periodFrequencyType.days"), //
@@ -73,7 +77,7 @@ public enum PeriodFrequencyType {
     public boolean isYearly() {
         return this.value.equals(PeriodFrequencyType.YEARS.getValue());
     }
-    
+
     public boolean isWeekly() {
         return this.value.equals(PeriodFrequencyType.WEEKS.getValue());
     }
@@ -81,11 +85,11 @@ public enum PeriodFrequencyType {
     public boolean isDaily() {
         return this.value.equals(PeriodFrequencyType.DAYS.getValue());
     }
-    
+
     public boolean isInvalid() {
         return this.value.equals(PeriodFrequencyType.INVALID.getValue());
     }
-    
+
     public static Object[] integerValues() {
         final List<Integer> values = new ArrayList<>();
         for (final PeriodFrequencyType enumType : values()) {
@@ -95,5 +99,53 @@ public enum PeriodFrequencyType {
         }
 
         return values.toArray();
+    }
+
+    public static Collection<EnumOptionData> periodFrequencyTypeOptions() {
+        final Collection<EnumOptionData> periodFrequencyTypeOptions = new ArrayList<>();
+        for (final PeriodFrequencyType enumType : values()) {
+            final EnumOptionData enumOptionData = periodFrequencyType(enumType.getValue());
+            if (enumOptionData != null) {
+                periodFrequencyTypeOptions.add(enumOptionData);
+            }
+        }
+        return periodFrequencyTypeOptions;
+    }
+
+    public static EnumOptionData periodFrequencyType(final int id) {
+        return periodFrequencyType(PeriodFrequencyType.fromInt(id));
+    }
+
+    public static EnumOptionData periodFrequencyType(final PeriodFrequencyType type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case DAYS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "DAYS");
+            break;
+            case WEEKS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "WEEKS");
+            break;
+            case MONTHS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "MONTHS");
+            break;
+            case YEARS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "YEARS");
+            break;
+            default:
+            break;
+        }
+        return optionData;
+    }
+
+    private static final Map<String, PeriodFrequencyType> periodFrequencyTypes = new HashMap<>();
+
+    static {
+        for (final PeriodFrequencyType periodFrequencyType : PeriodFrequencyType.values()) {
+            periodFrequencyTypes.put(periodFrequencyType.name().toLowerCase(), periodFrequencyType);
+        }
+    }
+
+    public static PeriodFrequencyType getPeriodFrequencyType(final String periodFrequencyType) {
+        return periodFrequencyTypes.get(periodFrequencyType.toLowerCase());
     }
 }

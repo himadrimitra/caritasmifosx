@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.organisation.teller.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
  * @since 2.0.0
  */
 @Service
+@CommandType(entity = "TELLER", action = "DELETE")
 public class DeleteTellerCommandHandler implements NewCommandSourceHandler {
 
     private final TellerWritePlatformService writePlatformService;

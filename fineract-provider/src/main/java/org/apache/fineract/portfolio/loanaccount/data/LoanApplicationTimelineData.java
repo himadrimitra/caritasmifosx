@@ -143,9 +143,54 @@ public class LoanApplicationTimelineData {
         this.writeOffByLastname = writeOffByLastname;
     }
 
+    public LoanApplicationTimelineData(LocalDate submittedOnDate, LocalDate rejectedOnDate, LocalDate withdrawnOnDate,
+            LocalDate approvedOnDate, LocalDate expectedDisbursementDate, LocalDate actualDisbursementDate, LocalDate closedOnDate,
+            LocalDate expectedMaturityDate, LocalDate writtenOffOnDate) {
+        this.submittedOnDate = submittedOnDate;
+        this.submittedByUsername = null;
+        this.submittedByFirstname = null;
+        this.submittedByLastname = null;
+        this.rejectedOnDate = rejectedOnDate;
+        this.rejectedByUsername = null;
+        this.rejectedByFirstname = null;
+        this.rejectedByLastname = null;
+        this.withdrawnOnDate = withdrawnOnDate;
+        this.withdrawnByUsername = null;
+        this.withdrawnByFirstname = null;
+        this.withdrawnByLastname = null;
+        this.approvedOnDate = approvedOnDate;
+        this.approvedByUsername = null;
+        this.approvedByFirstname = null;
+        this.approvedByLastname = null;
+        this.expectedDisbursementDate = expectedDisbursementDate;
+        this.actualDisbursementDate = actualDisbursementDate;
+        this.disbursedByUsername = null;
+        this.disbursedByFirstname = null;
+        this.disbursedByLastname = null;
+        this.closedOnDate = closedOnDate;
+        this.closedByUsername = null;
+        this.closedByFirstname = null;
+        this.closedByLastname = null;
+        this.expectedMaturityDate = expectedMaturityDate;
+        this.writeOffOnDate = writtenOffOnDate;
+        this.writeOffByUsername = null;
+        this.writeOffByFirstname = null;
+        this.writeOffByLastname = null;}
+
     public RepaymentScheduleRelatedLoanData repaymentScheduleRelatedData(final CurrencyData currency, final BigDecimal principal,
-            final BigDecimal approvedPrincipal, final BigDecimal inArrearsTolerance, final BigDecimal totalFeeChargesAtDisbursement) {
+            final BigDecimal approvedPrincipal, final BigDecimal inArrearsTolerance, final BigDecimal totalFeeChargesAtDisbursement,
+            BigDecimal interestPostedAmount, boolean considerFutureDisbursmentsInSchedule, boolean considerAllDisbursementsInSchedule, 
+            final BigDecimal discountedFromPrincipal) {
         return new RepaymentScheduleRelatedLoanData(this.expectedDisbursementDate, this.actualDisbursementDate, currency, principal,
-                 inArrearsTolerance, totalFeeChargesAtDisbursement);
+                inArrearsTolerance, totalFeeChargesAtDisbursement, interestPostedAmount, considerFutureDisbursmentsInSchedule,
+                considerAllDisbursementsInSchedule, discountedFromPrincipal);
+    }
+    
+    public LocalDate getDisbursementDate(){
+        LocalDate disbursementDate = this.expectedDisbursementDate;
+        if(this.actualDisbursementDate != null){
+            disbursementDate = this.actualDisbursementDate;
+        }
+        return disbursementDate;
     }
 }

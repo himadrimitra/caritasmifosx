@@ -30,7 +30,8 @@ import org.apache.fineract.portfolio.group.data.StaffCenterData;
 
 public interface CenterReadPlatformService {
 
-    CenterData retrieveTemplate(Long officeId, boolean staffInSelectedOfficeOnly);
+    CenterData retrieveTemplate(Long officeId, Long villageId, final boolean villagesInSelectedOfficeOnly,
+            boolean staffInSelectedOfficeOnly);
 
     CenterData retrieveOne(Long centerId);
 
@@ -47,4 +48,10 @@ public interface CenterReadPlatformService {
     CenterData retrieveCenterWithClosureReasons();
 
     Collection<StaffCenterData> retriveAllCentersByMeetingDate(Long officeId, Date meetingDate, Long staffId);
+
+    Collection<CenterData> retrieveAssociatedCenters(Long villageId);
+
+    CenterData retrieveCenterAndMembersDetailsTemplate(Long centerId);
+
+    boolean isCenter(Long centerId);
 }

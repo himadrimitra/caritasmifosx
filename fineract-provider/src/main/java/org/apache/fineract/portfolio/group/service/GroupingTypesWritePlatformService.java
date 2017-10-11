@@ -20,6 +20,9 @@ package org.apache.fineract.portfolio.group.service;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.portfolio.group.domain.Group;
+import org.joda.time.LocalDate;
 
 public interface GroupingTypesWritePlatformService {
 
@@ -50,4 +53,11 @@ public interface GroupingTypesWritePlatformService {
     CommandProcessingResult associateGroupsToCenter(final Long centerId, final JsonCommand command);
 
     CommandProcessingResult disassociateGroupsToCenter(final Long centerId, final JsonCommand command);
+
+    void updateGroupAndGroupMembersStaff(Staff staff, Group group);
+
+    void createStaffAssignmentHistory(Long centerId, Long staffId, LocalDate startDate);
+
+    void updateGroupOrCenterStaff(Long groupId, Long staffId);
+
 }

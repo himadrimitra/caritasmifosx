@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,77 +34,82 @@ public class BusinessEventNotifierServiceImpl implements BusinessEventNotifierSe
     private final Map<BUSINESS_EVENTS, List<BusinessEventListner>> preListners = new HashMap<>(5);
     private final Map<BUSINESS_EVENTS, List<BusinessEventListner>> postListners = new HashMap<>(5);
 
+    private final Map<String, Map<BUSINESS_EVENTS, List<BusinessEventListner>>> tenantPreListners = new HashMap<>(5);
+    private final Map<String, Map<BUSINESS_EVENTS, List<BusinessEventListner>>> tenantPostListners = new HashMap<>(5);
+
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
-     * org.mifosplatform.portfolio.common.service.BusinessEventNotifierService
+     * org.apache.fineract.portfolio.common.service.BusinessEventNotifierService
      * #notifyBusinessEventToBeExecuted
-     * (org.mifosplatform.portfolio.common.BusinessEventNotificationConstants
+     * (org.apache.fineract.portfolio.common.BusinessEventNotificationConstants
      * .BUSINESS_EVENTS,
      * org.springframework.data.jpa.domain.AbstractPersistable)
      */
     @Override
-    public void notifyBusinessEventToBeExecuted(BUSINESS_EVENTS businessEvent, Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-        List<BusinessEventListner> businessEventListners = this.preListners.get(businessEvent);
-        if (businessEventListners != null) {
-            for (BusinessEventListner eventListner : businessEventListners) {
-                eventListner.businessEventToBeExecuted(businessEventEntity);
-            }
+    public void notifyBusinessEventToBeExecuted(final BUSINESS_EVENTS businessEvent,
+            final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+        final List<BusinessEventListner> businessEventListners = getBusinessEventListners(businessEvent, this.preListners,
+                this.tenantPreListners);
+        businessEventEntity.put(BUSINESS_ENTITY.BUSINESS_EVENT, businessEvent);
+        for (final BusinessEventListner eventListner : businessEventListners) {
+            eventListner.businessEventToBeExecuted(businessEventEntity);
         }
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
-     * org.mifosplatform.portfolio.common.service.BusinessEventNotifierService
+     * org.apache.fineract.portfolio.common.service.BusinessEventNotifierService
      * #notifyBusinessEventWasExecuted
-     * (org.mifosplatform.portfolio.common.BusinessEventNotificationConstants
+     * (org.apache.fineract.portfolio.common.BusinessEventNotificationConstants
      * .BUSINESS_EVENTS,
      * org.springframework.data.jpa.domain.AbstractPersistable)
      */
     @Override
-    public void notifyBusinessEventWasExecuted(BUSINESS_EVENTS businessEvent, Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-        List<BusinessEventListner> businessEventListners = this.postListners.get(businessEvent);
-        if (businessEventListners != null) {
-            for (BusinessEventListner eventListner : businessEventListners) {
-                eventListner.businessEventWasExecuted(businessEventEntity);
-            }
+    public void notifyBusinessEventWasExecuted(final BUSINESS_EVENTS businessEvent,
+            final Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+        final List<BusinessEventListner> businessEventListners = getBusinessEventListners(businessEvent, this.postListners,
+                this.tenantPostListners);
+        businessEventEntity.put(BUSINESS_ENTITY.BUSINESS_EVENT, businessEvent);
+        for (final BusinessEventListner eventListner : businessEventListners) {
+            eventListner.businessEventWasExecuted(businessEventEntity);
         }
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
-     * org.mifosplatform.portfolio.common.service.BusinessEventNotifierService
+     * org.apache.fineract.portfolio.common.service.BusinessEventNotifierService
      * #addBusinessEventPreListners
-     * (org.mifosplatform.portfolio.common.BusinessEventNotificationConstants
+     * (org.apache.fineract.portfolio.common.BusinessEventNotificationConstants
      * .BUSINESS_EVENTS,
-     * org.mifosplatform.portfolio.common.service.BusinessEventListner)
+     * org.apache.fineract.portfolio.common.service.BusinessEventListner)
      */
     @Override
-    public void addBusinessEventPreListners(BUSINESS_EVENTS businessEvent, BusinessEventListner businessEventListner) {
-        addBusinessEventListners(businessEvent, businessEventListner, preListners);
+    public void addBusinessEventPreListners(final BUSINESS_EVENTS businessEvent, final BusinessEventListner businessEventListner) {
+        addBusinessEventListners(businessEvent, businessEventListner, this.preListners);
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
-     * org.mifosplatform.portfolio.common.service.BusinessEventNotifierService
+     * org.apache.fineract.portfolio.common.service.BusinessEventNotifierService
      * #addBusinessEventPostListners
-     * (org.mifosplatform.portfolio.common.BusinessEventNotificationConstants
+     * (org.apache.fineract.portfolio.common.BusinessEventNotificationConstants
      * .BUSINESS_EVENTS,
-     * org.mifosplatform.portfolio.common.service.BusinessEventListner)
+     * org.apache.fineract.portfolio.common.service.BusinessEventListner)
      */
     @Override
-    public void addBusinessEventPostListners(BUSINESS_EVENTS businessEvent, BusinessEventListner businessEventListner) {
-        addBusinessEventListners(businessEvent, businessEventListner, postListners);
+    public void addBusinessEventPostListners(final BUSINESS_EVENTS businessEvent, final BusinessEventListner businessEventListner) {
+        addBusinessEventListners(businessEvent, businessEventListner, this.postListners);
     }
 
-    private void addBusinessEventListners(BUSINESS_EVENTS businessEvent, BusinessEventListner businessEventListner,
+    private void addBusinessEventListners(final BUSINESS_EVENTS businessEvent, final BusinessEventListner businessEventListner,
             final Map<BUSINESS_EVENTS, List<BusinessEventListner>> businessEventListnerMap) {
         List<BusinessEventListner> businessEventListners = businessEventListnerMap.get(businessEvent);
         if (businessEventListners == null) {
@@ -113,16 +118,32 @@ public class BusinessEventNotifierServiceImpl implements BusinessEventNotifierSe
         }
         businessEventListners.add(businessEventListner);
     }
-    
+
     @Override
-    public void notifyBusinessEventsToBeExecuted(BUSINESS_EVENTS businessEvent,
-                    AbstractPersistable<Long> businessEventEntity) {
-              List<BusinessEventListner> businessEventListners = this.preListners.get(businessEvent);
-            if (businessEventListners != null) {
-                for (BusinessEventListner eventListner : businessEventListners) {
-                    eventListner.businessEventToBeExecuted(businessEventEntity);
-                }
-            }
+    public void addBusinessEventTenantBasedPreListners(final Map<BUSINESS_EVENTS, List<BusinessEventListner>> businessEventListnerMap) {
+        this.tenantPreListners.put(ThreadLocalContextUtil.getTenant().getTenantIdentifier(), businessEventListnerMap);
+    }
+
+    @Override
+    public void addBusinessEventTenantBasedPostListners(final Map<BUSINESS_EVENTS, List<BusinessEventListner>> businessEventListnerMap) {
+        this.tenantPostListners.put(ThreadLocalContextUtil.getTenant().getTenantIdentifier(), businessEventListnerMap);
+    }
+
+    private List<BusinessEventListner> getBusinessEventListners(final BUSINESS_EVENTS businessEvent,
+            final Map<BUSINESS_EVENTS, List<BusinessEventListner>> listners,
+            final Map<String, Map<BUSINESS_EVENTS, List<BusinessEventListner>>> tenantListners) {
+        final List<BusinessEventListner> businessEventListners = new ArrayList<>();
+        if (listners.get(businessEvent) != null) {
+            businessEventListners.addAll(listners.get(businessEvent));
+        }
+
+        final Map<BUSINESS_EVENTS, List<BusinessEventListner>> tenantSpecificListners = tenantListners
+                .get(ThreadLocalContextUtil.getTenant().getTenantIdentifier());
+        if (tenantSpecificListners != null && tenantSpecificListners.get(businessEvent) != null) {
+            businessEventListners.addAll(tenantSpecificListners.get(businessEvent));
+        }
+
+        return businessEventListners;
     }
 
 }

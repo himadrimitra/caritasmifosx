@@ -46,7 +46,7 @@ public class CronMethodParser {
         public String methodName;
     }
 
-    private static final String SEARCH_PACKAGE = "org.mifosplatform.";
+    private static final String SEARCH_PACKAGE = "org.apache.fineract.";
 
     private static final String CRON_ANNOTATION_ATTRIBUTE_NAME = "jobName";
 

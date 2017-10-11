@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.savings.domain;
 
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.bulkSavingsTransactionsParamName;
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.savingsIdParamName;
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.transactionDateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accountNoParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.allowOverdraftParamName;
@@ -32,20 +35,35 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interest
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestPostingPeriodTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyTypeParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.minOverdraftForInterestCalculationParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.minRequiredBalanceParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.minRequiredOpeningBalanceParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.nominalAnnualInterestRateOverdraftParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.nominalAnnualInterestRateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.overdraftLimitParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.productIdParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.submittedOnDateParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHoldTaxParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
+import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
@@ -53,23 +71,31 @@ import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
+import org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.group.exception.CenterNotActiveException;
 import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
+import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
+import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
 import org.apache.fineract.portfolio.savings.SavingsPostingInterestPeriodType;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.apache.fineract.portfolio.savings.exception.SavingsProductNotFoundException;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 @Service
 public class SavingsAccountAssembler {
@@ -83,6 +109,8 @@ public class SavingsAccountAssembler {
     private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     private final SavingsAccountChargeAssembler savingsAccountChargeAssembler;
     private final FromJsonHelper fromApiJsonHelper;
+    private final PlatformSecurityContext context;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public SavingsAccountAssembler(final SavingsAccountTransactionSummaryWrapper savingsAccountTransactionSummaryWrapper,
@@ -90,7 +118,8 @@ public class SavingsAccountAssembler {
             final StaffRepositoryWrapper staffRepository, final SavingsProductRepository savingProductRepository,
             final SavingsAccountRepositoryWrapper savingsAccountRepository,
             final SavingsAccountChargeAssembler savingsAccountChargeAssembler, final FromJsonHelper fromApiJsonHelper,
-            final AccountTransfersReadPlatformService accountTransfersReadPlatformService) {
+            final AccountTransfersReadPlatformService accountTransfersReadPlatformService, final PlatformSecurityContext context,
+            final ConfigurationDomainService configurationDomainService) {
         this.savingsAccountTransactionSummaryWrapper = savingsAccountTransactionSummaryWrapper;
         this.clientRepository = clientRepository;
         this.groupRepository = groupRepository;
@@ -99,7 +128,9 @@ public class SavingsAccountAssembler {
         this.savingsAccountRepository = savingsAccountRepository;
         this.savingsAccountChargeAssembler = savingsAccountChargeAssembler;
         this.fromApiJsonHelper = fromApiJsonHelper;
-        savingsHelper = new SavingsHelper(accountTransfersReadPlatformService);
+        this.savingsHelper = new SavingsHelper(accountTransfersReadPlatformService);
+        this.context = context;
+        this.configurationDomainService = configurationDomainService;
     }
 
     /**
@@ -107,7 +138,7 @@ public class SavingsAccountAssembler {
      * request inheriting details where relevant from chosen
      * {@link SavingsProduct}.
      */
-    public SavingsAccount assembleFrom(final JsonCommand command, final AppUser submittedBy) {
+    public SavingsAccount submitApplicationAssembleFrom(final JsonCommand command, final AppUser submittedBy) {
 
         final JsonElement element = command.parsedJson();
 
@@ -127,6 +158,10 @@ public class SavingsAccountAssembler {
             client = this.clientRepository.findOneWithNotFoundDetection(clientId);
             accountType = AccountType.INDIVIDUAL;
             if (client.isNotActive()) { throw new ClientNotActiveException(clientId); }
+            if (this.configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff() != null
+                    && client.getStaff().isLoanOfficer()) {
+                fieldOfficer = client.getStaff();
+            }
         }
 
         final Long groupId = this.fromApiJsonHelper.extractLongNamed(groupIdParamName, element);
@@ -137,6 +172,10 @@ public class SavingsAccountAssembler {
                 if (group.isCenter()) { throw new CenterNotActiveException(groupId); }
                 throw new GroupNotActiveException(groupId);
             }
+            if (this.configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff() != null
+                    && group.getStaff().isLoanOfficer()) {
+                fieldOfficer = group.getStaff();
+            }
         }
 
         if (group != null && client != null) {
@@ -145,7 +184,7 @@ public class SavingsAccountAssembler {
         }
 
         final Long fieldOfficerId = this.fromApiJsonHelper.extractLongNamed(fieldOfficerIdParamName, element);
-        if (fieldOfficerId != null) {
+        if (fieldOfficer == null && fieldOfficerId != null) {
             fieldOfficer = this.staffRepository.findOneWithNotFoundDetection(fieldOfficerId);
         }
 
@@ -230,17 +269,33 @@ public class SavingsAccountAssembler {
         }
 
         boolean releaseguarantor = false;
-                if(command.parameterExists("releaseguarantor")){
-                       releaseguarantor = command.booleanPrimitiveValueOfParameterNamed("releaseguarantor");
-                }else{
-                       releaseguarantor = product.isReleaseguarantor();
-                }
-        
-        BigDecimal overdraftLimit = null;
+        if (command.parameterExists("releaseguarantor")) {
+            releaseguarantor = command.booleanPrimitiveValueOfParameterNamed("releaseguarantor");
+        } else {
+            releaseguarantor = product.isReleaseguarantor();
+        }
+
+        BigDecimal overdraftLimit = BigDecimal.ZERO;
         if (command.parameterExists(overdraftLimitParamName)) {
             overdraftLimit = command.bigDecimalValueOfParameterNamedDefaultToNullIfZero(overdraftLimitParamName);
         } else {
             overdraftLimit = product.overdraftLimit();
+        }
+
+        BigDecimal nominalAnnualInterestRateOverdraft = BigDecimal.ZERO;
+        if (command.parameterExists(nominalAnnualInterestRateOverdraftParamName)) {
+            nominalAnnualInterestRateOverdraft = command
+                    .bigDecimalValueOfParameterNamedDefaultToNullIfZero(nominalAnnualInterestRateOverdraftParamName);
+        } else {
+            nominalAnnualInterestRateOverdraft = product.nominalAnnualInterestRateOverdraft();
+        }
+
+        BigDecimal minOverdraftForInterestCalculation = BigDecimal.ZERO;
+        if (command.parameterExists(minOverdraftForInterestCalculationParamName)) {
+            minOverdraftForInterestCalculation = command
+                    .bigDecimalValueOfParameterNamedDefaultToNullIfZero(minOverdraftForInterestCalculationParamName);
+        } else {
+            minOverdraftForInterestCalculation = product.minOverdraftForInterestCalculation();
         }
 
         boolean enforceMinRequiredBalance = false;
@@ -250,25 +305,61 @@ public class SavingsAccountAssembler {
             enforceMinRequiredBalance = product.isMinRequiredBalanceEnforced();
         }
 
-        BigDecimal minRequiredBalance = null;
+        BigDecimal minRequiredBalance = BigDecimal.ZERO;
         if (command.parameterExists(minRequiredBalanceParamName)) {
             minRequiredBalance = command.bigDecimalValueOfParameterNamedDefaultToNullIfZero(minRequiredBalanceParamName);
         } else {
             minRequiredBalance = product.minRequiredBalance();
         }
 
+        boolean withHoldTax = product.withHoldTax();
+        if (command.parameterExists(withHoldTaxParamName)) {
+            withHoldTax = command.booleanPrimitiveValueOfParameterNamed(withHoldTaxParamName);
+            if (withHoldTax
+                    && product.getTaxGroup() == null) { throw new UnsupportedParameterException(Arrays.asList(withHoldTaxParamName)); }
+        }
+
         final SavingsAccount account = SavingsAccount.createNewApplicationForSubmittal(client, group, product, fieldOfficer, accountNo,
                 externalId, accountType, submittedOnDate, submittedBy, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, charges, allowOverdraft,
-                overdraftLimit, enforceMinRequiredBalance, minRequiredBalance, releaseguarantor);
+                overdraftLimit, enforceMinRequiredBalance, minRequiredBalance, nominalAnnualInterestRateOverdraft,
+                minOverdraftForInterestCalculation, withHoldTax, releaseguarantor);
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
 
         account.validateNewApplicationState(DateUtils.getLocalDateOfTenant(), SAVINGS_ACCOUNT_RESOURCE_NAME);
 
         account.validateAccountValuesWithProduct();
 
+        SavingsAccountDpDetails savingsAccountDpDetails = null;
+        if (allowOverdraft) {
+            savingsAccountDpDetails = assembleSavingsAccountDpDetails(account, command);
+            account.setSavingsAccountDpDetails(savingsAccountDpDetails);
+        }
+
         return account;
+    }
+
+    private SavingsAccountDpDetails assembleSavingsAccountDpDetails(final SavingsAccount account, final JsonCommand command) {
+        SavingsAccountDpDetails savingsAccountDpDetails = null;
+        if (command.parameterExists(SavingsApiConstants.allowDpLimitParamName)) {
+            final boolean allowDpLimit = command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.allowDpLimitParamName);
+            if (allowDpLimit) {
+                final BigDecimal dpLimitAmount = command
+                        .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpLimitAmountParamName);
+                final Integer duration = command.integerValueOfParameterNamed(SavingsApiConstants.dpDurationParamName);
+                final Integer calculationType = command
+                        .integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName);
+                final BigDecimal amountOrPercentage = command
+                        .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpCalculateOnAmountParamName);
+                // update overdraft amount
+                account.updateOverDraftLimit(dpLimitAmount);
+                final Date dpStartDate = command.DateValueOfParameterNamed(SavingsApiConstants.dpStartDateParamName);
+                savingsAccountDpDetails = SavingsAccountDpDetails.createNew(account, duration, dpLimitAmount, calculationType,
+                        amountOrPercentage, dpStartDate);
+            }
+        }
+        return savingsAccountDpDetails;
     }
 
     public SavingsAccount assembleFrom(final Long savingsId) {
@@ -286,13 +377,17 @@ public class SavingsAccountAssembler {
      * request inheriting details where relevant from chosen
      * {@link SavingsProduct}.
      */
-    public SavingsAccount assembleFrom(final Client client, final Group group, final SavingsProduct product, final LocalDate appliedonDate,
-            final AppUser appliedBy) {
+    public SavingsAccount assembleFrom(final Client client, final Group group, final SavingsProduct product, Staff staff,
+            final LocalDate appliedonDate, final AppUser appliedBy) {
 
         AccountType accountType = AccountType.INVALID;
         if (client != null) {
             accountType = AccountType.INDIVIDUAL;
             if (client.isNotActive()) { throw new ClientNotActiveException(client.getId()); }
+            if (this.configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff() != null
+                    && client.getStaff().isLoanOfficer()) {
+                staff = client.getStaff();
+            }
         }
 
         if (group != null) {
@@ -300,6 +395,10 @@ public class SavingsAccountAssembler {
             if (group.isNotActive()) {
                 if (group.isCenter()) { throw new CenterNotActiveException(group.getId()); }
                 throw new GroupNotActiveException(group.getId());
+            }
+            if (this.configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff() != null
+                    && group.getStaff().isLoanOfficer()) {
+                staff = group.getStaff();
             }
         }
 
@@ -309,13 +408,13 @@ public class SavingsAccountAssembler {
         }
 
         final Set<SavingsAccountCharge> charges = this.savingsAccountChargeAssembler.fromSavingsProduct(product);
-
-        final SavingsAccount account = SavingsAccount.createNewApplicationForSubmittal(client, group, product, null, null, null,
+        final SavingsAccount account = SavingsAccount.createNewApplicationForSubmittal(client, group, product, staff, null, null,
                 accountType, appliedonDate, appliedBy, product.nominalAnnualInterestRate(), product.interestCompoundingPeriodType(),
                 product.interestPostingPeriodType(), product.interestCalculationType(), product.interestCalculationDaysInYearType(),
                 product.minRequiredOpeningBalance(), product.lockinPeriodFrequency(), product.lockinPeriodFrequencyType(),
                 product.isWithdrawalFeeApplicableForTransfer(), charges, product.isAllowOverdraft(), product.overdraftLimit(),
-                product.isMinRequiredBalanceEnforced(), product.minRequiredBalance(), product.isReleaseguarantor() );
+                product.isMinRequiredBalanceEnforced(), product.minRequiredBalance(), product.nominalAnnualInterestRateOverdraft(),
+                product.minOverdraftForInterestCalculation(), product.withHoldTax(), product.isReleaseguarantor());
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
 
         account.validateNewApplicationState(DateUtils.getLocalDateOfTenant(), SAVINGS_ACCOUNT_RESOURCE_NAME);
@@ -327,5 +426,59 @@ public class SavingsAccountAssembler {
 
     public void assignSavingAccountHelpers(final SavingsAccount savingsAccount) {
         savingsAccount.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
+    }
+
+    public Map<Long, List<SavingsAccountTransactionDTO>> assembleBulkSavingsAccountDepositAndWithdrawTransactionDTOs(
+            final JsonCommand command, final PaymentDetail paymentDetail) {
+        final Map<Long, List<SavingsAccountTransactionDTO>> transactionMap = new HashMap<>();
+        final String json = command.json();
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final LocalDate transactionDate = this.fromApiJsonHelper.extractLocalDateNamed(transactionDateParamName, element);
+        final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(element.getAsJsonObject());
+        final JsonObject topLevelJsonElement = element.getAsJsonObject();
+        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+        final DateTimeFormatter formatter = DateTimeFormat.forPattern(dateFormat).withLocale(locale);
+
+        if (element.isJsonObject()) {
+            if (topLevelJsonElement.has(bulkSavingsTransactionsParamName)
+                    && topLevelJsonElement.get(bulkSavingsTransactionsParamName).isJsonArray()) {
+                final JsonArray array = topLevelJsonElement.get(bulkSavingsTransactionsParamName).getAsJsonArray();
+
+                for (int i = 0; i < array.size(); i++) {
+                    final List<SavingsAccountTransactionDTO> savingsAccountTransactions = new ArrayList<>();
+                    final JsonObject savingsTransactionElement = array.get(i).getAsJsonObject();
+                    final Long savingsId = this.fromApiJsonHelper.extractLongNamed(savingsIdParamName, savingsTransactionElement);
+                    final BigDecimal transactionAmount = this.fromApiJsonHelper
+                            .extractBigDecimalNamed(CollectionSheetConstants.transactionAmountParamName, savingsTransactionElement, locale);
+                    final PaymentDetail detail = paymentDetail;
+                    if (!(transactionAmount == null) && transactionAmount.intValue() != 0) {
+                        final SavingsAccountTransactionDTO savingsAccountTransactionDTO = new SavingsAccountTransactionDTO(formatter,
+                                transactionDate, transactionAmount, detail, DateUtils.getLocalDateTimeOfTenant().toDate(), savingsId,
+                                this.context.getAuthenticatedUserIfPresent(), true);
+                        savingsAccountTransactions.add(savingsAccountTransactionDTO);
+                    }
+                    final BigDecimal withdrawAmount = this.fromApiJsonHelper
+                            .extractBigDecimalNamed(CollectionSheetConstants.withdrawAmountParamName, savingsTransactionElement, locale);
+                    if (!(withdrawAmount == null) && withdrawAmount.intValue() != 0) {
+                        final SavingsAccountTransactionDTO savingsAccountTransactionDTO = new SavingsAccountTransactionDTO(formatter,
+                                transactionDate, withdrawAmount, detail, DateUtils.getLocalDateTimeOfTenant().toDate(), savingsId,
+                                this.context.getAuthenticatedUserIfPresent(), false);
+                        savingsAccountTransactions.add(savingsAccountTransactionDTO);
+                    }
+                    if (!savingsAccountTransactions.isEmpty()) {
+                        transactionMap.put(savingsId, savingsAccountTransactions);
+                    }
+                }
+            }
+        }
+
+        return transactionMap;
+    }
+
+    public SavingsAccount assembleFromAccountNumber(final String savingsAccountNumber) {
+        final SavingsAccount savingAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsAccountNumber);
+        savingAccount.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
+        return savingAccount;
     }
 }

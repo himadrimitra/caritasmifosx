@@ -18,13 +18,22 @@
  */
 package org.apache.fineract.accounting.closure.domain;
 
+import javax.persistence.QueryHint;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 public interface GLClosureRepository extends JpaRepository<GLClosure, Long>, JpaSpecificationExecutor<GLClosure> {
 
-    @Query("from GLClosure closure where closure.closingDate = (select max(closure1.closingDate) from GLClosure closure1 where closure1.office.id=:officeId)  and closure.office.id= :officeId")
+    @Query("from GLClosure closure where closure.closingDate = (select max(closure1.closingDate) from GLClosure closure1 where closure1.office.id=:officeId and closure1.deleted=0)  and closure.office.id= :officeId and closure.deleted = 0")
+    @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     GLClosure getLatestGLClosureByBranch(@Param("officeId") Long officeId);
+   
+    @Modifying
+    @Query("UPDATE GLClosure closure SET closure.deleted =1 WHERE  closure.id = :closureId")
+    void deleteGLClosure(@Param("closureId") Long  closureId);
 }

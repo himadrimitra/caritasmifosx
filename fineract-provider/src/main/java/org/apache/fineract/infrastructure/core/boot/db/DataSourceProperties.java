@@ -29,18 +29,19 @@ import org.springframework.util.StringUtils;
  * override those via the Spring Values listed below; i.e. via -D Java System
  * properties, or main() command line arguments, OS environment variables, from
  * JNDI, or application.properties (thanks Spring Boot). For example:
- * -Dmifos.datasource.port=3307.
+ * -Dfineract.datasource.port=3307.
  */
-// NOT a @Component - we do not want this to picked up by component scan, only explicitly declared in DataSourceConfiguration (if that's active)
+// NOT a @Component - we do not want this to picked up by component scan, only
+// explicitly declared in DataSourceConfiguration (if that's active)
 public class DataSourceProperties extends PoolProperties {
 
-    public final static String PORT = "mifos.datasource.port";
-    public final static String HOST = "mifos.datasource.host";
-    public final static String DB = "mifos.datasource.db";
-    public final static String UID = "mifos.datasource.username";
-    public final static String PWD = "mifos.datasource.password";
-    public final static String PROTOCOL = "mifos.datasource.protocol";
-    public final static String SUBPROTOCOL = "mifos.datasource.subprotocol";
+    public final static String PORT = "fineract.datasource.port";
+    public final static String HOST = "fineract.datasource.host";
+    public final static String DB = "fineract.datasource.db";
+    public final static String UID = "fineract.datasource.username";
+    public final static String PWD = "fineract.datasource.password";
+    public final static String PROTOCOL = "fineract.datasource.protocol";
+    public final static String SUBPROTOCOL = "fineract.datasource.subprotocol";
 
     @Value("${" + PORT + ":3306}")
     private volatile @NotNull int port;
@@ -63,29 +64,29 @@ public class DataSourceProperties extends PoolProperties {
     @Value("${" + SUBPROTOCOL + ":mysql}")
     private volatile @NotNull String jdbcSubprotocol;
 
-
-    public DataSourceProperties() {
+    public DataSourceProperties(final String driverClassName, final String protocol, final String subProtocol, final Integer port) {
         super();
-
-        // default to save us from re-specifying this; note that it can still be
-        // overridden
-        setDriverClassName(com.mysql.jdbc.Driver.class.getName());
-
-        setMifosDefaults();
+        setDriverClassName(driverClassName);
+        this.jdbcProtocol = protocol;
+        this.jdbcSubprotocol = subProtocol;
+        this.port = port;
+        setDefaults();
     }
 
     /**
      * as per (some of..) INSTALL.md and
-     * org.mifosplatform.infrastructure.core.service
+     * org.apache.fineract.infrastructure.core.service
      * .TomcatJdbcDataSourcePerTenantService
-     * .createNewDataSourceFor(MifosPlatformTenant)
+     * .createNewDataSourceFor(FineractPlatformTenant)
      */
-    protected void setMifosDefaults() {
+    protected void setDefaults() {
         setInitialSize(3);
         // setMaxIdle(6); -- strange, why?
         // setMinIdle(3); -- JavaDoc says default is initialSize.. so shouldn't
         // be needed
-        if (getValidationQuery() == null) setValidationQuery("SELECT 1");
+        if (getValidationQuery() == null) {
+            setValidationQuery("SELECT 1");
+        }
         setTestOnBorrow(true);
         setTestOnReturn(true);
         setTestWhileIdle(true);
@@ -99,61 +100,59 @@ public class DataSourceProperties extends PoolProperties {
     }
 
     @Override
-    public void setUrl(@SuppressWarnings("unused") String url) {
-	throw new UnsupportedOperationException("Use setHost/Port/DB() instead of setURL()");
+    public void setUrl(@SuppressWarnings("unused") final String url) {
+        throw new UnsupportedOperationException("Use setHost/Port/DB() instead of setURL()");
     }
 
-	@Override
-	public String getUrl() {
-		String url = super.getUrl();
-		if (StringUtils.hasText(url)) {
-			throw new IllegalStateException();
-		}
-		return jdbcProtocol + ":" + jdbcSubprotocol + "://" + getHost() + ":" + getPort() + "/" + getDBName();
-	}
+    @Override
+    public String getUrl() {
+        final String url = super.getUrl();
+        if (StringUtils.hasText(url)) { throw new IllegalStateException(); }
+        return this.jdbcProtocol + ":" + this.jdbcSubprotocol + "://" + getHost() + ":" + getPort() + "/" + getDBName();
+    }
 
-	public String getHost() {
-		return hostname;
-	}
+    public String getHost() {
+        return this.hostname;
+    }
 
-	public int getPort() {
-		return port;
-	}
+    public int getPort() {
+        return this.port;
+    }
 
-	public String getDBName() {
-		return dbName;
-	}
+    public String getDBName() {
+        return this.dbName;
+    }
 
-	public void setPort(int port) {
-		this.port = port;
-	}
+    public void setPort(final int port) {
+        this.port = port;
+    }
 
-	public void setHost(String hostname) {
-		this.hostname = hostname;
-	}
+    public void setHost(final String hostname) {
+        this.hostname = hostname;
+    }
 
-	public void setDBName(String dbName) {
-		this.dbName = dbName;
-	}
+    public void setDBName(final String dbName) {
+        this.dbName = dbName;
+    }
 
-	@Override
-	public String getUsername() {
-		return this.username;
-	}
+    @Override
+    public String getUsername() {
+        return this.username;
+    }
 
-	@Override
-	public void setUsername(String username) {
-		this.username = username;
-	}
+    @Override
+    public void setUsername(final String username) {
+        this.username = username;
+    }
 
-	@Override
-	public String getPassword() {
-		return this.password;
-	}
+    @Override
+    public String getPassword() {
+        return this.password;
+    }
 
-	@Override
-	public void setPassword(String password) {
-		this.password = password;
-	}
+    @Override
+    public void setPassword(final String password) {
+        this.password = password;
+    }
 
 }

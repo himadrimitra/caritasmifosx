@@ -36,7 +36,6 @@ import org.apache.fineract.batch.domain.BatchResponse;
 import org.apache.fineract.batch.serialization.BatchRequestJsonHelper;
 import org.apache.fineract.batch.service.BatchApiService;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
-import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -44,15 +43,15 @@ import org.springframework.stereotype.Component;
 
 /**
  * Provides a REST resource for Batch Requests. This class acts as a proxy to
- * {@link org.apache.fineract.batch.service.BatchApiService} and de-serializes the
- * incoming JSON string to a list of
+ * {@link org.apache.fineract.batch.service.BatchApiService} and de-serializes
+ * the incoming JSON string to a list of
  * {@link org.apache.fineract.batch.domain .BatchRequest} type. This list is
  * forwarded to BatchApiService which finally returns a list of
  * {@link org.apache.fineract.batch.domain.BatchResponse} type which is then
  * serialized into JSON response by this Resource class.
- * 
+ *
  * @author Rishabh Shukla
- * 
+ *
  * @see org.apache.fineract.batch.service.BatchApiService
  * @see org.apache.fineract.batch.domain.BatchRequest
  * @see org.apache.fineract.batch.domain.BatchResponse
@@ -70,7 +69,7 @@ public class BatchApiResource {
     /**
      * Constructs a 'BatchApiService' with context, toApiJsonSerializer, service
      * and batchRequestJsonHelper.
-     * 
+     *
      * @param context
      * @param toApiJsonSerializer
      * @param service
@@ -89,7 +88,7 @@ public class BatchApiResource {
     /**
      * Rest assured POST method to get {@link BatchRequest} and returns back the
      * consolidated {@link BatchResponse}
-     * 
+     *
      * @param jsonRequestString
      * @param enclosingTransaction
      * @param uriInfo
@@ -99,25 +98,23 @@ public class BatchApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String handleBatchRequests(@DefaultValue("false") @QueryParam("enclosingTransaction") final boolean enclosingTransaction,
-            final String jsonRequestString, @Context UriInfo uriInfo) {
+            final String jsonRequestString, @Context final UriInfo uriInfo) {
 
         // Handles user authentication
         this.context.authenticatedUser();
-        Thread td =new Thread();
-        
-        
-                  // Converts request array into BatchRequest List
+
+        // Converts request array into BatchRequest List
         final List<BatchRequest> requestList = this.batchRequestJsonHelper.extractList(jsonRequestString);
-        
+
         // Gets back the consolidated BatchResponse from BatchApiservice
         List<BatchResponse> result = new ArrayList<>();
 
         // If the request is to be handled as a Transaction. All requests will
         // be rolled back on error
         if (enclosingTransaction) {
-            result = service.handleBatchRequestsWithEnclosingTransaction(requestList, uriInfo);
+            result = this.service.handleBatchRequestsWithEnclosingTransaction(requestList, uriInfo);
         } else {
-            result = service.handleBatchRequestsWithoutEnclosingTransaction(requestList, uriInfo);
+            result = this.service.handleBatchRequestsWithoutEnclosingTransaction(requestList, uriInfo);
         }
 
         return this.toApiJsonSerializer.serialize(result);

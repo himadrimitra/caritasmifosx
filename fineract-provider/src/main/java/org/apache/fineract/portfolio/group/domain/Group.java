@@ -39,6 +39,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
@@ -48,6 +49,7 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerator;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
@@ -57,7 +59,10 @@ import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupExistsInCenterException;
 import org.apache.fineract.portfolio.group.exception.GroupNotExistsInCenterException;
 import org.apache.fineract.portfolio.group.exception.InvalidGroupStateTransitionException;
+import org.apache.fineract.portfolio.village.domain.Village;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
@@ -78,7 +83,7 @@ public final class Group extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date activationDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "activatedon_userid", nullable = true)
     private AppUser activatedBy;
 
@@ -104,13 +109,19 @@ public final class Group extends AbstractPersistable<Long> {
     @Column(name = "hierarchy", length = 100)
     private String hierarchy;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @LazyCollection(LazyCollectionOption.TRUE)
+    @OneToMany
     @JoinColumn(name = "parent_id")
     private final List<Group> groupMembers = new LinkedList<>();
 
+    @LazyCollection(LazyCollectionOption.TRUE)
     @ManyToMany
     @JoinTable(name = "m_group_client", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "client_id"))
     private Set<Client> clientMembers = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinTable(name = "chai_village_center", joinColumns = @JoinColumn(name = "center_id"), inverseJoinColumns = @JoinColumn(name = "village_id"))
+    private Village village;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "closure_reason_cv_id", nullable = true)
@@ -120,7 +131,7 @@ public final class Group extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date closureDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "closedon_userid", nullable = true)
     private AppUser closedBy;
 
@@ -128,12 +139,22 @@ public final class Group extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date submittedOnDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "submittedon_userid", nullable = true)
     private AppUser submittedBy;
 
+    @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "center", orphanRemoval = true)
     private Set<StaffAssignmentHistory> staffHistory;
+
+    @Column(name = "account_no", length = 20, unique = true, nullable = false)
+    private String accountNumber;
+
+    @Transient
+    private boolean accountNumberRequiresAutoGeneration = false;
+
+    @OneToMany(mappedBy = "group", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    private Set<GroupRole> groupRoles;
 
     // JPA default constructor for entity
     protected Group() {
@@ -142,9 +163,9 @@ public final class Group extends AbstractPersistable<Long> {
         this.clientMembers = new HashSet<>();
     }
 
-    public static Group newGroup(final Office office, final Staff staff, final Group parent, final GroupLevel groupLevel,
-            final String name, final String externalId, final boolean active, final LocalDate activationDate,
-            final Set<Client> clientMembers, final Set<Group> groupMembers, final LocalDate submittedOnDate, final AppUser currentUser) {
+    public static Group newGroup(final Office office, final Staff staff, final Group parent, final GroupLevel groupLevel, final String name,
+            final String externalId, final boolean active, final LocalDate activationDate, final Set<Client> clientMembers,
+            final Set<Group> groupMembers, final LocalDate submittedOnDate, final AppUser currentUser, final String accountNo) {
 
         // By default new group is created in PENDING status, unless explicitly
         // status is set to active
@@ -156,12 +177,12 @@ public final class Group extends AbstractPersistable<Long> {
         }
 
         return new Group(office, staff, parent, groupLevel, name, externalId, status, groupActivationDate, clientMembers, groupMembers,
-                submittedOnDate, currentUser);
+                submittedOnDate, currentUser, accountNo);
     }
 
     private Group(final Office office, final Staff staff, final Group parent, final GroupLevel groupLevel, final String name,
             final String externalId, final GroupingTypeStatus status, final LocalDate activationDate, final Set<Client> clientMembers,
-            final Set<Group> groupMembers, final LocalDate submittedOnDate, final AppUser currentUser) {
+            final Set<Group> groupMembers, final LocalDate submittedOnDate, final AppUser currentUser, final String accountNo) {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
@@ -172,6 +193,13 @@ public final class Group extends AbstractPersistable<Long> {
 
         if (parent != null) {
             this.parent.addChild(this);
+        }
+
+        if (StringUtils.isBlank(accountNo)) {
+            this.accountNumber = new RandomPasswordGenerator(19).generate();
+            this.accountNumberRequiresAutoGeneration = true;
+        } else {
+            this.accountNumber = accountNo;
         }
 
         if (StringUtils.isNotBlank(name)) {
@@ -216,7 +244,8 @@ public final class Group extends AbstractPersistable<Long> {
 
     }
 
-    private void activate(final AppUser currentUser, final LocalDate activationLocalDate, final List<ApiParameterError> dataValidationErrors) {
+    private void activate(final AppUser currentUser, final LocalDate activationLocalDate,
+            final List<ApiParameterError> dataValidationErrors) {
 
         validateStatusNotEqualToActiveAndLogError(dataValidationErrors);
         if (dataValidationErrors.isEmpty()) {
@@ -230,9 +259,9 @@ public final class Group extends AbstractPersistable<Long> {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         activate(currentUser, activationLocalDate, dataValidationErrors);
-        if (this.isCenter() && this.hasStaff()) {
-            Staff staff = this.getStaff();
-            this.reassignStaff(staff, activationLocalDate);
+        if (isCenter() && hasStaff()) {
+            final Staff staff = getStaff();
+            reassignStaff(staff, activationLocalDate);
         }
         throwExceptionIfErrors(dataValidationErrors);
 
@@ -317,6 +346,12 @@ public final class Group extends AbstractPersistable<Long> {
             this.activationDate = newValue.toDate();
         }
 
+        if (command.isChangeInStringParameterNamed(GroupingTypesApiConstants.accountNoParamName, this.accountNumber)) {
+            final String newValue = command.stringValueOfParameterNamed(GroupingTypesApiConstants.accountNoParamName);
+            actualChanges.put(GroupingTypesApiConstants.accountNoParamName, newValue);
+            this.accountNumber = StringUtils.defaultIfEmpty(newValue, null);
+        }
+
         return actualChanges;
     }
 
@@ -361,24 +396,24 @@ public final class Group extends AbstractPersistable<Long> {
         return this.clientMembers.contains(client);
     }
 
-	public void generateHierarchy() {
-		if (this.parent != null) {
-			this.hierarchy = this.parent.hierarchyOf(getId());
-		} else {
-			this.hierarchy = "." + getId() + ".";
-			for (Group group : this.groupMembers) {
-				group.setParent(this);
-				group.generateHierarchy();
-			}
-		}
-	}
-    
-	public void resetHierarchy() {
-			this.hierarchy = "." + this.getId();
-	}
-    
+    public void generateHierarchy() {
+        if (this.parent != null) {
+            this.hierarchy = this.parent.hierarchyOf(getId());
+        } else {
+            this.hierarchy = "." + getId() + ".";
+            for (final Group group : this.groupMembers) {
+                group.setParent(this);
+                group.generateHierarchy();
+            }
+        }
+    }
+
+    public void resetHierarchy() {
+        this.hierarchy = "." + getId();
+    }
+
     private String hierarchyOf(final Long id) {
-    	return this.hierarchy + id.toString() + ".";
+        return this.hierarchy + id.toString() + ".";
     }
 
     public boolean isOfficeIdentifiedBy(final Long officeId) {
@@ -396,22 +431,40 @@ public final class Group extends AbstractPersistable<Long> {
         }
         return staffId;
     }
-   
+
     private void addChild(final Group group) {
         this.groupMembers.add(group);
     }
 
     public void updateStaff(final Staff staff) {
-        if (this.isCenter() && this.isActive()) {
-            LocalDate updatedDate = DateUtils.getLocalDateOfTenant();
+        if (isCenter() && isActive()) {
+            final LocalDate updatedDate = DateUtils.getLocalDateOfTenant();
             reassignStaff(staff, updatedDate);
         }
         this.staff = staff;
     }
 
+    public void updateStaffForGroupMembers(final Staff staff) {
+        if (isCenter() && isActive()) {
+            for (final Group group : this.groupMembers) {
+                group.updateStaff(staff);
+            }
+        }
+        this.staff = staff;
+    }
+
+    public void updateStaffForClientMembers(final Staff staff) {
+        if (isChildGroup() && isActive()) {
+            for (final Client client : this.clientMembers) {
+                client.updateStaff(staff);
+            }
+        }
+        this.staff = staff;
+    }
+
     public void unassignStaff() {
-        if (this.isCenter() && this.isActive()) {
-            LocalDate dateOfStaffUnassigned = DateUtils.getLocalDateOfTenant();
+        if (isCenter() && isActive()) {
+            final LocalDate dateOfStaffUnassigned = DateUtils.getLocalDateOfTenant();
             removeStaff(dateOfStaffUnassigned);
         }
         this.staff = null;
@@ -427,6 +480,49 @@ public final class Group extends AbstractPersistable<Long> {
 
     public void setStaff(final Staff staff) {
         this.staff = staff;
+    }
+
+    public void updateStaffForAllChilds(final Staff staff) {
+        this.staff = staff;
+        if (isCenter()) {
+            if (this.groupMembers != null) {
+                for (final Group group : this.groupMembers) {
+                    group.updateStaffForAllChilds(staff);
+                }
+            }
+        }
+        if (isGroup()) {
+            if (this.clientMembers != null) {
+                for (final Client client : this.clientMembers) {
+                    client.updateStaff(staff);
+                }
+            }
+        }
+    }
+
+    public List<Long> fetchAllClientMemerIds() {
+        final List<Long> ids = new ArrayList<>();
+        if (isCenter()) {
+            for (final Group group : this.groupMembers) {
+                ids.addAll(group.fetchAllClientMemerIds());
+            }
+        }
+        if (isGroup()) {
+            for (final Client client : this.clientMembers) {
+                ids.add(client.getId());
+            }
+        }
+        return ids;
+    }
+
+    public List<Long> fetchAllGroupMemerIds() {
+        final List<Long> ids = new ArrayList<>();
+        if (isCenter()) {
+            for (final Group group : this.groupMembers) {
+                ids.add(group.getId());
+            }
+        }
+        return ids;
     }
 
     public Group getParent() {
@@ -483,7 +579,8 @@ public final class Group extends AbstractPersistable<Long> {
 
         if (isClosed()) {
             final String errorMessage = "Group with identifier " + getId() + " is alread closed.";
-            throw new InvalidGroupStateTransitionException(this.groupLevel.getLevelName(), "close", "already.closed", errorMessage, getId());
+            throw new InvalidGroupStateTransitionException(this.groupLevel.getLevelName(), "close", "already.closed", errorMessage,
+                    getId());
         }
 
         if (isNotPending() && getActivationLocalDate().isAfter(closureDate)) {
@@ -537,27 +634,27 @@ public final class Group extends AbstractPersistable<Long> {
 
             if (group.isChildGroup()) {
                 final String defaultUserMessage = "Group is already associated with a center";
-                throw new GeneralPlatformDomainRuleException("error.msg.group.already.associated.with.center", defaultUserMessage, group
-                        .getParent().getId(), group.getId());
+                throw new GeneralPlatformDomainRuleException("error.msg.group.already.associated.with.center", defaultUserMessage,
+                        group.getParent().getId(), group.getId());
             }
 
             this.groupMembers.add(group);
             differences.add(group.getId().toString());
             group.setParent(this);
-    		group.generateHierarchy();
+            group.generateHierarchy();
         }
 
         return differences;
     }
 
-    public List<String> disassociateGroups(Set<Group> groupMembersSet) {
+    public List<String> disassociateGroups(final Set<Group> groupMembersSet) {
 
         final List<String> differences = new ArrayList<>();
         for (final Group group : groupMembersSet) {
             if (hasGroupAsMember(group)) {
                 this.groupMembers.remove(group);
                 differences.add(group.getId().toString());
-    			group.resetHierarchy();
+                group.resetHierarchy();
             } else {
                 throw new GroupNotExistsInCenterException(group.getId(), getId());
             }
@@ -580,14 +677,14 @@ public final class Group extends AbstractPersistable<Long> {
             maxClients = Integer.MAX_VALUE;
         }
 
-        Set<Client> activeClientMembers = getActiveClientMembers();
+        final Set<Client> activeClientMembers = getActiveClientMembers();
 
         if (activeClientMembers.size() >= minClients && activeClientMembers.size() <= maxClients) { return true; }
         return false;
     }
 
-    public Boolean isGroupsClientCountWithinMaxRange(Integer maxClients) {
-        Set<Client> activeClientMembers = getActiveClientMembers();
+    public Boolean isGroupsClientCountWithinMaxRange(final Integer maxClients) {
+        final Set<Client> activeClientMembers = getActiveClientMembers();
         if (maxClients == null) {
             return true;
         } else if (activeClientMembers.size() <= maxClients) {
@@ -598,8 +695,8 @@ public final class Group extends AbstractPersistable<Long> {
     }
 
     public Set<Client> getActiveClientMembers() {
-        Set<Client> activeClientMembers = new HashSet<>();
-        for (Client client : this.clientMembers) {
+        final Set<Client> activeClientMembers = new HashSet<>();
+        for (final Client client : this.clientMembers) {
             if (client.isActive()) {
                 activeClientMembers.add(client);
             }
@@ -669,11 +766,11 @@ public final class Group extends AbstractPersistable<Long> {
 
     // StaffAssignmentHistory[during center creation]
     public void captureStaffHistoryDuringCenterCreation(final Staff newStaff, final LocalDate assignmentDate) {
-        if (this.isCenter() && this.isActive() && staff != null) {
+        if (isCenter() && isActive() && this.staff != null) {
             this.staff = newStaff;
             final StaffAssignmentHistory staffAssignmentHistory = StaffAssignmentHistory.createNew(this, this.staff, assignmentDate);
             if (staffAssignmentHistory != null) {
-                staffHistory = new HashSet<>();
+                this.staffHistory = new HashSet<>();
                 this.staffHistory.add(staffAssignmentHistory);
             }
         }
@@ -704,5 +801,38 @@ public final class Group extends AbstractPersistable<Long> {
             }
         }
         return latestRecordWithNoEndDate;
+    }
+
+    public boolean isAccountNumberRequiresAutoGeneration() {
+        return this.accountNumberRequiresAutoGeneration;
+    }
+
+    public void setAccountNumberRequiresAutoGeneration(final boolean accountNumberRequiresAutoGeneration) {
+        this.accountNumberRequiresAutoGeneration = accountNumberRequiresAutoGeneration;
+    }
+
+    public void updateAccountNo(final String accountIdentifier) {
+        this.accountNumber = accountIdentifier;
+        this.accountNumberRequiresAutoGeneration = false;
+    }
+
+    public void setVillage(final Village village) {
+        this.village = village;
+    }
+
+    public List<Group> getGroupMembers() {
+        return this.groupMembers;
+    }
+
+    public Set<StaffAssignmentHistory> getStaffHistory() {
+        return this.staffHistory;
+    }
+
+    public Set<GroupRole> getGroupRoles() {
+        return this.groupRoles;
+    }
+
+    public String getName() {
+        return this.name;
     }
 }

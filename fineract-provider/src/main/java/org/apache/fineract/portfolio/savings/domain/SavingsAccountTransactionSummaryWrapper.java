@@ -35,10 +35,10 @@ public final class SavingsAccountTransactionSummaryWrapper {
     public BigDecimal calculateTotalDeposits(final MonetaryCurrency currency, final List<SavingsAccountTransaction> transactions) {
         Money total = Money.zero(currency);
         for (final SavingsAccountTransaction transaction : transactions) {
-            if (transaction.isDeposit() && transaction.isNotReversed()) {
+            if (transaction.isDepositAndNotReversed() || transaction.isDividendPayoutAndNotReversed()) {
                 total = total.plus(transaction.getAmount(currency));
-            }else if(transaction.isEarningFromInvestment() && transaction.isNotReversed()){
-            	total = total.plus(transaction.getAmount(currency));
+            } else if (transaction.isEarningFromInvestment() && transaction.isNotReversed()) {
+                total = total.plus(transaction.getAmount(currency));
             }
         }
         return total.getAmountDefaultedToNullIfZero();
@@ -114,7 +114,8 @@ public final class SavingsAccountTransactionSummaryWrapper {
         return total.getAmountDefaultedToNullIfZero();
     }
 
-    public BigDecimal calculateTotalPenaltyChargeWaived(final MonetaryCurrency currency, final List<SavingsAccountTransaction> transactions) {
+    public BigDecimal calculateTotalPenaltyChargeWaived(final MonetaryCurrency currency,
+            final List<SavingsAccountTransaction> transactions) {
         Money total = Money.zero(currency);
         for (final SavingsAccountTransaction transaction : transactions) {
             if (transaction.isWaivePenaltyChargeAndNotReversed()) {
@@ -124,4 +125,24 @@ public final class SavingsAccountTransactionSummaryWrapper {
         return total.getAmountDefaultedToNullIfZero();
     }
 
+    public BigDecimal calculateTotalOverdraftInterest(final MonetaryCurrency currency, final List<SavingsAccountTransaction> transactions) {
+        Money total = Money.zero(currency);
+        for (final SavingsAccountTransaction transaction : transactions) {
+            if (transaction.isOverdraftInterestAndNotReversed()) {
+                total = total.plus(transaction.getAmount(currency));
+            }
+        }
+        return total.getAmountDefaultedToNullIfZero();
+    }
+
+    public BigDecimal calculateTotalWithholdTaxWithdrawal(final MonetaryCurrency currency,
+            final List<SavingsAccountTransaction> transactions) {
+        Money total = Money.zero(currency);
+        for (final SavingsAccountTransaction transaction : transactions) {
+            if (transaction.isWithHoldTaxAndNotReversed()) {
+                total = total.plus(transaction.getAmount(currency));
+            }
+        }
+        return total.getAmountDefaultedToNullIfZero();
+    }
 }

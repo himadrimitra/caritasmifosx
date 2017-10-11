@@ -18,14 +18,14 @@
  */
 package org.apache.fineract.portfolio.charge.domain;
 
-public enum ChargeTimeType {
+import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 
+public enum ChargeTimeType {
     INVALID(0, "chargeTimeType.invalid"), //
     DISBURSEMENT(1, "chargeTimeType.disbursement"), // only for loan charges
     SPECIFIED_DUE_DATE(2, "chargeTimeType.specifiedDueDate"), // for loan and
-                                                              // savings charges
     SAVINGS_ACTIVATION(3, "chargeTimeType.savingsActivation"), // only for
-                                                               // savings
     SAVINGS_CLOSURE(4, "chargeTimeType.savingsClosure"), // only for savings
     WITHDRAWAL_FEE(5, "chargeTimeType.withdrawalFee"), // only for savings
     ANNUAL_FEE(6, "chargeTimeType.annualFee"), // only for savings
@@ -35,7 +35,15 @@ public enum ChargeTimeType {
                                                                  // loan charges
     OVERDRAFT_FEE(10, "chargeTimeType.overdraftFee"), // only for savings
     WEEKLY_FEE(11, "chargeTimeType.weeklyFee"), // only for savings
-    LATE_DEPOSITE_FEE(12, "chargeTimeType.lateDepositeFee"); // only for savings
+    TRANCHE_DISBURSEMENT(12, "chargeTimeType.tranchedisbursement"), // only for
+                                                                    // loan
+    SHAREACCOUNT_ACTIVATION(13, "chargeTimeType.activation"), // only for loan
+    SHARE_PURCHASE(14, "chargeTimeType.sharespurchase"), //
+    SHARE_REDEEM(15, "chargeTimeType.sharesredeem"), //
+
+    SAVINGS_NOACTIVITY_FEE(16, "chargeTimeType.savingsNoActivityFee"), // 0
+    UPFRONT_FEE(50, "chargeTimeType.upfrontFee"), //
+    LATE_DEPOSITE_FEE(51, "chargeTimeType.lateDepositeFee"); // only for savings
 
     private final Integer value;
     private final String code;
@@ -55,7 +63,8 @@ public enum ChargeTimeType {
 
     public static Object[] validLoanValues() {
         return new Integer[] { ChargeTimeType.DISBURSEMENT.getValue(), ChargeTimeType.SPECIFIED_DUE_DATE.getValue(),
-                ChargeTimeType.INSTALMENT_FEE.getValue(), ChargeTimeType.OVERDUE_INSTALLMENT.getValue() };
+                ChargeTimeType.INSTALMENT_FEE.getValue(), ChargeTimeType.OVERDUE_INSTALLMENT.getValue(),
+                ChargeTimeType.TRANCHE_DISBURSEMENT.getValue(), ChargeTimeType.UPFRONT_FEE.getValue() };
     }
 
     public static Object[] validLoanChargeValues() {
@@ -67,7 +76,17 @@ public enum ChargeTimeType {
         return new Integer[] { ChargeTimeType.SPECIFIED_DUE_DATE.getValue(), ChargeTimeType.SAVINGS_ACTIVATION.getValue(),
                 ChargeTimeType.SAVINGS_CLOSURE.getValue(), ChargeTimeType.WITHDRAWAL_FEE.getValue(), ChargeTimeType.ANNUAL_FEE.getValue(),
                 ChargeTimeType.MONTHLY_FEE.getValue(), ChargeTimeType.OVERDRAFT_FEE.getValue(), ChargeTimeType.WEEKLY_FEE.getValue(),
-                ChargeTimeType.LATE_DEPOSITE_FEE.getValue() };
+                ChargeTimeType.LATE_DEPOSITE_FEE.getValue(), ChargeTimeType.SAVINGS_NOACTIVITY_FEE.getValue() };
+    }
+
+    public static Object[] validClientValues() {
+        return new Integer[] { ChargeTimeType.SPECIFIED_DUE_DATE.getValue(), ChargeTimeType.ANNUAL_FEE.getValue(),
+                ChargeTimeType.MONTHLY_FEE.getValue(), ChargeTimeType.WEEKLY_FEE.getValue() };
+    }
+
+    public static Object[] validShareValues() {
+        return new Integer[] { ChargeTimeType.SHAREACCOUNT_ACTIVATION.getValue(), ChargeTimeType.SHARE_PURCHASE.getValue(),
+                ChargeTimeType.SHARE_REDEEM.getValue() };
     }
 
     public static ChargeTimeType fromInt(final Integer chargeTime) {
@@ -108,6 +127,24 @@ public enum ChargeTimeType {
                     chargeTimeType = WEEKLY_FEE;
                 break;
                 case 12:
+                    chargeTimeType = TRANCHE_DISBURSEMENT;
+                break;
+                case 13:
+                    chargeTimeType = SHAREACCOUNT_ACTIVATION;
+                break;
+                case 14:
+                    chargeTimeType = SHARE_PURCHASE;
+                break;
+                case 15:
+                    chargeTimeType = SHARE_REDEEM;
+                break;
+                case 16:
+                    chargeTimeType = SAVINGS_NOACTIVITY_FEE;
+                break;
+                case 50:
+                    chargeTimeType = UPFRONT_FEE;
+                break;
+                case 51:
                     chargeTimeType = LATE_DEPOSITE_FEE;
                 break;
                 default:
@@ -138,6 +175,10 @@ public enum ChargeTimeType {
         return this.value.equals(ChargeTimeType.WITHDRAWAL_FEE.getValue());
     }
 
+    public boolean isSavingsNoActivityFee() {
+        return this.value.equals(ChargeTimeType.SAVINGS_NOACTIVITY_FEE.getValue());
+    }
+
     public boolean isAnnualFee() {
         return this.value.equals(ChargeTimeType.ANNUAL_FEE.getValue());
     }
@@ -163,16 +204,80 @@ public enum ChargeTimeType {
     }
 
     public boolean isAllowedLoanChargeTime() {
-        return isTimeOfDisbursement() || isOnSpecifiedDueDate() || isInstalmentFee() || isOverdueInstallment();
+        return isTimeOfDisbursement() || isOnSpecifiedDueDate() || isInstalmentFee() || isOverdueInstallment() || isTrancheDisbursement()
+                || isUpfrontFee();
+    }
+
+    public boolean isAllowedClientChargeTime() {
+        return isOnSpecifiedDueDate() || isAnnualFee() || isMonthlyFee() || isWeeklyFee();
     }
 
     public boolean isAllowedSavingsChargeTime() {
-        return isOnSpecifiedDueDate() || isSavingsActivation() || isSavingsClosure() || isWithdrawalFee() || isAnnualFee()
-                || isMonthlyFee() || isWeeklyFee() || isOverdraftFee() || isLateDepositeFee();
+        return isOnSpecifiedDueDate() || isSavingsActivation() || isSavingsClosure() || isWithdrawalFee() || isAnnualFee() || isMonthlyFee()
+                || isWeeklyFee() || isOverdraftFee() || isSavingsNoActivityFee() || isLateDepositeFee();
     }
 
     public boolean isOverdraftFee() {
         return this.value.equals(ChargeTimeType.OVERDRAFT_FEE.getValue());
+    }
+
+    public boolean isTrancheDisbursement() {
+        return this.value.equals(ChargeTimeType.TRANCHE_DISBURSEMENT.getValue());
+    }
+
+    public boolean isShareAccountActivation() {
+        return this.value.equals(ChargeTimeType.SHAREACCOUNT_ACTIVATION.getValue());
+    }
+
+    public boolean isSharesPurchase() {
+        return this.value.equals(ChargeTimeType.SHARE_PURCHASE.getValue());
+    }
+
+    public boolean isSharesRedeem() {
+        return this.value.equals(ChargeTimeType.SHARE_REDEEM.getValue());
+    }
+
+    public boolean isUpfrontFee() {
+        return this.value.equals(ChargeTimeType.UPFRONT_FEE.getValue());
+    }
+
+    public boolean isSameFrequency(final CalendarFrequencyType calendarFrequencyType) {
+        boolean sameFrequency = false;
+        switch (calendarFrequencyType) {
+            case WEEKLY:
+                sameFrequency = isWeeklyFee();
+            break;
+            case MONTHLY:
+                sameFrequency = isMonthlyFee();
+            break;
+            case YEARLY:
+                sameFrequency = isAnnualFee();
+            break;
+            default:
+            break;
+        }
+
+        return sameFrequency;
+
+    }
+
+    public static PeriodFrequencyType getPeriodFrequencyTypeFromChargeTimeType(final int chargeTime) {
+        PeriodFrequencyType periodFrequencyType = PeriodFrequencyType.INVALID;
+        final ChargeTimeType chargeTimeType = fromInt(chargeTime);
+        switch (chargeTimeType) {
+            case WEEKLY_FEE:
+                periodFrequencyType = PeriodFrequencyType.WEEKS;
+            break;
+            case MONTHLY_FEE:
+                periodFrequencyType = PeriodFrequencyType.MONTHS;
+            break;
+            case ANNUAL_FEE:
+                periodFrequencyType = PeriodFrequencyType.YEARS;
+            break;
+            default:
+            break;
+        }
+        return periodFrequencyType;
     }
 
 }

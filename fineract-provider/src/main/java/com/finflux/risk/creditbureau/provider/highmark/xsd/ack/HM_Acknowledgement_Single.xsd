@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="REPORT-FILE">
+    <xs:complexType>
+	<xs:sequence>
+       <xs:element minOccurs="1" maxOccurs="1" name="INQUIRY-STATUS">
+			<xs:complexType>
+			<xs:sequence>
+			  <xs:element minOccurs="1" maxOccurs="unbounded" ref="INQUIRY"/>
+			</xs:sequence>
+			</xs:complexType>
+	   </xs:element>
+    </xs:sequence>
+	</xs:complexType>
+  </xs:element>
+ 
+  <xs:element name="INQUIRY">
+    <xs:complexType>
+	<xs:all>
+		  <xs:element minOccurs="1" maxOccurs="1" name="INQUIRY-UNIQUE-REF-NO" type="xs:string"/>
+		  <xs:element minOccurs="1" maxOccurs="1" name="MBR-ID" type="xs:string"/>
+		  <xs:element minOccurs="1" maxOccurs="1" name="REQUEST-DT-TM" type="xs:string"/>
+		  <xs:element minOccurs="1" maxOccurs="1" name="REPORT-ID" type="xs:string"/>
+		  <xs:element minOccurs="1" maxOccurs="1" name="RESPONSE-DT-TM" type="xs:string"/>
+		  <xs:element minOccurs="1" maxOccurs="1" name="REPONSE-TYPE">
+			<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="ACKNOWLEDGEMENT"/>
+						<xs:enumeration value="ERROR"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		  <xs:element minOccurs="0" maxOccurs="1" name="ERRORS">
+			<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="1"  maxOccurs="unbounded" ref="ERROR"/>
+			</xs:sequence>
+			</xs:complexType>
+		  </xs:element>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+  
+  <xs:element name="ERROR">
+    <xs:complexType>
+	<xs:all>
+      <xs:element minOccurs="1" maxOccurs="1" name="CODE" type="xs:string"/>
+	  <xs:element minOccurs="1" maxOccurs="1" name="DESCRIPTION" type="xs:string"/>
+    </xs:all>
+	</xs:complexType>
+  </xs:element>
+
+  </xs:schema>

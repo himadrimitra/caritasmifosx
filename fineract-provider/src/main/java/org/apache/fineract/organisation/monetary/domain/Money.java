@@ -89,7 +89,17 @@ public class Money implements Comparable<Money> {
             final double existingVal = amountScaled.doubleValue();
             amountScaled = BigDecimal.valueOf(roundToMultiplesOf(existingVal, inMultiplesOf));
         }
-        this.amount = amountScaled.setScale(this.currencyDigitsAfterDecimal, RoundingMode.HALF_EVEN);
+        this.amount = amountScaled.setScale(this.currencyDigitsAfterDecimal, MoneyHelper.getRoundingMode());
+    }
+    
+    public static double roundToMultiplesOf(final double existingVal, final Integer inMultiplesOf, RoundingMode roundingMode) {
+        BigDecimal valueInBigDecimal = BigDecimal.valueOf(existingVal);
+        BigDecimal multiplesOfBigDecimal = BigDecimal.valueOf(inMultiplesOf);
+        return roundToMultiplesOf(valueInBigDecimal, multiplesOfBigDecimal, roundingMode).doubleValue();
+    }
+    
+    public static BigDecimal roundToMultiplesOf(final BigDecimal existingVal, final BigDecimal inMultiplesOf, RoundingMode roundingMode) {
+        return (existingVal.divide(inMultiplesOf, 0 , roundingMode).multiply(inMultiplesOf));
     }
 
     public static double roundToMultiplesOf(final double existingVal, final Integer inMultiplesOf) {
@@ -237,11 +247,15 @@ public class Money implements Comparable<Money> {
         return this.multiplyRetainScale(BigDecimal.valueOf(valueToMultiplyBy), roundingMode);
     }
 
+    public Money percentageOf(BigDecimal percentage, final RoundingMode roundingMode) {
+        final BigDecimal newAmount = (this.amount.multiply(percentage)).divide(BigDecimal.valueOf(100), roundingMode);
+        return Money.of(monetaryCurrency(), newAmount);
+    }
     @Override
     public int compareTo(final Money other) {
         final Money otherMoney = other;
-        if (this.currencyCode.equals(otherMoney.currencyCode) == false) { throw new UnsupportedOperationException(
-                "currencies arent different"); }
+        if (this.currencyCode
+                .equals(otherMoney.currencyCode) == false) { throw new UnsupportedOperationException("currencies arent different"); }
         return this.amount.compareTo(otherMoney.amount);
     }
 

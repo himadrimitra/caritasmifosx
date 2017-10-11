@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.fineract;
 
 import java.awt.Desktop;
@@ -16,7 +34,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 
 /**
- * Mifos main() application which launches Mifos X in an embedded Tomcat HTTP
+ * Fineract main() application which launches Fineract in an embedded Tomcat HTTP
  * server (using Spring Boot), as well as an embedded database (using
  * MariaDB4j).
  *
@@ -24,7 +42,7 @@ import org.springframework.core.io.Resource;
  * without needing command line Gradle stuff, no need to build and deploy a WAR,
  * remote attachment etc.
  *
- * It's the old/classic Mifos (non-X) Workspace 2.0 reborn for Mifos X! ;-)
+ * It's the old/classic Mifos (non-X) Workspace 2.0 reborn for Fineract! ;-)
  *
  * @see ServerApplication for the same without the embedded MariaDB4j database
  */
@@ -47,7 +65,7 @@ public class ServerWithMariaDB4jApplication {
 					System.getProperty("file.separator") + "dist" +
 					System.getProperty("file.separator") + "community-app" +
 					System.getProperty("file.separator") + "index.html");
-			URI distURI = URI.create("https://localhost:8443/mifosng-provider" +
+			URI distURI = URI.create("https://localhost:8443/fineract-provider" +
 					"/apps/community-app/index.html?baseApiUrl=https://localhost:8443" +
 					"&tenantIdentifier=default#/");
 
@@ -57,7 +75,7 @@ public class ServerWithMariaDB4jApplication {
 					System.getProperty("file.separator") + "community-app" +
 					System.getProperty("file.separator") + "app" +
 					System.getProperty("file.separator") + "index.html");
-			URI devURI = URI.create("https://localhost:8443/mifosng-provider" +
+			URI devURI = URI.create("https://localhost:8443/fineract-provider" +
 					"/apps/community-app/app/index.html?baseApiUrl=https://localhost:8443" +
 					"&tenantIdentifier=default#/");
 
@@ -66,7 +84,7 @@ public class ServerWithMariaDB4jApplication {
 			} else if (devResource.exists()) {
 				openWebBrowser(devURI);				
 			} else {
-				logger.error("Cannot open Mifos X UI in browser; not found: " + distResource.toString());
+				logger.error("Cannot open Fineract UI in browser; not found: " + distResource.toString());
 			}
 		}
 		
@@ -77,10 +95,10 @@ public class ServerWithMariaDB4jApplication {
 
 	private static void openWebBrowser(URI uri) {
 		try {
-			logger.info("Opening Mifos X UI in browser: " + uri.toString());
+			logger.info("Opening Fineract UI in browser: " + uri.toString());
 			Desktop.getDesktop().browse(uri);
 		} catch (IOException e) {
-			logger.error("IOException when opening Mifos X UI in browser: " + uri.toString(), e);
+			logger.error("IOException when opening Fineract UI in browser: " + uri.toString(), e);
 		}
 	}
 

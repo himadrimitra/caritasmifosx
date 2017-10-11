@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.fineract.accounting.producttoaccountmapping.domain.PortfolioProductType;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -44,7 +45,10 @@ import org.apache.fineract.portfolio.account.domain.AccountTransferType;
 import org.apache.fineract.portfolio.account.exception.AccountTransferNotFoundException;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
+import org.apache.fineract.portfolio.savings.service.SavingsEnumerations;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -65,6 +69,14 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
 
     // pagination
     private final PaginationHelper<AccountTransferData> paginationHelper = new PaginationHelper<>();
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+
+    // to indicate loan account type
+    private final Integer mostRelevantForAccountTypeLoan = PortfolioProductType.LOAN.getValue();
+    private final Integer mostRelevantForAccountTypeSavings = PortfolioProductType.SAVING.getValue();
+
+    private final Byte transferToOwnAccount = 1;
+    private final Byte transferToOtherAccount = 2;
 
     @Autowired
     public AccountTransfersReadPlatformServiceImpl(final RoutingDataSource dataSource,
@@ -80,7 +92,8 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
 
     @Override
     public AccountTransferData retrieveTemplate(final Long fromOfficeId, final Long fromClientId, final Long fromAccountId,
-            final Integer fromAccountType, final Long toOfficeId, final Long toClientId, final Long toAccountId, final Integer toAccountType) {
+            final Integer fromAccountType, final Long toOfficeId, final Long toClientId, final Long toAccountId,
+            final Integer toAccountType, final Byte transferType) {
 
         final EnumOptionData loanAccountType = AccountTransferEnumerations.accountType(PortfolioAccountType.LOAN);
         final EnumOptionData savingsAccountType = AccountTransferEnumerations.accountType(PortfolioAccountType.SAVINGS);
@@ -88,7 +101,7 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
         final Integer mostRelevantFromAccountType = fromAccountType;
         final Collection<EnumOptionData> fromAccountTypeOptions = Arrays.asList(savingsAccountType, loanAccountType);
         final Collection<EnumOptionData> toAccountTypeOptions;
-        if (mostRelevantFromAccountType == 1) {
+        if (mostRelevantFromAccountType != null && mostRelevantFromAccountType == 1) {
             // overpaid loan amt transfer to savings account
             toAccountTypeOptions = Arrays.asList(savingsAccountType);
         } else {
@@ -111,6 +124,10 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
         // template
         Collection<PortfolioAccountData> fromAccountOptions = null;
         Collection<PortfolioAccountData> toAccountOptions = null;
+
+        // For transferring to own account
+        Collection<PortfolioAccountData> toSavingAccountOptions = null;
+        Collection<PortfolioAccountData> toLoanAccountOptions = null;
 
         Long mostRelevantFromOfficeId = fromOfficeId;
         Long mostRelevantFromClientId = fromClientId;
@@ -138,7 +155,7 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
             if (mostRelevantFromAccountType == 1) {
                 loanStatus = new long[] { 300, 700 };
             }
-            PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(mostRelevantFromAccountType, mostRelevantFromClientId,
+            final PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(mostRelevantFromAccountType, mostRelevantFromClientId,
                     loanStatus);
             fromAccountOptions = this.portfolioAccountReadPlatformService.retrieveAllForLookup(portfolioAccountDTO);
         }
@@ -183,9 +200,14 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
             }
         }
 
+        if (transferType != null && transferType.equals(this.transferToOwnAccount)) {
+            toSavingAccountOptions = retrieveToAccounts(fromAccount, this.mostRelevantForAccountTypeSavings, mostRelevantFromClientId);
+            toLoanAccountOptions = retrieveToAccounts(fromAccount, this.mostRelevantForAccountTypeLoan, mostRelevantFromClientId);
+        }
+
         return AccountTransferData.template(fromOffice, fromClient, fromAccountTypeData, fromAccount, transferDate, toOffice, toClient,
                 toAccountTypeData, toAccount, fromOfficeOptions, fromClientOptions, fromAccountTypeOptions, fromAccountOptions,
-                toOfficeOptions, toClientOptions, toAccountTypeOptions, toAccountOptions);
+                toOfficeOptions, toClientOptions, toAccountTypeOptions, toAccountOptions, toSavingAccountOptions, toLoanAccountOptions);
     }
 
     private Collection<PortfolioAccountData> retrieveToAccounts(final PortfolioAccountData excludeThisAccountFromOptions,
@@ -193,7 +215,7 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
 
         final String currencyCode = excludeThisAccountFromOptions != null ? excludeThisAccountFromOptions.currencyCode() : null;
 
-        PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(toAccountType, toClientId, currencyCode, null, null);
+        final PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(toAccountType, toClientId, currencyCode, null, null);
         Collection<PortfolioAccountData> accountOptions = this.portfolioAccountReadPlatformService
                 .retrieveAllForLookup(portfolioAccountDTO);
         if (!CollectionUtils.isEmpty(accountOptions)) {
@@ -274,8 +296,8 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
             sqlBuilder.append("curr.display_symbol as currencyDisplaySymbol, ");
             sqlBuilder.append("fromoff.id as fromOfficeId, fromoff.name as fromOfficeName,");
             sqlBuilder.append("tooff.id as toOfficeId, tooff.name as toOfficeName,");
-            sqlBuilder.append("fromclient.id as fromClientId, fromclient.display_name as fromClientName,fromclient.external_id as fromClientExternalId,");
-            sqlBuilder.append("toclient.id as toClientId, toclient.display_name as toClientName,toclient.external_id as toClientExternalId,");
+            sqlBuilder.append("fromclient.id as fromClientId, fromclient.display_name as fromClientName, fromclient.external_id as fromClientExternalId, ");
+            sqlBuilder.append("toclient.id as toClientId, toclient.display_name as toClientName, toclient.external_id as toClientExternalId, ");
             sqlBuilder.append("fromsavacc.id as fromSavingsAccountId, fromsavacc.account_no as fromSavingsAccountNo,");
             sqlBuilder.append("fromloanacc.id as fromLoanAccountId, fromloanacc.account_no as fromLoanAccountNo,");
             sqlBuilder.append("tosavacc.id as toSavingsAccountId, tosavacc.account_no as toSavingsAccountNo,");
@@ -283,7 +305,8 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
             sqlBuilder.append("fromsavtran.id as fromSavingsAccountTransactionId,");
             sqlBuilder.append("fromsavtran.transaction_type_enum as fromSavingsAccountTransactionType,");
             sqlBuilder.append("tosavtran.id as toSavingsAccountTransactionId,");
-            sqlBuilder.append("tosavtran.transaction_type_enum as toSavingsAccountTransactionType");
+            sqlBuilder.append("tosavtran.transaction_type_enum as toSavingsAccountTransactionType, ");
+            sqlBuilder.append("tosavacc.deposit_type_enum as depositType");
             sqlBuilder.append(" FROM m_account_transfer_transaction att ");
             sqlBuilder.append("left join m_account_transfer_details atd on atd.id = att.account_transfer_details_id ");
             sqlBuilder.append("join m_currency curr on curr.code = att.currency_code ");
@@ -323,8 +346,8 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
             final String currencyDisplaySymbol = rs.getString("currencyDisplaySymbol");
             final Integer currencyDigits = JdbcSupport.getInteger(rs, "currencyDigits");
             final Integer inMultiplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
-            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMultiplesOf,
-                    currencyDisplaySymbol, currencyNameCode);
+            final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMultiplesOf, currencyDisplaySymbol,
+                    currencyNameCode);
 
             final Long fromOfficeId = JdbcSupport.getLong(rs, "fromOfficeId");
             final String fromOfficeName = rs.getString("fromOfficeName");
@@ -337,12 +360,12 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
             final Long fromClientId = JdbcSupport.getLong(rs, "fromClientId");
             final String fromClientName = rs.getString("fromClientName");
             final String fromClientExternalId = rs.getString("fromClientExternalId");
-            final ClientData fromClient = ClientData.lookup(fromClientId, fromClientName, fromOfficeId, fromOfficeName,fromClientExternalId);
+            final ClientData fromClient = ClientData.lookup(fromClientId, fromClientName, fromOfficeId, fromOfficeName, fromClientExternalId);
 
             final Long toClientId = JdbcSupport.getLong(rs, "toClientId");
             final String toClientName = rs.getString("toClientName");
             final String toClientExternalId = rs.getString("toClientExternalId");
-            final ClientData toClient = ClientData.lookup(toClientId, toClientName, toOfficeId, toOfficeName,toClientExternalId);
+            final ClientData toClient = ClientData.lookup(toClientId, toClientName, toOfficeId, toOfficeName, toClientExternalId);
 
             final Long fromSavingsAccountId = JdbcSupport.getLong(rs, "fromSavingsAccountId");
             final String fromSavingsAccountNo = rs.getString("fromSavingsAccountNo");
@@ -365,16 +388,20 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
             final Long toLoanAccountId = JdbcSupport.getLong(rs, "toLoanAccountId");
             final String toLoanAccountNo = rs.getString("toLoanAccountNo");
 
+            EnumOptionData toAccountDepositType = null;
+
             if (toSavingsAccountId != null) {
                 toAccount = PortfolioAccountData.lookup(toSavingsAccountId, toSavingsAccountNo);
                 toAccountType = AccountTransferEnumerations.accountType(PortfolioAccountType.SAVINGS);
+                final Integer depositTypeId = rs.getInt("depositType");
+                toAccountDepositType = SavingsEnumerations.depositType(depositTypeId);
             } else if (toLoanAccountId != null) {
                 toAccount = PortfolioAccountData.lookup(toLoanAccountId, toLoanAccountNo);
                 toAccountType = AccountTransferEnumerations.accountType(PortfolioAccountType.LOAN);
             }
 
             return AccountTransferData.instance(id, reversed, transferDate, currency, transferAmount, transferDescription, fromOffice,
-                    toOffice, fromClient, toClient, fromAccountType, fromAccount, toAccountType, toAccount);
+                    toOffice, fromClient, toClient, fromAccountType, fromAccount, toAccountType, toAccount, toAccountDepositType);
         }
     }
 
@@ -398,9 +425,8 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
 
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
-        sqlBuilder
-                .append(this.accountTransfersMapper.schema())
-                .append(" join m_account_transfer_standing_instructions atsi on atsi.account_transfer_details_id = att.account_transfer_details_id ");
+        sqlBuilder.append(this.accountTransfersMapper.schema()).append(
+                " join m_account_transfer_standing_instructions atsi on atsi.account_transfer_details_id = att.account_transfer_details_id ");
         sqlBuilder.append(" where atsi.id = ?");
 
         if (searchParameters != null) {
@@ -428,7 +454,8 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
 
     @Override
     public AccountTransferData retrieveRefundByTransferTemplate(final Long fromOfficeId, final Long fromClientId, final Long fromAccountId,
-            final Integer fromAccountType, final Long toOfficeId, final Long toClientId, final Long toAccountId, final Integer toAccountType) {
+            final Integer fromAccountType, final Long toOfficeId, final Long toClientId, final Long toAccountId,
+            final Integer toAccountType) {
         // TODO Auto-generated method stub
         final EnumOptionData loanAccountType = AccountTransferEnumerations.accountType(PortfolioAccountType.LOAN);
         final EnumOptionData savingsAccountType = AccountTransferEnumerations.accountType(PortfolioAccountType.SAVINGS);
@@ -486,7 +513,7 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
             if (mostRelevantFromAccountType == 1) {
                 loanStatus = new long[] { 300, 700 };
             }
-            PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(mostRelevantFromAccountType, mostRelevantFromClientId,
+            final PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(mostRelevantFromAccountType, mostRelevantFromClientId,
                     loanStatus);
             fromAccountOptions = this.portfolioAccountReadPlatformService.retrieveAllForLookup(portfolioAccountDTO);
         }
@@ -533,7 +560,46 @@ public class AccountTransfersReadPlatformServiceImpl implements AccountTransfers
 
         return AccountTransferData.template(fromOffice, fromClient, fromAccountTypeData, fromAccount, transferDate, toOffice, toClient,
                 toAccountTypeData, toAccount, fromOfficeOptions, fromClientOptions, fromAccountTypeOptions, fromAccountOptions,
-                toOfficeOptions, toClientOptions, toAccountTypeOptions, toAccountOptions);
+                toOfficeOptions, toClientOptions, toAccountTypeOptions, toAccountOptions, null, null);
+    }
+
+    @Override
+    public BigDecimal getTotalTransactionAmount(final Long accountId, final Integer accountType, final LocalDate transactionDate) {
+        final StringBuilder sqlBuilder = new StringBuilder(" select sum(trans.amount) as totalTransactionAmount ");
+        sqlBuilder.append(" from m_account_transfer_details as det ");
+        sqlBuilder.append(" inner join m_account_transfer_transaction as trans ");
+        sqlBuilder.append(" on det.id = trans.account_transfer_details_id ");
+        sqlBuilder.append(" where trans.is_reversed = 0 ");
+        sqlBuilder.append(" and trans.transaction_date = ? ");
+        sqlBuilder.append(" and IF(1=?, det.from_loan_account_id = ?, det.from_savings_account_id = ?) ");
+
+        return this.jdbcTemplate.queryForObject(sqlBuilder.toString(),
+                new Object[] { this.formatter.print(transactionDate), accountType, accountId, accountId }, BigDecimal.class);
+    }
+
+    @Override
+    public Collection<Long> retrivePortfolioTransactionIds(final Long entityId, final PortfolioAccountType accountType) {
+        final StringBuilder sql = new StringBuilder();
+
+        if (accountType.isLoanAccount()) {
+            sql.append("select att.from_loan_transaction_id from  m_account_transfer_details  ad ");
+            sql.append(" join m_account_transfer_transaction att on ad.id = att.account_transfer_details_id ");
+            sql.append(" where ad.from_loan_account_id = ? and att.is_reversed = 0");
+            sql.append(" union ");
+            sql.append("select att.to_loan_transaction_id from  m_account_transfer_details  ad ");
+            sql.append(" join m_account_transfer_transaction att on ad.id = att.account_transfer_details_id ");
+            sql.append(" where ad.to_loan_account_id = ? and att.is_reversed = 0");
+        } else {
+            sql.append("select att.from_savings_transaction_id from  m_account_transfer_details  ad ");
+            sql.append(" join m_account_transfer_transaction att on ad.id = att.account_transfer_details_id ");
+            sql.append(" where ad.from_savings_account_id = ? and att.is_reversed = 0");
+            sql.append(" union ");
+            sql.append("select att.to_savings_transaction_id from  m_account_transfer_details  ad ");
+            sql.append(" join m_account_transfer_transaction att on ad.id = att.account_transfer_details_id ");
+            sql.append(" where ad.to_savings_account_id = ? and att.is_reversed = 0");
+        }
+
+        return this.jdbcTemplate.queryForList(sql.toString(), Long.class, entityId, entityId);
     }
 
 }

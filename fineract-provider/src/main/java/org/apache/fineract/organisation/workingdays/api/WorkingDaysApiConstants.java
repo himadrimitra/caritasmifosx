@@ -35,14 +35,20 @@ public class WorkingDaysApiConstants {
 
     public static final String rescheduleRepaymentTemplate = "rescheduleRepaymentTemplate";
     public static final String localeParamName = "locale";
+    public static final String extendTermForDailyRepayments = "extendTermForDailyRepayments";
+    
+    public static final String advancedRescheduleDetail = "advancedRescheduleDetail";
+    public static final String fromWeekDay = "fromWeekDay";
+    public static final String toWeekDay = "toWeekDay";
+    public static final String delete = "delete";
 
 
 
     public static final Set<String> WORKING_DAYS_CREATE_OR_UPDATE_REQUEST_DATA_PARAMETERS =new HashSet<>(Arrays.asList(
-            recurrence,repayment_rescheduling_enum,localeParamName
+            recurrence,repayment_rescheduling_enum,localeParamName,extendTermForDailyRepayments, advancedRescheduleDetail
     ));
     public static final Set<String> WORKING_DAYS_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName,
-            recurrence,repayment_rescheduling_enum
+            recurrence,repayment_rescheduling_enum,extendTermForDailyRepayments, advancedRescheduleDetail
     ));
 
     public static final Set<String> WORKING_DAYS_TEMPLATE_PARAMETERS = new HashSet<>(Arrays.asList(rescheduleRepaymentTemplate));

@@ -1,0 +1,1 @@
+INSERT INTO `c_configuration` (`name`, `description`) VALUES ('apply-loan-officer-to-center-hierarchy', 'When loan officer of a center is changing the loan officer for groups/clients/loans under that center should change to the new loan officer');

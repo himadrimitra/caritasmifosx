@@ -57,7 +57,7 @@ public class AccountAssociations extends AbstractPersistable<Long> {
     protected AccountAssociations() {}
 
     private AccountAssociations(final Loan loanAccount, final SavingsAccount savingsAccount, final Loan linkedLoanAccount,
-            final SavingsAccount linkedSavingsAccount, final Integer associationType, boolean active) {
+            final SavingsAccount linkedSavingsAccount, final Integer associationType, final boolean active) {
         this.loanAccount = loanAccount;
         this.savingsAccount = savingsAccount;
         this.linkedLoanAccount = linkedLoanAccount;
@@ -67,12 +67,12 @@ public class AccountAssociations extends AbstractPersistable<Long> {
     }
 
     public static AccountAssociations associateSavingsAccount(final Loan loan, final SavingsAccount savingsAccount,
-            final Integer associationType, boolean isActive) {
+            final Integer associationType, final boolean isActive) {
         return new AccountAssociations(loan, null, null, savingsAccount, associationType, isActive);
     }
 
     public static AccountAssociations associateSavingsAccount(final SavingsAccount savingsAccount,
-            final SavingsAccount linkedSavingsAccount, final Integer associationType, boolean isActive) {
+            final SavingsAccount linkedSavingsAccount, final Integer associationType, final boolean isActive) {
         return new AccountAssociations(null, savingsAccount, null, linkedSavingsAccount, associationType, isActive);
     }
 
@@ -83,19 +83,20 @@ public class AccountAssociations extends AbstractPersistable<Long> {
     public void updateLinkedSavingsAccount(final SavingsAccount savingsAccount) {
         this.linkedSavingsAccount = savingsAccount;
     }
-    
+
     public boolean isActive() {
-    		return this.active;
-   	}
-   	public void setActive(boolean active) {
-    			this.active = active;
-   	}
+        return this.active;
+    }
 
-	public Loan getLoanAccount() {
-		return this.loanAccount;
-	}
+    public void setActive(final boolean active) {
+        this.active = active;
+    }
 
-	public void setLoanAccount(Loan loanAccount) {
-		this.loanAccount = loanAccount;
-	}
+    public Loan getLoanAccount() {
+        return this.loanAccount;
+    }
+
+    public void setLoanAccount(final Loan loanAccount) {
+        this.loanAccount = loanAccount;
+    }
 }

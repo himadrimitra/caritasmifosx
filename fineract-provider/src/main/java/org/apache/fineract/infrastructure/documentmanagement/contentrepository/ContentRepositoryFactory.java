@@ -20,7 +20,7 @@ package org.apache.fineract.infrastructure.documentmanagement.contentrepository;
 
 import org.apache.fineract.infrastructure.configuration.data.S3CredentialsData;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
-import org.apache.fineract.infrastructure.configuration.service.ExternalServicesReadPlatformService;
+import org.apache.fineract.infrastructure.configuration.service.ExternalServicesPropertiesReadPlatformService;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -30,11 +30,11 @@ import org.springframework.stereotype.Component;
 public class ContentRepositoryFactory {
 
     private final ApplicationContext applicationContext;
-    private final ExternalServicesReadPlatformService externalServicesReadPlatformService;
+    private final ExternalServicesPropertiesReadPlatformService externalServicesReadPlatformService;
 
     @Autowired
     public ContentRepositoryFactory(final ApplicationContext applicationContext,
-            final ExternalServicesReadPlatformService externalServicesReadPlatformService) {
+            final ExternalServicesPropertiesReadPlatformService externalServicesReadPlatformService) {
         this.applicationContext = applicationContext;
         this.externalServicesReadPlatformService = externalServicesReadPlatformService;
     }

@@ -19,6 +19,7 @@
 package org.apache.fineract.infrastructure.documentmanagement.api;
 
 import java.io.InputStream;
+import java.util.Collection;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -35,21 +36,26 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.commands.domain.CommandWrapper;
+import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryUtils;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryUtils.IMAGE_FILE_EXTENSION;
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageData;
-import org.apache.fineract.infrastructure.documentmanagement.exception.InvalidEntityTypeForImageManagementException;
 import org.apache.fineract.infrastructure.documentmanagement.service.ImageReadPlatformService;
 import org.apache.fineract.infrastructure.documentmanagement.service.ImageWritePlatformService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.commands.service.CommandWrapperBuilder;
+import com.google.gson.JsonObject;
 import com.lowagie.text.pdf.codec.Base64;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataBodyPart;
@@ -63,15 +69,22 @@ public class ImagesApiResource {
     private final PlatformSecurityContext context;
     private final ImageReadPlatformService imageReadPlatformService;
     private final ImageWritePlatformService imageWritePlatformService;
-    private final DefaultToApiJsonSerializer<ClientData> toApiJsonSerializer;
+    private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final FromJsonHelper fromApiJsonHelper;
+    @SuppressWarnings("rawtypes")
+    private final DefaultToApiJsonSerializer toApiJsonSerializer;
 
+    @SuppressWarnings("rawtypes")
     @Autowired
     public ImagesApiResource(final PlatformSecurityContext context, final ImageReadPlatformService readPlatformService,
-            final ImageWritePlatformService imageWritePlatformService, final DefaultToApiJsonSerializer<ClientData> toApiJsonSerializer) {
+            final ImageWritePlatformService imageWritePlatformService, final DefaultToApiJsonSerializer toApiJsonSerializer,
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService, final FromJsonHelper fromApiJsonHelper) {
         this.context = context;
         this.imageReadPlatformService = readPlatformService;
         this.imageWritePlatformService = imageWritePlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
+        this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+        this.fromApiJsonHelper = fromApiJsonHelper;
     }
 
     /**
@@ -82,16 +95,27 @@ public class ImagesApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String addNewClientImage(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId,
             @HeaderParam("Content-Length") final Long fileSize, @FormDataParam("file") final InputStream inputStream,
-            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart) {
-        validateEntityTypeforImage(entityName);
+            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart,
+            @HeaderParam("Geo-Tag") final String geoTagHeaderParam) {
+
+        final GeoTag geoTag = GeoTag.from(geoTagHeaderParam);
+        final Base64EncodedImage base64EncodedImage = null;
+        final String json = this.imageWritePlatformService.saveImageInRepository(fileDetails.getFileName(), inputStream, fileSize,
+                base64EncodedImage, entityId, entityName);
+        final JsonObject jsonObject = (JsonObject) this.fromApiJsonHelper.parse(json);
+        if (geoTag != null) {
+            jsonObject.addProperty(ImagesApiConstants.geoTagParam, geoTag.toString());
+        }
         // TODO: vishwas might need more advances validation (like reading magic
         // number) for handling malicious clients
         // and clients not setting mime type
         ContentRepositoryUtils.validateClientImageNotEmpty(fileDetails.getFileName());
         ContentRepositoryUtils.validateImageMimeType(bodyPart.getMediaType().toString());
-
-        final CommandProcessingResult result = this.imageWritePlatformService.saveOrUpdateImage(entityName, entityId,
-                fileDetails.getFileName(), inputStream, fileSize);
+        // rap(entityId, entityName, formDataMultiPart, inputStream, fileSize,
+        // geoTag);
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().saveImage(entityId, entityName).withJson(jsonObject.toString())
+                .build();
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
     }
@@ -104,11 +128,14 @@ public class ImagesApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String addNewClientImage(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId,
             final String jsonRequestBody) {
-        validateEntityTypeforImage(entityName);
         final Base64EncodedImage base64EncodedImage = ContentRepositoryUtils.extractImageFromDataURL(jsonRequestBody);
-
-        final CommandProcessingResult result = this.imageWritePlatformService.saveOrUpdateImage(entityName, entityId, base64EncodedImage);
-
+        final InputStream inputStream = null;
+        final Long fileSize = null;
+        final String fileName = entityName + entityId;
+        final String json = this.imageWritePlatformService.saveImageInRepository(fileName, inputStream, fileSize, base64EncodedImage,
+                entityId, entityName);
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().saveImage(entityId, entityName).withJson(json).build();
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         return this.toApiJsonSerializer.serialize(result);
     }
 
@@ -121,11 +148,12 @@ public class ImagesApiResource {
     public Response retrieveImage(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId,
             @QueryParam("maxWidth") final Integer maxWidth, @QueryParam("maxHeight") final Integer maxHeight,
             @QueryParam("output") final String output) {
-        validateEntityTypeforImage(entityName);
-        if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equalsIgnoreCase(entityName)) {
+        if (EntityType.CLIENT.getDisplayName().equalsIgnoreCase(entityName)) {
             this.context.authenticatedUser().validateHasReadPermission("CLIENTIMAGE");
-        } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equalsIgnoreCase(entityName)) {
+        } else if (EntityType.STAFF.getDisplayName().equalsIgnoreCase(entityName)) {
             this.context.authenticatedUser().validateHasReadPermission("STAFFIMAGE");
+        } else {
+            this.context.authenticatedUser().validateHasReadPermission("IMAGE");
         }
 
         if (output != null && (output.equals("octet") || output.equals("inline_octet"))) { return downloadClientImage(entityName, entityId,
@@ -142,7 +170,45 @@ public class ImagesApiResource {
         }
 
         final String clientImageAsBase64Text = imageDataURISuffix + Base64.encodeBytes(imageData.getContentOfSize(maxWidth, maxHeight));
-        return Response.ok(clientImageAsBase64Text).build();
+        ResponseBuilder responseBuilder = Response.ok(clientImageAsBase64Text);
+        if (imageData.getGeoTag() != null) {
+            responseBuilder = responseBuilder.header("Geo-Tag", imageData.getGeoTag().toString());
+        }
+        return responseBuilder.build();
+    }
+
+    @Path("/{imageId}")
+    @GET
+    @Consumes({ MediaType.TEXT_PLAIN, MediaType.TEXT_HTML, MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.TEXT_PLAIN })
+    public Response retrieveImageById(@PathParam("imageId") final Long imageId, @QueryParam("maxWidth") final Integer maxWidth,
+            @QueryParam("maxHeight") final Integer maxHeight) {
+        this.context.authenticatedUser().validateHasReadPermission("IMAGE");
+        final ImageData imageData = this.imageReadPlatformService.retrieveImage(imageId);
+
+        // TODO: Need a better way of determining image type
+        String imageDataURISuffix = ContentRepositoryUtils.IMAGE_DATA_URI_SUFFIX.JPEG.getValue();
+        if (StringUtils.endsWith(imageData.location(), ContentRepositoryUtils.IMAGE_FILE_EXTENSION.GIF.getValue())) {
+            imageDataURISuffix = ContentRepositoryUtils.IMAGE_DATA_URI_SUFFIX.GIF.getValue();
+        } else if (StringUtils.endsWith(imageData.location(), ContentRepositoryUtils.IMAGE_FILE_EXTENSION.PNG.getValue())) {
+            imageDataURISuffix = ContentRepositoryUtils.IMAGE_DATA_URI_SUFFIX.PNG.getValue();
+        }
+
+        final String clientImageAsBase64Text = imageDataURISuffix + Base64.encodeBytes(imageData.getContentOfSize(maxWidth, maxHeight));
+        ResponseBuilder responseBuilder = Response.ok(clientImageAsBase64Text);
+        if (imageData.getGeoTag() != null) {
+            responseBuilder = responseBuilder.header("Geo-Tag", imageData.getGeoTag().toString());
+        }
+        return responseBuilder.build();
+    }
+
+    @GET
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAllImages(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId) {
+        this.context.authenticatedUser().validateHasReadPermission("IMAGE");
+        final Collection<ImageData> images = this.imageReadPlatformService.retrieveAllImages(entityName, entityId);
+        return this.toApiJsonSerializer.serialize(images);
     }
 
     @GET
@@ -150,24 +216,26 @@ public class ImagesApiResource {
     @Produces({ MediaType.APPLICATION_OCTET_STREAM })
     public Response downloadClientImage(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId,
             @QueryParam("maxWidth") final Integer maxWidth, @QueryParam("maxHeight") final Integer maxHeight,
-            @QueryParam("output") String output) {
-        validateEntityTypeforImage(entityName);
-        if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equalsIgnoreCase(entityName)) {
+            @QueryParam("output") final String output) {
+        if (EntityType.CLIENT.getDisplayName().equalsIgnoreCase(entityName)) {
             this.context.authenticatedUser().validateHasReadPermission("CLIENTIMAGE");
-        } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equalsIgnoreCase(entityName)) {
+        } else if (EntityType.STAFF.getDisplayName().equalsIgnoreCase(entityName)) {
             this.context.authenticatedUser().validateHasReadPermission("STAFFIMAGE");
         }
 
         final ImageData imageData = this.imageReadPlatformService.retrieveImage(entityName, entityId);
 
-        final ResponseBuilder response = Response.ok(imageData.getContentOfSize(maxWidth, maxHeight));
-        String dispositionType = "inline_octet".equals(output) ? "inline" : "attachment";
-        response.header("Content-Disposition", dispositionType + "; filename=\"" + imageData.getEntityDisplayName()
-                + IMAGE_FILE_EXTENSION.JPEG + "\"");
+        ResponseBuilder response = Response.ok(imageData.getContentOfSize(maxWidth, maxHeight));
+        final String dispositionType = "inline_octet".equals(output) ? "inline" : "attachment";
+        response.header("Content-Disposition",
+                dispositionType + "; filename=\"" + imageData.getEntityDisplayName() + IMAGE_FILE_EXTENSION.JPEG + "\"");
 
         // TODO: Need a better way of determining image type
 
         response.header("Content-Type", imageData.contentType());
+        if (imageData.getGeoTag() != null) {
+            response = response.header("Geo-Tag", imageData.getGeoTag().toString());
+        }
         return response.build();
     }
 
@@ -180,14 +248,15 @@ public class ImagesApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String updateClientImage(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId,
             @HeaderParam("Content-Length") final Long fileSize, @FormDataParam("file") final InputStream inputStream,
-            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart) {
-        return addNewClientImage(entityName, entityId, fileSize, inputStream, fileDetails, bodyPart);
+            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart,
+            @HeaderParam("Geo-Tag") final String geoTagHeaderParam) {
+        return addNewClientImage(entityName, entityId, fileSize, inputStream, fileDetails, bodyPart, geoTagHeaderParam);
     }
 
     /**
      * This method is added only for consistency with other URL patterns and for
      * maintaining consistency of usage of the HTTP "verb" at the client side
-     * 
+     *
      * Upload image as a Data URL (essentially a base64 encoded stream)
      */
     @PUT
@@ -202,30 +271,8 @@ public class ImagesApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String deleteClientImage(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId) {
-        validateEntityTypeforImage(entityName);
         this.imageWritePlatformService.deleteImage(entityName, entityId);
         return this.toApiJsonSerializer.serialize(new CommandProcessingResult(entityId));
-    }
-
-    /*** Entities for document Management **/
-    public static enum ENTITY_TYPE_FOR_IMAGES {
-        STAFF, CLIENTS;
-
-        @Override
-        public String toString() {
-            return name().toString().toLowerCase();
-        }
-    }
-
-    private void validateEntityTypeforImage(final String entityName) {
-        if (!checkValidEntityType(entityName)) { throw new InvalidEntityTypeForImageManagementException(entityName); }
-    }
-
-    private static boolean checkValidEntityType(final String entityType) {
-        for (final ENTITY_TYPE_FOR_IMAGES entities : ENTITY_TYPE_FOR_IMAGES.values()) {
-            if (entities.name().equalsIgnoreCase(entityType)) { return true; }
-        }
-        return false;
     }
 
 }

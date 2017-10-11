@@ -20,6 +20,7 @@ package org.apache.fineract.organisation.staff.service;
 
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.organisation.staff.data.StaffData;
 
 public interface StaffReadPlatformService {
@@ -36,5 +37,7 @@ public interface StaffReadPlatformService {
      */
     Collection<StaffData> retrieveAllStaffInOfficeAndItsParentOfficeHierarchy(Long officeId, boolean loanOfficersOnly);
 
-    Collection<StaffData> retrieveAllStaff(String sqlSearch, Long officeId, boolean loanOfficersOnly, String status);
+    Page<StaffData> retrieveAllStaff(String sqlSearch, Long officeId, boolean loanOfficersOnly, String status, Integer offset, Integer limit);
+    
+    Object[] hasAssociatedItems(final Long staffId);
 }

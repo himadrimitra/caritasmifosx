@@ -25,7 +25,7 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 
 /**
  * Immutable data object to represent aspects of a loan schedule such as:
- * 
+ *
  * <ul>
  * <li>Totals information - the totals for each part of repayment schedule
  * monitored.</li>
@@ -54,6 +54,7 @@ public class LoanScheduleData {
     private final BigDecimal totalPaidInAdvance;
     private final BigDecimal totalPaidLate;
     private final BigDecimal totalOutstanding;
+    private final BigDecimal totalAdvancePayment;
 
     /**
      * <code>periods</code> is collection of data objects containing specific
@@ -69,7 +70,7 @@ public class LoanScheduleData {
             final BigDecimal totalInterestCharged, final BigDecimal totalFeeChargesCharged, final BigDecimal totalPenaltyChargesCharged,
             final BigDecimal totalWaived, final BigDecimal totalWrittenOff, final BigDecimal totalRepaymentExpected,
             final BigDecimal totalRepayment, final BigDecimal totalPaidInAdvance, final BigDecimal totalPaidLate,
-            final BigDecimal totalOutstanding) {
+            final BigDecimal totalOutstanding, final BigDecimal totalAdvancePayment) {
         this.currency = currency;
         this.periods = periods;
         this.loanTermInDays = loanTermInDays;
@@ -86,6 +87,7 @@ public class LoanScheduleData {
         this.totalPaidInAdvance = totalPaidInAdvance;
         this.totalPaidLate = totalPaidLate;
         this.totalOutstanding = totalOutstanding;
+        this.totalAdvancePayment = totalAdvancePayment;
     }
 
     public LoanScheduleData(final CurrencyData currency, final Collection<LoanSchedulePeriodData> periods, final Integer loanTermInDays,
@@ -107,13 +109,34 @@ public class LoanScheduleData {
         this.totalPaidInAdvance = null;
         this.totalPaidLate = null;
         this.totalOutstanding = null;
+        this.totalAdvancePayment = null;
+    }
+
+    public LoanScheduleData() {
+        this.currency = null;
+        this.periods = null;
+        this.loanTermInDays = null;
+        this.totalPrincipalDisbursed = null;
+        this.totalPrincipalExpected = null;
+        this.totalPrincipalPaid = null;
+        this.totalInterestCharged = null;
+        this.totalFeeChargesCharged = null;
+        this.totalPenaltyChargesCharged = null;
+        this.totalWaived = null;
+        this.totalWrittenOff = null;
+        this.totalRepaymentExpected = null;
+        this.totalRepayment = null;
+        this.totalPaidInAdvance = null;
+        this.totalPaidLate = null;
+        this.totalOutstanding = null;
+        this.totalAdvancePayment = null;
     }
 
     public Collection<LoanSchedulePeriodData> getPeriods() {
         return this.periods;
     }
 
-    public void updateFuturePeriods(Collection<LoanSchedulePeriodData> futurePeriods) {
+    public void updateFuturePeriods(final Collection<LoanSchedulePeriodData> futurePeriods) {
         this.futurePeriods = futurePeriods;
     }
 }

@@ -21,9 +21,9 @@ package org.apache.fineract.portfolio.loanaccount.domain;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.CreocoreLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.EarlyPaymentLoanRepaymentScheduleTransactionProcessor;
+import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.FineractStyleLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.HeavensFamilyLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.InterestPrincipalPenaltyFeesOrderLoanRepaymentScheduleTransactionProcessor;
-import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.MifosStyleLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.NewStrategyTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.OverDueAndDuePenaltiesFeeInterestPrincipalScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.PrincipalInterestPenaltyFeesOrderLoanRepaymentScheduleTransactionProcessor;
@@ -41,8 +41,8 @@ public class LoanRepaymentScheduleTransactionProcessorFactory {
 
         if (transactionProcessingStrategy != null) {
 
-            if (transactionProcessingStrategy.isStandardMifosStrategy()) {
-                processor = new MifosStyleLoanRepaymentScheduleTransactionProcessor();
+            if (transactionProcessingStrategy.isStandardStrategy()) {
+                processor = new FineractStyleLoanRepaymentScheduleTransactionProcessor();
             }
 
             if (transactionProcessingStrategy.isHeavensfamilyStrategy()) {
@@ -68,10 +68,11 @@ public class LoanRepaymentScheduleTransactionProcessorFactory {
             if (transactionProcessingStrategy.isInterestPrincipalPenaltiesFeesOrderStrategy()) {
                 processor = new InterestPrincipalPenaltyFeesOrderLoanRepaymentScheduleTransactionProcessor();
             }
+
             if (transactionProcessingStrategy.isOverdueDuePenaltiesFeeInterestPrincipal()) {
                 processor = new OverDueAndDuePenaltiesFeeInterestPrincipalScheduleTransactionProcessor();
             }
-            
+
             if (transactionProcessingStrategy.isNewStrategy()) {
                 processor = new NewStrategyTransactionProcessor();
             }

@@ -21,8 +21,10 @@ package org.apache.fineract.portfolio.loanaccount.domain;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -48,11 +50,56 @@ public class LoanRepositoryWrapper {
         return loan;
     }
 
-    public Collection<Loan> findActiveLoansByLoanIdAndGroupId(Long clientId, Long groupId) {
+    public Loan findOneWithNotFoundDetectionAndLazyInitialize(final Long id) {
+        final Loan loan = this.repository.findOne(id);
+        if (loan == null) { throw new LoanNotFoundException(id); }
+        initializeLazyEntities(loan);
+        return loan;
+    }
+
+    private void initializeLazyEntities(final Loan loan) {
+        Hibernate.initialize(loan.getLoanPurpose());
+        Hibernate.initialize(loan.getLoanOfficerHistory());
+        Hibernate.initialize(loan.getFund());
+        Hibernate.initialize(loan.getCollateral());
+    }
+
+    public Collection<Loan> findActiveLoansByLoanIdAndGroupId(final Long clientId, final Long groupId) {
         final Collection<Integer> loanStatuses = new ArrayList<>(Arrays.asList(LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(),
                 LoanStatus.APPROVED.getValue(), LoanStatus.ACTIVE.getValue(), LoanStatus.OVERPAID.getValue()));
         final Collection<Loan> loans = this.repository.findByClientIdAndGroupIdAndLoanStatus(clientId, groupId, loanStatuses);
         return loans;
+    }
+
+    public void save(final Loan loan) {
+        this.repository.save(loan);
+    }
+
+    public List<Loan> findLoanByClientId(final Long clientId) {
+        final List<Loan> loans = this.repository.findLoanByClientId(clientId);
+        for (final Loan loan : loans) {
+            initializeLazyEntities(loan);
+        }
+        return loans;
+    }
+
+    public List<Loan> findByClientIdAndGroupId(final Long clientId, final Long groupId) {
+        final List<Loan> loans = this.repository.findByClientIdAndGroupId(clientId, groupId);
+        for (final Loan loan : loans) {
+            initializeLazyEntities(loan);
+        }
+        return loans;
+    }
+
+    public Loan getActiveLoanByAccountNumber(final String accountNumber) {
+        return this.repository.findActiveLoanByAccountNumber(accountNumber);
+    }
+
+    public Loan findOneWithNotFoundDetectionAndLazyInitialize(final String accountNumber) {
+        final Loan loan = this.repository.findByAccountNumber(accountNumber);
+        if (loan == null) { throw new LoanNotFoundException(accountNumber); }
+        initializeLazyEntities(loan);
+        return loan;
     }
 
 }

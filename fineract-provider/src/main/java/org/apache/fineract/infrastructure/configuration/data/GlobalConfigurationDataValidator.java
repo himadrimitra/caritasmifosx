@@ -19,7 +19,9 @@
 package org.apache.fineract.infrastructure.configuration.data;
 
 import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.CONFIGURATION_RESOURCE_NAME;
+import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.DATE_VALUE;
 import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.ENABLED;
+import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.STRING_VALUE_CONFIGURATIONS;
 import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.UPDATE_CONFIGURATION_DATA_PARAMETERS;
 import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.VALUE;
 
@@ -29,12 +31,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -45,13 +49,16 @@ import com.google.gson.reflect.TypeToken;
 public class GlobalConfigurationDataValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
-    public GlobalConfigurationDataValidator(final FromJsonHelper fromApiJsonHelper) {
+    public GlobalConfigurationDataValidator(final FromJsonHelper fromApiJsonHelper,
+            final ConfigurationDomainService configurationDomainService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.configurationDomainService = configurationDomainService;
     }
 
-    public void validateForUpdate(final JsonCommand command) {
+    public void validateForUpdate(final String configurationName, final JsonCommand command) {
         final String json = command.json();
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
@@ -68,11 +75,35 @@ public class GlobalConfigurationDataValidator {
         }
 
         if (this.fromApiJsonHelper.parameterExists(VALUE, element)) {
-            final Long valueStr = this.fromApiJsonHelper.extractLongNamed(VALUE, element);
-            baseDataValidator.reset().parameter(ENABLED).value(valueStr).zeroOrPositiveAmount();
+            if (!STRING_VALUE_CONFIGURATIONS.contains(configurationName)) {
+                final Long valueStr = this.fromApiJsonHelper.extractLongNamed(VALUE, element);
+                baseDataValidator.reset().parameter(ENABLED).value(valueStr).zeroOrPositiveAmount();
+                if (valueStr != null) {
+                    validateForCgtDays(configurationName, valueStr, baseDataValidator);
+                }
+            }
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(DATE_VALUE, element)) {
+            final LocalDate dateValue = this.fromApiJsonHelper.extractLocalDateNamed(DATE_VALUE, element);
+            baseDataValidator.reset().parameter(DATE_VALUE).value(dateValue).notNull();
         }
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
+    }
+
+    private void validateForCgtDays(final String configurationName, final Long value, final DataValidatorBuilder baseDataValidator) {
+        if (configurationName.equals("min-cgt-days")) {
+            final Long maximumCgtDays = this.configurationDomainService.getMaxCgtDays();
+            if (maximumCgtDays != null) {
+                baseDataValidator.reset().parameter(VALUE).value(value).notGreaterThanMax(maximumCgtDays.intValue());
+            }
+        } else if (configurationName.equals("max-cgt-days")) {
+            final Long minumumCgtDays = this.configurationDomainService.getMinCgtDays();
+            if (minumumCgtDays != null) {
+                baseDataValidator.reset().parameter(VALUE).value(value).notLessThanMin(minumumCgtDays.intValue());
+            }
+        }
     }
 }

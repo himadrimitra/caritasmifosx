@@ -20,116 +20,92 @@ package org.apache.fineract.organisation.teller.data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Collection;
+
+import org.apache.fineract.infrastructure.core.service.Page;
 
 public final class CashierTransactionsWithSummaryData implements Serializable {
-	
-	private final BigDecimal sumCashAllocation;
-	private final BigDecimal sumInwardCash;
-	private final BigDecimal sumOutwardCash;
-	private final BigDecimal sumCashSettlement;
-	private final BigDecimal netCash;
-	private final String officeName;
-	private final long tellerId;
-	private final String tellerName;
-	private final long cashierId;
-	private final String cashierName;
 
-    private final Collection<CashierTransactionData> cashierTransactions;
+    private final BigDecimal sumCashAllocation;
+    private final BigDecimal sumInwardCash;
+    private final BigDecimal sumOutwardCash;
+    private final BigDecimal sumCashSettlement;
+    private final BigDecimal netCash;
+    private final String officeName;
+    private final long tellerId;
+    private final String tellerName;
+    private final long cashierId;
+    private final String cashierName;
 
-    private CashierTransactionsWithSummaryData(
-    		final Collection<CashierTransactionData> cashierTransactions, 
-    		final BigDecimal sumCashAllocation,
-    		final BigDecimal sumInwardCash,
-    		final BigDecimal sumOutwardCash,
-    		final BigDecimal sumCashSettlement,
-    		final BigDecimal netCash,
-    		final String officeName,
-    		final Long tellerId,
-    		final String tellerName,
-    		final Long cashierId,
-    		final String cashierName
-    		) {
-    	this.cashierTransactions = cashierTransactions;
-    	this.sumCashAllocation = sumCashAllocation;
-    	this.sumInwardCash = sumInwardCash;
-    	this.sumOutwardCash = sumOutwardCash;
-    	this.sumCashSettlement = sumCashSettlement;
-    	this.netCash = netCash;
-    	this.officeName = officeName;
-    	this.tellerId = tellerId;
-    	this.tellerName = tellerName;
-    	this.cashierId = cashierId;
-    	this.cashierName = cashierName;
+    private final Page<CashierTransactionData> cashierTransactions;
+
+    private CashierTransactionsWithSummaryData(final Page<CashierTransactionData> cashierTransactions, final BigDecimal sumCashAllocation,
+            final BigDecimal sumInwardCash, final BigDecimal sumOutwardCash, final BigDecimal sumCashSettlement, final BigDecimal netCash,
+            final String officeName, final Long tellerId, final String tellerName, final Long cashierId, final String cashierName) {
+        this.cashierTransactions = cashierTransactions;
+        this.sumCashAllocation = sumCashAllocation;
+        this.sumInwardCash = sumInwardCash;
+        this.sumOutwardCash = sumOutwardCash;
+        this.sumCashSettlement = sumCashSettlement;
+        this.netCash = netCash;
+        this.officeName = officeName;
+        this.tellerId = tellerId;
+        this.tellerName = tellerName;
+        this.cashierId = cashierId;
+        this.cashierName = cashierName;
     }
 
-    public static CashierTransactionsWithSummaryData instance(
-    		final Collection<CashierTransactionData> cashierTransactions, 
-    		final BigDecimal sumCashAllocation,
-    		final BigDecimal sumInwardCash,
-    		final BigDecimal sumOutwardCash,
-    		final BigDecimal sumCashSettlement,
-    		final String officeName,
-    		final Long tellerId,
-    		final String tellerName,
-    		final Long cashierId,
-    		final String cashierName
-    		) {
-    	
-    	final BigDecimal netCash = 
-    			sumCashAllocation.add(sumInwardCash).
-    				subtract(sumOutwardCash).
-    				subtract(sumCashSettlement); 
-        return new CashierTransactionsWithSummaryData(
-        		cashierTransactions, 
-        		sumCashAllocation,
-        		sumInwardCash,
-        		sumOutwardCash,
-        		sumCashSettlement, netCash,
-        		officeName, tellerId, tellerName, cashierId, cashierName);
+    public static CashierTransactionsWithSummaryData instance(final Page<CashierTransactionData> cashierTransactions,
+            final BigDecimal sumCashAllocation, final BigDecimal sumInwardCash, final BigDecimal sumOutwardCash,
+            final BigDecimal sumCashSettlement, final String officeName, final Long tellerId, final String tellerName, final Long cashierId,
+            final String cashierName) {
+
+        final BigDecimal netCash = sumCashAllocation.add(sumInwardCash).subtract(sumOutwardCash).subtract(sumCashSettlement);
+        return new CashierTransactionsWithSummaryData(cashierTransactions, sumCashAllocation, sumInwardCash, sumOutwardCash,
+                sumCashSettlement, netCash, officeName, tellerId, tellerName, cashierId, cashierName);
     }
 
-	public BigDecimal getSumCashAllocation() {
-		return sumCashAllocation;
-	}
+    public BigDecimal getSumCashAllocation() {
+        return this.sumCashAllocation;
+    }
 
-	public BigDecimal getSumInwardCash() {
-		return sumInwardCash;
-	}
+    public BigDecimal getSumInwardCash() {
+        return this.sumInwardCash;
+    }
 
-	public BigDecimal getSumOutwardCash() {
-		return sumOutwardCash;
-	}
+    public BigDecimal getSumOutwardCash() {
+        return this.sumOutwardCash;
+    }
 
-	public BigDecimal getSumCashSettlement() {
-		return sumCashSettlement;
-	}
+    public BigDecimal getSumCashSettlement() {
+        return this.sumCashSettlement;
+    }
 
-	public BigDecimal getNetCash() {
-		return netCash;
-	}
-	
-	public String getOfficeName() {
-		return officeName;
-	}
-	
-	public Long getTellerId() {
-		return tellerId;
-	}
-	
-	public String getTellerName() {
-		return tellerName;
-	}
+    public BigDecimal getNetCash() {
+        return this.netCash;
+    }
 
-	public Long getCashierId() {
-		return cashierId;
-	}
-	
-	public String getCashierName() {
-		return cashierName;
-	}
-	public Collection<CashierTransactionData> getCashierTransactions() {
-		return cashierTransactions;
-	}
-    
+    public String getOfficeName() {
+        return this.officeName;
+    }
+
+    public Long getTellerId() {
+        return this.tellerId;
+    }
+
+    public String getTellerName() {
+        return this.tellerName;
+    }
+
+    public Long getCashierId() {
+        return this.cashierId;
+    }
+
+    public String getCashierName() {
+        return this.cashierName;
+    }
+
+    public Page<CashierTransactionData> getCashierTransactions() {
+        return this.cashierTransactions;
+    }
+
 }

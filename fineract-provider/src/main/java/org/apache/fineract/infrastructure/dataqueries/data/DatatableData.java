@@ -25,24 +25,60 @@ import java.util.List;
  */
 public class DatatableData {
 
+    private final Integer id;
     @SuppressWarnings("unused")
     private final String applicationTableName;
     @SuppressWarnings("unused")
     private final String registeredTableName;
-    @SuppressWarnings("unused")
     private final List<ResultsetColumnHeaderData> columnHeaderData;
+    private final Long scopingCriteriaEnum;
+    private final List<ScopeCriteriaData> scopeCriteriaData;
+    private final String registeredTableDisplayName;
+    @SuppressWarnings("unused")
+    private final List<SectionData> sectionDataList;
 
-
-    public static DatatableData create(final String applicationTableName, final String registeredTableName,
-            final List<ResultsetColumnHeaderData> columnHeaderData) {
-        return new DatatableData(applicationTableName, registeredTableName, columnHeaderData);
+    public static DatatableData create(final Integer id, final String applicationTableName, final String registeredTableName,
+            final List<ResultsetColumnHeaderData> columnHeaderData, final Long scopingCriteriaEnum,
+            final List<ScopeCriteriaData> scopeCriteriaData, final String registeredTableDisplayName) {
+        final List<SectionData> sectionDataList = null;
+        return new DatatableData(id, applicationTableName, registeredTableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData,
+                registeredTableDisplayName, sectionDataList);
     }
 
-    private DatatableData(final String applicationTableName, final String registeredTableName,
-            final List<ResultsetColumnHeaderData> columnHeaderData) {
+    private DatatableData(final Integer id, final String applicationTableName, final String registeredTableName,
+            final List<ResultsetColumnHeaderData> columnHeaderData, final Long scopingCriteriaEnum,
+            final List<ScopeCriteriaData> scopeCriteriaData, final String registeredTableDisplayName,
+            final List<SectionData> sectionDataList) {
+        this.id = id;
         this.applicationTableName = applicationTableName;
         this.registeredTableName = registeredTableName;
         this.columnHeaderData = columnHeaderData;
+        this.scopingCriteriaEnum = scopingCriteriaEnum;
+        this.scopeCriteriaData = scopeCriteriaData;
+        this.registeredTableDisplayName = registeredTableDisplayName;
+        this.sectionDataList = sectionDataList;
+    }
 
+    public static DatatableData instance(final Integer id, final String applicationTableName, final String registeredTableName,
+            final List<ResultsetColumnHeaderData> columnHeaderData, final Long scopingCriteriaEnum,
+            final List<ScopeCriteriaData> scopeCriteriaData, final String registeredTableDisplayName,
+            final List<SectionData> sectionDataList) {
+        return new DatatableData(id, applicationTableName, registeredTableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData,
+                registeredTableDisplayName, sectionDataList);
+    }
+
+    public static DatatableData instance(final String applicationTableName, final String registeredTableName,
+            final String registeredTableDisplayName) {
+        final Integer id = null;
+        final List<ResultsetColumnHeaderData> columnHeaderData = null;
+        final List<ScopeCriteriaData> scopeCriteriaData = null;
+        final Long scopingCriteriaEnum = null;
+        final List<SectionData> sectionDataList = null;
+        return new DatatableData(id, applicationTableName, registeredTableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData,
+                registeredTableDisplayName, sectionDataList);
+    }
+
+    public Integer getId() {
+        return this.id;
     }
 }

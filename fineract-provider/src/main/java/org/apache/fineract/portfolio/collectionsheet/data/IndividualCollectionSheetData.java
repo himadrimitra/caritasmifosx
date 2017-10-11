@@ -20,7 +20,7 @@ package org.apache.fineract.portfolio.collectionsheet.data;
 
 import java.util.Collection;
 
-import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.joda.time.LocalDate;
 
 /**
@@ -34,15 +34,15 @@ public class IndividualCollectionSheetData {
     private final Collection<IndividualClientData> clients;
 
     @SuppressWarnings("unused")
-    private final Collection<CodeValueData> paymentTypeOptions;
+    private final Collection<PaymentTypeData> paymentTypeOptions;
 
     public static IndividualCollectionSheetData instance(final LocalDate date, final Collection<IndividualClientData> clients,
-            final Collection<CodeValueData> paymentTypeOptions) {
+            final Collection<PaymentTypeData> paymentTypeOptions) {
         return new IndividualCollectionSheetData(date, clients, paymentTypeOptions);
     }
 
     private IndividualCollectionSheetData(final LocalDate dueDate, final Collection<IndividualClientData> clients,
-            final Collection<CodeValueData> paymentTypeOptions) {
+            final Collection<PaymentTypeData> paymentTypeOptions) {
         this.dueDate = dueDate;
         this.clients = clients;
         this.paymentTypeOptions = paymentTypeOptions;

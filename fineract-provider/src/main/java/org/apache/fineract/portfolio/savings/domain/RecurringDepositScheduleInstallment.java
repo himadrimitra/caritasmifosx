@@ -32,8 +32,14 @@ import javax.persistence.TemporalType;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
+import org.apache.fineract.portfolio.calendar.data.CalendarData;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
+
+import com.finflux.common.util.WorkingDaysAndHolidaysUtil;
 
 @Entity
 @Table(name = "m_mandatory_savings_schedule")
@@ -52,7 +58,11 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
 
     @Temporal(TemporalType.DATE)
     @Column(name = "duedate", nullable = false)
-    private final Date dueDate;
+    private Date dueDate;
+
+    @Temporal(TemporalType.DATE)
+    @Column(name = "actualduedate", nullable = false)
+    private Date actualDueDate;
 
     @Column(name = "deposit_amount", scale = 6, precision = 19, nullable = true)
     private BigDecimal depositAmount;
@@ -74,12 +84,13 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
     private Date obligationsMetOnDate;
 
     /**
-     * 
+     *
      */
     protected RecurringDepositScheduleInstallment() {
         this.installmentNumber = null;
         this.fromDate = null;
         this.dueDate = null;
+        this.actualDueDate = null;
         this.obligationsMet = false;
     }
 
@@ -95,14 +106,15 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
      * @param obligationsMet
      * @param obligationsMetOnDate
      */
-    private RecurringDepositScheduleInstallment(final RecurringDepositAccount account, final Integer installmentNumber,
-            final Date fromDate, final Date dueDate, final BigDecimal depositAmount, final BigDecimal depositAmountCompleted,
+    private RecurringDepositScheduleInstallment(final RecurringDepositAccount account, final Integer installmentNumber, final Date fromDate,
+            final Date dueDate, final Date actualDueDate, final BigDecimal depositAmount, final BigDecimal depositAmountCompleted,
             final BigDecimal totalPaidInAdvance, final BigDecimal totalPaidLate, final boolean obligationsMet,
             final Date obligationsMetOnDate) {
         this.account = account;
         this.installmentNumber = installmentNumber;
         this.fromDate = fromDate;
         this.dueDate = dueDate;
+        this.actualDueDate = actualDueDate;
         this.depositAmount = defaultToNullIfZero(depositAmount);
         this.depositAmountCompleted = depositAmountCompleted;
         this.totalPaidInAdvance = totalPaidInAdvance;
@@ -112,15 +124,15 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
     }
 
     public static RecurringDepositScheduleInstallment from(final RecurringDepositAccount account, final Integer installmentNumber,
-            final Date fromDate, final Date dueDate, final BigDecimal depositAmount, final BigDecimal depositAmountCompleted,
-            final BigDecimal totalPaidInAdvance, final BigDecimal totalPaidLate, final boolean obligationsMet,
-            final Date obligationsMetOnDate) {
-        return new RecurringDepositScheduleInstallment(account, installmentNumber, fromDate, dueDate, depositAmount,
+            final Date fromDate, final Date dueDate, final Date actualDueDate, final BigDecimal depositAmount,
+            final BigDecimal depositAmountCompleted, final BigDecimal totalPaidInAdvance, final BigDecimal totalPaidLate,
+            final boolean obligationsMet, final Date obligationsMetOnDate) {
+        return new RecurringDepositScheduleInstallment(account, installmentNumber, fromDate, dueDate, actualDueDate, depositAmount,
                 depositAmountCompleted, totalPaidInAdvance, totalPaidLate, obligationsMet, obligationsMetOnDate);
     }
 
     public static RecurringDepositScheduleInstallment installment(final RecurringDepositAccount account, final Integer installmentNumber,
-            final Date dueDate, final BigDecimal depositAmount) {
+            final Date dueDate, final Date actualDueDate, final BigDecimal depositAmount) {
 
         final Date fromDate = null;
         final BigDecimal depositAmountCompleted = null;
@@ -129,7 +141,7 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
         final boolean obligationsMet = false;
         final Date obligationsMetOnDate = null;
 
-        return new RecurringDepositScheduleInstallment(account, installmentNumber, fromDate, dueDate, depositAmount,
+        return new RecurringDepositScheduleInstallment(account, installmentNumber, fromDate, dueDate, actualDueDate, depositAmount,
                 depositAmountCompleted, totalPaidInAdvance, totalPaidLate, obligationsMet, obligationsMetOnDate);
     }
 
@@ -237,8 +249,34 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
         this.obligationsMetOnDate = null;
     }
 
-    public void updateDepositAmountAndResetDerivedFields(BigDecimal newDepositAmount) {
+    public void updateDepositAmountAndResetDerivedFields(final BigDecimal newDepositAmount) {
         this.depositAmount = newDepositAmount;
-        this.resetDerivedFields();
+        resetDerivedFields();
+    }
+
+    public LocalDate getDueDate() {
+        return new LocalDate(this.dueDate);
+    }
+
+    public LocalDate getLocalDateActualDueDate() {
+        return new LocalDate(this.actualDueDate);
+    }
+
+    public void setDueDate(final Date dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public void setActualDueDate(final Date actualDueDate) {
+        this.actualDueDate = actualDueDate;
+    }
+
+    public AdjustedDateDetailsDTO updateDueDateBasedOnWorkingDaysAndHolidays(AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final HolidayDetailDTO holidayDetailDTO, final PeriodFrequencyType frequency, final Integer recurringEvery) {
+        final CalendarData calendarData = null;
+        adjustedDateDetailsDTO = WorkingDaysAndHolidaysUtil.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO,
+                holidayDetailDTO, frequency, recurringEvery, calendarData);
+        setActualDueDate(adjustedDateDetailsDTO.getChangedActualRepaymentDate().toDate());
+        setDueDate(adjustedDateDetailsDTO.getChangedScheduleDate().toDate());
+        return adjustedDateDetailsDTO;
     }
 }

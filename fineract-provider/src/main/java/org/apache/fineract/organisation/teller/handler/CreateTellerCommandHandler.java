@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.fineract.organisation.teller.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
  * @since 2.0.0
  */
 @Service
+@CommandType(entity = "TELLER", action = "CREATE")
 public class CreateTellerCommandHandler implements NewCommandSourceHandler {
 
     private final TellerWritePlatformService writePlatformService;

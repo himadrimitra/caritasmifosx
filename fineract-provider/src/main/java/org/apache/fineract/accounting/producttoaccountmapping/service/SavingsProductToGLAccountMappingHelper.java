@@ -21,14 +21,15 @@ package org.apache.fineract.accounting.producttoaccountmapping.service;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_SAVINGS;
 import org.apache.fineract.accounting.common.AccountingConstants.SAVINGS_PRODUCT_ACCOUNTING_PARAMS;
+import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountRepository;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountRepositoryWrapper;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountType;
 import org.apache.fineract.accounting.producttoaccountmapping.domain.PortfolioProductType;
 import org.apache.fineract.accounting.producttoaccountmapping.domain.ProductToGLAccountMappingRepository;
+import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
@@ -45,9 +46,9 @@ public class SavingsProductToGLAccountMappingHelper extends ProductToGLAccountMa
     public SavingsProductToGLAccountMappingHelper(final GLAccountRepository glAccountRepository,
             final ProductToGLAccountMappingRepository glAccountMappingRepository, final FromJsonHelper fromApiJsonHelper,
             final ChargeRepositoryWrapper chargeRepositoryWrapper, final GLAccountRepositoryWrapper accountRepositoryWrapper,
-            final PaymentTypeRepositoryWrapper paymentTypeRepositoryWrapper) {
+            final PaymentTypeRepositoryWrapper paymentTypeRepositoryWrapper,final CodeValueRepositoryWrapper codeValueRepository) {
         super(glAccountRepository, glAccountMappingRepository, fromApiJsonHelper, chargeRepositoryWrapper, accountRepositoryWrapper,
-                paymentTypeRepositoryWrapper);
+                paymentTypeRepositoryWrapper, codeValueRepository);
     }
 
     /*** Set of abstractions for saving Saving Products to GL Account Mappings ***/
@@ -98,6 +99,12 @@ public class SavingsProductToGLAccountMappingHelper extends ProductToGLAccountMa
                 GLAccountType.LIABILITY, PortfolioProductType.SAVING);
     }
 
+    public void createOrmergeSavingsToLiabilityAccountMappingChanges(final JsonElement element, final String paramName, final Long productId,
+            final int accountTypeId, final Map<String, Object> changes) {
+        createOrmergeProductToAccountMappingChanges(element, paramName, productId, accountTypeId, changes,
+                GLAccountType.LIABILITY, PortfolioProductType.SAVING);
+    }
+    
     /*** Abstractions for payments channel related to savings products ***/
 
     public void savePaymentChannelToFundSourceMappings(final JsonCommand command, final JsonElement element, final Long productId,
@@ -222,6 +229,9 @@ public class SavingsProductToGLAccountMappingHelper extends ProductToGLAccountMa
                 mergeSavingsToLiabilityAccountMappingChanges(element, SAVINGS_PRODUCT_ACCOUNTING_PARAMS.TRANSFERS_SUSPENSE.getValue(),
                         savingsProductId, CASH_ACCOUNTS_FOR_SAVINGS.TRANSFERS_SUSPENSE.getValue(),
                         CASH_ACCOUNTS_FOR_SAVINGS.TRANSFERS_SUSPENSE.toString(), changes);
+                createOrmergeSavingsToLiabilityAccountMappingChanges(element, SAVINGS_PRODUCT_ACCOUNTING_PARAMS.ESCHEAT_LIABILITY.getValue(),
+                        savingsProductId, CASH_ACCOUNTS_FOR_SAVINGS.ESCHEAT_LIABILITY.getValue(),
+                         changes);
             break;
             case ACCRUAL_PERIODIC:
             break;

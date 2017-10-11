@@ -18,26 +18,37 @@
  */
 package org.apache.fineract.useradministration.domain;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Cacheable;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.useradministration.data.RoleBasedLimitData;
 import org.apache.fineract.useradministration.data.RoleData;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "Role")
 @Table(name = "m_role", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "unq_name") })
 public class Role extends AbstractPersistable<Long> {
 
@@ -51,8 +62,13 @@ public class Role extends AbstractPersistable<Long> {
     private Boolean disabled;
 
     @ManyToMany(fetch = FetchType.EAGER)
+    @Cache(usage = CacheConcurrencyStrategy.READ_ONLY, region = "Permission")
     @JoinTable(name = "m_role_permission", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
     private final Set<Permission> permissions = new HashSet<>();
+
+    @OrderBy(value = "id")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "role", orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<RoleBasedLimit> roleBasedLimits = new ArrayList<>();
 
     public static Role fromJson(final JsonCommand command) {
         final String name = command.stringValueOfParameterNamed("name");
@@ -126,7 +142,13 @@ public class Role extends AbstractPersistable<Long> {
     }
 
     public RoleData toData() {
-        return new RoleData(getId(), this.name, this.description, this.disabled);
+        final List<RoleBasedLimitData> roleBasedLimitDatas = new ArrayList<>();
+        if (this.roleBasedLimits != null && !this.roleBasedLimits.isEmpty()) {
+            for (final RoleBasedLimit roleBasedLimit : this.roleBasedLimits) {
+                roleBasedLimitDatas.add(roleBasedLimit.toData());
+            }
+        }
+        return new RoleData(getId(), this.name, this.description, this.disabled, roleBasedLimitDatas);
     }
 
     public void disableRole() {
@@ -144,4 +166,13 @@ public class Role extends AbstractPersistable<Long> {
     public Boolean isEnabled() {
         return this.disabled;
     }
+
+    public List<RoleBasedLimit> getRoleBasedLimits() {
+        return this.roleBasedLimits;
+    }
+
+    public void setRoleBasedLimits(final List<RoleBasedLimit> roleBasedLimits) {
+        this.roleBasedLimits = roleBasedLimits;
+    }
+
 }

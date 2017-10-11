@@ -16,12 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
-
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/.
- */package org.apache.fineract.portfolio.search;
+package org.apache.fineract.portfolio.search;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -31,7 +26,7 @@ public class SearchConstants {
     public static enum SEARCH_RESPONSE_PARAMETERS {
         ENTITY_ID("entityId"), ENTITY_ACCOUNT_NO("entityAccountNo"), ENTITY_EXTERNAL_ID("entityExternalId"), ENTITY_NAME("entityName"), ENTITY_TYPE(
                 "entityType"), PARENT_ID("parentId"), PARENT_NAME("parentName"), ENTITY_MOBILE_NO("entityMobileNo"), ENTITY_STATUS(
-                "entityStatus");
+                "entityStatus"), GROUP_NAME("groupName"), CENTER_NAME("centerName"), OFFICE_NAME("officeName");
 
         private final String value;
 
@@ -39,8 +34,7 @@ public class SearchConstants {
             this.value = value;
         }
 
-        @SuppressWarnings("unused")
-        private static final Set<String> values = new HashSet<String>();
+        private static final Set<String> values = new HashSet<>();
         static {
             for (final SEARCH_RESPONSE_PARAMETERS param : SEARCH_RESPONSE_PARAMETERS.values()) {
                 values.add(param.value);
@@ -62,7 +56,7 @@ public class SearchConstants {
     }
 
     public static enum SEARCH_SUPPORTED_PARAMETERS {
-        QUERY("query"), RESOURCE("resource");
+        QUERY("query"), RESOURCE("resource"),EXACTMATCH("exactMatch");
 
         private final String value;
 
@@ -70,8 +64,7 @@ public class SearchConstants {
             this.value = value;
         }
 
-        @SuppressWarnings("unused")
-        private static final Set<String> values = new HashSet<String>();
+        private static final Set<String> values = new HashSet<>();
         static {
             for (final SEARCH_SUPPORTED_PARAMETERS param : SEARCH_SUPPORTED_PARAMETERS.values()) {
                 values.add(param.value);
@@ -93,7 +86,8 @@ public class SearchConstants {
     }
 
     public static enum SEARCH_SUPPORTED_RESOURCES {
-        CLIENTS("clients"), GROUPS("groups"), LOANS("loans"), SAVINGS("savings"), CLIENTIDENTIFIERS("clientIdentifiers");
+        CLIENTS("clients"), GROUPS("groups"), VILLAGES("villages"), LOANS("loans"), SAVINGS("savings"), CLIENTIDENTIFIERS(
+                "clientIdentifiers"), PLEDGES("pledges"), STAFF("staff"), BANKSTATEMENT("bankstatement");
 
         private final String value;
 
@@ -101,8 +95,7 @@ public class SearchConstants {
             this.value = value;
         }
 
-        @SuppressWarnings("unused")
-        private static final Set<String> values = new HashSet<String>();
+        private static final Set<String> values = new HashSet<>();
         static {
             for (final SEARCH_SUPPORTED_RESOURCES param : SEARCH_SUPPORTED_RESOURCES.values()) {
                 values.add(param.value);
@@ -132,8 +125,7 @@ public class SearchConstants {
             this.value = value;
         }
 
-        @SuppressWarnings("unused")
-        private static final Set<String> values = new HashSet<String>();
+        private static final Set<String> values = new HashSet<>();
         static {
             for (final SEARCH_LOAN_DATE param : SEARCH_LOAN_DATE.values()) {
                 values.add(param.value);

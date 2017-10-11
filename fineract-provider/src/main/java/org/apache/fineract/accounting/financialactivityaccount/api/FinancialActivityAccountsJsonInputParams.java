@@ -25,7 +25,9 @@ import java.util.Set;
  * Enum of all parameters passed in while creating/updating a GL Account
  ***/
 public enum FinancialActivityAccountsJsonInputParams {
-    FINANCIAL_ACTIVITY_ID("financialActivityId"), GL_ACCOUNT_ID("glAccountId");
+    FINANCIAL_ACTIVITY_ID("financialActivityId"), GL_ACCOUNT_ID("glAccountId"), ADVANCED_FINANCIAL_ACTIVITY_MAPPING(
+            "advancedFinacialActivityMapping"), PAYMENT_TYPE_ACCOUNT_MAPPING("paymentTypeAccountMapping"), PAYMENT_TYPE_ID(
+                    "paymentTypeId"), DELETE("delete"), ID("id"), FINANCIAL_ACTIVITY_ACCOUNT_MAPPING("financialActivityaAccountmapping");
 
     private final String value;
 

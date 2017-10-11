@@ -47,7 +47,7 @@ public final class CodeCommandFromApiJsonDeserializer {
     /**
      * The parameters supported for this command.
      */
-    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("name"));
+    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("name", "parentId"));
     private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
@@ -69,6 +69,9 @@ public final class CodeCommandFromApiJsonDeserializer {
         final String name = this.fromApiJsonHelper.extractStringNamed("name", element);
         baseDataValidator.reset().parameter("name").value(name).notBlank().notExceedingLengthOf(100);
 
+        final Long parentId = this.fromApiJsonHelper.extractLongNamed("parentId", element);
+        baseDataValidator.reset().parameter("parentId").value(parentId).ignoreIfNull().longGreaterThanZero();
+
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
@@ -85,6 +88,10 @@ public final class CodeCommandFromApiJsonDeserializer {
         if (this.fromApiJsonHelper.parameterExists("name", element)) {
             final String name = this.fromApiJsonHelper.extractStringNamed("name", element);
             baseDataValidator.reset().parameter("name").value(name).notBlank().notExceedingLengthOf(100);
+        }
+        if (this.fromApiJsonHelper.parameterExists("parentId", element)) {
+            final Long parentId = this.fromApiJsonHelper.extractLongNamed("parentId", element);
+            baseDataValidator.reset().parameter("parentId").value(parentId).ignoreIfNull().longGreaterThanZero();
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

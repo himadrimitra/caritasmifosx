@@ -53,6 +53,8 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -63,11 +65,11 @@ import org.springframework.stereotype.Component;
 @Scope("singleton")
 public class GLAccountsApiResource {
 
-    private static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "name", "parentId", "glCode",
-            "disabled", "manualEntriesAllowed", "type", "usage", "description", "assetHeaderAccountOptions",
-            "liabilityHeaderAccountOptions", "equityHeaderAccountOptions", "incomeHeaderAccountOptions", "expenseHeaderAccountOptions",
-            "nameDecorated", "tagId", "allowedAssetsTagOptions", "allowedLiabilitiesTagOptions", "allowedEquityTagOptions",
-            "allowedIncomeTagOptions", "allowedExpensesTagOptions", "creditAccounts", "debitAccounts"));
+    private static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "name", "parentId", "glCode", "disabled",
+            "manualEntriesAllowed", "type", "usage", "description", "assetHeaderAccountOptions", "liabilityHeaderAccountOptions",
+            "equityHeaderAccountOptions", "incomeHeaderAccountOptions", "expenseHeaderAccountOptions", "nameDecorated", "tagId",
+            "allowedAssetsTagOptions", "allowedLiabilitiesTagOptions", "allowedEquityTagOptions", "allowedIncomeTagOptions",
+            "allowedExpensesTagOptions", "creditAccounts", "debitAccounts"));
 
     private final String resourceNameForPermission = "GLACCOUNT";
 
@@ -115,12 +117,22 @@ public class GLAccountsApiResource {
     public String retrieveAllAccounts(@Context final UriInfo uriInfo, @QueryParam("type") final Integer type,
             @QueryParam("searchParam") final String searchParam, @QueryParam("usage") final Integer usage,
             @QueryParam("manualEntriesAllowed") final Boolean manualEntriesAllowed, @QueryParam("disabled") final Boolean disabled,
-            @QueryParam("fetchRunningBalance") final boolean runningBalance) {
+            @QueryParam("fetchRunningBalance") final boolean runningBalance, @QueryParam("isPagination") final boolean isPagination,
+            @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+            @QueryParam("classificationType") final Integer classificationType) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
-        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false, runningBalance);
+        final JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false,
+                runningBalance, false);
+        if (isPagination) {
+            final SearchParameters searchParameters = SearchParameters.forPagination(offset, limit, null, null);
+            final Page<GLAccountData> glAccountDatas = this.glAccountReadPlatformService.retrieveAllGLAccounts(associationParametersData,
+                    searchParameters, usage, type, classificationType);
+            final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+            return this.apiJsonSerializerService.serialize(settings, glAccountDatas, RESPONSE_DATA_PARAMETERS);
+        }
         final List<GLAccountData> glAccountDatas = this.glAccountReadPlatformService.retrieveAllGLAccounts(type, searchParam, usage,
-                manualEntriesAllowed, disabled, associationParametersData);
+                manualEntriesAllowed, disabled, associationParametersData, classificationType);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.apiJsonSerializerService.serialize(settings, glAccountDatas, RESPONSE_DATA_PARAMETERS);
@@ -131,13 +143,16 @@ public class GLAccountsApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retreiveAccount(@PathParam("glAccountId") final Long glAccountId, @Context final UriInfo uriInfo,
-            @QueryParam("fetchRunningBalance") final boolean runningBalance) {
+            @QueryParam("fetchRunningBalance") final boolean runningBalance,
+            @QueryParam("fetchOfficeRunningBalance") final boolean officeRunningBalance, @QueryParam("officeId") final Long officeId) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false, runningBalance);
-        GLAccountData glAccountData = this.glAccountReadPlatformService.retrieveGLAccountById(glAccountId, associationParametersData);
+        final JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false,
+                runningBalance, officeRunningBalance);
+        GLAccountData glAccountData = this.glAccountReadPlatformService.retrieveGLAccountById(glAccountId, officeId,
+                associationParametersData);
         if (settings.isTemplate()) {
             glAccountData = handleTemplate(glAccountData);
         }
@@ -186,16 +201,16 @@ public class GLAccountsApiResource {
     private GLAccountData handleTemplate(final GLAccountData glAccountData) {
         final List<EnumOptionData> accountTypeOptions = this.dropdownReadPlatformService.retrieveGLAccountTypeOptions();
         final List<EnumOptionData> usageOptions = this.dropdownReadPlatformService.retrieveGLAccountUsageOptions();
-        final List<GLAccountData> assetHeaderAccountOptions = defaultIfEmpty(this.glAccountReadPlatformService
-                .retrieveAllEnabledHeaderGLAccounts(GLAccountType.ASSET));
-        final List<GLAccountData> liabilityHeaderAccountOptions = defaultIfEmpty(this.glAccountReadPlatformService
-                .retrieveAllEnabledHeaderGLAccounts(GLAccountType.LIABILITY));
-        final List<GLAccountData> equityHeaderAccountOptions = defaultIfEmpty(this.glAccountReadPlatformService
-                .retrieveAllEnabledHeaderGLAccounts(GLAccountType.EQUITY));
-        final List<GLAccountData> incomeHeaderAccountOptions = defaultIfEmpty(this.glAccountReadPlatformService
-                .retrieveAllEnabledHeaderGLAccounts(GLAccountType.INCOME));
-        final List<GLAccountData> expenseHeaderAccountOptions = defaultIfEmpty(this.glAccountReadPlatformService
-                .retrieveAllEnabledHeaderGLAccounts(GLAccountType.EXPENSE));
+        final List<GLAccountData> assetHeaderAccountOptions = defaultIfEmpty(
+                this.glAccountReadPlatformService.retrieveAllEnabledHeaderGLAccounts(GLAccountType.ASSET));
+        final List<GLAccountData> liabilityHeaderAccountOptions = defaultIfEmpty(
+                this.glAccountReadPlatformService.retrieveAllEnabledHeaderGLAccounts(GLAccountType.LIABILITY));
+        final List<GLAccountData> equityHeaderAccountOptions = defaultIfEmpty(
+                this.glAccountReadPlatformService.retrieveAllEnabledHeaderGLAccounts(GLAccountType.EQUITY));
+        final List<GLAccountData> incomeHeaderAccountOptions = defaultIfEmpty(
+                this.glAccountReadPlatformService.retrieveAllEnabledHeaderGLAccounts(GLAccountType.INCOME));
+        final List<GLAccountData> expenseHeaderAccountOptions = defaultIfEmpty(
+                this.glAccountReadPlatformService.retrieveAllEnabledHeaderGLAccounts(GLAccountType.EXPENSE));
         final Collection<CodeValueData> allowedAssetsTagOptions = this.codeValueReadPlatformService
                 .retrieveCodeValuesByCode(AccountingConstants.ASSESTS_TAG_OPTION_CODE_NAME);
         final Collection<CodeValueData> allowedLiabilitiesTagOptions = this.codeValueReadPlatformService
@@ -206,10 +221,14 @@ public class GLAccountsApiResource {
                 .retrieveCodeValuesByCode(AccountingConstants.INCOME_TAG_OPTION_CODE_NAME);
         final Collection<CodeValueData> allowedExpensesTagOptions = this.codeValueReadPlatformService
                 .retrieveCodeValuesByCode(AccountingConstants.EXPENSES_TAG_OPTION_CODE_NAME);
+        final Collection<EnumOptionData> glClassificationTypeOptions = this.dropdownReadPlatformService
+                .retrieveGlClassificationTypeOptions();
+        final EnumOptionData glClassificationType = glAccountData.getGlClassificationType();
 
         return new GLAccountData(glAccountData, accountTypeOptions, usageOptions, assetHeaderAccountOptions, liabilityHeaderAccountOptions,
                 equityHeaderAccountOptions, incomeHeaderAccountOptions, expenseHeaderAccountOptions, allowedAssetsTagOptions,
-                allowedLiabilitiesTagOptions, allowedEquityTagOptions, allowedIncomeTagOptions, allowedExpensesTagOptions);
+                allowedLiabilitiesTagOptions, allowedEquityTagOptions, allowedIncomeTagOptions, allowedExpensesTagOptions,
+                glClassificationTypeOptions, glClassificationType);
     }
 
     private List<GLAccountData> defaultIfEmpty(final List<GLAccountData> list) {

@@ -54,7 +54,7 @@ public class HookConfiguration extends AbstractPersistable<Long> {
 		return new HookConfiguration(hook, fieldType, fieldName, fieldValue);
 	}
 
-	public HookConfiguration() {
+	protected HookConfiguration() {
 		//
 	}
 

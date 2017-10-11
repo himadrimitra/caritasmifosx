@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.paymentdetail.domain;
 
+import java.util.Date;
 import java.util.Map;
 
 import javax.persistence.Column;
@@ -25,6 +26,8 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -57,6 +60,13 @@ public final class PaymentDetail extends AbstractPersistable<Long> {
     @Column(name = "bank_number", length = 50)
     private String bankNumber;
 
+    @Column(name = "branch_name", length = 200, nullable = true)
+    private String branchName;
+
+    @Temporal(TemporalType.DATE)
+    @Column(name = "payment_date", nullable = true)
+    private Date paymentDate;
+
     protected PaymentDetail() {
 
     }
@@ -84,30 +94,44 @@ public final class PaymentDetail extends AbstractPersistable<Long> {
         if (StringUtils.isNotBlank(bankNumber)) {
             changes.put(PaymentDetailConstants.bankNumberParamName, bankNumber);
         }
+        final String branchName = null;
+        final Date paymentDate = null;
         final PaymentDetail paymentDetail = new PaymentDetail(paymentType, accountNumber, checkNumber, routingCode, receiptNumber,
-                bankNumber);
+                bankNumber, branchName, paymentDate);
         return paymentDetail;
     }
 
     public static PaymentDetail instance(final PaymentType paymentType, final String accountNumber, final String checkNumber,
             final String routingCode, final String receiptNumber, final String bankNumber) {
-        return new PaymentDetail(paymentType, accountNumber, checkNumber, routingCode, receiptNumber, bankNumber);
+        final String branchName = null;
+        final Date paymentDate = null;
+        return new PaymentDetail(paymentType, accountNumber, checkNumber, routingCode, receiptNumber, bankNumber, branchName, paymentDate);
+    }
+
+    public static PaymentDetail instance(final PaymentType paymentType, final String checkNumber, final String bankNumber,
+            final String branchName, final Date paymentDate) {
+        final String accountNumber = null;
+        final String routingCode = null;
+        final String receiptNumber = null;
+        return new PaymentDetail(paymentType, accountNumber, checkNumber, routingCode, receiptNumber, bankNumber, branchName, paymentDate);
     }
 
     private PaymentDetail(final PaymentType paymentType, final String accountNumber, final String checkNumber, final String routingCode,
-            final String receiptNumber, final String bankNumber) {
+            final String receiptNumber, final String bankNumber, final String branchName, final Date paymentDate) {
         this.paymentType = paymentType;
         this.accountNumber = accountNumber;
         this.checkNumber = checkNumber;
         this.routingCode = routingCode;
         this.receiptNumber = receiptNumber;
         this.bankNumber = bankNumber;
+        this.branchName = branchName;
+        this.paymentDate = paymentDate;
     }
 
     public PaymentDetailData toData() {
         final PaymentTypeData paymentTypeData = this.paymentType.toData();
         final PaymentDetailData paymentDetailData = new PaymentDetailData(getId(), paymentTypeData, this.accountNumber, this.checkNumber,
-                this.routingCode, this.receiptNumber, this.bankNumber);
+                this.routingCode, this.receiptNumber, this.bankNumber, this.branchName, this.paymentDate);
         return paymentDetailData;
     }
 
@@ -115,4 +139,60 @@ public final class PaymentDetail extends AbstractPersistable<Long> {
         return this.paymentType;
     }
 
+    public boolean setPaymentType(final PaymentType paymentType) {
+        boolean changed = false;
+        if (!this.paymentType.getId().equals(paymentType.getId())) {
+            this.paymentType = paymentType;
+            changed = true;
+        }
+        return changed;
+
+    }
+
+    public boolean setCheckNumber(final String checkNumber) {
+        boolean changed = false;
+        if (this.checkNumber == null || !this.checkNumber.equals(checkNumber)) {
+            this.checkNumber = checkNumber;
+            changed = true;
+        }
+        return changed;
+
+    }
+
+    public boolean setPaymentDate(final Date paymentDate) {
+        boolean changed = false;
+        if (this.paymentDate == null || !this.paymentDate.equals(paymentDate)) {
+            this.paymentDate = paymentDate;
+            changed = true;
+        }
+        return changed;
+
+    }
+
+    public boolean setBankNumber(final String bankNumber) {
+        boolean changed = false;
+        if (this.bankNumber == null || !this.bankNumber.equals(bankNumber)) {
+            this.bankNumber = bankNumber;
+            changed = true;
+        }
+        return changed;
+    }
+
+    public boolean setBranchName(final String branchName) {
+        boolean changed = false;
+        if (this.branchName == null || !this.branchName.equals(branchName)) {
+            this.branchName = branchName;
+            changed = true;
+        }
+        return changed;
+    }
+
+    public void updatePaymentDetail(final String paymentDetailAccountNumber, final String paymentDetailChequeNumber,
+            final String routingCode, final String receiptNumber, final String paymentDetailBankNumber) {
+        this.accountNumber = paymentDetailAccountNumber;
+        this.checkNumber = paymentDetailChequeNumber;
+        this.routingCode = routingCode;
+        this.receiptNumber = receiptNumber;
+        this.bankNumber = paymentDetailBankNumber;
+    }
 }

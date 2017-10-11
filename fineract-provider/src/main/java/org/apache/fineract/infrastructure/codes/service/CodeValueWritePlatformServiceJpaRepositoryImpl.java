@@ -26,6 +26,7 @@ import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepository;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.codes.exception.CodeNotFoundException;
+import org.apache.fineract.infrastructure.codes.exception.SystemDefinedCodeValueCannotBeDeletedException;
 import org.apache.fineract.infrastructure.codes.serialization.CodeValueCommandFromApiJsonDeserializer;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -35,7 +36,6 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +64,7 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
 
     @Transactional
     @Override
-    @CacheEvict(value = "code_values", allEntries = true)
+    // @CacheEvict(value = "code_values", allEntries = true)
     public CommandProcessingResult createCodeValue(final JsonCommand command) {
 
         try {
@@ -74,9 +74,7 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
 
             final Long codeId = command.entityId();
             final Code code = this.codeRepository.findOne(codeId);
-            if (code == null) {
-                throw new CodeNotFoundException(codeId);
-            }
+            if (code == null) { throw new CodeNotFoundException(codeId); }
             final CodeValue codeValue = CodeValue.fromJson(code, command);
             this.codeValueRepository.save(codeValue);
 
@@ -101,8 +99,8 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
         final Throwable realCause = dve.getMostSpecificCause();
         if (realCause.getMessage().contains("code_value")) {
             final String name = command.stringValueOfParameterNamed("name");
-            throw new PlatformDataIntegrityException("error.msg.code.value.duplicate.label", "A code value with lable '" + name
-                    + "' already exists", "name", name);
+            throw new PlatformDataIntegrityException("error.msg.code.value.duplicate.label",
+                    "A code value with lable '" + name + "' already exists", "name", name);
         }
 
         logger.error(dve.getMessage(), dve);
@@ -112,7 +110,7 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
 
     @Transactional
     @Override
-    @CacheEvict(value = "code_values", allEntries = true)
+    // @CacheEvict(value = "code_values", allEntries = true)
     public CommandProcessingResult updateCodeValue(final Long codeValueId, final JsonCommand command) {
 
         try {
@@ -143,7 +141,7 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
 
     @Transactional
     @Override
-    @CacheEvict(value = "code_values", allEntries = true)
+    // @CacheEvict(value = "code_values", allEntries = true)
     public CommandProcessingResult deleteCodeValue(final Long codeId, final Long codeValueId) {
 
         try {
@@ -153,6 +151,8 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
             if (code == null) { throw new CodeNotFoundException(codeId); }
 
             final CodeValue codeValueToDelete = this.codeValueRepositoryWrapper.findOneWithNotFoundDetection(codeValueId);
+
+            if (null != codeValueToDelete.getSystemIdentifier()) { throw new SystemDefinedCodeValueCannotBeDeletedException(codeValueId); }
 
             final boolean removed = code.remove(codeValueToDelete);
             if (removed) {

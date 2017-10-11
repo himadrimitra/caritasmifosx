@@ -21,16 +21,20 @@ package org.apache.fineract.portfolio.loanaccount.service;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.staff.data.StaffAccountSummaryCollectionData;
-import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
-import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPlatformService;
+import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.domain.ClientStatus;
+import org.apache.fineract.portfolio.group.data.CenterData;
+import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.domain.GroupingTypeStatus;
+import org.apache.fineract.portfolio.loanaccount.data.AccountSummaryDataMapper;
+import org.apache.fineract.portfolio.loanaccount.data.LoanOfficerAssignmentHistoryData;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -41,14 +45,11 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
 
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
-    private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
 
     @Autowired
-    public BulkLoansReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final AccountDetailsReadPlatformService accountDetailsReadPlatformService) {
+    public BulkLoansReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
     }
 
     @Override
@@ -56,68 +57,72 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
 
         this.context.authenticatedUser();
 
-        final StaffClientMapper staffClientMapper = new StaffClientMapper();
-        final String clientSql = "select distinct " + staffClientMapper.schema() + " and c.status_enum=?";
+        final AccountSummaryDataMapper.StaffClientMapper staffClientMapper = new AccountSummaryDataMapper.StaffClientMapper();
 
-        final StaffGroupMapper staffGroupMapper = new StaffGroupMapper();
-        final String groupSql = "select distinct " + staffGroupMapper.schema() + " and g.status_enum=?";
+        final String clientSql = staffClientMapper.schemaForReassign();
+        final Collection<ClientData> clientSummaryList = this.jdbcTemplate.query(clientSql, staffClientMapper,
+                new Object[] { loanOfficerId, ClientStatus.ACTIVE.getValue() });
 
-        final List<StaffAccountSummaryCollectionData.LoanAccountSummary> clientSummaryList = this.jdbcTemplate.query(clientSql,
-                staffClientMapper, new Object[] { loanOfficerId, ClientStatus.ACTIVE.getValue() });
+        final AccountSummaryDataMapper.StaffGroupMapper staffGroupMapper = new AccountSummaryDataMapper.StaffGroupMapper();
+        final String groupSql = staffGroupMapper.schemaForReassign();
 
-        for (final StaffAccountSummaryCollectionData.LoanAccountSummary clientSummary : clientSummaryList) {
+        final Collection<GroupGeneralData> groupSummaryList = this.jdbcTemplate.query(groupSql, staffGroupMapper,
+                new Object[] { GroupingTypeStatus.ACTIVE.getValue(), loanOfficerId });
 
-            final Collection<LoanAccountSummaryData> clientLoanAccounts = this.accountDetailsReadPlatformService
-                    .retrieveClientLoanAccountsByLoanOfficerId(clientSummary.getId(), loanOfficerId);
+        final AccountSummaryDataMapper.StaffAccountSummaryCollectionDataMapper staffAccountSummaryCollectionDataMapper = new AccountSummaryDataMapper.StaffAccountSummaryCollectionDataMapper();
+        final String dataSql = staffAccountSummaryCollectionDataMapper.schemaForReassign();
 
-            clientSummary.setLoans(clientLoanAccounts);
-        }
+        final Collection<CenterData> staffAccountSummaryCollectionData = this.jdbcTemplate.query(dataSql,
+                staffAccountSummaryCollectionDataMapper, new Object[] { ClientStatus.ACTIVE.getValue(),
+                        GroupingTypeStatus.ACTIVE.getValue(), loanOfficerId, LoanStatus.ACTIVE.getValue(), });
 
-        final List<StaffAccountSummaryCollectionData.LoanAccountSummary> groupSummaryList = this.jdbcTemplate.query(groupSql,
-                staffGroupMapper, new Object[] { loanOfficerId, GroupingTypeStatus.ACTIVE.getValue() });
-
-        for (final StaffAccountSummaryCollectionData.LoanAccountSummary groupSummary : groupSummaryList) {
-
-            final Collection<LoanAccountSummaryData> groupLoanAccounts = this.accountDetailsReadPlatformService
-                    .retrieveGroupLoanAccountsByLoanOfficerId(groupSummary.getId(), loanOfficerId);
-
-            groupSummary.setLoans(groupLoanAccounts);
-        }
-
-        return new StaffAccountSummaryCollectionData(clientSummaryList, groupSummaryList);
+        return new StaffAccountSummaryCollectionData(clientSummaryList, groupSummaryList, staffAccountSummaryCollectionData);
     }
 
-    private static final class StaffClientMapper implements RowMapper<StaffAccountSummaryCollectionData.LoanAccountSummary> {
+    @Override
+    public LoanOfficerAssignmentHistoryData retrieveLoanOfficerAssignmentHistoryByLoanId(final Long loanId) {
+        final LoanOfficerAssignmentHistoryMapper mapper = new LoanOfficerAssignmentHistoryMapper();
+        final String sql = "select " + mapper.schema() + " where loan.id = ?";
+        return this.jdbcTemplate.queryForObject(sql, new Object[] { loanId }, mapper);
+    }
+
+    private static final class LoanOfficerAssignmentHistoryMapper implements RowMapper<LoanOfficerAssignmentHistoryData> {
+
+        final String schema;
+
+        private LoanOfficerAssignmentHistoryMapper() {
+            final StringBuilder sql = new StringBuilder(400);
+            sql.append("loan.loan_officer_id as loanOfficerId, ");
+            sql.append("loan.loan_status_id as loanStatusId, ");
+            sql.append("loan.submittedon_date as loanSubmittedOnDate, ");
+            sql.append("loh.id as latestHistoryRecordId, ");
+            sql.append("loh.start_date as latestHistoryRecordStartdate, ");
+            sql.append("loh.end_date as latestHistoryRecordEndDate ");
+            sql.append("from m_loan loan ");
+            sql.append("left join m_loan_officer_assignment_history loh on loh.loan_id = loan.id and ISNULL(loh.end_date)  ");
+
+            this.schema = sql.toString();
+        }
 
         public String schema() {
-            return " c.id as id, c.display_name as displayName from m_client c "
-                    + " join m_loan l on c.id = l.client_id where l.loan_officer_id = ? ";
+            return this.schema;
         }
 
         @Override
-        public StaffAccountSummaryCollectionData.LoanAccountSummary mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum)
-                throws SQLException {
-            final Long id = JdbcSupport.getLong(rs, "id");
-            final String displayName = rs.getString("displayName");
+        public LoanOfficerAssignmentHistoryData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
+            final Long loanOfficerId = JdbcSupport.getLong(rs, "loanOfficerId");
+            final Long latestHistoryRecordId = JdbcSupport.getLong(rs, "latestHistoryRecordId");
+            final LocalDate loanSubmittedOnDate = JdbcSupport.getLocalDate(rs, "loanSubmittedOnDate");
+            final LocalDate latestHistoryRecordEndDate = JdbcSupport.getLocalDate(rs, "latestHistoryRecordEndDate");
+            final LocalDate latestHistoryRecordStartdate = JdbcSupport.getLocalDate(rs, "latestHistoryRecordStartdate");
+            final Integer statusId = JdbcSupport.getInteger(rs, "loanStatusId");
+            final LoanStatus status = LoanStatus.fromInt(statusId);
 
-            return new StaffAccountSummaryCollectionData.LoanAccountSummary(id, displayName);
+            return new LoanOfficerAssignmentHistoryData(loanOfficerId, latestHistoryRecordId, loanSubmittedOnDate,
+                    latestHistoryRecordEndDate, latestHistoryRecordStartdate, status);
+
         }
+
     }
 
-    private static final class StaffGroupMapper implements RowMapper<StaffAccountSummaryCollectionData.LoanAccountSummary> {
-
-        public String schema() {
-            return " g.id as id, g.display_name as name from m_group g"
-                    + " join m_loan l on g.id = l.group_id where l.loan_officer_id = ? ";
-        }
-
-        @Override
-        public StaffAccountSummaryCollectionData.LoanAccountSummary mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum)
-                throws SQLException {
-            final Long id = JdbcSupport.getLong(rs, "id");
-            final String name = rs.getString("name");
-
-            return new StaffAccountSummaryCollectionData.LoanAccountSummary(id, name);
-        }
-    }
 }

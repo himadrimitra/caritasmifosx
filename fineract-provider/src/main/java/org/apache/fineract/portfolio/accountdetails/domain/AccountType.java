@@ -18,6 +18,11 @@
  */
 package org.apache.fineract.portfolio.accountdetails.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
 /**
  * Enum representation of account types .
  */
@@ -26,7 +31,8 @@ public enum AccountType {
     INVALID(0, "accountType.invalid"), //
     INDIVIDUAL(1, "accountType.individual"), //
     GROUP(2, "accountType.group"), //
-    JLG(3, "accountType.jlg");// JLG account given in group context
+    JLG(3, "accountType.jlg"),// JLG account given in group context
+    GLIM(4, "accountType.glim");
 
     private final Integer value;
     private final String code;
@@ -48,6 +54,9 @@ public enum AccountType {
             break;
             case 3:
                 enumeration = AccountType.JLG;
+            break;
+            case 4:
+                enumeration = AccountType.GLIM;
             break;
         }
         return enumeration;
@@ -90,5 +99,40 @@ public enum AccountType {
 
     public boolean isJLGAccount() {
         return this.value.equals(AccountType.JLG.getValue());
+    }
+    
+    public static Object[] codeNames() {
+        final List<String> codes = new ArrayList<>();
+        for (final AccountType enumType : values()) {
+            codes.add(enumType.getName());
+        }
+        return codes.toArray();
+	}
+
+    public boolean isGLIMAccount() {
+        return this.value.equals(AccountType.GLIM.getValue());
+    }
+    
+    public static EnumOptionData loanAccountType(final Integer id, final String codePrefix) {
+        EnumOptionData optionData = null;
+        switch (id) {
+            case 0:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.inavlid);
+            break;
+            case 1:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.individual);
+            break;
+            case 2:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.group);
+            break;
+            case 3:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.jlg);
+            break;
+            case 4:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.glim);
+            break;
+
+        }
+        return optionData;
     }
 }

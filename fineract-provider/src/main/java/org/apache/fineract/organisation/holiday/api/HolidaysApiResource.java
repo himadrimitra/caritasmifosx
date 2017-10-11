@@ -65,16 +65,19 @@ public class HolidaysApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
 
     private final HolidayReadPlatformService holidayReadPlatformService;
+    private final DefaultToApiJsonSerializer defalutToApiJsonSerializer;
 
     @Autowired
     public HolidaysApiResource(final DefaultToApiJsonSerializer<HolidayData> toApiJsonSerializer,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService, final PlatformSecurityContext context,
-            final ApiRequestParameterHelper apiRequestParameterHelper, final HolidayReadPlatformService holidayReadPlatformService) {
+            final ApiRequestParameterHelper apiRequestParameterHelper, final HolidayReadPlatformService holidayReadPlatformService,
+            final DefaultToApiJsonSerializer defalutToApiJsonSerializer) {
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.context = context;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.holidayReadPlatformService = holidayReadPlatformService;
+        this.defalutToApiJsonSerializer = defalutToApiJsonSerializer;
     }
 
     @POST
@@ -180,4 +183,14 @@ public class HolidaysApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, holidays, HOLIDAY_RESPONSE_DATA_PARAMETERS);
     }
+
+    @GET
+    @Path("/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveRepaymentScheduleUpdationTyeOptions(@Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(HOLIDAY_RESOURCE_NAME);
+        return this.defalutToApiJsonSerializer.serialize(this.holidayReadPlatformService.retrieveRepaymentScheduleUpdationTyeOptions());
+    }
+
 }

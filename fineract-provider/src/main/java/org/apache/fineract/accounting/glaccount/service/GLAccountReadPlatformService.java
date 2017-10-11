@@ -18,19 +18,24 @@
  */
 package org.apache.fineract.accounting.glaccount.service;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.glaccount.data.GLAccountDataForLookup;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountType;
 import org.apache.fineract.accounting.journalentry.data.JournalEntryAssociationParametersData;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 
 public interface GLAccountReadPlatformService {
 
     List<GLAccountData> retrieveAllGLAccounts(Integer accountClassification, String searchParam, Integer usage,
-            Boolean manualTransactionsAllowed, Boolean disabled, JournalEntryAssociationParametersData associationParametersData);
+            Boolean manualTransactionsAllowed, Boolean disabled, JournalEntryAssociationParametersData associationParametersData,
+            final Integer glClassificationType);
 
-    GLAccountData retrieveGLAccountById(long glAccountId, JournalEntryAssociationParametersData associationParametersData);
+    GLAccountData retrieveGLAccountById(long glAccountId, final Long officeId,
+            JournalEntryAssociationParametersData associationParametersData);
 
     List<GLAccountData> retrieveAllEnabledDetailGLAccounts();
 
@@ -41,4 +46,10 @@ public interface GLAccountReadPlatformService {
     GLAccountData retrieveNewGLAccountDetails(final Integer type);
 
     List<GLAccountDataForLookup> retrieveAccountsByTagId(final Long ruleId, final Integer transactionType);
+
+    List<GLAccountDataForLookup> retrieveAccountsByTags(Collection<Long> tagIds);
+
+    Page<GLAccountData> retrieveAllGLAccounts(JournalEntryAssociationParametersData associationParametersData,
+            SearchParameters searchParameters, final Integer usage, final Integer accountType, final Integer glAccounytClassificatioType);
+
 }

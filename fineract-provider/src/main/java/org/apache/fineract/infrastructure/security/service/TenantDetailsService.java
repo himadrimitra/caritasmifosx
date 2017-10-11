@@ -20,11 +20,13 @@ package org.apache.fineract.infrastructure.security.service;
 
 import java.util.List;
 
-import org.apache.fineract.infrastructure.core.domain.MifosPlatformTenant;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 
 public interface TenantDetailsService {
 
-    MifosPlatformTenant loadTenantById(String tenantId);
+    FineractPlatformTenant loadTenantById(String tenantId);
 
-    List<MifosPlatformTenant> findAllTenants();
+    List<FineractPlatformTenant> findAllTenants();
+
+    void encrypteAllTenantsServerCredentials();
 }

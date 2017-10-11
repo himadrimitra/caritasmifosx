@@ -19,10 +19,14 @@
 package org.apache.fineract.portfolio.savings.domain;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Set;
 
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.SavingsTransactionBooleanValues;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -32,8 +36,26 @@ public interface SavingsAccountDomainService {
             BigDecimal transactionAmount, PaymentDetail paymentDetail, SavingsTransactionBooleanValues transactionBooleanValues);
 
     SavingsAccountTransaction handleDeposit(SavingsAccount account, DateTimeFormatter fmt, LocalDate transactionDate,
-            BigDecimal transactionAmount, PaymentDetail paymentDetail, boolean isAccountTransfer, boolean isRegularTransaction, boolean isEarningFromInvestment);
+            BigDecimal transactionAmount, PaymentDetail paymentDetail, boolean isAccountTransfer, boolean isRegularTransaction,
+            boolean isEarningFromInvestment);
 
     void postJournalEntries(SavingsAccount savingsAccount, Set<Long> existingTransactionIds, Set<Long> existingReversedTransactionIds);
+
     void handleUndoTransaction(SavingsAccount account, SavingsAccountTransaction transactionDetail);
+
+    SavingsAccountTransaction handleDividendPayout(SavingsAccount account, LocalDate transactionDate, BigDecimal transactionAmount);
+
+    List<Long> handleDepositAndwithdrawal(Long accountId, List<SavingsAccountTransactionDTO> savingstransactions,
+            SavingsTransactionBooleanValues transactionBooleanValues, boolean isSavingsInterestPostingAtCurrentPeriodEnd,
+            Integer financialYearBeginningMonth, final boolean isSavingAccountsInculdedInCollectionSheet,
+            final boolean isWithDrawForSavingsIncludedInCollectionSheet,
+            final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetailsList);
+
+    SavingsAccountTransaction handleDeposit(String savingsAccountNumber, LocalDate transactionDate, BigDecimal transactionAmount,
+            String paymentTypeName, String paymentDetailAccountNumber, String paymentDetailChequeNumber, String routingCode,
+            String paymentDetailBankNumber, String receiptNumber, String note, DateTimeFormatter fmt);
+
+    HolidayDetailDTO getHolidayDetails(final RecurringDepositAccount account);
+
+    void updateMaturityDateAndAmount(final RecurringDepositAccount account);
 }

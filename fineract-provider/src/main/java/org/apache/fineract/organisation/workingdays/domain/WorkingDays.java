@@ -16,19 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.fineract.organisation.workingdays.domain;
 
-import org.apache.fineract.infrastructure.core.api.JsonCommand;
-import org.springframework.data.jpa.domain.AbstractPersistable;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.persistence.Cacheable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.organisation.workingdays.api.WorkingDaysApiConstants;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.springframework.data.jpa.domain.AbstractPersistable;
+
 @Entity
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "WorkingDays")
 @Table(name = "m_working_days")
 public class WorkingDays extends AbstractPersistable<Long> {
 
@@ -38,13 +46,20 @@ public class WorkingDays extends AbstractPersistable<Long> {
     @Column(name = "repayment_rescheduling_enum", nullable = false)
     private Integer repaymentReschedulingType;
 
+    @Column(name = "extend_term_daily_repayments", nullable = false)
+    private Boolean extendTermForDailyRepayments;
+
+    @Transient
+    private final Map<Integer, NonWorkingDayRescheduleDetail> nonWorkingDayRescheduleDetails = new HashMap<>();
+
     protected WorkingDays() {
 
     }
 
-    protected WorkingDays(final String recurrence, final Integer repaymentReschedulingType) {
+    protected WorkingDays(final String recurrence, final Integer repaymentReschedulingType, final Boolean extendTermForDailyRepayments) {
         this.recurrence = recurrence;
         this.repaymentReschedulingType = repaymentReschedulingType;
+        this.extendTermForDailyRepayments = extendTermForDailyRepayments;
     }
 
     /**
@@ -61,6 +76,13 @@ public class WorkingDays extends AbstractPersistable<Long> {
         return this.repaymentReschedulingType;
     }
 
+    public void setRepaymentReschedulingType(final Integer repaymentReschedulingType) {
+        this.repaymentReschedulingType = repaymentReschedulingType;
+    }
+
+    public Boolean getExtendTermForDailyRepayments() {
+        return this.extendTermForDailyRepayments;
+    }
 
     public Map<String, Object> update(final JsonCommand command) {
         final Map<String, Object> actualChanges = new LinkedHashMap<>(7);
@@ -74,11 +96,22 @@ public class WorkingDays extends AbstractPersistable<Long> {
 
         final String repaymentRescheduleTypeParamName = "repaymentRescheduleType";
         if (command.isChangeInIntegerParameterNamed(repaymentRescheduleTypeParamName, this.repaymentReschedulingType)) {
-            final Integer newValue =command.integerValueOfParameterNamed(repaymentRescheduleTypeParamName);
-            actualChanges.put(repaymentRescheduleTypeParamName,  WorkingDaysEnumerations.workingDaysStatusType(newValue));
+            final Integer newValue = command.integerValueOfParameterNamed(repaymentRescheduleTypeParamName);
+            actualChanges.put(repaymentRescheduleTypeParamName, WorkingDaysEnumerations.workingDaysStatusType(newValue));
             this.repaymentReschedulingType = RepaymentRescheduleType.fromInt(newValue).getValue();
         }
+
+        if (command.isChangeInBooleanParameterNamed(WorkingDaysApiConstants.extendTermForDailyRepayments,
+                this.extendTermForDailyRepayments)) {
+            final Boolean newValue = command.booleanPrimitiveValueOfParameterNamed(WorkingDaysApiConstants.extendTermForDailyRepayments);
+            actualChanges.put(WorkingDaysApiConstants.extendTermForDailyRepayments, newValue);
+            this.extendTermForDailyRepayments = newValue;
+        }
         return actualChanges;
+    }
+
+    public Map<Integer, NonWorkingDayRescheduleDetail> getNonWorkingDayRescheduleDetails() {
+        return this.nonWorkingDayRescheduleDetails;
     }
 
 }

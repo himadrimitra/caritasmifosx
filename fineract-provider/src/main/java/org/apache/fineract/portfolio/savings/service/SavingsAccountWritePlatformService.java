@@ -18,13 +18,16 @@
  */
 package org.apache.fineract.portfolio.savings.service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
-import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
+import org.apache.fineract.portfolio.collectionsheet.domain.CollectionSheetTransactionDetails;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.joda.time.LocalDate;
@@ -42,11 +45,7 @@ public interface SavingsAccountWritePlatformService {
 
     CommandProcessingResult calculateInterest(Long savingsId);
 
-    CommandProcessingResult postInterest(Long savingsId);
-
     CommandProcessingResult undoTransaction(Long savingsId, Long transactionId, boolean allowAccountTransferModification);
-
-    void postInterestForAccounts();
 
     CommandProcessingResult adjustSavingsTransaction(Long savingsId, Long transactionId, JsonCommand command);
 
@@ -68,7 +67,7 @@ public interface SavingsAccountWritePlatformService {
 
     CommandProcessingResult waiveCharge(Long savingsAccountId, Long savingsAccountChargeId);
 
-    CommandProcessingResult payCharge( Long savingsAccountId,Long savingsAccountChargeId, JsonCommand command);
+    CommandProcessingResult payCharge(Long savingsAccountId, Long savingsAccountChargeId, JsonCommand command);
 
     CommandProcessingResult inactivateCharge(Long savingsAccountId, Long savingsAccountChargeId);
 
@@ -80,4 +79,38 @@ public interface SavingsAccountWritePlatformService {
 
     void processPostActiveActions(SavingsAccount account, DateTimeFormatter fmt, Set<Long> existingTransactionIds,
             Set<Long> existingReversedTransactionIds);
+
+    CommandProcessingResult modifyWithHoldTax(Long savingsAccountId, JsonCommand command);
+
+    void setSubStatusInactive(Long savingsId);
+
+    void setSubStatusDormant(Long savingsId);
+
+    void escheat(Long savingsId);
+
+    CommandProcessingResult postInterest(JsonCommand command);
+
+    void postInterest(SavingsAccount account, boolean postInterestAs, LocalDate transactionDate);
+
+    List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions,
+            final List<CollectionSheetTransactionDetails> collectionSheetTransactionDetailsList);
+
+    CommandProcessingResult blockAccount(Long savingsId);
+
+    CommandProcessingResult unblockAccount(Long savingsId);
+
+    CommandProcessingResult holdAmount(Long savingsId, JsonCommand command);
+
+    CommandProcessingResult blockCredits(Long savingsId);
+
+    CommandProcessingResult unblockCredits(Long savingsId);
+
+    CommandProcessingResult blockDebits(Long savingsId);
+
+    CommandProcessingResult unblockDebits(Long savingsId);
+
+    CommandProcessingResult releaseAmount(Long savingsId, Long transactionId);
+
+    void postInterestForAccounts();
+
 }

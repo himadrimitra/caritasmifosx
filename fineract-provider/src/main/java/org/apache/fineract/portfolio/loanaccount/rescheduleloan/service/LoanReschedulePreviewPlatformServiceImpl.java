@@ -20,31 +20,36 @@ package org.apache.fineract.portfolio.loanaccount.rescheduleloan.service;
 
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
-import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
-import org.apache.fineract.organisation.holiday.domain.Holiday;
-import org.apache.fineract.organisation.holiday.domain.HolidayRepository;
-import org.apache.fineract.organisation.holiday.domain.HolidayStatusType;
-import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
-import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
-import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
-import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
-import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
-import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
-import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
-import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
+import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
+import org.apache.fineract.portfolio.calendar.domain.Calendar;
+import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
+import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
+import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanRepaymentScheduleHistory;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleHistoryWritePlatformService;
-import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.DefaultLoanReschedulerFactory;
-import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleModel;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanLifecycleStateMachine;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRescheduleRequestToTermVariationMapping;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanSummaryWrapper;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariations;
+import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanRepaymentScheduleTransactionProcessor;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleDTO;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGenerator;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequestRepository;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.exception.LoanRescheduleRequestNotFoundException;
-import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
-import org.apache.fineract.portfolio.loanproduct.domain.LoanProductMinimumRepaymentScheduleRelatedDetail;
+import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -52,65 +57,132 @@ import org.springframework.stereotype.Service;
 public class LoanReschedulePreviewPlatformServiceImpl implements LoanReschedulePreviewPlatformService {
 
     private final LoanRescheduleRequestRepository loanRescheduleRequestRepository;
-    private final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository;
-    private final ConfigurationDomainService configurationDomainService;
-    private final HolidayRepository holidayRepository;
-    private final WorkingDaysRepositoryWrapper workingDaysRepository;
-    private final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService;
-    private final CalendarInstanceRepository calendarInstanceRepository;
+    private final LoanUtilService loanUtilService;
+    private final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory;
+    private final LoanScheduleGeneratorFactory loanScheduleFactory;
+    private final LoanSummaryWrapper loanSummaryWrapper;
+    private final DefaultScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
+    private final GlimLoanRescheduleService glimLoanRescheduleService;
 
     @Autowired
     public LoanReschedulePreviewPlatformServiceImpl(final LoanRescheduleRequestRepository loanRescheduleRequestRepository,
-            final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
-            final ConfigurationDomainService configurationDomainService, final HolidayRepository holidayRepository,
-            final WorkingDaysRepositoryWrapper workingDaysRepository,
-            final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService,
-            final CalendarInstanceRepository calendarInstanceRepository) {
+            final LoanUtilService loanUtilService,
+            final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory,
+            final LoanScheduleGeneratorFactory loanScheduleFactory, final LoanSummaryWrapper loanSummaryWrapper,
+            final GlimLoanRescheduleService glimLoanRescheduleService) {
         this.loanRescheduleRequestRepository = loanRescheduleRequestRepository;
-        this.applicationCurrencyRepository = applicationCurrencyRepository;
-        this.configurationDomainService = configurationDomainService;
-        this.holidayRepository = holidayRepository;
-        this.workingDaysRepository = workingDaysRepository;
-        this.loanScheduleHistoryWritePlatformService = loanScheduleHistoryWritePlatformService;
-        this.calendarInstanceRepository = calendarInstanceRepository;
+        this.loanUtilService = loanUtilService;
+        this.loanRepaymentScheduleTransactionProcessorFactory = loanRepaymentScheduleTransactionProcessorFactory;
+        this.loanScheduleFactory = loanScheduleFactory;
+        this.loanSummaryWrapper = loanSummaryWrapper;
+        this.glimLoanRescheduleService = glimLoanRescheduleService;
     }
 
     @Override
-    public LoanRescheduleModel previewLoanReschedule(Long requestId) {
+    public LoanScheduleModel previewLoanReschedule(final Long requestId) {
         final LoanRescheduleRequest loanRescheduleRequest = this.loanRescheduleRequestRepository.findOne(requestId);
 
         if (loanRescheduleRequest == null) { throw new LoanRescheduleRequestNotFoundException(requestId); }
 
-        Loan loan = loanRescheduleRequest.getLoan();
+        final Loan loan = loanRescheduleRequest.getLoan();
 
-        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
-        final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(), loan
-                .getDisbursementDate().toDate(), HolidayStatusType.ACTIVE.getValue());
-        final WorkingDays workingDays = this.workingDaysRepository.findOne();
-        final LoanProductMinimumRepaymentScheduleRelatedDetail loanProductRelatedDetail = loan.getLoanRepaymentScheduleDetail();
-        final MonetaryCurrency currency = loanProductRelatedDetail.getCurrency();
-        final ApplicationCurrency applicationCurrency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currency);
+        final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan,
+                loanRescheduleRequest.getRescheduleFromDate());
+        LocalDate rescheduleFromDate = null;
+        LocalDate previouslyAdjustedDate = null;
+        final List<LoanTermVariationsData> removeLoanTermVariationsData = new ArrayList<>();
+        final LoanApplicationTerms loanApplicationTerms = loan.constructLoanApplicationTerms(scheduleGeneratorDTO);
+        final LoanTermVariations dueDateVariationInCurrentRequest = loanRescheduleRequest.getDueDateTermVariationIfExists();
+        if (dueDateVariationInCurrentRequest != null) {
+            for (final LoanTermVariationsData loanTermVariation : loanApplicationTerms.getLoanTermVariations().getDueDateVariation()) {
+                if (loanTermVariation.getDateValue().equals(dueDateVariationInCurrentRequest.fetchTermApplicaDate())) {
+                    rescheduleFromDate = loanTermVariation.getTermApplicableFrom();
+                    previouslyAdjustedDate = loanTermVariation.getDateValue();
+                    removeLoanTermVariationsData.add(loanTermVariation);
+                }
+            }
+            if (!(loanApplicationTerms.getNthDay() == null || loanApplicationTerms.getWeekDayType() == null
+                    || loanApplicationTerms.getWeekDayType() == DayOfWeekType.INVALID)
+                    && loanApplicationTerms.getRepaymentPeriodFrequencyType().isMonthly()) {
+                final Calendar loanCalendar = loanApplicationTerms.getLoanCalendar();
+                final CalendarHistory calendarHistory = new CalendarHistory(loanCalendar, loanCalendar.getStartDate());
+                final Date endDate = dueDateVariationInCurrentRequest.fetchDateValue().minusDays(1).toDate();
+                calendarHistory.updateEndDate(endDate);
+                loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistoryList().add(calendarHistory);
+                final boolean isMeetingAttached = this.loanUtilService.isMeetingAttached(loan);
+                if (loan.isGLIMLoan()) {
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeek(dueDateVariationInCurrentRequest.fetchDateValue(), isMeetingAttached);
+                } else {
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue(),
+                            isMeetingAttached);
+                }
 
-        final InterestMethod interestMethod = loan.getLoanRepaymentScheduleDetail().getInterestMethod();
-        final RoundingMode roundingMode = RoundingMode.HALF_EVEN;
-        final MathContext mathContext = new MathContext(8, roundingMode);
-        List<LoanRepaymentScheduleHistory> oldPeriods = this.loanScheduleHistoryWritePlatformService.createLoanScheduleArchive(
-                loan.getRepaymentScheduleInstallments(), loan, loanRescheduleRequest);
-        HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays);
-        CalendarInstance restCalendarInstance = null;
-        CalendarInstance compoundingCalendarInstance = null;
-        if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
-            restCalendarInstance = calendarInstanceRepository.findCalendarInstaneByEntityId(loan.loanInterestRecalculationDetailId(),
-                    CalendarEntityType.LOAN_RECALCULATION_REST_DETAIL.getValue());
-            compoundingCalendarInstance = calendarInstanceRepository.findCalendarInstaneByEntityId(
-                    loan.loanInterestRecalculationDetailId(), CalendarEntityType.LOAN_RECALCULATION_COMPOUNDING_DETAIL.getValue());
+            }
+        }
+        loanApplicationTerms.getLoanTermVariations().getDueDateVariation().removeAll(removeLoanTermVariationsData);
+        if (rescheduleFromDate == null) {
+            rescheduleFromDate = loanRescheduleRequest.getRescheduleFromDate();
+        }
+        final List<LoanTermVariationsData> loanTermVariationsData = new ArrayList<>();
+        LocalDate adjustedApplicableDate = null;
+        final Set<LoanRescheduleRequestToTermVariationMapping> loanRescheduleRequestToTermVariationMappings = loanRescheduleRequest
+                .getLoanRescheduleRequestToTermVariationMappings();
+        if (!loanRescheduleRequestToTermVariationMappings.isEmpty()) {
+            for (final LoanRescheduleRequestToTermVariationMapping loanRescheduleRequestToTermVariationMapping : loanRescheduleRequestToTermVariationMappings) {
+                if (loanRescheduleRequestToTermVariationMapping.getLoanTermVariations().getTermType().isDueDateVariation()
+                        && rescheduleFromDate != null) {
+                    adjustedApplicableDate = loanRescheduleRequestToTermVariationMapping.getLoanTermVariations().fetchDateValue();
+                    loanRescheduleRequestToTermVariationMapping.getLoanTermVariations().setTermApplicableFrom(rescheduleFromDate.toDate());
+                }
+                loanTermVariationsData.add(loanRescheduleRequestToTermVariationMapping.getLoanTermVariations().toData());
+            }
         }
 
-        LoanRescheduleModel loanRescheduleModel = new DefaultLoanReschedulerFactory().reschedule(mathContext, interestMethod,
-                loanRescheduleRequest, applicationCurrency, holidayDetailDTO, restCalendarInstance, compoundingCalendarInstance);
-        LoanRescheduleModel loanRescheduleModelWithOldPeriods = LoanRescheduleModel.createWithSchedulehistory(loanRescheduleModel,
-                oldPeriods);
-        return loanRescheduleModelWithOldPeriods;
+        /**
+         * Validate adjusted applicable date is not a holiday or non working day
+         */
+        if (adjustedApplicableDate != null) {
+            final HolidayDetailDTO holidayDetailDTO = scheduleGeneratorDTO.getHolidayDetailDTO();
+            loan.validateRepaymentDateIsOnHoliday(adjustedApplicableDate, holidayDetailDTO.isAllowTransactionsOnHoliday(),
+                    holidayDetailDTO.getHolidays());
+            loan.validateRepaymentDateIsOnNonWorkingDay(adjustedApplicableDate, holidayDetailDTO.getWorkingDays(),
+                    holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
+        }
+
+        for (final LoanTermVariationsData loanTermVariation : loanApplicationTerms.getLoanTermVariations().getDueDateVariation()) {
+            if (rescheduleFromDate.isBefore(loanTermVariation.getTermApplicableFrom())) {
+                final LocalDate applicableDate = this.scheduledDateGenerator.generateNextRepaymentDate(rescheduleFromDate,
+                        loanApplicationTerms, false);
+                if (loanTermVariation.getTermApplicableFrom().equals(applicableDate)) {
+                    final LocalDate adjustedDate = this.scheduledDateGenerator.generateNextRepaymentDate(adjustedApplicableDate,
+                            loanApplicationTerms, false);
+                    loanTermVariation.setApplicableFromDate(adjustedDate);
+                    loanTermVariationsData.add(loanTermVariation);
+                }
+            }
+        }
+
+        if (previouslyAdjustedDate != null) {
+            rescheduleFromDate = rescheduleFromDate.isAfter(previouslyAdjustedDate) ? previouslyAdjustedDate : rescheduleFromDate;
+        }
+
+        loanApplicationTerms.getLoanTermVariations().updateLoanTermVariationsData(loanTermVariationsData);
+        final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
+        final MathContext mathContext = new MathContext(8, roundingMode);
+        final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.loanRepaymentScheduleTransactionProcessorFactory
+                .determineProcessor(loan.transactionProcessingStrategy());
+        final LoanScheduleGenerator loanScheduleGenerator = this.loanScheduleFactory.create(loanApplicationTerms.getInterestMethod());
+        final LoanLifecycleStateMachine loanLifecycleStateMachine = null;
+        loan.setHelpers(loanLifecycleStateMachine, this.loanSummaryWrapper, this.loanRepaymentScheduleTransactionProcessorFactory);
+        if (loan.isGLIMLoan()) { return this.glimLoanRescheduleService.getGlimLoanScheduleModels(loan, scheduleGeneratorDTO,
+                loanApplicationTerms, rescheduleFromDate); }
+        final LoanScheduleDTO loanSchedule = loanScheduleGenerator.rescheduleNextInstallments(mathContext, loanApplicationTerms, loan,
+                loanApplicationTerms.getHolidayDetailDTO(), loan.getLoanTransactions(), loanRepaymentScheduleTransactionProcessor,
+                rescheduleFromDate);
+        final LoanScheduleModel loanScheduleModel = loanSchedule.getLoanScheduleModel();
+        final LoanScheduleModel loanScheduleModels = LoanScheduleModel.withLoanScheduleModelPeriods(loanScheduleModel.getPeriods(),
+                loanScheduleModel);
+        return loanScheduleModels;
     }
 
 }

@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.loanproduct.api;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -40,27 +41,41 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.fineract.accounting.common.AccountingDropdownReadPlatformService;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.producttoaccountmapping.data.ChargeToGLAccountMapper;
+import org.apache.fineract.accounting.producttoaccountmapping.data.CodeValueToGLAccountMapper;
 import org.apache.fineract.accounting.producttoaccountmapping.data.PaymentTypeToGLAccountMapper;
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingReadPlatformService;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
+import org.apache.fineract.portfolio.client.domain.LegalForm;
+import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
+import org.apache.fineract.portfolio.floatingrates.data.FloatingRateData;
+import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformService;
+import org.apache.fineract.portfolio.fund.api.FundApiConstants;
 import org.apache.fineract.portfolio.fund.data.FundData;
 import org.apache.fineract.portfolio.fund.service.FundReadPlatformService;
+import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductTemplateData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
+import org.apache.fineract.portfolio.loanproduct.domain.ClientProfileType;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductApplicableForLoanType;
 import org.apache.fineract.portfolio.loanproduct.productmix.data.ProductMixData;
 import org.apache.fineract.portfolio.loanproduct.productmix.service.ProductMixReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
@@ -71,25 +86,39 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.loanproduct.creditbureau.data.CreditBureauLoanProductMappingData;
+import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductOfficeMapping;
+import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductOfficeMappingRepository;
+import com.finflux.portfolio.loanproduct.creditbureau.service.CreditBureauLoanProductMappingReadPlatformService;
+import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityData;
+import com.finflux.ruleengine.eligibility.service.LoanProductEligibilityReadPlatformService;
+
 @Path("/loanproducts")
 @Component
 @Scope("singleton")
 public class LoanProductsApiResource {
 
-    private final Set<String> LOAN_PRODUCT_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "name", "shortName", "description",
-            "fundId", "fundName", "includeInBorrowerCycle", "currency", "principal", "minPrincipal", "maxPrincipal", "numberOfRepayments",
+    private final Set<String> LOAN_PRODUCT_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "name", "shortName", "description", "fundId",
+            "fundName", "includeInBorrowerCycle", "currency", "principal", "minPrincipal", "maxPrincipal", "numberOfRepayments",
             "minNumberOfRepayments", "maxNumberOfRepayments", "repaymentEvery", "repaymentFrequencyType", "graceOnPrincipalPayment",
-            "graceOnInterestPayment", "graceOnInterestCharged", "interestRatePerPeriod", "minInterestRatePerPeriod",
-            "maxInterestRatePerPeriod", "interestRateFrequencyType", "annualInterestRate", "amortizationType", "interestType",
-            "interestCalculationPeriodType", "inArrearsTolerance", "transactionProcessingStrategyId", "transactionProcessingStrategyName",
-            "charges", "accountingRule", "externalId", "accountingMappings", "paymentChannelToFundSourceMappings", "fundOptions",
-            "paymentTypeOptions", "currencyOptions", "repaymentFrequencyTypeOptions", "interestRateFrequencyTypeOptions",
-            "amortizationTypeOptions", "interestTypeOptions", "interestCalculationPeriodTypeOptions",
-            "transactionProcessingStrategyOptions", "chargeOptions", "accountingOptions", "accountingRuleOptions",
-            "accountingMappingOptions"));
+            "recurringMoratoriumOnPrincipalPeriods", "graceOnInterestPayment", "graceOnInterestCharged", "interestRatePerPeriod",
+            "minInterestRatePerPeriod", "maxInterestRatePerPeriod", "interestRateFrequencyType", "annualInterestRate", "amortizationType",
+            "interestType", "interestCalculationPeriodType", LoanProductConstants.allowPartialPeriodInterestCalcualtionParamName,
+            "inArrearsTolerance", "transactionProcessingStrategyId", "transactionProcessingStrategyName", "charges", "accountingRule",
+            "externalId", "accountingMappings", "paymentChannelToFundSourceMappings", "fundOptions", "paymentTypeOptions",
+            "currencyOptions", "repaymentFrequencyTypeOptions", "interestRateFrequencyTypeOptions", "amortizationTypeOptions",
+            "interestTypeOptions", "interestCalculationPeriodTypeOptions", "transactionProcessingStrategyOptions", "chargeOptions",
+            "accountingOptions", "accountingRuleOptions", "accountingMappingOptions", "floatingRateOptions",
+            "isLinkedToFloatingInterestRates", "floatingRatesId", "interestRateDifferential", "minDifferentialLendingRate",
+            "defaultDifferentialLendingRate", "maxDifferentialLendingRate", "isFloatingInterestRateCalculationAllowed",
+            LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, LoanProductConstants.loanTenureFrequencyType,
+            LoanProductConstants.canUseForTopup, LoanProductConstants.allowUpfrontCollection, "writeOffToExpenseAccountMapping",
+            LoanProductConstants.weeksInYearType));
 
-    private final Set<String> PRODUCT_MIX_DATA_PARAMETERS = new HashSet<>(Arrays.asList("productId", "productName", "restrictedProducts",
-            "allowedProducts", "productOptions"));
+    private final Set<String> PRODUCT_MIX_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList("productId", "productName", "restrictedProducts", "allowedProducts", "productOptions"));
+
+    private final Set<String> ELIGIBILITY_DATA_PARAMETERS = new HashSet<>(Arrays.asList("loanProductId", "loanProductName", "isActive"));
 
     private final String resourceNameForPermissions = "LOANPRODUCT";
 
@@ -105,9 +134,17 @@ public class LoanProductsApiResource {
     private final ProductToGLAccountMappingReadPlatformService accountMappingReadPlatformService;
     private final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService;
     private final DefaultToApiJsonSerializer<ProductMixData> productMixDataApiJsonSerializer;
+    private final ToApiJsonSerializer<LoanProductEligibilityData> productEligibilityDataToApiJsonSerializer;
     private final ProductMixReadPlatformService productMixReadPlatformService;
     private final DropdownReadPlatformService commonDropdownReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
+    private final FloatingRatesReadPlatformService floatingRateReadPlatformService;
+    private final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer;
+    private final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService;
+    private final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
+    private final ClientReadPlatformService clientReadPlatformService;
+    private final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository;
 
     @Autowired
     public LoanProductsApiResource(final PlatformSecurityContext context, final LoanProductReadPlatformService readPlatformService,
@@ -119,9 +156,16 @@ public class LoanProductsApiResource {
             final ProductToGLAccountMappingReadPlatformService accountMappingReadPlatformService,
             final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService,
             final DefaultToApiJsonSerializer<ProductMixData> productMixDataApiJsonSerializer,
+            final DefaultToApiJsonSerializer<LoanProductEligibilityData> productEligibilityDataToApiJsonSerializer,
             final ProductMixReadPlatformService productMixReadPlatformService,
             final DropdownReadPlatformService commonDropdownReadPlatformService,
-            PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+            final FloatingRatesReadPlatformService floatingRateReadPlatformService,
+            final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer,
+            final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService,
+            final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService,
+            final CodeValueReadPlatformService codeValueReadPlatformService, final ClientReadPlatformService clientReadPlatformService,
+            final CreditBureauLoanProductOfficeMappingRepository creditBureauLoanProductOfficeMappingRepository) {
         this.context = context;
         this.loanProductReadPlatformService = readPlatformService;
         this.chargeReadPlatformService = chargeReadPlatformService;
@@ -137,6 +181,14 @@ public class LoanProductsApiResource {
         this.productMixReadPlatformService = productMixReadPlatformService;
         this.commonDropdownReadPlatformService = commonDropdownReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
+        this.floatingRateReadPlatformService = floatingRateReadPlatformService;
+        this.creditbureauLoanproductDataApiJsonSerializer = creditbureauLoanproductDataApiJsonSerializer;
+        this.creditBureauLoanProductMappingReadPlatformService = creditBureauLoanProductMappingReadPlatformService;
+        this.productEligibilityDataToApiJsonSerializer = productEligibilityDataToApiJsonSerializer;
+        this.productEligibilityReadPlatformService = productEligibilityReadPlatformService;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
+        this.clientReadPlatformService = clientReadPlatformService;
+        this.creditBureauLoanProductOfficeMappingRepository = creditBureauLoanProductOfficeMappingRepository;
     }
 
     @POST
@@ -165,6 +217,16 @@ public class LoanProductsApiResource {
                 this.context.authenticatedUser().validateHasReadPermission("PRODUCTMIX");
                 final Collection<ProductMixData> productMixes = this.productMixReadPlatformService.retrieveAllProductMixes();
                 return this.productMixDataApiJsonSerializer.serialize(settings, productMixes, this.PRODUCT_MIX_DATA_PARAMETERS);
+            } else if (associationParameters.contains("creditBureaus")) {
+                final Collection<CreditBureauLoanProductMappingData> creditBureauLoanProductMappingData = this.creditBureauLoanProductMappingReadPlatformService
+                        .retrieveAllCreditbureauLoanproductMappingData();
+                return this.creditbureauLoanproductDataApiJsonSerializer.serialize(settings, creditBureauLoanProductMappingData);
+            }
+            if (associationParameters.contains("eligibility")) {
+                final Collection<LoanProductEligibilityData> eligibilityLoanProducts = this.productEligibilityReadPlatformService
+                        .getAllLoanProductEligibility();
+                return this.productEligibilityDataToApiJsonSerializer.serialize(settings, eligibilityLoanProducts,
+                        this.ELIGIBILITY_DATA_PARAMETERS);
             }
         }
 
@@ -200,29 +262,55 @@ public class LoanProductsApiResource {
     @Path("{productId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveLoanProductDetails(@PathParam("productId") final Long productId, @Context final UriInfo uriInfo) {
+    public String retrieveLoanProductDetails(@PathParam("productId") final Long productId, @Context final UriInfo uriInfo,
+            @QueryParam("clientId") final Long clientId) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
+        final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        if (associationParameters.contains("creditBureaus")) {
+            CreditBureauLoanProductMappingData creditBureauLoanProductMappingData = null;
+            Long mappingId = null;
+            if (clientId != null) {
+                CreditBureauLoanProductOfficeMapping creditBureauLoanProductOfficeMapping = null;
+                final Long officeId = this.clientReadPlatformService.retrieveOfficeId(clientId);
+                creditBureauLoanProductOfficeMapping = this.creditBureauLoanProductOfficeMappingRepository
+                        .retrieveCreditBureauAndLoanProductOfficeMapping(productId, officeId);
+                if (creditBureauLoanProductOfficeMapping == null) {
+                    creditBureauLoanProductOfficeMapping = this.creditBureauLoanProductOfficeMappingRepository
+                            .retrieveDefaultCreditBureauAndLoanProductOfficeMapping(productId);
+                }
+                if (creditBureauLoanProductOfficeMapping != null) {
+                    mappingId = creditBureauLoanProductOfficeMapping.getCreditBureauLoanProductMapping().getId();
+                }
+            } else {
+                mappingId = productId;
+            }
+            creditBureauLoanProductMappingData = this.creditBureauLoanProductMappingReadPlatformService
+                    .retrieveCreditbureauLoanproductMappingData(mappingId);
 
+            return this.creditbureauLoanproductDataApiJsonSerializer.serialize(settings, creditBureauLoanProductMappingData);
+        }
         LoanProductData loanProduct = this.loanProductReadPlatformService.retrieveLoanProduct(productId);
 
         Map<String, Object> accountingMappings = null;
         Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings = null;
         Collection<ChargeToGLAccountMapper> feeToGLAccountMappings = null;
+        Collection<CodeValueToGLAccountMapper> writeOffReasonsToExpenseAccountMappings = null;
         Collection<ChargeToGLAccountMapper> penaltyToGLAccountMappings = null;
         if (loanProduct.hasAccountingEnabled()) {
-            accountingMappings = this.accountMappingReadPlatformService.fetchAccountMappingDetailsForLoanProduct(productId, loanProduct
-                    .accountingRuleType().getId().intValue());
+            accountingMappings = this.accountMappingReadPlatformService.fetchAccountMappingDetailsForLoanProduct(productId,
+                    loanProduct.accountingRuleType().getId().intValue());
             paymentChannelToFundSourceMappings = this.accountMappingReadPlatformService
                     .fetchPaymentTypeToFundSourceMappingsForLoanProduct(productId);
             feeToGLAccountMappings = this.accountMappingReadPlatformService
                     .fetchFeeToIncomeOrLiabilityAccountMappingsForLoanProduct(productId);
             penaltyToGLAccountMappings = this.accountMappingReadPlatformService
                     .fetchPenaltyToIncomeAccountMappingsForLoanProduct(productId);
+            writeOffReasonsToExpenseAccountMappings = this.accountMappingReadPlatformService
+                    .fetchCodeValueToExpenseAccountMappingsForLoanProduct(productId);
             loanProduct = LoanProductData.withAccountingDetails(loanProduct, accountingMappings, paymentChannelToFundSourceMappings,
-                    feeToGLAccountMappings, penaltyToGLAccountMappings);
+                    feeToGLAccountMappings, penaltyToGLAccountMappings, writeOffReasonsToExpenseAccountMappings);
         }
 
         if (settings.isTemplate()) {
@@ -267,7 +355,7 @@ public class LoanProductsApiResource {
                 .retrieveInterestRateFrequencyTypeOptions();
         final Collection<PaymentTypeData> paymentTypeOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
 
-        Collection<FundData> fundOptions = this.fundReadPlatformService.retrieveAllFunds();
+        Collection<FundData> fundOptions = this.fundReadPlatformService.retrieveAllFunds(FundApiConstants.activeParamName);
         if (fundOptions.isEmpty()) {
             fundOptions = null;
         }
@@ -283,22 +371,48 @@ public class LoanProductsApiResource {
         final List<EnumOptionData> loanCycleValueConditionTypeOptions = this.dropdownReadPlatformService
                 .retrieveLoanCycleValueConditionTypeOptions();
 
-        final List<EnumOptionData> daysInMonthTypeOptions = commonDropdownReadPlatformService.retrieveDaysInMonthTypeOptions();
-        final List<EnumOptionData> daysInYearTypeOptions = commonDropdownReadPlatformService.retrieveDaysInYearTypeOptions();
-        final List<EnumOptionData> interestRecalculationCompoundingTypeOptions = dropdownReadPlatformService
+        final List<EnumOptionData> daysInMonthTypeOptions = this.commonDropdownReadPlatformService.retrieveDaysInMonthTypeOptions();
+        final List<EnumOptionData> daysInYearTypeOptions = this.commonDropdownReadPlatformService.retrieveDaysInYearTypeOptions();
+        final List<EnumOptionData> interestRecalculationCompoundingTypeOptions = this.dropdownReadPlatformService
                 .retrieveInterestRecalculationCompoundingTypeOptions();
-        final List<EnumOptionData> rescheduleStrategyTypeOptions = dropdownReadPlatformService.retrieveRescheduleStrategyTypeOptions();
-        final List<EnumOptionData> interestRecalculationFrequencyTypeOptions = dropdownReadPlatformService
+        final List<EnumOptionData> rescheduleStrategyTypeOptions = this.dropdownReadPlatformService.retrieveRescheduleStrategyTypeOptions();
+        final List<EnumOptionData> interestRecalculationFrequencyTypeOptions = this.dropdownReadPlatformService
                 .retrieveInterestRecalculationFrequencyTypeOptions();
-        final List<EnumOptionData> preCloseInterestCalculationStrategyOptions = dropdownReadPlatformService
+        final List<EnumOptionData> interestRecalculationNthDayTypeOptions = this.dropdownReadPlatformService
+                .retrieveInterestRecalculationNthDayTypeOptions();
+        final List<EnumOptionData> interestRecalculationDayOfWeekTypeOptions = this.dropdownReadPlatformService
+                .retrieveInterestRecalculationDayOfWeekTypeOptions();
+        final List<EnumOptionData> preCloseInterestCalculationStrategyOptions = this.dropdownReadPlatformService
                 .retrivePreCloseInterestCalculationStrategyOptions();
+        final List<FloatingRateData> floatingRateOptions = this.floatingRateReadPlatformService.retrieveLookupActive();
+        final boolean closeLoanOnOverpayment = productData.closeLoanOnOverpayment();
 
-        return new LoanProductData(productData, chargeOptions, penaltyOptions, paymentTypeOptions, currencyOptions,
-                amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions, repaymentFrequencyTypeOptions,
-                interestRateFrequencyTypeOptions, fundOptions, transactionProcessingStrategyOptions, accountOptions,
-                accountingRuleTypeOptions, loanCycleValueConditionTypeOptions, daysInMonthTypeOptions, daysInYearTypeOptions,
+        final List<CodeValueData> codeValueOptions = new ArrayList<>(
+                this.codeValueReadPlatformService.retrieveCodeValuesByCode(LoanApiConstants.WRITEOFFREASONS));
+
+        final List<EnumOptionData> weeksInYearTypeOptions = this.dropdownReadPlatformService.retrieveWeeksInYearTypeOptions();
+
+        final List<EnumOptionData> brokenPeriodMethodTypeOptions = this.dropdownReadPlatformService.retrieveBrokenPeriodMethodTypeOptions();
+
+        final Collection<EnumOptionData> loanProductApplicableForLoanTypeOptions = LoanProductApplicableForLoanType.typeOptions();
+        final Collection<EnumOptionData> clientProfileTypeOptions = ClientProfileType.typeOptions();
+        final Collection<EnumOptionData> legalFormOptions = LegalForm.legalFormTypeOptions();
+        final Collection<CodeValueData> clientTypeOptions = this.codeValueReadPlatformService
+                .retrieveCodeValuesByCode(LoanProductConstants.CLIENT_TYPE_CODE);
+        final Collection<CodeValueData> clientClassificationOptions = this.codeValueReadPlatformService
+                .retrieveCodeValuesByCode(LoanProductConstants.CLIENT_CLASSIFICATION_CODE);
+
+        final LoanProductTemplateData loanProductTemplateData = LoanProductTemplateData.template(loanProductApplicableForLoanTypeOptions,
+                clientProfileTypeOptions, legalFormOptions, clientTypeOptions, clientClassificationOptions);
+
+        return new LoanProductData(productData, chargeOptions, penaltyOptions, paymentTypeOptions, currencyOptions, amortizationTypeOptions,
+                interestTypeOptions, interestCalculationPeriodTypeOptions, repaymentFrequencyTypeOptions, interestRateFrequencyTypeOptions,
+                fundOptions, transactionProcessingStrategyOptions, accountOptions, accountingRuleTypeOptions,
+                loanCycleValueConditionTypeOptions, daysInMonthTypeOptions, daysInYearTypeOptions,
                 interestRecalculationCompoundingTypeOptions, rescheduleStrategyTypeOptions, interestRecalculationFrequencyTypeOptions,
-                preCloseInterestCalculationStrategyOptions);
+                preCloseInterestCalculationStrategyOptions, floatingRateOptions, interestRecalculationNthDayTypeOptions,
+                interestRecalculationDayOfWeekTypeOptions, closeLoanOnOverpayment, codeValueOptions, weeksInYearTypeOptions,
+                brokenPeriodMethodTypeOptions, loanProductTemplateData);
     }
 
 }

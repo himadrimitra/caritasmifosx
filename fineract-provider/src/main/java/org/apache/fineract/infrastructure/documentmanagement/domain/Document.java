@@ -57,6 +57,15 @@ public class Document extends AbstractPersistable<Long> {
     @Column(name = "storage_type_enum")
     private Integer storageType;
 
+    @Column(name = "report_mapping_id")
+    private Long reportIdentifier ;
+    
+    @Column(name = "tag_id")
+    private Long tagIdentifier ;
+    
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
+    
     public Document() {}
 
     public static Document createNew(final String parentEntityType, final Long parentEntityId, final String name, final String fileName,
@@ -164,5 +173,21 @@ public class Document extends AbstractPersistable<Long> {
 
     public StorageType storageType() {
         return StorageType.fromInt(this.storageType);
+    }
+    
+    public void setReportIdentifier(final Long reportIdentifier) {
+        this.reportIdentifier = reportIdentifier ;
+    }
+    
+    public Long getReportIdentifier() {
+        return this.reportIdentifier ;
+    }
+    
+    public void setTagIdentifier(final Long tagIdentifier) {
+        this.tagIdentifier = tagIdentifier ;
+    }
+    
+    public boolean isLocked() {
+        return this.isLocked;
     }
 }

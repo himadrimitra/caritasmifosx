@@ -20,6 +20,7 @@ package org.apache.fineract.infrastructure.documentmanagement.service;
 
 import java.io.InputStream;
 
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,11 +28,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 public interface ImageWritePlatformService {
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'CREATE_CLIENTIMAGE','CREATE_STAFFIMAGE')")
-    CommandProcessingResult saveOrUpdateImage(String entityName, Long entityId, String imageName, InputStream inputStream, Long fileSize);
-
-    @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'CREATE_CLIENTIMAGE','CREATE_STAFFIMAGE')")
-    CommandProcessingResult saveOrUpdateImage(String entityName, Long entityId, Base64EncodedImage encodedImage);
+    CommandProcessingResult saveOrUpdateImage(JsonCommand jsonCommand);
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'DELETE_CLIENTIMAGE','DELETE_STAFFIMAGE')")
     CommandProcessingResult deleteImage(String entityName, Long entityId);
+
+    @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'DELETE_CLIENTIMAGE','DELETE_STAFFIMAGE')")
+    String saveImageInRepository(String imageName,InputStream inputStream, Long fileSize,Base64EncodedImage encodedImage,Long entityId,String entityName);
 }

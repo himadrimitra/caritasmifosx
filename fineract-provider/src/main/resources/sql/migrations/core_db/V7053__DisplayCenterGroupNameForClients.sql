@@ -1,0 +1,1 @@
+INSERT INTO `c_configuration` (`name`, `value`, `date_value`, `enabled`, `is_trap_door`, `description`) VALUES ('show-hierarchy-details-on-search', NULL, NULL, 0, 0, 'to show the hierarchy details based on search.');

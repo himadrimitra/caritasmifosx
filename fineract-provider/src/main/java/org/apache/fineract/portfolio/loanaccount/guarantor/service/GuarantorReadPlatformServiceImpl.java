@@ -35,12 +35,10 @@ import org.apache.fineract.portfolio.account.data.PortfolioAccountData;
 import org.apache.fineract.portfolio.account.domain.AccountAssociationType;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
-import org.apache.fineract.portfolio.loanaccount.domain.Loan;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.GuarantorData;
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.GuarantorFundingData;
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.GuarantorTransactionData;
+import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.savings.data.DepositAccountOnHoldTransactionData;
 import org.apache.fineract.portfolio.savings.service.SavingsEnumerations;
 import org.joda.time.LocalDate;
@@ -55,21 +53,20 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
     private final JdbcTemplate jdbcTemplate;
     private final ClientReadPlatformService clientReadPlatformService;
     private final StaffReadPlatformService staffReadPlatformService;
-    private final LoanRepository loanRepository;
+    private final LoanReadPlatformService loanReadPlatformService;
 
     @Autowired
     public GuarantorReadPlatformServiceImpl(final RoutingDataSource dataSource, final ClientReadPlatformService clientReadPlatformService,
-            final StaffReadPlatformService staffReadPlatformService, final LoanRepository loanRepository) {
+            final StaffReadPlatformService staffReadPlatformService, final LoanReadPlatformService loanReadPlatformService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.clientReadPlatformService = clientReadPlatformService;
         this.staffReadPlatformService = staffReadPlatformService;
-        this.loanRepository = loanRepository;
+        this.loanReadPlatformService = loanReadPlatformService;
     }
 
     @Override
     public List<GuarantorData> retrieveGuarantorsForValidLoan(final Long loanId) {
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
+        this.loanReadPlatformService.validateForLoanExistence(loanId);
         return retrieveGuarantorsForLoan(loanId);
     }
 
@@ -126,10 +123,12 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
                 .append(this.guarantorFundingMapper.schema())//
                 .append(",")//
                 .append(this.guarantorTransactionMapper.schema())//
+                .append(",")//
+                .append(" g.national_id as nationalId ")//
                 .append(" FROM m_guarantor g") //
                 .append(" left JOIN m_code_value cv on g.client_reln_cv_id = cv.id")//
                 .append(" left JOIN m_guarantor_funding_details gfd on g.id = gfd.guarantor_id")//
-                .append(" left JOIN m_portfolio_account_associations aa on gfd.account_associations_id = aa.id and aa.association_type_enum = ?")//
+                .append(" left JOIN m_portfolio_account_associations aa on gfd.account_associations_id = aa.id and aa.is_active = 1 and aa.association_type_enum = ?")//
                 .append(" left JOIN m_savings_account sa on sa.id = aa.linked_savings_account_id ")//
                 .append(" left join m_guarantor_transaction gt on gt.guarantor_fund_detail_id = gfd.id") //
                 .append(" left join m_deposit_account_on_hold_transaction oht on oht.id = gt.deposit_on_hold_transaction_id");
@@ -166,6 +165,7 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
             final String housePhoneNumber = rs.getString("housePhoneNumber");
             final String comment = rs.getString("comment");
             final boolean status = rs.getBoolean("guarantorStatus");
+            final String nationalId = rs.getString("nationalId");
             final Collection<PortfolioAccountData> accountLinkingOptions = null;
             List<GuarantorFundingData> guarantorFundingDetails = null;
             GuarantorFundingData guarantorFundingData = this.guarantorFundingMapper.mapRow(rs, rowNum);
@@ -184,18 +184,14 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
 
                 }
             }
-
             final String accountNumber = null;
             final String clientName = null;
-           
-
             return new GuarantorData(id, loanId, clientRelationshipType, entityId, guarantorType, firstname, lastname, dob, addressLine1,
                     addressLine2, city, state, zip, country, mobileNumber, housePhoneNumber, comment, null, null, null, status,
-                    guarantorFundingDetails, null, null, accountLinkingOptions, accountNumber, clientName);
+                    guarantorFundingDetails, null, null, accountLinkingOptions,nationalId, accountNumber, clientName);
         }
     }
-    
-    
+
     private static final class GuarantorSavingsMapper implements RowMapper<GuarantorData> {
 
         private GuarantorTransactionMapper guarantorTransactionMapper = new GuarantorTransactionMapper();
@@ -209,6 +205,8 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
                 .append(this.guarantorFundingMapper.schema())//
                 .append(",")//
                 .append(this.guarantorTransactionMapper.schema())//
+                .append(",")//
+                .append(" g.national_id as nationalId ")//
                 .append(" FROM m_guarantor g") //
                 .append(" join m_loan ml on ml.id = g.loan_id")
                 .append(" left join m_client c on c.id = ml.client_id")
@@ -253,6 +251,7 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
             final boolean status = rs.getBoolean("guarantorStatus");
             final String accountNumber = rs.getString("loanaccountNumber");
             final String clientName = rs.getString("loanclientName");
+            final String nationalId = rs.getString("nationalId");
             final Collection<PortfolioAccountData> accountLinkingOptions = null;
             List<GuarantorFundingData> guarantorFundingDetails = null;
             GuarantorFundingData guarantorFundingData = this.guarantorFundingMapper.mapRow(rs, rowNum);
@@ -271,12 +270,11 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
 
                 }
             }
-
            
 
             return new GuarantorData(id, loanId, clientRelationshipType, entityId, guarantorType, firstname, lastname, dob, addressLine1,
                     addressLine2, city, state, zip, country, mobileNumber, housePhoneNumber, comment, null, null, null, status,
-                    guarantorFundingDetails, null, null, accountLinkingOptions, accountNumber, clientName);
+                    guarantorFundingDetails, null, null, accountLinkingOptions, nationalId, accountNumber, clientName);
         }
     }
 
@@ -303,7 +301,7 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
         public GuarantorFundingData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
             GuarantorFundingData guarantorFundingData = null;
             final Long id = rs.getLong("gfdId");
-            if (id != null && id > 0) {
+            if (id > 0) {
                 final BigDecimal amount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "amount");
                 final BigDecimal amountReleased = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "amountReleased");
                 final BigDecimal amountRemaining = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "amountRemaining");
@@ -320,7 +318,7 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
                         guarantorTransactions.add(guarantorTransactionData);
                         while (rs.next()) {
                             final Long tempFundId = rs.getLong("gfdId");
-                            if (tempFundId != null && tempFundId.equals(id)) {
+                            if (tempFundId.equals(id)) {
                                 guarantorTransactionData = this.guarantorTransactionMapper.mapRow(rs, rowNum);
                                 guarantorTransactions.add(guarantorTransactionData);
                             } else {
@@ -365,7 +363,7 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
             EnumOptionData transactionType = SavingsEnumerations.onHoldTransactionType(transactionTypeEnum);
             final boolean reversed = rs.getBoolean("reversed");
             final boolean transactionReversed = rs.getBoolean("transactionReversed");
-            if (id != null) {
+            if (id > 0) {
                 DepositAccountOnHoldTransactionData onHoldTransactionData = DepositAccountOnHoldTransactionData.instance(transactionId,
                         amount, transactionType, date, transactionReversed);
                 guarantorTransactionData = GuarantorTransactionData.instance(id, onHoldTransactionData, null, reversed);

@@ -20,7 +20,7 @@ package org.apache.fineract.portfolio.accountdetails.data;
 
 import java.util.Collection;
 
-import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.portfolio.collaterals.data.PledgeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeSummaryData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.savings.data.SavingsChargesSummaryData;
@@ -28,68 +28,74 @@ import org.apache.fineract.portfolio.savings.data.SavingsChargesSummaryData;
 /**
  * Immutable data object representing a summary of various accounts.
  */
+@SuppressWarnings("unused")
 public class AccountSummaryCollectionData {
 
-    @SuppressWarnings("unused")
     private final Collection<LoanAccountSummaryData> loanAccounts;
-    @SuppressWarnings("unused")
     private final Collection<SavingsAccountSummaryData> savingsAccounts;
-    @SuppressWarnings("unused")
+    private final Collection<ShareAccountSummaryData> shareAccounts;
+
     private final Collection<LoanAccountSummaryData> memberLoanAccounts;
-    @SuppressWarnings("unused")
     private final Collection<SavingsAccountSummaryData> memberSavingsAccounts;
-    @SuppressWarnings("unused")
-    private final Collection<PaymentTypeData> paymentTypeOptions;    
-    @SuppressWarnings("unused")
-	private final Collection<LoanChargeSummaryData>loanCharges;    
-    @SuppressWarnings("unused")
-	private final Collection<SavingsChargesSummaryData>savingsCharges;
-    
-   
+    private final Collection<PledgeData> pledges;
+
+    private final Collection<PaymentTypeData> paymentTypeOptions;
+    private final Collection<LoanChargeSummaryData> loanCharges;
+    private final Collection<SavingsChargesSummaryData> savingsCharges;
 
     public AccountSummaryCollectionData(final Collection<LoanAccountSummaryData> loanAccounts,
-            final Collection<SavingsAccountSummaryData> savingsAccounts, final Collection<PaymentTypeData> paymentTypeOptions) {
+            final Collection<SavingsAccountSummaryData> savingsAccounts, final Collection<PledgeData> pledges,
+            final Collection<ShareAccountSummaryData> shareAccounts, final Collection<PaymentTypeData> paymentTypeOptions) {
         this.loanAccounts = defaultLoanAccountsIfEmpty(loanAccounts);
         this.savingsAccounts = defaultSavingsAccountsIfEmpty(savingsAccounts);
+        this.shareAccounts = defaultShareAccountsIfEmpty(shareAccounts);
         this.memberLoanAccounts = null;
         this.memberSavingsAccounts = null;
+        this.pledges = pledges;
         this.paymentTypeOptions = defaultPaymentTypeIfEmpty(paymentTypeOptions);
         this.loanCharges = null;
-		this.savingsCharges = null;
+        this.savingsCharges = null;
     }
 
     public AccountSummaryCollectionData(final Collection<LoanAccountSummaryData> loanAccounts,
             final Collection<SavingsAccountSummaryData> savingsAccounts, final Collection<LoanAccountSummaryData> memberLoanAccounts,
-            final Collection<SavingsAccountSummaryData> memberSavingsAccounts, final Collection<PaymentTypeData> paymentTypeOptions) {
+            final Collection<SavingsAccountSummaryData> memberSavingsAccounts, final Collection<PledgeData> pledges,
+            final Collection<PaymentTypeData> paymentTypeOptions) {
         this.loanAccounts = defaultLoanAccountsIfEmpty(loanAccounts);
         this.savingsAccounts = defaultSavingsAccountsIfEmpty(savingsAccounts);
+        this.shareAccounts = null;
         this.memberLoanAccounts = defaultLoanAccountsIfEmpty(memberLoanAccounts);
         this.memberSavingsAccounts = defaultSavingsAccountsIfEmpty(memberSavingsAccounts);
+        this.pledges = defaultPledgesIfEmpty(pledges);
         this.paymentTypeOptions = defaultPaymentTypeIfEmpty(paymentTypeOptions);
         this.loanCharges = null;
-		this.savingsCharges = null;
+        this.savingsCharges = null;
     }
-    
 
-    public AccountSummaryCollectionData(
-		final Collection<LoanAccountSummaryData> loanAccounts,
-		final Collection<SavingsAccountSummaryData> savingsAccounts,
-		final Collection<PaymentTypeData> paymentTypeOptions,
-		final Collection<LoanChargeSummaryData> loanCharges,
-		final Collection<SavingsChargesSummaryData> savingsCharges,
-		final Collection<LoanAccountSummaryData> memberLoanAccounts,
-        final Collection<SavingsAccountSummaryData> memberSavingsAccounts) {
-		super();
-		this.loanAccounts = defaultLoanAccountsIfEmpty(loanAccounts);
-		this.savingsAccounts = defaultSavingsAccountsIfEmpty(savingsAccounts);
-		this.paymentTypeOptions = defaultPaymentTypeIfEmpty(paymentTypeOptions);		   
-		this.loanCharges = loanCharges;
-		this.savingsCharges = savingsCharges;
-		this.memberLoanAccounts = null;
-        this.memberSavingsAccounts = null;  
-	}
+    public AccountSummaryCollectionData(final Collection<LoanAccountSummaryData> loanAccounts,
+            final Collection<SavingsAccountSummaryData> savingsAccounts, final Collection<PledgeData> pledges,
+            final Collection<ShareAccountSummaryData> shareAccounts, final Collection<PaymentTypeData> paymentTypeOptions,
+            final Collection<LoanChargeSummaryData> loanCharges, final Collection<SavingsChargesSummaryData> savingsCharges) {
+        this.loanAccounts = defaultLoanAccountsIfEmpty(loanAccounts);
+        this.savingsAccounts = defaultSavingsAccountsIfEmpty(savingsAccounts);
+        this.shareAccounts = defaultShareAccountsIfEmpty(shareAccounts);
+        this.memberLoanAccounts = null;
+        this.memberSavingsAccounts = null;
+        this.pledges = pledges;
+        this.paymentTypeOptions = defaultPaymentTypeIfEmpty(paymentTypeOptions);
+        this.loanCharges = loanCharges;
+        this.savingsCharges = savingsCharges;
+    }
 
-	private Collection<LoanAccountSummaryData> defaultLoanAccountsIfEmpty(final Collection<LoanAccountSummaryData> collection) {
+    private Collection<PledgeData> defaultPledgesIfEmpty(final Collection<PledgeData> pledges) {
+        Collection<PledgeData> returnPledges = null;
+        if (pledges != null && !pledges.isEmpty()) {
+            returnPledges = pledges;
+        }
+        return returnPledges;
+    }
+
+    private Collection<LoanAccountSummaryData> defaultLoanAccountsIfEmpty(final Collection<LoanAccountSummaryData> collection) {
         Collection<LoanAccountSummaryData> returnCollection = null;
         if (collection != null && !collection.isEmpty()) {
             returnCollection = collection;
@@ -104,9 +110,17 @@ public class AccountSummaryCollectionData {
         }
         return returnCollection;
     }
-    
+
     private Collection<PaymentTypeData> defaultPaymentTypeIfEmpty(final Collection<PaymentTypeData> collection) {
         Collection<PaymentTypeData> returnCollection = null;
+        if (collection != null && !collection.isEmpty()) {
+            returnCollection = collection;
+        }
+        return returnCollection;
+    }
+
+    private Collection<ShareAccountSummaryData> defaultShareAccountsIfEmpty(final Collection<ShareAccountSummaryData> collection) {
+        Collection<ShareAccountSummaryData> returnCollection = null;
         if (collection != null && !collection.isEmpty()) {
             returnCollection = collection;
         }

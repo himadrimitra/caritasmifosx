@@ -21,7 +21,6 @@ package org.apache.fineract.infrastructure.security.service;
 import org.apache.fineract.infrastructure.security.domain.PlatformUser;
 import org.apache.fineract.infrastructure.security.domain.PlatformUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -39,7 +38,7 @@ public class TenantAwareJpaPlatformUserDetailsService implements PlatformUserDet
     private PlatformUserRepository platformUserRepository;
 
     @Override
-    @Cacheable(value = "usersByUsername", key = "T(org.mifosplatform.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#username+'ubu')")
+//    @Cacheable(value = "usersByUsername", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#username+'ubu')")
     public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException, DataAccessException {
 
         // Retrieve active users only

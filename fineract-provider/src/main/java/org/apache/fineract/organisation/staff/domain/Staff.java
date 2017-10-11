@@ -22,17 +22,33 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.persistence.*;
+import javax.persistence.Cacheable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.UniqueConstraint;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Image;
 import org.apache.fineract.organisation.office.domain.Office;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.LazyToOne;
+import org.hibernate.annotations.LazyToOneOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "Staff")
 @Table(name = "m_staff", uniqueConstraints = { @UniqueConstraint(columnNames = { "display_name" }, name = "display_name"),
         @UniqueConstraint(columnNames = { "external_id" }, name = "external_id_UNIQUE"),
         @UniqueConstraint(columnNames = { "mobile_no" }, name = "mobile_no_UNIQUE") })
@@ -70,11 +86,12 @@ public class Staff extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date joiningDate;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organisational_role_parent_staff_id", nullable = true)
     private Staff organisationalRoleParentStaff;
 
     @OneToOne(optional = true)
+    @LazyToOne(value = LazyToOneOption.PROXY)
     @JoinColumn(name = "image_id", nullable = true)
     private Image image;
 
@@ -254,11 +271,23 @@ public class Staff extends AbstractPersistable<Long> {
         return this.office;
     }
 
-    public void setImage(Image image) {
+    public void setImage(final Image image) {
         this.image = image;
     }
 
     public Image getImage() {
         return this.image;
+    }
+
+    public String getDisplayName() {
+        return this.displayName;
+    }
+
+    public LocalDate getJoiningLocalDate() {
+        LocalDate joiningLocalDate = null;
+        if (this.joiningDate != null) {
+            joiningLocalDate = LocalDate.fromDateFields(this.joiningDate);
+        }
+        return joiningLocalDate;
     }
 }

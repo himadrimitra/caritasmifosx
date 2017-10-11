@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.accounting.glaccount.data;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 
@@ -29,7 +30,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 /**
  * Immutable object representing a General Ledger Account
- * 
+ *
  * Note: no getter/setters required as google-gson will produce json from fields
  * of object.
  */
@@ -46,7 +47,9 @@ public class GLAccountData {
     private final String description;
     private final String nameDecorated;
     private final CodeValueData tagId;
-    private final Long organizationRunningBalance;
+    private final BigDecimal organizationRunningBalance;
+    private final EnumOptionData glClassificationType;
+    private final BigDecimal officeRunningBalance;
 
     // templates
     final List<EnumOptionData> accountTypeOptions;
@@ -61,10 +64,12 @@ public class GLAccountData {
     final Collection<CodeValueData> allowedEquityTagOptions;
     final Collection<CodeValueData> allowedIncomeTagOptions;
     final Collection<CodeValueData> allowedExpensesTagOptions;
+    final Collection<EnumOptionData> glClassificationTypeOptions;
 
     public GLAccountData(final Long id, final String name, final Long parentId, final String glCode, final boolean disabled,
             final boolean manualEntriesAllowed, final EnumOptionData type, final EnumOptionData usage, final String description,
-            final String nameDecorated, final CodeValueData tagId, final Long organizationRunningBalance) {
+            final String nameDecorated, final CodeValueData tagId, final BigDecimal organizationRunningBalance,
+            final EnumOptionData glClassificationType, final BigDecimal officeRunningBalance) {
         this.id = id;
         this.name = name;
         this.parentId = parentId;
@@ -89,6 +94,9 @@ public class GLAccountData {
         this.allowedEquityTagOptions = null;
         this.allowedIncomeTagOptions = null;
         this.allowedExpensesTagOptions = null;
+        this.glClassificationTypeOptions = null;
+        this.glClassificationType = glClassificationType;
+        this.officeRunningBalance = officeRunningBalance;
     }
 
     public GLAccountData(final GLAccountData accountData, final List<EnumOptionData> accountTypeOptions,
@@ -97,7 +105,8 @@ public class GLAccountData {
             final List<GLAccountData> incomeHeaderAccountOptions, final List<GLAccountData> expenseHeaderAccountOptions,
             final Collection<CodeValueData> allowedAssetsTagOptions, final Collection<CodeValueData> allowedLiabilitiesTagOptions,
             final Collection<CodeValueData> allowedEquityTagOptions, final Collection<CodeValueData> allowedIncomeTagOptions,
-            final Collection<CodeValueData> allowedExpensesTagOptions) {
+            final Collection<CodeValueData> allowedExpensesTagOptions, final Collection<EnumOptionData> glClassificationTypeOptions,
+            final EnumOptionData glClassificationType) {
         this.id = accountData.id;
         this.name = accountData.name;
         this.parentId = accountData.parentId;
@@ -122,6 +131,9 @@ public class GLAccountData {
         this.allowedEquityTagOptions = allowedEquityTagOptions;
         this.allowedIncomeTagOptions = allowedIncomeTagOptions;
         this.allowedExpensesTagOptions = allowedExpensesTagOptions;
+        this.glClassificationTypeOptions = glClassificationTypeOptions;
+        this.glClassificationType = glClassificationType;
+        this.officeRunningBalance = accountData.officeRunningBalance;
     }
 
     public static GLAccountData sensibleDefaultsForNewGLAccountCreation(final Integer glAccType) {
@@ -141,10 +153,12 @@ public class GLAccountData {
         final String description = null;
         final String nameDecorated = null;
         final CodeValueData tagId = null;
-        final Long organizationRunningBalance = null;
+        final BigDecimal organizationRunningBalance = null;
+        final EnumOptionData glClassificationType = null;
+        final BigDecimal officeRunningBalance = null;
 
-        return new GLAccountData(id, name, parentId, glCode, disabled, manualEntriesAllowed, type, usage, description, nameDecorated,
-                tagId, organizationRunningBalance);
+        return new GLAccountData(id, name, parentId, glCode, disabled, manualEntriesAllowed, type, usage, description, nameDecorated, tagId,
+                organizationRunningBalance, glClassificationType, officeRunningBalance);
     }
 
     public GLAccountData(final Long id, final String name, final String glCode) {
@@ -172,6 +186,25 @@ public class GLAccountData {
         this.allowedEquityTagOptions = null;
         this.allowedIncomeTagOptions = null;
         this.allowedExpensesTagOptions = null;
+        this.glClassificationTypeOptions = null;
+        this.glClassificationType = null;
+        this.officeRunningBalance = null;
+    }
+
+    public static GLAccountData createFrom(final Long id, final String name, final String glCode, final EnumOptionData type) {
+        final Long parentId = null;
+        final boolean disabled = false;
+        final boolean manualEntriesAllowed = true;
+        final EnumOptionData usage = null;
+        final String description = null;
+        final String nameDecorated = null;
+        final CodeValueData tagId = null;
+        final BigDecimal organizationRunningBalance = null;
+        final EnumOptionData glClassificationType = null;
+        final BigDecimal officeRunningBalance = null;
+
+        return new GLAccountData(id, name, parentId, glCode, disabled, manualEntriesAllowed, type, usage, description, nameDecorated, tagId,
+                organizationRunningBalance, glClassificationType, officeRunningBalance);
     }
 
     public Long getId() {
@@ -193,6 +226,14 @@ public class GLAccountData {
     public Integer getTypeId() {
         if (this.type != null) { return this.type.getId().intValue(); }
         return null;
+    }
+
+    public Collection<EnumOptionData> getGlClassificationTypeOptions() {
+        return this.glClassificationTypeOptions;
+    }
+
+    public EnumOptionData getGlClassificationType() {
+        return this.glClassificationType;
     }
 
 }

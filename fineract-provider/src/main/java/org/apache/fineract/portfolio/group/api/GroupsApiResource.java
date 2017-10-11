@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -49,6 +50,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -71,12 +73,18 @@ import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.group.service.GroupRolesReadPlatformService;
 import org.apache.fineract.portfolio.meeting.data.MeetingData;
 import org.apache.fineract.portfolio.meeting.service.MeetingReadPlatformService;
+import org.apache.fineract.portfolio.village.data.VillageData;
+import org.apache.fineract.portfolio.village.service.VillageReadPlatformService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.common.util.FinfluxStringUtils;
+import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckData;
+import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckTemplateData;
+import com.finflux.portfolio.loan.utilization.service.LoanUtilizationCheckReadPlatformService;
 import com.google.gson.JsonElement;
 
 @Path("/groups")
@@ -99,7 +107,13 @@ public class GroupsApiResource {
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final MeetingReadPlatformService meetingReadPlatformService;
+    private final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService;
+    private final VillageReadPlatformService villageReadPlatformService;
 
+    @SuppressWarnings("rawtypes")
+    private final DefaultToApiJsonSerializer defaultToApiJsonSerializer;
+
+    @SuppressWarnings("rawtypes")
     @Autowired
     public GroupsApiResource(final PlatformSecurityContext context, final GroupReadPlatformService groupReadPlatformService,
             final CenterReadPlatformService centerReadPlatformService, final ClientReadPlatformService clientReadPlatformService,
@@ -111,8 +125,9 @@ public class GroupsApiResource {
             final CollectionSheetReadPlatformService collectionSheetReadPlatformService, final FromJsonHelper fromJsonHelper,
             final GroupRolesReadPlatformService groupRolesReadPlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
-            final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService) {
-
+            final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService,
+            final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService,
+            final DefaultToApiJsonSerializer defaultToApiJsonSerializer, final VillageReadPlatformService villageReadPlatformService) {
         this.context = context;
         this.groupReadPlatformService = groupReadPlatformService;
         this.centerReadPlatformService = centerReadPlatformService;
@@ -128,6 +143,9 @@ public class GroupsApiResource {
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.meetingReadPlatformService = meetingReadPlatformService;
+        this.loanUtilizationCheckReadPlatformService = loanUtilizationCheckReadPlatformService;
+        this.defaultToApiJsonSerializer = defaultToApiJsonSerializer;
+        this.villageReadPlatformService = villageReadPlatformService;
     }
 
     @GET
@@ -165,19 +183,19 @@ public class GroupsApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
+    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("searchConditions") final String searchConditions,
             @QueryParam("officeId") final Long officeId, @QueryParam("staffId") final Long staffId,
             @QueryParam("externalId") final String externalId, @QueryParam("name") final String name,
             @QueryParam("underHierarchy") final String hierarchy, @QueryParam("paged") final Boolean paged,
             @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
-            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder) {
-
+            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
+            @QueryParam("orphansOnly") final Boolean orphansOnly) {
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
         this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.GROUP_RESOURCE_NAME);
         final PaginationParameters parameters = PaginationParameters.instance(paged, offset, limit, orderBy, sortOrder);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-
-        final SearchParameters searchParameters = SearchParameters.forGroups(sqlSearch, officeId, staffId, externalId, name, hierarchy,
-                offset, limit, orderBy, sortOrder);
+        final SearchParameters searchParameters = SearchParameters.forGroups(searchConditionsMap, officeId, staffId, externalId, name,
+                hierarchy, offset, limit, orderBy, sortOrder, orphansOnly);
         if (parameters.isPaged()) {
             final Page<GroupGeneralData> groups = this.groupReadPlatformService.retrievePagedAll(searchParameters, parameters);
             return this.toApiJsonSerializer.serialize(settings, groups, GroupingTypesApiConstants.GROUP_RESPONSE_DATA_PARAMETERS);
@@ -208,11 +226,12 @@ public class GroupsApiResource {
         GroupRoleData selectedRole = null;
         Collection<CalendarData> calendars = null;
         CalendarData collectionMeetingCalendar = null;
+        VillageData vd = null;
 
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("all")) {
-                associationParameters.addAll(Arrays.asList("clientMembers", "activeClientMembers",
-                        "groupRoles", "calendars", "collectionMeetingCalendar"));
+                associationParameters.addAll(Arrays.asList("clientMembers", "hierarchyLookup", "activeClientMembers", "groupRoles",
+                        "calendars", "collectionMeetingCalendar"));
             }
             if (associationParameters.contains("clientMembers")) {
                 membersOfGroup = this.clientReadPlatformService.retrieveClientMembersOfGroup(groupId);
@@ -220,6 +239,12 @@ public class GroupsApiResource {
                     membersOfGroup = null;
                 }
             }
+
+            if (associationParameters.contains("hierarchyLookup") && (group.getParentId() != null)) {
+                vd = this.villageReadPlatformService.retrieveVillageDetails(group.getParentId());
+                group = GroupGeneralData.withVillageData(group, vd);
+            }
+
             if (associationParameters.contains("activeClientMembers")) {
                 activeClientMembers = this.clientReadPlatformService.retrieveActiveClientMembersOfGroup(groupId);
                 if (CollectionUtils.isEmpty(activeClientMembers)) {
@@ -251,12 +276,12 @@ public class GroupsApiResource {
                 if (collectionMeetingCalendar != null) {
                     final boolean withHistory = true;
                     final LocalDate tillDate = null;
-                    final Collection<LocalDate> recurringDates = this.calendarReadPlatformService.generateRecurringDates(
-                            collectionMeetingCalendar, withHistory, tillDate);
+                    final Collection<LocalDate> recurringDates = this.calendarReadPlatformService
+                            .generateRecurringDates(collectionMeetingCalendar, withHistory, tillDate);
                     final Collection<LocalDate> nextTenRecurringDates = this.calendarReadPlatformService
                             .generateNextTenRecurringDates(collectionMeetingCalendar);
-                    final MeetingData lastMeeting = this.meetingReadPlatformService.retrieveLastMeeting(collectionMeetingCalendar
-                            .getCalendarInstanceId());
+                    final MeetingData lastMeeting = this.meetingReadPlatformService
+                            .retrieveLastMeeting(collectionMeetingCalendar.getCalendarInstanceId());
                     final LocalDate recentEligibleMeetingDate = this.calendarReadPlatformService
                             .generateNextEligibleMeetingDateForCollection(collectionMeetingCalendar, lastMeeting);
                     collectionMeetingCalendar = CalendarData.withRecurringDates(collectionMeetingCalendar, recurringDates,
@@ -264,8 +289,8 @@ public class GroupsApiResource {
                 }
             }
 
-            group = GroupGeneralData.withAssocations(group, membersOfGroup, activeClientMembers,
-                    groupRoles, calendars, collectionMeetingCalendar);
+            group = GroupGeneralData.withAssocations(group, membersOfGroup, activeClientMembers, groupRoles, calendars,
+                    collectionMeetingCalendar);
         }
 
         if (roleId != null) {
@@ -422,10 +447,58 @@ public class GroupsApiResource {
 
         final AccountSummaryCollectionData groupAccount = this.accountDetailsReadPlatformService.retrieveGroupAccountDetails(groupId);
 
-        final Set<String> GROUP_ACCOUNTS_DATA_PARAMETERS = new HashSet<>(Arrays.asList("loanAccounts", "savingsAccounts",
-                "memberLoanAccounts", "memberSavingsAccounts"));
+        final Set<String> GROUP_ACCOUNTS_DATA_PARAMETERS = new HashSet<>(
+                Arrays.asList("loanAccounts", "savingsAccounts", "memberLoanAccounts", "memberSavingsAccounts"));
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.groupSummaryToApiJsonSerializer.serialize(settings, groupAccount, GROUP_ACCOUNTS_DATA_PARAMETERS);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{groupId}/utilizationchecks/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveUtilizationchecksTemplate(@PathParam("groupId") final Long groupId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission("GROUP");
+
+        final Collection<LoanUtilizationCheckTemplateData> loanUtilizationCheckTemplateDatas = this.loanUtilizationCheckReadPlatformService
+                .retrieveGroupUtilizationchecksTemplate(groupId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.defaultToApiJsonSerializer.serialize(settings, loanUtilizationCheckTemplateDatas);
+    }
+
+    @POST
+    @Path("{groupId}/utilizationchecks")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String createCenterLoanUtilizationCheck(@PathParam("groupId") final Long groupId, final String apiRequestBodyAsJson) {
+
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().createGroupLoanUtilizationCheck(groupId)
+                .withJson(apiRequestBodyAsJson).build();
+
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+
+        return this.toApiJsonSerializer.serialize(result);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{groupId}/utilizationchecks")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveCenterLoanUtilizationchecks(@PathParam("groupId") final Long groupId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.CENTER_RESOURCE_NAME);
+
+        final Collection<LoanUtilizationCheckData> loanUtilizationCheckDatas = this.loanUtilizationCheckReadPlatformService
+                .retrieveGroupLoanUtilizationchecks(groupId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.defaultToApiJsonSerializer.serialize(settings, loanUtilizationCheckDatas);
     }
 }

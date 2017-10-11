@@ -28,7 +28,8 @@ import org.apache.fineract.infrastructure.accountnumberformat.service.AccountNum
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
-@Table(name = AccountNumberFormatConstants.ACCOUNT_NUMBER_FORMAT_TABLE_NAME, uniqueConstraints = { @UniqueConstraint(columnNames = { AccountNumberFormatConstants.ACCOUNT_TYPE_ENUM_COLUMN_NAME }, name = AccountNumberFormatConstants.ACCOUNT_TYPE_UNIQUE_CONSTRAINT_NAME) })
+@Table(name = AccountNumberFormatConstants.ACCOUNT_NUMBER_FORMAT_TABLE_NAME, uniqueConstraints = { @UniqueConstraint(columnNames = {
+        AccountNumberFormatConstants.ACCOUNT_TYPE_ENUM_COLUMN_NAME }, name = AccountNumberFormatConstants.ACCOUNT_TYPE_UNIQUE_CONSTRAINT_NAME) })
 public class AccountNumberFormat extends AbstractPersistable<Long> {
 
     @Column(name = AccountNumberFormatConstants.ACCOUNT_TYPE_ENUM_COLUMN_NAME, nullable = false)
@@ -37,11 +38,14 @@ public class AccountNumberFormat extends AbstractPersistable<Long> {
     @Column(name = AccountNumberFormatConstants.PREFIX_TYPE_ENUM_COLUMN_NAME, nullable = false)
     private Integer prefixEnum;
 
+    @Column(name = AccountNumberFormatConstants.CUSTOM_PREFIX_TYPE_ENUM_COLUMN_NAME, nullable = false)
+    private Integer customTypeEnum;
+
     protected AccountNumberFormat() {
         //
     }
 
-    public AccountNumberFormat(EntityAccountType entityAccountType, AccountNumberPrefixType prefixType) {
+    public AccountNumberFormat(final EntityAccountType entityAccountType, final AccountNumberPrefixType prefixType) {
         this.accountTypeEnum = entityAccountType.getValue();
         if (prefixType != null) {
             this.prefixEnum = prefixType.getValue();
@@ -56,11 +60,11 @@ public class AccountNumberFormat extends AbstractPersistable<Long> {
         return EntityAccountType.fromInt(this.accountTypeEnum);
     }
 
-    private void setAccountTypeEnum(Integer accountTypeEnum) {
+    private void setAccountTypeEnum(final Integer accountTypeEnum) {
         this.accountTypeEnum = accountTypeEnum;
     }
 
-    public void setAccountType(EntityAccountType entityAccountType) {
+    public void setAccountType(final EntityAccountType entityAccountType) {
         setAccountTypeEnum(entityAccountType.getValue());
     }
 
@@ -68,11 +72,19 @@ public class AccountNumberFormat extends AbstractPersistable<Long> {
         return this.prefixEnum;
     }
 
-    private void setPrefixEnum(Integer prefixEnum) {
+    private void setPrefixEnum(final Integer prefixEnum) {
         this.prefixEnum = prefixEnum;
     }
 
-    public void setPrefix(AccountNumberPrefixType accountNumberPrefixType) {
+    public Integer getCustomTypeEnum() {
+        return this.customTypeEnum;
+    }
+
+    public void setCustomTypeEnum(final Integer customTypeEnum) {
+        this.customTypeEnum = customTypeEnum;
+    }
+
+    public void setPrefix(final AccountNumberPrefixType accountNumberPrefixType) {
         setPrefixEnum(accountNumberPrefixType.getValue());
     }
 }

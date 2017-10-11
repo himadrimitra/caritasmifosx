@@ -47,6 +47,7 @@ public class LoanScheduleAccrualData {
     private final BigDecimal accruedPenaltyIncome;
     private final CurrencyData currencyData;
     private final LocalDate interestCalculatedFrom;
+    private final boolean isNpa;
 
     private Map<LoanChargeData, BigDecimal> applicableCharges;
     private BigDecimal dueDateFeeIncome;
@@ -58,7 +59,7 @@ public class LoanScheduleAccrualData {
             final Long repaymentScheduleId, final Long loanProductId, final BigDecimal interestIncome, final BigDecimal feeIncome,
             final BigDecimal penaltyIncome, final BigDecimal accruedInterestIncome, final BigDecimal accruedFeeIncome,
             final BigDecimal accruedPenaltyIncome, final CurrencyData currencyData, final LocalDate interestCalculatedFrom,
-            final BigDecimal waivedInterestIncome) {
+            final BigDecimal waivedInterestIncome, final boolean isNpa) {
         this.loanId = loanId;
         this.installmentNumber = installmentNumber;
         this.officeId = officeId;
@@ -78,6 +79,7 @@ public class LoanScheduleAccrualData {
         this.repayEvery = repayEvery;
         this.interestCalculatedFrom = interestCalculatedFrom;
         this.waivedInterestIncome = waivedInterestIncome;
+        this.isNpa = isNpa;
     }
 
     public Long getLoanId() {
@@ -175,20 +177,20 @@ public class LoanScheduleAccrualData {
         this.dueDatePenaltyIncome = dueDatePenaltyIncome;
     }
 
-    
     public BigDecimal getWaivedInterestIncome() {
         return this.waivedInterestIncome;
     }
 
-    
-    public BigDecimal getAccruableIncome () {
+    public BigDecimal getAccruableIncome() {
         return this.accruableIncome;
     }
 
-    
-    public void updateAccruableIncome (BigDecimal accruableIncome ) {
-        this.accruableIncome = accruableIncome ;
+    public void updateAccruableIncome(final BigDecimal accruableIncome) {
+        this.accruableIncome = accruableIncome;
     }
 
+    public boolean isNpa() {
+        return this.isNpa;
+    }
 
 }

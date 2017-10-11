@@ -27,6 +27,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface LoanProductRepository extends JpaRepository<LoanProduct, Long>, JpaSpecificationExecutor<LoanProduct> {
 
-    @Query("select loanProduct from LoanProduct loanProduct, IN(loanProduct.charges) charge where charge.id = :chargeId")
+    @Query("select loanProduct from LoanProduct loanProduct, IN(loanProduct.productLoanCharges) productLoanCharges where productLoanCharges.chargeId = :chargeId")
     List<LoanProduct> retrieveLoanProductsByChargeId(@Param("chargeId") Long chargeId);
 }

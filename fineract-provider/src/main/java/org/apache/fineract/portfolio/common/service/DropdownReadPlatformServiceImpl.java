@@ -24,12 +24,17 @@ import static org.apache.fineract.portfolio.common.service.CommonEnumerations.da
 import static org.apache.fineract.portfolio.common.service.CommonEnumerations.termFrequencyType;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.common.domain.ConditionType;
+import org.apache.fineract.portfolio.common.domain.ConditionalOperator;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.DaysInMonthType;
 import org.apache.fineract.portfolio.common.domain.DaysInYearType;
+import org.apache.fineract.portfolio.common.domain.LoanPeriodFrequencyType;
+import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.springframework.stereotype.Service;
 
@@ -64,8 +69,39 @@ public class DropdownReadPlatformServiceImpl implements DropdownReadPlatformServ
     public List<EnumOptionData> retrieveDaysInYearTypeOptions() {
 
         final List<EnumOptionData> daysInYearTypeOptions = Arrays.asList(daysInYearType(DaysInYearType.ACTUAL),
-                daysInYearType(DaysInYearType.DAYS_360), daysInYearType(DaysInYearType.DAYS_364), daysInYearType(DaysInYearType.DAYS_365));
+                daysInYearType(DaysInYearType.DAYS_360), daysInYearType(DaysInYearType.DAYS_364), daysInYearType(DaysInYearType.DAYS_365), daysInYearType(DaysInYearType.DAYS_240));
         return daysInYearTypeOptions;
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveConditionalOperatorOptions() {
+
+        return Arrays.asList(ConditionalOperator.from(ConditionalOperator.BETWEEN),ConditionalOperator.from(ConditionalOperator.LESS_THAN),ConditionalOperator.from(ConditionalOperator.LESS_THAN_OR_EQUAL),
+                ConditionalOperator.from(ConditionalOperator.GREATER_THAN),ConditionalOperator.from(ConditionalOperator.GREATER_THAN_OR_EQUAL),ConditionalOperator.from(ConditionalOperator.EQUAL));
+    }
+    
+    @Override
+    public Collection<EnumOptionData> retrieveNthDayTypeOptions(final String codePrefix) {
+        return Arrays.asList(CommonEnumerations.nthDayType(NthDayType.ONE, codePrefix),
+                CommonEnumerations.nthDayType(NthDayType.TWO, codePrefix), CommonEnumerations.nthDayType(NthDayType.THREE, codePrefix),
+                CommonEnumerations.nthDayType(NthDayType.FOUR, codePrefix), CommonEnumerations.nthDayType(NthDayType.LAST, codePrefix),
+                CommonEnumerations.nthDayType(NthDayType.ONDAY, codePrefix));
+    }
+
+    @Override
+    public Collection<EnumOptionData> retrieveDayOfWeekTypeOptions(final String codePrefix) {
+        return Arrays.asList(CommonEnumerations.dayOfWeekType(DayOfWeekType.SUNDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.MONDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.TUESDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.WEDNESDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.THURSDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.FRIDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.SATURDAY, codePrefix));
+    }
+
+    @Override
+    public Collection<EnumOptionData> retrieveLoanPeriodFrequencyTypeOptions() {
+        return LoanPeriodFrequencyType.overduePeriodFrequencyTypeOptions();
     }
 
 }

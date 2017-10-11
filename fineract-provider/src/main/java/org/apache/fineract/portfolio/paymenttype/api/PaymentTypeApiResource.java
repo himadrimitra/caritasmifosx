@@ -18,10 +18,7 @@
  */
 package org.apache.fineract.portfolio.paymenttype.api;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -38,6 +35,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
@@ -48,6 +46,13 @@ import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWra
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.finflux.portfolio.bank.data.BankAccountDetailData;
+import com.finflux.portfolio.bank.domain.BankAccountDetailEntityType;
+import com.finflux.portfolio.bank.service.BankAccountDetailsReadService;
+import com.finflux.portfolio.external.ExternalServiceType;
+import com.finflux.portfolio.external.data.ExternalServicesData;
+import com.finflux.portfolio.external.service.ExternalServicesReadService;
 
 @Path("/paymenttypes")
 @Component
@@ -60,14 +65,19 @@ public class PaymentTypeApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     // private final String resourceNameForPermissions = "PAYMENT_TYPE";
     private final PaymentTypeRepositoryWrapper paymentTypeRepositoryWrapper;
+    private final BankAccountDetailsReadService bankAccountDetailsReadService;
+    private final ExternalServicesReadService externalServicesReadService;
 
     // private final Set<String> RESPONSE_DATA_PARAMETERS = new
     // HashSet<>(Arrays.asList("id", "value", "description", "isCashPayment"));
 
     @Autowired
-    public PaymentTypeApiResource(PlatformSecurityContext securityContext, DefaultToApiJsonSerializer<PaymentTypeData> jsonSerializer,
-            PaymentTypeReadPlatformService readPlatformService, PaymentTypeRepositoryWrapper paymentTypeRepositoryWrapper,
-            ApiRequestParameterHelper apiRequestParameterHelper, PortfolioCommandSourceWritePlatformService commandWritePlatformService) {
+    public PaymentTypeApiResource(final PlatformSecurityContext securityContext,
+            final DefaultToApiJsonSerializer<PaymentTypeData> jsonSerializer, final PaymentTypeReadPlatformService readPlatformService,
+            final PaymentTypeRepositoryWrapper paymentTypeRepositoryWrapper, final ApiRequestParameterHelper apiRequestParameterHelper,
+            final PortfolioCommandSourceWritePlatformService commandWritePlatformService,
+            final BankAccountDetailsReadService bankAccountDetailsReadService,
+            final ExternalServicesReadService externalServicesReadService) {
         super();
         this.securityContext = securityContext;
         this.jsonSerializer = jsonSerializer;
@@ -75,6 +85,22 @@ public class PaymentTypeApiResource {
         this.paymentTypeRepositoryWrapper = paymentTypeRepositoryWrapper;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandWritePlatformService = commandWritePlatformService;
+        this.bankAccountDetailsReadService = bankAccountDetailsReadService;
+        this.externalServicesReadService = externalServicesReadService;
+    }
+
+    @GET
+    @Path("template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String template(@Context final UriInfo uriInfo) {
+        this.securityContext.authenticatedUser().validateHasReadPermission(PaymentTypeApiResourceConstants.resourceNameForPermissions);
+        final Collection<ExternalServicesData> externalServiceOptions = this.externalServicesReadService
+                .findExternalServicesByType(ExternalServiceType.BANK_TRANSFER.getValue());
+        final PaymentTypeData paymentTypes = PaymentTypeData.template(externalServiceOptions,
+                this.bankAccountDetailsReadService.bankAccountTypeOptions());
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.jsonSerializer.serialize(settings, paymentTypes, PaymentTypeApiResourceConstants.RESPONSE_DATA_PARAMETERS);
     }
 
     @GET
@@ -94,7 +120,22 @@ public class PaymentTypeApiResource {
     public String retrieveOnePaymentType(@PathParam("paymentTypeId") final Long paymentTypeId, @Context final UriInfo uriInfo) {
         this.securityContext.authenticatedUser().validateHasReadPermission(PaymentTypeApiResourceConstants.resourceNameForPermissions);
         this.paymentTypeRepositoryWrapper.findOneWithNotFoundDetection(paymentTypeId);
-        final PaymentTypeData paymentTypes = this.readPlatformService.retrieveOne(paymentTypeId);
+        PaymentTypeData paymentTypes = this.readPlatformService.retrieveOne(paymentTypeId);
+
+        if (paymentTypes.getExternalServiceId() != null) {
+            final BankAccountDetailData bankAccountDetailData = this.bankAccountDetailsReadService
+                    .retrieveOneBy(BankAccountDetailEntityType.PAYMENTTYPES, paymentTypeId);
+            paymentTypes = PaymentTypeData.instance(paymentTypes, bankAccountDetailData);
+        }
+
+        final boolean template = ApiParameterHelper.template(uriInfo.getQueryParameters());
+        if (template) {
+            final Collection<ExternalServicesData> externalServiceOptions = this.externalServicesReadService
+                    .findExternalServicesByType(ExternalServiceType.BANK_TRANSFER.getValue());
+            paymentTypes = PaymentTypeData.withTemplate(paymentTypes, externalServiceOptions,
+                    this.bankAccountDetailsReadService.bankAccountTypeOptions());
+        }
+
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.jsonSerializer.serialize(settings, paymentTypes, PaymentTypeApiResourceConstants.RESPONSE_DATA_PARAMETERS);
     }

@@ -45,4 +45,16 @@ public interface ClientReadPlatformService {
     Collection<ClientData> retrieveActiveClientMembersOfCenter(final Long centerId);
 
     ClientData retrieveAllNarrations(String clientNarrations);
+
+    Collection<ClientData> retrieveAllForTaskLookupBySearchParameters(SearchParameters searchParameters);
+
+    Long fetchDefaultLoanOfficerFromGroup(Long clientId);
+
+    Long retrieveSavingsAccountIdByMobileNo(String mobileno);
+
+    ClientData retrieveHierarchyLookupForClient(ClientData clientData);
+
+    ClientData retrieveOneWithBasicDetails(final Long clientId);
+
+    Long retrieveOfficeId(Long clientId);
 }

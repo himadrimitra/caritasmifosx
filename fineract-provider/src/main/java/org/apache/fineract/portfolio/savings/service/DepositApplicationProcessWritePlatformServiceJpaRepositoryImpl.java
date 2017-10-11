@@ -25,6 +25,7 @@ import static org.apache.fineract.portfolio.savings.DepositsApiConstants.transfe
 
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +47,11 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
+import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
+import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.portfolio.account.domain.AccountAssociationType;
 import org.apache.fineract.portfolio.account.domain.AccountAssociations;
 import org.apache.fineract.portfolio.account.domain.AccountAssociationsRepository;
@@ -68,6 +72,7 @@ import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.CenterNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
@@ -79,9 +84,11 @@ import org.apache.fineract.portfolio.savings.domain.FixedDepositAccount;
 import org.apache.fineract.portfolio.savings.domain.FixedDepositAccountRepository;
 import org.apache.fineract.portfolio.savings.domain.RecurringDepositAccount;
 import org.apache.fineract.portfolio.savings.domain.RecurringDepositAccountRepository;
+import org.apache.fineract.portfolio.savings.domain.RecurringDepositScheduleInstallment;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountCharge;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountChargeAssembler;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
 import org.apache.fineract.portfolio.savings.domain.SavingsProductRepository;
@@ -94,6 +101,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.finflux.common.util.ScheduleDateGeneratorUtil;
 
 @Service
 public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl implements DepositApplicationProcessWritePlatformService {
@@ -119,6 +128,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     private final CalendarInstanceRepository calendarInstanceRepository;
     private final ConfigurationDomainService configurationDomainService;
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
+    private final HolidayRepositoryWrapper holidayRepository;
+    private final SavingsAccountDomainService savingsAccountDomainService;
 
     @Autowired
     public DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -133,7 +144,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final RecurringDepositAccountRepository recurringDepositAccountRepository,
             final AccountAssociationsRepository accountAssociationsRepository, final FromJsonHelper fromJsonHelper,
             final CalendarInstanceRepository calendarInstanceRepository, final ConfigurationDomainService configurationDomainService,
-            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository) {
+            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final HolidayRepositoryWrapper holidayRepository,
+            final SavingsAccountDomainService savingsAccountDomainService) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.depositAccountAssembler = depositAccountAssembler;
@@ -153,6 +165,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.configurationDomainService = configurationDomainService;
         this.accountNumberFormatRepository = accountNumberFormatRepository;
+        this.holidayRepository = holidayRepository;
+        this.savingsAccountDomainService = savingsAccountDomainService;
     }
 
     /*
@@ -167,15 +181,15 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         if (realCause.getMessage().contains("sa_account_no_UNIQUE")) {
             final String accountNo = command.stringValueOfParameterNamed("accountNo");
             errorCodeBuilder.append(".duplicate.accountNo");
-            throw new PlatformDataIntegrityException(errorCodeBuilder.toString(), "Savings account with accountNo " + accountNo
-                    + " already exists", "accountNo", accountNo);
+            throw new PlatformDataIntegrityException(errorCodeBuilder.toString(),
+                    "Savings account with accountNo " + accountNo + " already exists", "accountNo", accountNo);
 
         } else if (realCause.getMessage().contains("sa_external_id_UNIQUE")) {
 
             final String externalId = command.stringValueOfParameterNamed("externalId");
             errorCodeBuilder.append(".duplicate.externalId");
-            throw new PlatformDataIntegrityException(errorCodeBuilder.toString(), "Savings account with externalId " + externalId
-                    + " already exists", "externalId", externalId);
+            throw new PlatformDataIntegrityException(errorCodeBuilder.toString(),
+                    "Savings account with externalId " + externalId + " already exists", "externalId", externalId);
         }
 
         errorCodeBuilder.append(".unknown.data.integrity.issue");
@@ -205,7 +219,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             this.fixedDepositAccountRepository.save(account);
 
             if (account.isAccountNumberRequiresAutoGeneration()) {
-                AccountNumberFormat accountNumberFormat = this.accountNumberFormatRepository.findByAccountType(EntityAccountType.CLIENT);
+                final AccountNumberFormat accountNumberFormat = this.accountNumberFormatRepository
+                        .findByAccountType(EntityAccountType.SAVINGS);
                 account.updateAccountNo(this.accountNumberGenerator.generate(account, accountNumberFormat));
 
                 this.savingAccountRepository.save(account);
@@ -217,7 +232,7 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                 final SavingsAccount savingsAccount = this.depositAccountAssembler.assembleFrom(savingsAccountId,
                         DepositAccountType.SAVINGS_DEPOSIT);
                 this.depositAccountDataValidator.validatelinkedSavingsAccount(savingsAccount, account);
-                boolean isActive = true;
+                final boolean isActive = true;
                 final AccountAssociations accountAssociations = AccountAssociations.associateSavingsAccount(account, savingsAccount,
                         AccountAssociationType.LINKED_ACCOUNT_ASSOCIATION.getValue(), isActive);
                 this.accountAssociationsRepository.save(accountAssociations);
@@ -245,40 +260,19 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         try {
             this.depositAccountDataValidator.validateRecurringDepositForSubmit(command.json());
             final AppUser submittedBy = this.context.authenticatedUser();
-
-            final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
-                    .isSavingsInterestPostingAtCurrentPeriodEnd();
-            final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
-
             final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler.assembleFrom(command,
                     submittedBy, DepositAccountType.RECURRING_DEPOSIT);
-
             this.recurringDepositAccountRepository.save(account);
-
             if (account.isAccountNumberRequiresAutoGeneration()) {
                 final AccountNumberFormat accountNumberFormat = this.accountNumberFormatRepository
                         .findByAccountType(EntityAccountType.SAVINGS);
                 account.updateAccountNo(this.accountNumberGenerator.generate(account, accountNumberFormat));
             }
-
             final Long savingsId = account.getId();
             final CalendarInstance calendarInstance = getCalendarInstance(command, account);
             this.calendarInstanceRepository.save(calendarInstance);
-
-            // FIXME: Avoid save separately (Calendar instance requires account
-            // details)
-            final MathContext mc = MathContext.DECIMAL64;
-            final Calendar calendar = calendarInstance.getCalendar();
-            final PeriodFrequencyType frequencyType = CalendarFrequencyType.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
-            Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
-            frequency = frequency == -1 ? 1 : frequency;
-            account.generateSchedule(frequencyType, frequency, calendar);
-            final boolean isPreMatureClosure = false;
-            account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
-                    financialYearBeginningMonth);
-            account.validateApplicableInterestRate();
+            generateSchedule(calendarInstance, account);
             this.savingAccountRepository.save(account);
-
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withEntityId(savingsId) //
@@ -293,12 +287,32 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         }
     }
 
-    private CalendarInstance getCalendarInstance(final JsonCommand command, RecurringDepositAccount account) {
+    private void generateSchedule(final CalendarInstance calendarInstance, final RecurringDepositAccount account) {
+        final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
+                .isSavingsInterestPostingAtCurrentPeriodEnd();
+        final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
+        // FIXME: Avoid save separately (Calendar instance requires account
+        // details)
+        final MathContext mc = MathContext.DECIMAL64;
+        final Calendar calendar = calendarInstance.getCalendar();
+        final PeriodFrequencyType frequencyType = CalendarFrequencyType.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
+        Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
+        frequency = frequency == -1 ? 1 : frequency;
+
+        final HolidayDetailDTO holidayDetails = this.savingsAccountDomainService.getHolidayDetails(account);
+        account.generateSchedule(frequencyType, frequency, calendar, holidayDetails);
+        final boolean isPreMatureClosure = false;
+        account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth,
+                frequencyType, frequency, holidayDetails);
+        account.validateApplicableInterestRate();
+    }
+
+    private CalendarInstance getCalendarInstance(final JsonCommand command, final RecurringDepositAccount account) {
         CalendarInstance calendarInstance = null;
         final boolean isCalendarInherited = command.booleanPrimitiveValueOfParameterNamed(isCalendarInheritedParamName);
 
         if (isCalendarInherited) {
-            Set<Group> groups = account.getClient().getGroups();
+            final Set<Group> groups = account.getClient().getGroups();
             Long groupId = null;
             if (groups.isEmpty()) {
                 final String defaultUserMessage = "Client does not belong to group/center. Cannot follow group/center meeting frequency.";
@@ -307,12 +321,11 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                         defaultUserMessage, account.clientId());
             } else if (groups.size() > 1) {
                 final String defaultUserMessage = "Client belongs to more than one group. Cannot support recurring deposit.";
-                throw new GeneralPlatformDomainRuleException(
-                        "error.msg.recurring.deposit.account.cannot.create.belongs.to.multiple.groups", defaultUserMessage,
-                        account.clientId());
+                throw new GeneralPlatformDomainRuleException("error.msg.recurring.deposit.account.cannot.create.belongs.to.multiple.groups",
+                        defaultUserMessage, account.clientId());
             } else {
-                Group group = groups.iterator().next();
-                Group parent = group.getParent();
+                final Group group = groups.iterator().next();
+                final Group parent = group.getParent();
                 Integer entityType = CalendarEntityType.GROUPS.getValue();
                 if (parent != null) {
                     groupId = parent.getId();
@@ -320,21 +333,29 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                 } else {
                     groupId = group.getId();
                 }
-                CalendarInstance parentCalendarInstance = this.calendarInstanceRepository.findByEntityIdAndEntityTypeIdAndCalendarTypeId(
-                        groupId, entityType, CalendarType.COLLECTION.getValue());
+                final CalendarInstance parentCalendarInstance = this.calendarInstanceRepository
+                        .findByEntityIdAndEntityTypeIdAndCalendarTypeId(groupId, entityType, CalendarType.COLLECTION.getValue());
+                if (parentCalendarInstance == null) {
+                    final String defaultUserMessage = "Meeting frequency is not attached to the Group/Center to which the client belongs to.";
+                    throw new GeneralPlatformDomainRuleException(
+                            "error.msg.meeting.frequency.not.attached.to.group.to.which.client.belongs.to", defaultUserMessage,
+                            account.clientId());
+                }
                 calendarInstance = CalendarInstance.from(parentCalendarInstance.getCalendar(), account.getId(),
                         CalendarEntityType.SAVINGS.getValue());
             }
         } else {
-            LocalDate calendarStartDate = account.depositStartDate();
+            final LocalDate calendarStartDate = account.depositStartDate();
             final Integer frequencyType = command.integerValueSansLocaleOfParameterNamed(recurringFrequencyTypeParamName);
             final PeriodFrequencyType periodFrequencyType = PeriodFrequencyType.fromInt(frequencyType);
             final Integer frequency = command.integerValueSansLocaleOfParameterNamed(recurringFrequencyParamName);
 
             final Integer repeatsOnDay = calendarStartDate.getDayOfWeek();
             final String title = "recurring_savings_" + account.getId();
+            final Collection<Integer> repeatsOnDayOfMonth = null;
+
             final Calendar calendar = Calendar.createRepeatingCalendar(title, calendarStartDate, CalendarType.COLLECTION.getValue(),
-                    CalendarFrequencyType.from(periodFrequencyType), frequency, repeatsOnDay);
+                    CalendarFrequencyType.from(periodFrequencyType), frequency, repeatsOnDay, null, repeatsOnDayOfMonth);
             calendarInstance = CalendarInstance.from(calendar, account.getId(), CalendarEntityType.SAVINGS.getValue());
         }
         if (calendarInstance == null) {
@@ -373,7 +394,7 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                 this.savingAccountRepository.save(account);
             }
 
-            boolean isLinkedAccRequired = command.booleanPrimitiveValueOfParameterNamed(transferInterestToSavingsParamName);
+            final boolean isLinkedAccRequired = command.booleanPrimitiveValueOfParameterNamed(transferInterestToSavingsParamName);
 
             // Save linked account information
             final Long savingsAccountId = command.longValueOfParameterNamed(DepositsApiConstants.linkedAccountParamName);
@@ -406,7 +427,7 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                             DepositAccountType.SAVINGS_DEPOSIT);
                     this.depositAccountDataValidator.validatelinkedSavingsAccount(savingsAccount, account);
                     if (accountAssociations == null) {
-                        boolean isActive = true;
+                        final boolean isActive = true;
                         accountAssociations = AccountAssociations.associateSavingsAccount(account, savingsAccount,
                                 AccountAssociationType.LINKED_ACCOUNT_ASSOCIATION.getValue(), isActive);
                     } else {
@@ -438,34 +459,21 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         try {
             this.depositAccountDataValidator.validateRecurringDepositForUpdate(command.json());
 
-            final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
-                    .isSavingsInterestPostingAtCurrentPeriodEnd();
-            final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
-
             final Map<String, Object> changes = new LinkedHashMap<>(20);
 
             final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler.assembleFrom(accountId,
                     DepositAccountType.RECURRING_DEPOSIT);
+
             checkClientOrGroupActive(account);
             account.modifyApplication(command, changes);
             account.validateNewApplicationState(DateUtils.getLocalDateOfTenant(), DepositAccountType.RECURRING_DEPOSIT.resourceName());
 
             if (!changes.isEmpty()) {
                 updateFDAndRDCommonChanges(changes, command, account);
-                final MathContext mc = MathContext.DECIMAL64;
                 final CalendarInstance calendarInstance = this.calendarInstanceRepository.findByEntityIdAndEntityTypeIdAndCalendarTypeId(
                         accountId, CalendarEntityType.SAVINGS.getValue(), CalendarType.COLLECTION.getValue());
-                final Calendar calendar = calendarInstance.getCalendar();
-                final PeriodFrequencyType frequencyType = CalendarFrequencyType.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
-                Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
-                frequency = frequency == -1 ? 1 : frequency;
-                account.generateSchedule(frequencyType, frequency, calendar);
-                final boolean isPreMatureClosure = false;
-                account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
-                        financialYearBeginningMonth);
-                account.validateApplicableInterestRate();
+                generateSchedule(calendarInstance, account);
                 this.savingAccountRepository.save(account);
-
             }
 
             // update calendar details
@@ -475,12 +483,13 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                 final PeriodFrequencyType periodFrequencyType = PeriodFrequencyType.fromInt(frequencyType);
                 final Integer frequency = command.integerValueSansLocaleOfParameterNamed(recurringFrequencyParamName);
                 final Integer repeatsOnDay = calendarStartDate.getDayOfWeek();
+                final Collection<Integer> repeatsOnDayOfMonth = null;
 
-                CalendarInstance calendarInstance = this.calendarInstanceRepository.findByEntityIdAndEntityTypeIdAndCalendarTypeId(
+                final CalendarInstance calendarInstance = this.calendarInstanceRepository.findByEntityIdAndEntityTypeIdAndCalendarTypeId(
                         accountId, CalendarEntityType.SAVINGS.getValue(), CalendarType.COLLECTION.getValue());
-                Calendar calendar = calendarInstance.getCalendar();
+                final Calendar calendar = calendarInstance.getCalendar();
                 calendar.updateRepeatingCalendar(calendarStartDate, CalendarFrequencyType.from(periodFrequencyType), frequency,
-                        repeatsOnDay);
+                        repeatsOnDay, null, repeatsOnDayOfMonth);
                 this.calendarInstanceRepository.save(calendarInstance);
             }
 
@@ -549,8 +558,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         }
 
         if (changes.containsKey("charges")) {
-            final Set<SavingsAccountCharge> charges = this.savingsAccountChargeAssembler.fromParsedJson(command.parsedJson(), account
-                    .getCurrency().getCode());
+            final Set<SavingsAccountCharge> charges = this.savingsAccountChargeAssembler.fromParsedJson(command.parsedJson(),
+                    account.getCurrency().getCode());
             final boolean updated = account.update(charges);
             if (!updated) {
                 changes.remove("charges");
@@ -568,8 +577,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
 
         if (account.isNotSubmittedAndPendingApproval()) {
             final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource(depositAccountType
-                    .resourceName() + DepositsApiConstants.deleteApplicationAction);
+            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                    .resource(depositAccountType.resourceName() + DepositsApiConstants.deleteApplicationAction);
 
             baseDataValidator.reset().parameter(DepositsApiConstants.activatedOnDateParamName)
                     .failWithCodeNoParameterAddedToErrorCode("not.in.submittedandpendingapproval.state");
@@ -742,6 +751,49 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                 if (group.isCenter()) { throw new CenterNotActiveException(group.getId()); }
                 throw new GroupNotActiveException(group.getId());
             }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateScheduleDates(final Long savingsId, HolidayDetailDTO holidayDetailDTO, final LocalDate recalculateFrom) {
+        final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler.assembleFrom(savingsId,
+                DepositAccountType.RECURRING_DEPOSIT);
+        final List<Holiday> holidaysToBeProcess = this.holidayRepository.findByOfficeIdAndGreaterThanDate(account.officeId(),
+                recalculateFrom.toDate());
+        holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, holidaysToBeProcess);
+        final List<CalendarInstance> calendarInstances = (List<CalendarInstance>) this.calendarInstanceRepository
+                .findByEntityIdAndEntityTypeId(account.getId(), CalendarEntityType.SAVINGS.getValue());
+        if (calendarInstances != null && !calendarInstances.isEmpty()) {
+            final CalendarInstance calendarInstance = calendarInstances.get(0);
+            final Calendar calendar = calendarInstance.getCalendar();
+            final CalendarFrequencyType calendarFrequencyType = CalendarUtils.getFrequency(calendar.getRecurrence());
+            final PeriodFrequencyType frequencyType = CalendarFrequencyType.from(calendarFrequencyType);
+            final Integer recurringEvery = CalendarUtils.getInterval(calendar.getRecurrence());
+            LocalDate actualInstallmentDate = null;
+            for (final RecurringDepositScheduleInstallment rdScheduleInstallment : account.depositScheduleInstallments()) {
+                if (!rdScheduleInstallment.dueDate().isBefore(recalculateFrom)) {
+                    if (actualInstallmentDate == null) {
+                        actualInstallmentDate = rdScheduleInstallment.getLocalDateActualDueDate();
+                    }
+                    AdjustedDateDetailsDTO adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(actualInstallmentDate, actualInstallmentDate,
+                            actualInstallmentDate);
+                    adjustedDateDetailsDTO = rdScheduleInstallment.updateDueDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO,
+                            holidayDetailDTO, frequencyType, recurringEvery);
+                    actualInstallmentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
+                    actualInstallmentDate = ScheduleDateGeneratorUtil.generateNextScheduleDate(actualInstallmentDate, frequencyType,
+                            recurringEvery);
+                    actualInstallmentDate = CalendarUtils.adjustDate(actualInstallmentDate, account.depositStartDate(), frequencyType);
+                }
+            }
+            final MathContext mc = MathContext.DECIMAL64;
+            final boolean isPreMatureClosure = false;
+            final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
+                    .isSavingsInterestPostingAtCurrentPeriodEnd();
+            final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
+            account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
+                    financialYearBeginningMonth, frequencyType, recurringEvery, holidayDetailDTO);
+            this.savingAccountRepository.save(account);
         }
     }
 }

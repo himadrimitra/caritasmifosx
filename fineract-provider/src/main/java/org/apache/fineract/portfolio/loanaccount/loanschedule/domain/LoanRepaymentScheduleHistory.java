@@ -32,7 +32,6 @@ import javax.persistence.TemporalType;
 
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -70,24 +69,11 @@ public class LoanRepaymentScheduleHistory extends AbstractPersistable<Long> {
     @Column(name = "penalty_charges_amount", scale = 6, precision = 19, nullable = true)
     private BigDecimal penaltyCharges;
 
-    @Temporal(TemporalType.DATE)
-    @Column(name = "created_date")
-    private Date createdOnDate;
-
-    @ManyToOne
-    @JoinColumn(name = "createdby_id")
-    private AppUser createdByUser;
-
-    @ManyToOne
-    @JoinColumn(name = "lastmodifiedby_id")
-    private AppUser lastModifiedByUser;
-
-    @Temporal(TemporalType.DATE)
-    @Column(name = "lastmodified_date")
-    private Date lastModifiedOnDate;
-
     @Column(name = "version")
     private Integer version;
+
+    @Column(name = "recalculated_interest_component", nullable = false)
+    private Boolean recalculatedInterestComponent;
 
     /**
      * LoanRepaymentScheduleHistory constructor
@@ -99,9 +85,8 @@ public class LoanRepaymentScheduleHistory extends AbstractPersistable<Long> {
      **/
     private LoanRepaymentScheduleHistory(final Loan loan, final LoanRescheduleRequest loanRescheduleRequest,
             final Integer installmentNumber, final Date fromDate, final Date dueDate, final BigDecimal principal,
-            final BigDecimal interestCharged, final BigDecimal feeChargesCharged, final BigDecimal penaltyCharges,
-            final Date createdOnDate, final AppUser createdByUser, final AppUser lastModifiedByUser, final Date lastModifiedOnDate,
-            final Integer version) {
+            final BigDecimal interestCharged, final BigDecimal feeChargesCharged, final BigDecimal penaltyCharges, final Integer version,
+            final Boolean recalculatedInterestComponent) {
 
         this.loan = loan;
         this.loanRescheduleRequest = loanRescheduleRequest;
@@ -112,11 +97,8 @@ public class LoanRepaymentScheduleHistory extends AbstractPersistable<Long> {
         this.interestCharged = interestCharged;
         this.feeChargesCharged = feeChargesCharged;
         this.penaltyCharges = penaltyCharges;
-        this.createdOnDate = createdOnDate;
-        this.createdByUser = createdByUser;
-        this.lastModifiedByUser = lastModifiedByUser;
-        this.lastModifiedOnDate = lastModifiedOnDate;
         this.version = version;
+        this.recalculatedInterestComponent = recalculatedInterestComponent;
     }
 
     /**
@@ -124,13 +106,11 @@ public class LoanRepaymentScheduleHistory extends AbstractPersistable<Long> {
      **/
     public static LoanRepaymentScheduleHistory instance(final Loan loan, final LoanRescheduleRequest loanRescheduleRequest,
             final Integer installmentNumber, final Date fromDate, final Date dueDate, final BigDecimal principal,
-            final BigDecimal interestCharged, final BigDecimal feeChargesCharged, final BigDecimal penaltyCharges,
-            final Date createdOnDate, final AppUser createdByUser, final AppUser lastModifiedByUser, final Date lastModifiedOnDate,
-            final Integer version) {
+            final BigDecimal interestCharged, final BigDecimal feeChargesCharged, final BigDecimal penaltyCharges, final Integer version,
+            final boolean recalculatedInterestComponent) {
 
         return new LoanRepaymentScheduleHistory(loan, loanRescheduleRequest, installmentNumber, fromDate, dueDate, principal,
-                interestCharged, feeChargesCharged, penaltyCharges, createdOnDate, createdByUser, lastModifiedByUser, lastModifiedOnDate,
-                version);
+                interestCharged, feeChargesCharged, penaltyCharges, version, recalculatedInterestComponent);
 
     }
 

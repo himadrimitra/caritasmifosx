@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.survey.handler;
 
+import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 
 @Service
+@CommandType(entity = "LIKELIHOOD", action = "UPDATE")
 public class UpdateLikelihoodCommandHandler implements NewCommandSourceHandler {
 
 

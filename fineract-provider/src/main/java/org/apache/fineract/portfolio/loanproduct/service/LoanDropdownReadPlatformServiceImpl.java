@@ -41,9 +41,11 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionProcessingStrategyRepository;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
+import org.apache.fineract.portfolio.loanproduct.domain.BrokenPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
@@ -52,7 +54,9 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditio
 import org.apache.fineract.portfolio.loanproduct.domain.LoanRescheduleStrategyMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -61,7 +65,8 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
     private final LoanTransactionProcessingStrategyRepository loanTransactionProcessingStrategyRepository;
 
     @Autowired
-    public LoanDropdownReadPlatformServiceImpl(final LoanTransactionProcessingStrategyRepository loanTransactionProcessingStrategyRepository) {
+    public LoanDropdownReadPlatformServiceImpl(
+            final LoanTransactionProcessingStrategyRepository loanTransactionProcessingStrategyRepository) {
         this.loanTransactionProcessingStrategyRepository = loanTransactionProcessingStrategyRepository;
     }
 
@@ -111,7 +116,8 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
     public List<EnumOptionData> retrieveRepaymentFrequencyOptionsForNthDayOfMonth() {
         final List<EnumOptionData> repaymentFrequencyOptions = Arrays.asList(repaymentFrequencyNthDayType(NthDayType.ONE),
                 repaymentFrequencyNthDayType(NthDayType.TWO), repaymentFrequencyNthDayType(NthDayType.THREE),
-                repaymentFrequencyNthDayType(NthDayType.FOUR));
+                repaymentFrequencyNthDayType(NthDayType.FOUR), repaymentFrequencyNthDayType(NthDayType.LAST),
+                repaymentFrequencyNthDayType(NthDayType.ONDAY));
         return repaymentFrequencyOptions;
     }
 
@@ -137,8 +143,8 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
     public Collection<TransactionProcessingStrategyData> retreiveTransactionProcessingStrategies() {
 
         final Collection<TransactionProcessingStrategyData> strategyOptions = new ArrayList<>();
-
-        final List<LoanTransactionProcessingStrategy> strategies = this.loanTransactionProcessingStrategyRepository.findAll();
+        final Sort sort = new Sort("sortOrder");
+        final List<LoanTransactionProcessingStrategy> strategies = this.loanTransactionProcessingStrategyRepository.findAll(sort);
         for (final LoanTransactionProcessingStrategy strategy : strategies) {
             strategyOptions.add(strategy.toData());
         }
@@ -164,6 +170,26 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
                 interestRecalculationCompoundingType(InterestRecalculationCompoundingMethod.INTEREST),
                 interestRecalculationCompoundingType(InterestRecalculationCompoundingMethod.INTEREST_AND_FEE));
         return interestRecalculationCompoundingTypeOptions;
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveInterestRecalculationNthDayTypeOptions() {
+        final String codePrefix = "interestRecalculationCompounding.";
+        return Arrays.asList(CommonEnumerations.nthDayType(NthDayType.ONE, codePrefix),
+                CommonEnumerations.nthDayType(NthDayType.TWO, codePrefix), CommonEnumerations.nthDayType(NthDayType.THREE, codePrefix),
+                CommonEnumerations.nthDayType(NthDayType.FOUR, codePrefix), CommonEnumerations.nthDayType(NthDayType.LAST, codePrefix));
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveInterestRecalculationDayOfWeekTypeOptions() {
+        final String codePrefix = "interestRecalculationCompounding.";
+        return Arrays.asList(CommonEnumerations.dayOfWeekType(DayOfWeekType.SUNDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.MONDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.TUESDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.WEDNESDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.THURSDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.FRIDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.SATURDAY, codePrefix));
     }
 
     @Override
@@ -194,5 +220,21 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
                 preCloseInterestCalculationStrategy(LoanPreClosureInterestCalculationStrategy.TILL_PRE_CLOSURE_DATE),
                 preCloseInterestCalculationStrategy(LoanPreClosureInterestCalculationStrategy.TILL_REST_FREQUENCY_DATE));
         return preCloseInterestCalculationStrategyOptions;
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveWeeksInYearTypeOptions() {
+        final List<EnumOptionData> weeksInYearTypeOptions = Arrays.asList(LoanEnumerations.weeksInYearType(WeeksInYearType.Week_52),
+                LoanEnumerations.weeksInYearType(WeeksInYearType.Week_48));
+        return weeksInYearTypeOptions;
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveBrokenPeriodMethodTypeOptions() {
+        final List<EnumOptionData> brokenPeriodMethodTypeOptions = Arrays.asList(
+                LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.DISTRIBUTE_EQUALLY),
+                LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.ADJUST_IN_FIRST_EMI),
+                LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.POST_INTEREST));
+        return brokenPeriodMethodTypeOptions;
     }
 }

@@ -20,14 +20,20 @@ package org.apache.fineract.portfolio.charge.data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
+import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountChargeData;
+import org.apache.fineract.portfolio.shareaccounts.data.ShareAccountChargeData;
+import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.joda.time.LocalDate;
 import org.joda.time.MonthDay;
 
@@ -51,6 +57,11 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
     private final BigDecimal minCap;
     private final BigDecimal maxCap;
     private final EnumOptionData feeFrequency;
+    private final GLAccountData incomeOrLiabilityAccount;
+    private final TaxGroupData taxGroup;
+    private final EnumOptionData percentageType;
+    private final EnumOptionData percentagePeriodType;
+    private final ChargeOverdueData chargeOverdueData;
 
     private final Collection<CurrencyData> currencyOptions;
     private final List<EnumOptionData> chargeCalculationTypeOptions;//
@@ -62,34 +73,81 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
     private final List<EnumOptionData> loanChargeTimeTypeOptions;
     private final List<EnumOptionData> savingsChargeCalculationTypeOptions;
     private final List<EnumOptionData> savingsChargeTimeTypeOptions;
-    private final List<EnumOptionData> feeFrequencyOptions;
+    private final List<EnumOptionData> clientChargeCalculationTypeOptions;
+    private final List<EnumOptionData> clientChargeTimeTypeOptions;
+    private final List<EnumOptionData> shareChargeCalculationTypeOptions;
+    private final List<EnumOptionData> shareChargeTimeTypeOptions;
+
+    private final Collection<EnumOptionData> loanFeeFrequencyOptions;
+
+    private final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions;
+    private final Collection<TaxGroupData> taxGroupOptions;
+    private final boolean emiRoundingGoalSeek;
+    private final boolean isGlimCharge;
+    private final EnumOptionData glimChargeCalculation;
+    private final List<EnumOptionData> glimChargeCalculationTypeOptions;
+    private List<ChargeSlabData> slabs;
+    private final boolean isCapitalized;
+    private final List<EnumOptionData> slabChargeTypeOptions;
+
+    private final Collection<EnumOptionData> percentageTypeOptions;
+    private final Collection<EnumOptionData> percentagePeriodTypeOptions;
+    private final Collection<EnumOptionData> penaltyGraceTypeOptions;
 
     public static ChargeData template(final Collection<CurrencyData> currencyOptions,
             final List<EnumOptionData> chargeCalculationTypeOptions, final List<EnumOptionData> chargeAppliesToOptions,
             final List<EnumOptionData> chargeTimeTypeOptions, final List<EnumOptionData> chargePaymentModeOptions,
             final List<EnumOptionData> loansChargeCalculationTypeOptions, final List<EnumOptionData> loansChargeTimeTypeOptions,
             final List<EnumOptionData> savingsChargeCalculationTypeOptions, final List<EnumOptionData> savingsChargeTimeTypeOptions,
-            final List<EnumOptionData> feeFrequencyOptions) {
-
-        return new ChargeData(null, null, null, null, null, null, null, null, false, false, currencyOptions, chargeCalculationTypeOptions,
-                chargeAppliesToOptions, chargeTimeTypeOptions, chargePaymentModeOptions, loansChargeCalculationTypeOptions,
-                loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, null, null, null, null,
-                null, feeFrequencyOptions);
+            final List<EnumOptionData> clientChargeCalculationTypeOptions, final List<EnumOptionData> clientChargeTimeTypeOptions,
+            final Collection<EnumOptionData> loanFeeFrequencyOptions,
+            final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions, final Collection<TaxGroupData> taxGroupOptions,
+            final List<EnumOptionData> shareChargeCalculationTypeOptions, final List<EnumOptionData> shareChargeTimeTypeOptions,
+            final List<EnumOptionData> glimChargeCalculationTypeOptions, final List<EnumOptionData> slabChargeTypeOptions,
+            final Collection<EnumOptionData> percentageTypeOptions, final Collection<EnumOptionData> percentagePeriodTypeOptions,
+            final Collection<EnumOptionData> penaltyGraceTypeOptions) {
+        final GLAccountData account = null;
+        final TaxGroupData taxGroupData = null;
+        final boolean emiRoundingGoalSeek = false;
+        final boolean isGlimCharge = false;
+        final EnumOptionData glimChargeCalculationType = null;
+        final boolean isCapitalized = false;
+        final List<ChargeSlabData> slabs = null;
+        final EnumOptionData percentageType = null;
+        final EnumOptionData percentagePeriodType = null;
+        final ChargeOverdueData chargeOverdueData = null;
+        return new ChargeData(null, null, null, null, null, null, null, null, false, false, taxGroupData, currencyOptions,
+                chargeCalculationTypeOptions, chargeAppliesToOptions, chargeTimeTypeOptions, chargePaymentModeOptions,
+                loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions,
+                savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions, clientChargeTimeTypeOptions, null, null, null, null, null,
+                loanFeeFrequencyOptions, account, incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions,
+                shareChargeTimeTypeOptions, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions,
+                isCapitalized, slabs, slabChargeTypeOptions, percentageType, percentagePeriodType, chargeOverdueData, percentageTypeOptions,
+                percentagePeriodTypeOptions, penaltyGraceTypeOptions);
     }
 
     public static ChargeData withTemplate(final ChargeData charge, final ChargeData template) {
         return new ChargeData(charge.id, charge.name, charge.amount, charge.currency, charge.chargeTimeType, charge.chargeAppliesTo,
-                charge.chargeCalculationType, charge.chargePaymentMode, charge.penalty, charge.active, template.currencyOptions,
-                template.chargeCalculationTypeOptions, template.chargeAppliesToOptions, template.chargeTimeTypeOptions,
-                template.chargePaymetModeOptions, template.loanChargeCalculationTypeOptions, template.loanChargeTimeTypeOptions,
-                template.savingsChargeCalculationTypeOptions, template.savingsChargeTimeTypeOptions, charge.feeOnMonthDay,
-                charge.feeInterval, charge.minCap, charge.maxCap, charge.feeFrequency, template.feeFrequencyOptions);
+                charge.chargeCalculationType, charge.chargePaymentMode, charge.penalty, charge.active, charge.taxGroup,
+                template.currencyOptions, template.chargeCalculationTypeOptions, template.chargeAppliesToOptions,
+                template.chargeTimeTypeOptions, template.chargePaymetModeOptions, template.loanChargeCalculationTypeOptions,
+                template.loanChargeTimeTypeOptions, template.savingsChargeCalculationTypeOptions, template.savingsChargeTimeTypeOptions,
+                template.clientChargeCalculationTypeOptions, template.clientChargeTimeTypeOptions, charge.feeOnMonthDay, charge.feeInterval,
+                charge.minCap, charge.maxCap, charge.feeFrequency, template.loanFeeFrequencyOptions, charge.incomeOrLiabilityAccount,
+                template.incomeOrLiabilityAccountOptions, template.taxGroupOptions, template.shareChargeCalculationTypeOptions,
+                template.shareChargeTimeTypeOptions, charge.emiRoundingGoalSeek, charge.isGlimCharge, charge.glimChargeCalculation,
+                template.glimChargeCalculationTypeOptions, charge.isCapitalized, charge.getChargeSlabs(), template.slabChargeTypeOptions,
+                charge.percentageType, charge.percentagePeriodType, charge.chargeOverdueData, template.percentageTypeOptions,
+                template.percentagePeriodTypeOptions, template.penaltyGraceTypeOptions);
     }
 
     public static ChargeData instance(final Long id, final String name, final BigDecimal amount, final CurrencyData currency,
             final EnumOptionData chargeTimeType, final EnumOptionData chargeAppliesTo, final EnumOptionData chargeCalculationType,
             final EnumOptionData chargePaymentMode, final MonthDay feeOnMonthDay, final Integer feeInterval, final boolean penalty,
-            final boolean active, final BigDecimal minCap, final BigDecimal maxCap, final EnumOptionData feeFrequency) {
+            final boolean active, final BigDecimal minCap, final BigDecimal maxCap, final EnumOptionData feeFrequency,
+            final GLAccountData accountData, final TaxGroupData taxGroupData, final boolean emiRoundingGoalSeek, final boolean isGlimCharge,
+            final EnumOptionData glimChargeCalculationType, final boolean isCapitalized, final EnumOptionData percentageType,
+            final EnumOptionData percentagePeriodType, final ChargeOverdueData chargeOverdueData) {
 
         final Collection<CurrencyData> currencyOptions = null;
         final List<EnumOptionData> chargeCalculationTypeOptions = null;
@@ -100,13 +158,76 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         final List<EnumOptionData> loansChargeTimeTypeOptions = null;
         final List<EnumOptionData> savingsChargeCalculationTypeOptions = null;
         final List<EnumOptionData> savingsChargeTimeTypeOptions = null;
-        final List<EnumOptionData> feeFrequencyOptions = null;
+        final Collection<EnumOptionData> loanFeeFrequencyOptions = null;
+        final List<EnumOptionData> clientChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> clientChargeTimeTypeOptions = null;
+        final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions = null;
+        final List<EnumOptionData> shareChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> shareChargeTimeTypeOptions = null;
+        final Collection<TaxGroupData> taxGroupOptions = null;
+        final List<EnumOptionData> glimChargeCalculationTypeOptions = null;
+        final List<ChargeSlabData> chargeSlabs = null;
+        final List<EnumOptionData> slabChargeTypeOptions = null;
+        final Collection<EnumOptionData> percentageTypeOptions = null;
+        final Collection<EnumOptionData> percentagePeriodTypeOptions = null;
+        final Collection<EnumOptionData> penaltyGraceTypeOptions = null;
+        return new ChargeData(id, name, amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType, chargePaymentMode,
+                penalty, active, taxGroupData, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions, chargeTimeTypeOptions,
+                chargePaymentModeOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
+                savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
+                clientChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, loanFeeFrequencyOptions, accountData,
+                incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,
+                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs,
+                slabChargeTypeOptions, percentageType, percentagePeriodType, chargeOverdueData, percentageTypeOptions,
+                percentagePeriodTypeOptions, penaltyGraceTypeOptions);
+    }
+
+    public static ChargeData instance(final Long id, final String name, final BigDecimal amount, final CurrencyData currency,
+            final EnumOptionData chargeTimeType, final EnumOptionData chargeAppliesTo, final EnumOptionData chargeCalculationType,
+            final EnumOptionData chargePaymentMode, final MonthDay feeOnMonthDay, final Integer feeInterval, final boolean penalty,
+            final boolean active, final BigDecimal minCap, final BigDecimal maxCap, final EnumOptionData feeFrequency,
+            final GLAccountData accountData) {
+
+        final Collection<CurrencyData> currencyOptions = null;
+        final List<EnumOptionData> chargeCalculationTypeOptions = null;
+        final List<EnumOptionData> chargeAppliesToOptions = null;
+        final List<EnumOptionData> chargeTimeTypeOptions = null;
+        final List<EnumOptionData> chargePaymentModeOptions = null;
+        final List<EnumOptionData> loansChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> loansChargeTimeTypeOptions = null;
+        final List<EnumOptionData> savingsChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> savingsChargeTimeTypeOptions = null;
+        final Collection<EnumOptionData> loanFeeFrequencyOptions = null;
+        final List<EnumOptionData> clientChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> clientChargeTimeTypeOptions = null;
+        final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions = null;
+        final Collection<TaxGroupData> taxGroupOptions = null;
+        final TaxGroupData taxGroupData = null;
+        final List<EnumOptionData> shareChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> shareChargeTimeTypeOptions = null;
+        final boolean emiRoundingGoalSeek = false;
+        final boolean isGlimCharge = false;
+        final List<EnumOptionData> glimChargeCalculationTypeOptions = null;
+        final EnumOptionData glimChargeCalculationType = null;
+        final boolean isCapitalized = false;
+        final List<ChargeSlabData> chargeSlabs = null;
+        final List<EnumOptionData> slabChargeTypeOptions = null;
+        final Collection<EnumOptionData> percentageTypeOptions = null;
+        final Collection<EnumOptionData> percentagePeriodTypeOptions = null;
+        final Collection<EnumOptionData> penaltyGraceTypeOptions = null;
+        final EnumOptionData percentageType = null;
+        final EnumOptionData percentagePeriodType = null;
+        final ChargeOverdueData chargeOverdueData = null;
 
         return new ChargeData(id, name, amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType, chargePaymentMode,
-                penalty, active, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions, chargeTimeTypeOptions,
+                penalty, active, taxGroupData, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions, chargeTimeTypeOptions,
                 chargePaymentModeOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
-                savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap,
-                feeFrequency, feeFrequencyOptions);
+                savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
+                clientChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, loanFeeFrequencyOptions, accountData,
+                incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,
+                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs,
+                slabChargeTypeOptions, percentageType, percentagePeriodType, chargeOverdueData, percentageTypeOptions,
+                percentagePeriodTypeOptions, penaltyGraceTypeOptions);
     }
 
     public static ChargeData lookup(final Long id, final String name, final boolean isPenalty) {
@@ -131,26 +252,59 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         final List<EnumOptionData> loansChargeTimeTypeOptions = null;
         final List<EnumOptionData> savingsChargeCalculationTypeOptions = null;
         final List<EnumOptionData> savingsChargeTimeTypeOptions = null;
+        final List<EnumOptionData> clientChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> clientChargeTimeTypeOptions = null;
         final EnumOptionData feeFrequency = null;
-        final List<EnumOptionData> feeFrequencyOptions = null;
-
+        final Collection<EnumOptionData> loanFeeFrequencyOptions = null;
+        final GLAccountData account = null;
+        final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions = null;
+        final List<EnumOptionData> shareChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> shareChargeTimeTypeOptions = null;
+        final TaxGroupData taxGroupData = null;
+        final Collection<TaxGroupData> taxGroupOptions = null;
+        final boolean emiRoundingGoalSeek = false;
+        final boolean isGlimCharge = false;
+        final List<EnumOptionData> glimChargeCalculationTypeOptions = null;
+        final EnumOptionData glimChargeCalculationType = null;
+        final boolean isCapitalized = false;
+        final List<ChargeSlabData> chargeSlabs = null;
+        final List<EnumOptionData> slabChargeTypeOptions = null;
+        final Collection<EnumOptionData> percentageTypeOptions = null;
+        final Collection<EnumOptionData> percentagePeriodTypeOptions = null;
+        final Collection<EnumOptionData> penaltyGraceTypeOptions = null;
+        final EnumOptionData percentageType = null;
+        final EnumOptionData percentagePeriodType = null;
+        final ChargeOverdueData chargeOverdueData = null;
         return new ChargeData(id, name, amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType, chargePaymentMode,
-                penalty, active, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions, chargeTimeTypeOptions,
+                penalty, active, taxGroupData, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions, chargeTimeTypeOptions,
                 chargePaymentModeOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
-                savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap,
-                feeFrequency, feeFrequencyOptions);
+                savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
+                clientChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, loanFeeFrequencyOptions, account,
+                incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,
+                emiRoundingGoalSeek, isGlimCharge, glimChargeCalculationType, glimChargeCalculationTypeOptions, isCapitalized, chargeSlabs,
+                slabChargeTypeOptions, percentageType, percentagePeriodType, chargeOverdueData, percentageTypeOptions,
+                percentagePeriodTypeOptions, penaltyGraceTypeOptions);
     }
 
     private ChargeData(final Long id, final String name, final BigDecimal amount, final CurrencyData currency,
             final EnumOptionData chargeTimeType, final EnumOptionData chargeAppliesTo, final EnumOptionData chargeCalculationType,
-            final EnumOptionData chargePaymentMode, final boolean penalty, final boolean active,
+            final EnumOptionData chargePaymentMode, final boolean penalty, final boolean active, final TaxGroupData taxGroupData,
             final Collection<CurrencyData> currencyOptions, final List<EnumOptionData> chargeCalculationTypeOptions,
             final List<EnumOptionData> chargeAppliesToOptions, final List<EnumOptionData> chargeTimeTypeOptions,
             final List<EnumOptionData> chargePaymentModeOptions, final List<EnumOptionData> loansChargeCalculationTypeOptions,
             final List<EnumOptionData> loansChargeTimeTypeOptions, final List<EnumOptionData> savingsChargeCalculationTypeOptions,
-            final List<EnumOptionData> savingsChargeTimeTypeOptions, final MonthDay feeOnMonthDay, final Integer feeInterval,
+            final List<EnumOptionData> savingsChargeTimeTypeOptions, final List<EnumOptionData> clientChargeCalculationTypeOptions,
+            final List<EnumOptionData> clientChargeTimeTypeOptions, final MonthDay feeOnMonthDay, final Integer feeInterval,
             final BigDecimal minCap, final BigDecimal maxCap, final EnumOptionData feeFrequency,
-            final List<EnumOptionData> feeFrequencyOptions) {
+            final Collection<EnumOptionData> loanFeeFrequencyOptions, final GLAccountData account,
+            final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions, final Collection<TaxGroupData> taxGroupOptions,
+            final List<EnumOptionData> shareChargeCalculationTypeOptions, final List<EnumOptionData> shareChargeTimeTypeOptions,
+            final boolean emiRoundingGoalSeek, final boolean isGlimCharge, final EnumOptionData glimChargeCalculationType,
+            final List<EnumOptionData> glimChargeCalculationTypeOptions, final boolean isCapitalized,
+            final List<ChargeSlabData> chargeSlabs, final List<EnumOptionData> slabChargeTypeOptions, final EnumOptionData percentageType,
+            final EnumOptionData percentagePeriodType, final ChargeOverdueData chargeOverdueData,
+            final Collection<EnumOptionData> percentageTypeOptions, final Collection<EnumOptionData> percentagePeriodTypeOptions,
+            final Collection<EnumOptionData> penaltyGraceTypeOptions) {
         this.id = id;
         this.name = name;
         this.amount = amount;
@@ -172,10 +326,31 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         this.chargePaymetModeOptions = chargePaymentModeOptions;
         this.savingsChargeCalculationTypeOptions = savingsChargeCalculationTypeOptions;
         this.savingsChargeTimeTypeOptions = savingsChargeTimeTypeOptions;
+        this.clientChargeCalculationTypeOptions = clientChargeCalculationTypeOptions;
+        this.clientChargeTimeTypeOptions = clientChargeTimeTypeOptions;
         this.loanChargeCalculationTypeOptions = loansChargeCalculationTypeOptions;
         this.loanChargeTimeTypeOptions = loansChargeTimeTypeOptions;
         this.feeFrequency = feeFrequency;
-        this.feeFrequencyOptions = feeFrequencyOptions;
+        this.loanFeeFrequencyOptions = loanFeeFrequencyOptions;
+        this.incomeOrLiabilityAccount = account;
+        this.incomeOrLiabilityAccountOptions = incomeOrLiabilityAccountOptions;
+        this.taxGroup = taxGroupData;
+        this.taxGroupOptions = taxGroupOptions;
+        this.shareChargeCalculationTypeOptions = shareChargeCalculationTypeOptions;
+        this.shareChargeTimeTypeOptions = shareChargeTimeTypeOptions;
+        this.emiRoundingGoalSeek = emiRoundingGoalSeek;
+        this.isGlimCharge = isGlimCharge;
+        this.glimChargeCalculation = glimChargeCalculationType;
+        this.glimChargeCalculationTypeOptions = glimChargeCalculationTypeOptions;
+        this.isCapitalized = isCapitalized;
+        this.slabs = chargeSlabs;
+        this.slabChargeTypeOptions = slabChargeTypeOptions;
+        this.percentageType = percentageType;
+        this.percentagePeriodType = percentagePeriodType;
+        this.chargeOverdueData = chargeOverdueData;
+        this.percentageTypeOptions = percentageTypeOptions;
+        this.percentagePeriodTypeOptions = percentagePeriodTypeOptions;
+        this.penaltyGraceTypeOptions = penaltyGraceTypeOptions;
     }
 
     @Override
@@ -202,9 +377,14 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         if (this.chargeCalculationType.getId() == 2) {
             percentage = this.amount;
         }
-
+        Long taxGroupId = null;
+        if (this.taxGroup != null) {
+            taxGroupId = this.taxGroup.getId();
+        }
+        final boolean isMandatory = false;
         return LoanChargeData.newLoanChargeDetails(this.id, this.name, this.currency, this.amount, percentage, this.chargeTimeType,
-                this.chargeCalculationType, this.penalty, this.chargePaymentMode, this.minCap, this.maxCap);
+                this.chargeCalculationType, this.penalty, this.chargePaymentMode, this.minCap, this.maxCap, this.isGlimCharge,
+                this.isCapitalized, taxGroupId, isMandatory);
     }
 
     public SavingsAccountChargeData toSavingsAccountChargeData() {
@@ -223,45 +403,128 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         final LocalDate inactivationDate = null;
 
         return SavingsAccountChargeData.instance(savingsChargeId, this.id, savingsAccountId, this.name, this.currency, this.amount,
-                amountPaid, amountWaived, amountWrittenOff, amountOutstanding, this.chargeTimeType, dueAsOfDate,
-                this.chargeCalculationType, percentage, amountPercentageAppliedTo, chargeOptions, this.penalty, this.feeOnMonthDay,
-                this.feeInterval, isActive, inactivationDate);
+                amountPaid, amountWaived, amountWrittenOff, amountOutstanding, this.chargeTimeType, dueAsOfDate, this.chargeCalculationType,
+                percentage, amountPercentageAppliedTo, chargeOptions, this.penalty, this.feeOnMonthDay, this.feeInterval, isActive,
+                inactivationDate);
+    }
+
+    public ShareAccountChargeData toShareAccountChargeData() {
+
+        final Long shareChargeId = null;
+        final Long shareAccountId = null;
+        final BigDecimal amountPaid = BigDecimal.ZERO;
+        final BigDecimal amountWaived = BigDecimal.ZERO;
+        final BigDecimal amountWrittenOff = BigDecimal.ZERO;
+        final BigDecimal amountOutstanding = BigDecimal.ZERO;
+        final BigDecimal percentage = BigDecimal.ZERO;
+        final BigDecimal amountPercentageAppliedTo = BigDecimal.ZERO;
+        final Collection<ChargeData> chargeOptions = null;
+        final Boolean isActive = null;
+        final BigDecimal chargeAmountOrPercentage = BigDecimal.ZERO;
+
+        return new ShareAccountChargeData(shareChargeId, this.id, shareAccountId, this.name, this.currency, this.amount, amountPaid,
+                amountWaived, amountWrittenOff, amountOutstanding, this.chargeTimeType, this.chargeCalculationType, percentage,
+                amountPercentageAppliedTo, chargeOptions, isActive, chargeAmountOrPercentage);
     }
 
     public boolean isPenalty() {
         return this.penalty;
     }
-    
-    public boolean isOverdueInstallmentCharge(){
+
+    public boolean isOverdueInstallmentCharge() {
         boolean isOverdueInstallmentCharge = false;
-        if(this.chargeTimeType != null){
+        if (this.chargeTimeType != null) {
             isOverdueInstallmentCharge = ChargeTimeType.fromInt(this.chargeTimeType.getId().intValue()).isOverdueInstallment();
         }
         return isOverdueInstallmentCharge;
     }
-    
+
+    public boolean isActive() {
+        return this.active;
+    }
+
+    public Integer getFeeInterval() {
+        return this.feeInterval;
+    }
+
+    public EnumOptionData getFeeFrequency() {
+        return this.feeFrequency;
+    }
+
+    public boolean isSlabBasedCharge() {
+        boolean isSlabBasedCharge = false;
+        if (ChargeCalculationType.fromInt(this.chargeCalculationType.getId().intValue()).isSlabBased()) {
+            isSlabBasedCharge = true;
+        }
+        return isSlabBasedCharge;
+    }
+
+    public void updateSlabCharges(final Collection<ChargeSlabData> chargeSlabs) {
+        if (chargeSlabs == null) {
+            this.slabs = new ArrayList<>();
+        }
+        if (this.slabs != null) {
+            this.slabs.addAll(chargeSlabs);
+        }
+
+    }
+
+    public void addChargeSlabData(final ChargeSlabData chargeSlabData) {
+        if (this.slabs == null) {
+            this.slabs = new ArrayList<>();
+        }
+        this.slabs.add(chargeSlabData);
+    }
+
+    public List<ChargeSlabData> getChargeSlabs() {
+        return this.slabs;
+    }
+
     public Long getId() {
-                       return this.id;
-               }
-        
-               public boolean isActive() {
-                       return this.active;
-               }
-        
-               public BigDecimal getAmount() {
-                       return this.amount;
-               }
-        
-              public EnumOptionData getChargeTimeType() {
-                       return this.chargeTimeType;
-               }
-        
-               public Integer getFeeInterval() {
-                       return this.feeInterval;
-               }
-        
-               public EnumOptionData getFeeFrequency() {
-                       return this.feeFrequency;
-               }
-    
+        return this.id;
+    }
+
+    public BigDecimal getAmount() {
+        return this.amount;
+    }
+
+    public Integer getChargeTimeType() {
+        return this.chargeTimeType.getId().intValue();
+    }
+
+    public Integer getChargeCalculationType() {
+        return this.chargeCalculationType.getId().intValue();
+    }
+
+    public Integer getChargePaymentMode() {
+        return this.chargePaymentMode.getId().intValue();
+    }
+
+    public Integer feeInterval() {
+        return this.feeInterval;
+    }
+
+    public Integer feeFrequency() {
+        Integer feeFrequency = null;
+        if (this.feeFrequency != null) {
+            feeFrequency = this.feeFrequency.getId().intValue();
+        }
+        return feeFrequency;
+    }
+
+    public TaxGroupData getTaxGroup() {
+        return this.taxGroup;
+    }
+
+    public Integer getPercentageType() {
+        return this.percentageType.getId().intValue();
+    }
+
+    public Integer getPercentagePeriodType() {
+        return this.percentagePeriodType.getId().intValue();
+    }
+
+    public ChargeOverdueData getChargeOverdueData() {
+        return this.chargeOverdueData;
+    }
 }

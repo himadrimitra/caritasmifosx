@@ -31,10 +31,12 @@ public class LoanDTO {
     final boolean upfrontAccrualBasedAccountingEnabled;
     final boolean periodicAccrualBasedAccountingEnabled;
     private List<LoanTransactionDTO> newLoanTransactions;
+    private Long writeOffReasonId;
 
     public LoanDTO(final Long loanId, final Long loanProductId, final Long officeId, final String currencyCode,
             final boolean cashBasedAccountingEnabled, final boolean upfrontAccrualBasedAccountingEnabled,
-            final boolean periodicAccrualBasedAccountingEnabled, final List<LoanTransactionDTO> newLoanTransactions) {
+            final boolean periodicAccrualBasedAccountingEnabled, final List<LoanTransactionDTO> newLoanTransactions,
+            final Long writeOffReasonId) {
         this.loanId = loanId;
         this.loanProductId = loanProductId;
         this.officeId = officeId;
@@ -43,6 +45,7 @@ public class LoanDTO {
         this.currencyCode = currencyCode;
         this.upfrontAccrualBasedAccountingEnabled = upfrontAccrualBasedAccountingEnabled;
         this.periodicAccrualBasedAccountingEnabled = periodicAccrualBasedAccountingEnabled;
+        this.writeOffReasonId = writeOffReasonId;
     }
 
     public Long getLoanId() {
@@ -99,6 +102,14 @@ public class LoanDTO {
 
     public void setCurrencyCode(final String currencyCode) {
         this.currencyCode = currencyCode;
+    }
+
+    public Long getWriteOffReasonId() {
+        return this.writeOffReasonId;
+    }
+
+    public void setWriteOffReasonId(final Long writeOffReasonId) {
+        this.writeOffReasonId = writeOffReasonId;
     }
 
 }

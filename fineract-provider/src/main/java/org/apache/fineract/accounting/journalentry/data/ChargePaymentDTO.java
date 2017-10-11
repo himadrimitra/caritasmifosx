@@ -19,17 +19,23 @@
 package org.apache.fineract.accounting.journalentry.data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChargePaymentDTO {
 
     private final Long chargeId;
     private final BigDecimal amount;
     private final Long loanChargeId;
+    private final boolean isCapitalized;
+    private List<TaxPaymentDTO> taxPaymentDTO;
 
-    public ChargePaymentDTO(final Long chargeId, final Long loanChargeId, final BigDecimal amount) {
+    public ChargePaymentDTO(final Long chargeId, final Long loanChargeId, final BigDecimal amount, final boolean isCapitalized) {
         this.chargeId = chargeId;
         this.amount = amount;
         this.loanChargeId = loanChargeId;
+        this.isCapitalized = isCapitalized;
+        this.taxPaymentDTO = null;
     }
 
     public Long getChargeId() {
@@ -42,6 +48,21 @@ public class ChargePaymentDTO {
 
     public Long getLoanChargeId() {
         return this.loanChargeId;
+    }
+
+    public void updateTaxPaymentDTO(final TaxPaymentDTO taxPaymentDTO) {
+        if (this.taxPaymentDTO == null) {
+            this.taxPaymentDTO = new ArrayList<>();
+        }
+        this.taxPaymentDTO.add(taxPaymentDTO);
+    }
+
+    public List<TaxPaymentDTO> getTaxPaymentDTO() {
+        return this.taxPaymentDTO;
+    }
+
+    public boolean isCapitalized() {
+        return this.isCapitalized;
     }
 
 }

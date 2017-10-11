@@ -21,6 +21,7 @@ package org.apache.fineract.useradministration.api;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -45,6 +46,8 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.monetary.data.CurrencyData;
+import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.useradministration.data.PermissionData;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.data.RolePermissionsData;
@@ -63,13 +66,14 @@ public class RolesApiResource {
      * The set of parameters that are supported in response for {@link RoleData}
      */
     private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "name", "description", "availablePermissions",
-            "selectedPermissions"));
+            "selectedPermissions", AppUserApiConstant.ROLE_BASED_LIMITS));
 
     /**
-     * The set of parameters that are supported in response for {@link RoleData}
+     * The set of parameters that are supported in response for
+     * {@link RolePermissionsData}
      */
-    private final Set<String> PERMISSIONS_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "name", "description",
-            "permissionUsageData"));
+    private final Set<String> PERMISSIONS_RESPONSE_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList("id", "name", "description", "permissionUsageData"));
 
     private final String resourceNameForPermissions = "ROLE";
 
@@ -80,6 +84,7 @@ public class RolesApiResource {
     private final DefaultToApiJsonSerializer<RolePermissionsData> permissionsToApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final CurrencyReadPlatformService currencyReadPlatformService;
 
     @Autowired
     public RolesApiResource(final PlatformSecurityContext context, final RoleReadPlatformService readPlatformService,
@@ -87,7 +92,8 @@ public class RolesApiResource {
             final DefaultToApiJsonSerializer<RoleData> toApiJsonSerializer,
             final DefaultToApiJsonSerializer<RolePermissionsData> permissionsToApiJsonSerializer,
             final ApiRequestParameterHelper apiRequestParameterHelper,
-            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+            final CurrencyReadPlatformService currencyReadPlatformService) {
         this.context = context;
         this.roleReadPlatformService = readPlatformService;
         this.permissionReadPlatformService = permissionReadPlatformService;
@@ -95,6 +101,7 @@ public class RolesApiResource {
         this.permissionsToApiJsonSerializer = permissionsToApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+        this.currencyReadPlatformService = currencyReadPlatformService;
     }
 
     @GET
@@ -137,12 +144,16 @@ public class RolesApiResource {
 
         final RoleData role = this.roleReadPlatformService.retrieveOne(roleId);
 
+        if (settings.isTemplate()) {
+            final List<CurrencyData> allowedCurrencies = (List<CurrencyData>) this.currencyReadPlatformService.retrieveAllowedCurrencies();
+            role.setCurrencyOptions(allowedCurrencies);
+        }
         return this.toApiJsonSerializer.serialize(settings, role, this.RESPONSE_DATA_PARAMETERS);
     }
 
     /**
      * Roles enable or disable
-     * 
+     *
      * @param roleId
      * @param commandParam
      * @param apiRequestBodyAsJson
@@ -219,7 +230,7 @@ public class RolesApiResource {
 
     /**
      * Delete Role
-     * 
+     *
      * @param roleId
      * @return
      */
