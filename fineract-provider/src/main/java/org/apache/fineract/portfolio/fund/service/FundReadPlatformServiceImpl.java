@@ -145,9 +145,12 @@ public class FundReadPlatformServiceImpl implements FundReadPlatformService {
             final EnumOptionData tenureFrequency = PeriodFrequencyType.periodFrequencyType(tenureFrequencyIntValue);
             final int tenure = rs.getInt("tenure");
 
-            final int morotoriumFrequencyIntValue = rs.getInt("morotoriumFrequency");
-            final EnumOptionData morotoriumFrequency = PeriodFrequencyType.periodFrequencyType(morotoriumFrequencyIntValue);
-            final int morotorium = rs.getInt("morotorium");
+            final Integer morotoriumFrequencyIntValue = JdbcSupport.getIntegeActualValue(rs, "morotoriumFrequency");
+            EnumOptionData morotoriumFrequency = null;
+            if (morotoriumFrequencyIntValue != null) {
+                morotoriumFrequency = PeriodFrequencyType.periodFrequencyType(morotoriumFrequencyIntValue);
+            }
+            final Integer morotorium = JdbcSupport.getIntegeActualValue(rs, "morotorium");
 
             final BigDecimal loanPortfolioFee = rs.getBigDecimal("loanPortfolioFee");
             final BigDecimal bookDebtHypothecation = rs.getBigDecimal("bookDebtHypothecation");

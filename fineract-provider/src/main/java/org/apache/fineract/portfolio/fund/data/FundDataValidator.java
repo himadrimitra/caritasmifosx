@@ -332,7 +332,7 @@ public class FundDataValidator {
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.morotoriumParamName, element)) {
                 final Integer morotorium = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(FundApiConstants.morotoriumParamName,
                         element);
-                baseDataValidator.reset().parameter(FundApiConstants.morotoriumParamName).value(morotorium).notNull()
+                baseDataValidator.reset().parameter(FundApiConstants.morotoriumParamName).value(morotorium).ignoreIfNull()
                         .integerGreaterThanZero();
             }
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.morotoriumFrequencyParamName, element)) {
@@ -344,7 +344,7 @@ public class FundDataValidator {
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.loanPortfolioFeeParamName, element)) {
                 final BigDecimal loanPortfolioFee = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.loanPortfolioFeeParamName, element);
-                baseDataValidator.reset().parameter(FundApiConstants.loanPortfolioFeeParamName).value(loanPortfolioFee).notNull()
+                baseDataValidator.reset().parameter(FundApiConstants.loanPortfolioFeeParamName).value(loanPortfolioFee).ignoreIfNull()
                         .positiveAmount();
 
             }
@@ -352,7 +352,7 @@ public class FundDataValidator {
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.bookDebtHypothecationParamName, element)) {
                 final BigDecimal bookDebtHypothecation = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.bookDebtHypothecationParamName, element);
-                baseDataValidator.reset().parameter(FundApiConstants.bookDebtHypothecationParamName).value(bookDebtHypothecation).notNull()
+                baseDataValidator.reset().parameter(FundApiConstants.bookDebtHypothecationParamName).value(bookDebtHypothecation).ignoreIfNull()
                         .positiveAmount();
 
             }
@@ -360,7 +360,7 @@ public class FundDataValidator {
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.cashCollateralParamName, element)) {
                 final BigDecimal cashCollateral = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.cashCollateralParamName, element);
-                baseDataValidator.reset().parameter(FundApiConstants.cashCollateralParamName).value(cashCollateral).notNull()
+                baseDataValidator.reset().parameter(FundApiConstants.cashCollateralParamName).value(cashCollateral).ignoreIfNull()
                         .positiveAmount();
 
             }
