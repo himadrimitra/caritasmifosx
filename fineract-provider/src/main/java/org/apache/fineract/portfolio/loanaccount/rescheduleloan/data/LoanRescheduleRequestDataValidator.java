@@ -211,9 +211,6 @@ public class LoanRescheduleRequestDataValidator {
                 && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.newInstallmentAmountParamName, jsonElement)) {
             dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.graceOnPrincipalParamName).notNull();
         }
-        if(!isBulkCreateAndApprove){
-            validateForOverdueCharges(dataValidatorBuilder, loan, installment);
-        }
 		if (extraTerms != null) {
 			List<LoanTermVariations> loanTermVariations = new ArrayList<>();
 			loanTermVariations = loan.getLoanTermVariations();
@@ -254,20 +251,6 @@ public class LoanRescheduleRequestDataValidator {
         }
     }
     
-    private void validateForOverdueCharges(DataValidatorBuilder dataValidatorBuilder, final Loan loan,
-            final LoanRepaymentScheduleInstallment installment) {
-        if (installment != null) {
-            LocalDate rescheduleFromDate = installment.getFromDate();
-            Collection<LoanCharge> charges = loan.getLoanCharges();
-            for (LoanCharge loanCharge : charges) {
-                if (loanCharge.isOverdueInstallmentCharge() && loanCharge.getDueLocalDate().isAfter(rescheduleFromDate)) {
-                    dataValidatorBuilder.failWithCodeNoParameterAddedToErrorCode("not.allowed.due.to.overdue.charges");
-                    break;
-                }
-            }
-        }
-    }
-
     /**
      * Validates a user request to approve a loan reschedule request
      * 
@@ -333,8 +316,6 @@ public class LoanRescheduleRequestDataValidator {
             }
         }
         
-        validateForOverdueCharges(dataValidatorBuilder, loan, installment);
-
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
 
@@ -428,7 +409,6 @@ public class LoanRescheduleRequestDataValidator {
 
         }
 
-        validateForOverdueCharges(dataValidatorBuilder, loan, installment);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
     }

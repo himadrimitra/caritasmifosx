@@ -21155,6 +21155,78 @@
                         <td class=fielddesc>This field is Optional and can be used only when a charge is applied to a Client. It indicates the Income or Liability account which gets
                             credited when a payment is made on this charge<br/></td>
                     </tr>
+					<tr class=alt>
+                        <td>percentageType</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is Optional and can be used only when a charge is Loan overdue charge with percentage calculation. It indicates that provided percentage amount should be taken as FLAT or Yearly <br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>percentagePeriodType</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is Optional and can be used only when a charge percentageType is yearly. It indicates that provided percentage amount should be taken as daily calculation or as per provided  frequency type ex: for monthly that percentage calculation will be 12%/12<br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>overdueChargeDetail</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is mandatory and can be used only when a charge is Loan overdue charge. with this feild we can provide additional properties like gracePeriod, penaltyFreePeriod, graceType, applyChargeForBrokenPeriod, isBasedOnOriginalSchedule,considerOnlyPostedInterest, calculateChargeOnCurrentOverdue, stopChargeOnNPA, minOverdueAmountRequired  for loan overdue charge <br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>gracePeriod</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is mandatory and can be used only when a charge is Loan overdue charge. It indicates that overdue charge applied only after mentioned grace period days are completed without payment<br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>penaltyFreePeriod</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is mandatory and can be used only when a charge is Loan overdue charge. It indicates that overdue charge will not apply for mentioned  free  period days<br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>graceType</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is mandatory and can be used only when a charge is Loan overdue charge. It indicates that overdue charge gracePeriod and penaltyFreePeriod should be applied for each overdue instalment or only for first overdue instalment  <br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>applyChargeForBrokenPeriod</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is optional and can be used only when a charge is Loan overdue charge. It indicates that overdue charge given with repeat frequency can be applied till payment date <br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>isBasedOnOriginalSchedule</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is optional and can be used only when a charge is Loan overdue charge and interest recalculation loan product. It indicates that overdue charge calculation will be done only based on original schedule <br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>considerOnlyPostedInterest</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is optional and can be used only when a charge is Loan overdue charge and interest recalculation loan product with post compounding as transaction . It indicates that overdue charge calculation will be done on posted compounding amount when principal is zero <br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>calculateChargeOnCurrentOverdue</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is optional and can be used only when a charge is Loan overdue charge and applyChargeForBrokenPeriod is set s false . It indicates that overdue charge calculation will be done on current outstanding only. means it won't calculate amounts based on between transactions. <br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>stopChargeOnNPA</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is optional and can be used only when a charge is Loan overdue charge. It indicates that overdue charge will not apply if loan moves to NPA . <br/></td>
+                    </tr>
+					<tr class=alt>
+                        <td>minOverdueAmountRequired</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>This field is optional and can be used only when a charge is Loan overdue charge. It indicates that overdue charge will not apply if loan overdue amount is less than specified minimum overdue amount. <br/></td>
+                    </tr>
                 </table>
             </div>
         </div>
