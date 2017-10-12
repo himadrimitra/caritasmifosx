@@ -167,6 +167,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
 
     @Column(name = "account_moves_out_of_npa_only_on_arrears_completion")
     private boolean accountMovesOutOfNPAOnlyOnArrearsCompletion;
+    
+    @Column(name = "stop_loan_processing_on_npa")
+    private boolean stopLoanProcessingOnNpa;
 
     @Column(name = "can_define_fixed_emi_amount")
     private boolean canDefineInstallmentAmount;
@@ -388,6 +391,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         }
         final boolean accountMovesOutOfNPAOnlyOnArrearsCompletion = command
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.accountMovesOutOfNPAOnlyOnArrearsCompletionParamName);
+        final boolean stopProcessingOnNpa = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.stopLoanProcessingOnNpa);
         final boolean canDefineEmiAmount = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.canDefineEmiAmountParamName);
         final Integer installmentAmountInMultiplesOf = command
                 .integerValueOfParameterNamed(LoanProductConstants.installmentAmountInMultiplesOfParamName);
@@ -459,7 +463,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding,
                 isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod,
                 isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule,
-                percentageOfDisbursementToBeTransferred, collectInterestUpfront, inerestRatesListPerPeriod, applicableForLoanType);
+                percentageOfDisbursementToBeTransferred, collectInterestUpfront, inerestRatesListPerPeriod, applicableForLoanType, stopProcessingOnNpa);
     }
 
     public void updateLoanProductInRelatedClasses() {
@@ -725,7 +729,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final Integer brokenPeriodMethod, final boolean isFlatInterestRate, final boolean allowNegativeLoanBalances,
             final boolean considerFutureDisbursementScheduleInLoans, final boolean considerAllDisbursementsInSchedule,
             final BigDecimal percentageOfDisbursementToBeTransferred, boolean allowUpfrontCollection,
-            final String inerestRatesListPerPeriod, final Integer applicableForLoanType) {
+            final String inerestRatesListPerPeriod, final Integer applicableForLoanType, final boolean stopProcessingOnNpa) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -802,6 +806,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         this.loanProductGuaranteeDetails = loanProductGuaranteeDetails;
         this.principalThresholdForLastInstallment = principalThresholdForLastInstallment;
         this.accountMovesOutOfNPAOnlyOnArrearsCompletion = accountMovesOutOfNPAOnlyOnArrearsCompletion;
+        this.stopLoanProcessingOnNpa = stopProcessingOnNpa;
         this.canDefineInstallmentAmount = canDefineEmiAmount;
         this.installmentAmountInMultiplesOf = installmentAmountInMultiplesOf;
         this.adjustFirstEMIAmount = adjustFirstEMIAmount;
@@ -1222,6 +1227,14 @@ public class LoanProduct extends AbstractPersistable<Long> {
             actualChanges.put(LoanProductConstants.accountMovesOutOfNPAOnlyOnArrearsCompletionParamName, newValue);
             this.accountMovesOutOfNPAOnlyOnArrearsCompletion = newValue;
         }
+        
+        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.stopLoanProcessingOnNpa, this.stopLoanProcessingOnNpa)) {
+            final boolean newValue = command
+                    .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.stopLoanProcessingOnNpa);
+            actualChanges.put(LoanProductConstants.stopLoanProcessingOnNpa, newValue);
+            this.stopLoanProcessingOnNpa = newValue;
+        }
+        
         if (command.isChangeInBooleanParameterNamed(LoanProductConstants.canDefineEmiAmountParamName, this.canDefineInstallmentAmount)) {
             final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.canDefineEmiAmountParamName);
             actualChanges.put(LoanProductConstants.canDefineEmiAmountParamName, newValue);

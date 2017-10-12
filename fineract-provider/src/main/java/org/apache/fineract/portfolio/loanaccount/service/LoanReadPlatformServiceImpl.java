@@ -2007,6 +2007,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 .append("select ")
                 .append(mapper.schema())
                 .append(" where (recaldet.is_compounding_to_be_posted_as_transaction is null or recaldet.is_compounding_to_be_posted_as_transaction = 0) ")
+                .append(" and (loan.is_npa = 0 or mpl.stop_loan_processing_on_npa = 0)")
                 .append(" and (((ls.fee_charges_amount <> if(ls.accrual_fee_charges_derived is null,0, ls.accrual_fee_charges_derived))")
                 .append(" or ( ls.penalty_charges_amount <> if(ls.accrual_penalty_charges_derived is null,0,ls.accrual_penalty_charges_derived))")
                 .append(" or ( ls.interest_amount <> if(ls.accrual_interest_derived is null,0,ls.accrual_interest_derived)))")
@@ -2035,6 +2036,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 .append("select ")
                 .append(mapper.schema())
                 .append(" where  (recaldet.is_compounding_to_be_posted_as_transaction is null or recaldet.is_compounding_to_be_posted_as_transaction = 0) ")
+                .append(" and (loan.is_npa = 0 or mpl.stop_loan_processing_on_npa = 0)")
                 .append(" and (((ls.fee_charges_amount <> if(ls.accrual_fee_charges_derived is null,0, ls.accrual_fee_charges_derived))")
                 .append(" or (ls.penalty_charges_amount <> if(ls.accrual_penalty_charges_derived is null,0,ls.accrual_penalty_charges_derived))")
                 .append(" or (ls.interest_amount <> if(ls.accrual_interest_derived is null,0,ls.accrual_interest_derived)))")
@@ -2253,6 +2255,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             this.jdbcTemplate.update("truncate reprocess_loans");
         }
         sqlBuilder.append("SELECT ml.id FROM m_loan ml ");
+        sqlBuilder.append(" join m_product_loan lp on ml.product_id = lp.id  ");
         sqlBuilder.append(" INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id ");
         sqlBuilder.append(" LEFT JOIN m_loan_disbursement_detail dd on dd.loan_id=ml.id and dd.disbursedon_date is null ");
         // For Floating rate changes
@@ -2265,6 +2268,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         sqlBuilder.append(" left join  m_floating_rates bfr on  bfr.is_base_lending_rate = 1");
         sqlBuilder.append(" left join  m_floating_rates_periods bfrp on  bfr.id = bfrp.floating_rates_id and bfrp.created_date >= ?");
         sqlBuilder.append(" WHERE ml.loan_status_id = ? ");
+        sqlBuilder.append(" and (ml.is_npa = 0 or lp.stop_loan_processing_on_npa = 0)");
         sqlBuilder.append(" and ((");
         sqlBuilder.append("ml.interest_recalculation_enabled = 1 ");
         sqlBuilder.append(" and (ml.interest_recalcualated_on is null or ml.interest_recalcualated_on <> ?)");
@@ -3069,7 +3073,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         sql.append("left join m_loan_arrears_aging laa on laa.loan_id = loan.id ");
         sql.append("inner join m_product_loan mpl on mpl.id = loan.product_id and mpl.overdue_days_for_npa is not null ");
         sql.append("and mpl.accounting_type = ? ");
-        sql.append("where  loan.loan_status_id = 300 and loan.is_npa = 1 and ( ");
+        sql.append("where  loan.loan_status_id = 300 and loan.is_npa = 1 and ");
+        sql.append("mpl.stop_loan_processing_on_npa = 0 and ( ");
         sql.append("laa.overdue_since_date_derived is null or (mpl.account_moves_out_of_npa_only_on_arrears_completion = 0 and ");
         sql.append("laa.overdue_since_date_derived >= SUBDATE(?,INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day))) ");
 
@@ -3086,6 +3091,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         sql.append(" INNER JOIN  m_loan loan on laa.loan_id = loan.id ");
         sql.append(" INNER JOIN m_product_loan mpl on mpl.id = loan.product_id AND mpl.overdue_days_for_npa is not null  and mpl.accounting_type = ? ");
         sql.append("WHERE loan.loan_status_id = 300 and loan.is_npa = 0 and ");
+        sql.append("mpl.stop_loan_processing_on_npa = 0 and ");
         sql.append("laa.overdue_since_date_derived < SUBDATE(?,INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day) ");
         sql.append("group by loan.id ");
         return this.jdbcTemplate.queryForList(sql.toString(), Long.class, AccountingRuleType.ACCRUAL_PERIODIC.getValue(), currentdate);
@@ -3210,6 +3216,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         sb.append("SELECT if( DATE_SUB(:currentdate ,INTERVAL MIN(od.grace_period) DAY) > MIN(ls.duedate) , ml.id, 0) as loanId ");
         sb.append(" FROM m_loan ml");
+        sb.append(" join m_product_loan lp on ml.product_id = lp.id  ");
         sb.append(" JOIN f_loan_recurring_charge rc ON rc.loan_id = ml.id");
         sb.append(" JOIN f_loan_overdue_charge_detail od ON od.recurrence_charge_id = rc.id AND (od.last_run_on_date <> :currentdate OR od.last_run_on_date IS NULL)");
         if (isRunForBrokenPeriod) {
@@ -3222,6 +3229,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         } else {
             sb.append("ml.interest_recalculation_enabled = 0 ");
         }
+        sb.append(" and (ml.is_npa = 0 or lp.stop_loan_processing_on_npa = 0) ");
         sb.append("AND :currentdate > ls.duedate AND ls.recalculated_interest_component <> 1 AND ls.completed_derived <> 1");
         sb.append(" GROUP BY ml.id");
         Map<String, Object> paramMap = new HashMap<>(3);
