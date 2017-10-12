@@ -61,6 +61,7 @@ import org.apache.fineract.portfolio.fund.domain.FundRepositoryWrapper;
 import org.apache.fineract.portfolio.fund.exception.CsvDataException;
 import org.apache.fineract.portfolio.fund.exception.FundNotFoundException;
 import org.apache.fineract.portfolio.fund.exception.InvalidLoanForAssignmentException;
+import org.apache.fineract.portfolio.fund.exception.InvalidLoanPurposeAmountException;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -227,6 +228,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
         List<FundLoanPurpose> fundLoanPurposeList = new ArrayList<>();
         Locale locale = this.fromApiJsonHelper.extractLocaleParameter(command.parsedJson().getAsJsonObject());
         JsonElement fundLoanPurpose = command.parsedJson().getAsJsonObject().get(FundApiConstants.fundLoanPurposeParamName);
+        BigDecimal totalLoanPurposeAmount = BigDecimal.ZERO;
         for (JsonElement fundloanPurposeData : fundLoanPurpose.getAsJsonArray()) {
             Integer loanPurposeId = this.fromApiJsonHelper.extractIntegerNamed("loanPurposeId", fundloanPurposeData, locale);
             CodeValue loanPurpose = this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(
@@ -234,7 +236,9 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
             BigDecimal loanPurposeAmount = this.fromApiJsonHelper.extractBigDecimalNamed("loanPurposeAmount", fundloanPurposeData,
                     locale);
             fundLoanPurposeList.add(FundLoanPurpose.instanceWithoutFund(loanPurpose, loanPurposeAmount));
+            totalLoanPurposeAmount=totalLoanPurposeAmount.add(loanPurposeAmount);
         }
+        if (totalLoanPurposeAmount.compareTo(new BigDecimal(100)) > 0) { throw new InvalidLoanPurposeAmountException(); }
         return fundLoanPurposeList;
     }
 
