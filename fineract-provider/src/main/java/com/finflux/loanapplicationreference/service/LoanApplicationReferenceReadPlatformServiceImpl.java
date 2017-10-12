@@ -367,13 +367,16 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("lar.account_type_enum AS accountTypeEnum, ");
             sqlBuilder.append("lar.loan_product_id AS loanProductId, ");
             sqlBuilder.append("lp.name AS loanProductName, ");
-            sqlBuilder.append("(select (if(cblpom.loan_product_id is null, false , if(cblpm.is_active is null, false,cblpm.is_active))) from f_creditbureau_loanproduct_office_mapping cblpom  LEFT join f_creditbureau_loanproduct_mapping cblpm on cblpm.id=cblpom.credit_bureau_loan_product_mapping_id where cblpom.loan_product_id = lp.id and cblpom.id = case when cl.office_id = (select m.office_id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) then (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id = cl.office_id) else (select m.id from f_creditbureau_loanproduct_office_mapping m where m.loan_product_id = lp.id and m.office_id is null) end )  as isCreditBureauProduct, ");
+            sqlBuilder.append("(if(cblpom.loan_product_id is null, false , if(cblpm.is_active is null, false,cblpm.is_active))) AS isCreditBureauProduct, ");
             sqlBuilder.append("lar.loan_amount_requested AS loanAmountRequested ");
             sqlBuilder.append(",task.id as workflowId ") ;
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
             sqlBuilder.append("LEFT JOIN m_client cl ON cl.id = lar.client_id ");
             sqlBuilder.append("LEFT JOIN f_task task ON task.parent_id is null and task.entity_type = 1 and task.entity_id = lar.id ");
+            sqlBuilder.append("LEFT JOIN f_creditbureau_loanproduct_office_mapping cblpom ON cblpom.loan_product_id = lp.id AND (cblpom.office_id = cl.office_id OR cblpom.office_id IS NULL) ");
+            sqlBuilder.append("LEFT JOIN f_creditbureau_loanproduct_mapping cblpm ON cblpm.id = cblpom.credit_bureau_loan_product_mapping_id ");
+          
             this.schemaSql = sqlBuilder.toString();
         }
 
