@@ -398,42 +398,42 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     @Transactional
     public void updateNPAForNonAccrualBasedProducts(StringBuilder sb){
         
-        try{
-        int result = 0;
-        
-        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
-        
-        final StringBuilder resetNPASqlBuilder = new StringBuilder(900);
-        resetNPASqlBuilder.append("update m_loan loan ");
-        resetNPASqlBuilder
-                        .append("left join m_loan_arrears_aging laa on laa.loan_id = loan.id ");
-        resetNPASqlBuilder
-                        .append("inner join m_product_loan mpl on mpl.id = loan.product_id and mpl.overdue_days_for_npa is not null and mpl.accounting_type != ? ");
-        resetNPASqlBuilder.append("set loan.is_npa = 0 ");
-        resetNPASqlBuilder.append("where  loan.loan_status_id = 300 and loan.is_npa = 1 and ( ");
-        resetNPASqlBuilder.append("laa.overdue_since_date_derived is null or (mpl.account_moves_out_of_npa_only_on_arrears_completion = 0 and ");
-        resetNPASqlBuilder.append("laa.overdue_since_date_derived >= SUBDATE(?,INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day))) ");
+        try {
+            int result = 0;
 
-        result += jdbcTemplate.update(resetNPASqlBuilder.toString(),AccountingRuleType.ACCRUAL_PERIODIC.getValue(),currentdate);
+            String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
 
-        final StringBuilder updateSqlBuilder = new StringBuilder(900);
+            final StringBuilder resetNPASqlBuilder = new StringBuilder(900);
+            resetNPASqlBuilder.append("update m_loan loan ");
+            resetNPASqlBuilder.append("left join m_loan_arrears_aging laa on laa.loan_id = loan.id ");
+            resetNPASqlBuilder
+                    .append("inner join m_product_loan mpl on mpl.id = loan.product_id and mpl.overdue_days_for_npa is not null ");
+            resetNPASqlBuilder.append("and (mpl.accounting_type != ? or mpl.stop_loan_processing_on_npa = 1)");
+            resetNPASqlBuilder.append("set loan.is_npa = 0 ");
+            resetNPASqlBuilder.append("where  loan.loan_status_id = 300 and loan.is_npa = 1 and ( ");
+            resetNPASqlBuilder
+                    .append("laa.overdue_since_date_derived is null or (mpl.account_moves_out_of_npa_only_on_arrears_completion = 0 and ");
+            resetNPASqlBuilder.append("laa.overdue_since_date_derived >= SUBDATE(?,INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day))) ");
 
-        updateSqlBuilder.append("UPDATE m_loan as ml,");
-        updateSqlBuilder.append(" (select loan.id ");
-        updateSqlBuilder.append("from m_loan_arrears_aging laa");
-        updateSqlBuilder
-                        .append(" INNER JOIN  m_loan loan on laa.loan_id = loan.id ");
-        updateSqlBuilder
-                        .append(" INNER JOIN m_product_loan mpl on mpl.id = loan.product_id AND mpl.overdue_days_for_npa is not null  and mpl.accounting_type != ? ");
-        updateSqlBuilder.append("WHERE loan.loan_status_id = 300  and loan.is_npa = 0 and ");
-        updateSqlBuilder
-                        .append("laa.overdue_since_date_derived < SUBDATE(?,INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day) ");
-        updateSqlBuilder.append("group by loan.id) as sl ");
-        updateSqlBuilder.append("SET ml.is_npa=1 where ml.id=sl.id ");
+            result += jdbcTemplate.update(resetNPASqlBuilder.toString(), AccountingRuleType.ACCRUAL_PERIODIC.getValue(), currentdate);
 
-        result += jdbcTemplate.update(updateSqlBuilder.toString(),AccountingRuleType.ACCRUAL_PERIODIC.getValue(), currentdate);
-        
-        logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by NPA update: " + result);
+            final StringBuilder updateSqlBuilder = new StringBuilder(900);
+
+            updateSqlBuilder.append("UPDATE m_loan as ml,");
+            updateSqlBuilder.append(" (select loan.id ");
+            updateSqlBuilder.append("from m_loan_arrears_aging laa");
+            updateSqlBuilder.append(" INNER JOIN  m_loan loan on laa.loan_id = loan.id ");
+            updateSqlBuilder
+                    .append(" INNER JOIN m_product_loan mpl on mpl.id = loan.product_id AND mpl.overdue_days_for_npa is not null ");
+            updateSqlBuilder.append("and (mpl.accounting_type != ? or mpl.stop_loan_processing_on_npa = 1)");
+            updateSqlBuilder.append("WHERE loan.loan_status_id = 300  and loan.is_npa = 0 and ");
+            updateSqlBuilder.append("laa.overdue_since_date_derived < SUBDATE(?,INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day) ");
+            updateSqlBuilder.append("group by loan.id) as sl ");
+            updateSqlBuilder.append("SET ml.is_npa=1 where ml.id=sl.id ");
+
+            result += jdbcTemplate.update(updateSqlBuilder.toString(), AccountingRuleType.ACCRUAL_PERIODIC.getValue(), currentdate);
+
+            logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by NPA update: " + result);
         } catch (Exception exception) {
             String rootCause = ExceptionHelper.fetchExceptionMessage(exception);
             logger.error("Failed to update NPA status for non periodic accrual loans with message " + rootCause);
