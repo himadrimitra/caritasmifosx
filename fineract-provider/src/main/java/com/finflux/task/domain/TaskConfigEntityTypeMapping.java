@@ -7,6 +7,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -22,6 +23,17 @@ public class TaskConfigEntityTypeMapping extends AbstractPersistable<Long> {
 
     @Column(name = "entity_id", length = 20)
     private Long entityId;
+
+    @Column(name = "is_active")
+    private boolean isActive;
+
+    @Autowired
+    public TaskConfigEntityTypeMapping(final TaskConfig taskConfig, final Integer entityType, final Long entityId, boolean isActive) {
+        this.taskConfig = taskConfig;
+        this.entityType = entityType;
+        this.entityId = entityId;
+        this.isActive = isActive;
+    }
 
     public TaskConfigEntityTypeMapping() {}
 
@@ -44,4 +56,13 @@ public class TaskConfigEntityTypeMapping extends AbstractPersistable<Long> {
     public void setEntityId(final Long entityId) {
         this.entityId = entityId;
     }
+
+    public boolean getIsActive() {
+        return this.isActive;
+    }
+
+    public void setIsActive(boolean isActive) {
+        this.isActive = isActive;
+    }
+
 }

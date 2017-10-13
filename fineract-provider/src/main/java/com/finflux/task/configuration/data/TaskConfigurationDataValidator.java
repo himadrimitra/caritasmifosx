@@ -85,4 +85,35 @@ public class TaskConfigurationDataValidator {
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
+    
+    public void validateCreateTaskConfigEntityMapping(final String json) {
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
+                TaskConfigurationApiConstants.CREATE_TASK_CONFIG_ENTITYMAPPING_REQUEST_DATA_PARAMETERS);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(TaskConfigurationApiConstants.TASK_CONFIG_ENTITYMAPPING_RESOURCE_NAME);
+
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final Long taskConfigId = this.fromApiJsonHelper.extractLongNamed(TaskConfigurationApiConstants.taskConfigIdParamName, element);
+        baseDataValidator.reset().parameter(TaskConfigurationApiConstants.taskConfigIdParamName).value(taskConfigId).notBlank();
+
+        final Integer entityType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(TaskConfigurationApiConstants.entityTypeParamName,
+                element);
+        baseDataValidator.reset().parameter(TaskConfigurationApiConstants.entityTypeParamName).value(entityType).notBlank();
+
+        final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(TaskConfigurationApiConstants.isActiveParamName, element);
+        baseDataValidator.reset().parameter(TaskConfigurationApiConstants.isActiveParamName).value(isActive).notBlank()
+                .trueOrFalseRequired(true);
+
+        final JsonArray entityIds = this.fromApiJsonHelper.extractJsonArrayNamed(TaskConfigurationApiConstants.entityIdsParamName, element);
+        baseDataValidator.reset().parameter(TaskConfigurationApiConstants.entityIdsParamName).value(entityIds).jsonArrayNotEmpty();
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
 }
