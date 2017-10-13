@@ -144,5 +144,5 @@ public class TaskConfigReadServiceImpl implements TaskConfigReadService {
             return TaskConfigData.instance(id, parentId, name, shortName, taskTypeEnum, null, configOrder, criteriaId, approvalLogic,
                     rejectionLogic, null, actionGroupId);
         }
-    }
+    }    
 }
