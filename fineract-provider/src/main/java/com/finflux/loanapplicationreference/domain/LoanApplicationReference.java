@@ -18,8 +18,10 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.UniqueConstraint;
 
 import com.finflux.portfolio.loanemipacks.domain.LoanEMIPack;
+
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.staff.domain.Staff;
@@ -38,7 +40,9 @@ import com.finflux.loanapplicationreference.api.LoanApplicationReferenceApiConst
 import com.finflux.portfolio.loan.purpose.domain.LoanPurpose;
 
 @Entity
-@Table(name = "f_loan_application_reference")
+@Table(name = "f_loan_application_reference", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "external_id_one" }, name = "UQ_loan_app_ref_external_id_one"),
+        @UniqueConstraint(columnNames = { "external_id_two" }, name = "UQ_loan_app_ref_external_id_two") })
 public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "loan_application_reference_no", nullable = false)

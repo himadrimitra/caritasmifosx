@@ -16,7 +16,6 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
-import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
@@ -42,7 +41,7 @@ public class LoanUtilizationCheck extends AbstractPersistable<Long> {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "audit_done_by", nullable = true)
-    private Staff auditDoneBy;
+    private AppUser auditDoneBy;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "audit_done_on", nullable = true)
@@ -56,7 +55,7 @@ public class LoanUtilizationCheck extends AbstractPersistable<Long> {
 
     protected LoanUtilizationCheck() {}
 
-    private LoanUtilizationCheck(final Loan loan, final AppUser toBeAuditedBy, final Date auditeScheduledOn, final Staff auditDoneBy,
+    private LoanUtilizationCheck(final Loan loan, final AppUser toBeAuditedBy, final Date auditeScheduledOn, final AppUser auditDoneBy,
             final Date auditDoneOn) {
         this.loan = loan;
         this.toBeAuditedBy = toBeAuditedBy;
@@ -66,7 +65,7 @@ public class LoanUtilizationCheck extends AbstractPersistable<Long> {
     }
 
     public static LoanUtilizationCheck create(final Loan loan, final AppUser toBeAuditedBy, final Date auditeScheduledOn,
-            final Staff auditDoneBy, final Date auditDoneOn) {
+            final AppUser auditDoneBy, final Date auditDoneOn) {
         return new LoanUtilizationCheck(loan, toBeAuditedBy, auditeScheduledOn, auditDoneBy,auditDoneOn);
     }
 
@@ -159,7 +158,7 @@ public class LoanUtilizationCheck extends AbstractPersistable<Long> {
         this.toBeAuditedBy = toBeAuditedBy;
     }
 
-    public void updateAuditDoneBy(final Staff auditDoneBy) {
+    public void updateAuditDoneBy(final AppUser auditDoneBy) {
         this.auditDoneBy = auditDoneBy;
     }
 

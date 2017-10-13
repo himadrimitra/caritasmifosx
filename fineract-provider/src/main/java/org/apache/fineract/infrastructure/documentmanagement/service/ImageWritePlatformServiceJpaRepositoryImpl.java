@@ -39,6 +39,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.task.domain.Task;
+import com.finflux.task.domain.TaskRepositoryWrapper;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -49,15 +51,17 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
     private final ClientRepositoryWrapper clientRepositoryWrapper;
     private final ImageRepository imageRepository;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
+    private final TaskRepositoryWrapper taskRepositoryWrapper;
 
     @Autowired
     public ImageWritePlatformServiceJpaRepositoryImpl(final ContentRepositoryFactory documentStoreFactory,
             final ClientRepositoryWrapper clientRepositoryWrapper, final ImageRepository imageRepository,
-            final StaffRepositoryWrapper staffRepositoryWrapper) {
+            final StaffRepositoryWrapper staffRepositoryWrapper, final TaskRepositoryWrapper taskRepositoryWrapper) {
         this.contentRepositoryFactory = documentStoreFactory;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
         this.imageRepository = imageRepository;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
+        this.taskRepositoryWrapper = taskRepositoryWrapper;
     }
 
     @Transactional
@@ -70,7 +74,8 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
         entityName = json.getAsJsonObject().get(ImagesApiConstants.entityNameParam).getAsString();
         entityId = json.getAsJsonObject().get(ImagesApiConstants.entityIdParam).getAsLong();
         if (entityName.equalsIgnoreCase(EntityType.CLIENT.getDisplayName())
-                || entityName.equalsIgnoreCase(EntityType.STAFF.getDisplayName())) {
+                || entityName.equalsIgnoreCase(EntityType.STAFF.getDisplayName())
+                || entityName.equalsIgnoreCase(EntityType.TASK.getDisplayName())) {
             owner = deletePreviousImage(entityName, entityId);
         }
 
@@ -144,6 +149,10 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
             final Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(entityId);
             image = staff.getImage();
             owner = staff;
+        } else if (EntityType.TASK.getDisplayName().equalsIgnoreCase(entityName)) {
+            final Task task = this.taskRepositoryWrapper.findOneWithNotFoundDetection(entityId);
+            image = task.getImage();
+            owner = task;
         }
         if (image != null) {
             final ContentRepository contentRepository = this.contentRepositoryFactory
@@ -169,6 +178,12 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
             image = createImage(image, imageLocation, storageType, command);
             staff.setImage(image);
             this.staffRepositoryWrapper.save(staff);
+        } else if (owner instanceof Task) {
+            final Task task = (Task) owner;
+            image = task.getImage();
+            image = createImage(image, imageLocation, storageType, command);
+            task.setImage(image);
+            this.taskRepositoryWrapper.save(task);
         } else {
             image = createImage(image, imageLocation, storageType, command);
         }
@@ -177,15 +192,16 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
     }
 
     private Image createImage(Image image, final String imageLocation, final StorageType storageType, final JsonCommand command) {
+        final JsonElement json = command.parsedJson();
         if (image == null) {
             image = new Image(imageLocation, storageType, command);
         } else {
-            final JsonElement json = command.parsedJson();
             image.setLocation(imageLocation);
             image.setStorageType(storageType.getValue());
-            if (json.getAsJsonObject().has(ImagesApiConstants.geoTagParam)) {
-                image.setGeoTag(GeoTag.from(json.getAsJsonObject().get(ImagesApiConstants.geoTagParam).getAsString()));
-            }
+        }
+
+        if (json.getAsJsonObject().has(ImagesApiConstants.geoTagParam)) {
+            image.setGeoTag(GeoTag.from(json.getAsJsonObject().get(ImagesApiConstants.geoTagParam).getAsString()));
         }
         return image;
     }

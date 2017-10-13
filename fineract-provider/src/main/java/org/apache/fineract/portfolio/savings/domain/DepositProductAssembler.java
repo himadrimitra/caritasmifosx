@@ -47,6 +47,7 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interest
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestCalculationTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestCompoundingPeriodTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestPostingPeriodTypeParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isInterestCalculationFromProductChartParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.minBalanceForInterestCalculationParamName;
@@ -109,6 +110,7 @@ public class DepositProductAssembler {
         final String shortName = command.stringValueOfParameterNamed(shortNameParamName);
         final String description = command.stringValueOfParameterNamed(descriptionParamName);
         final String externalId = command.stringValueOfParameterNamed(externalIdParamName);
+        final boolean isInterestCalculationFromProductChart = command.booleanPrimitiveValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
 
         final String currencyCode = command.stringValueOfParameterNamed(currencyCodeParamName);
         final Integer digitsAfterDecimal = command.integerValueOfParameterNamed(digitsAfterDecimalParamName);
@@ -182,7 +184,7 @@ public class DepositProductAssembler {
         FixedDepositProduct fixedDepositProduct = FixedDepositProduct.createNew(name, shortName, description, currency, interestRate,
                 interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, accountingRuleType, charges, productTermAndPreClosure, charts,
-                minBalanceForInterestCalculation, withHoldTax, taxGroup, externalId);
+                minBalanceForInterestCalculation, withHoldTax, taxGroup, externalId, isInterestCalculationFromProductChart);
 
         // update product reference
         productTermAndPreClosure.updateProductReference(fixedDepositProduct);
@@ -202,6 +204,7 @@ public class DepositProductAssembler {
         final String shortName = command.stringValueOfParameterNamed(shortNameParamName);
         final String description = command.stringValueOfParameterNamed(descriptionParamName);
         final String externalId = command.stringValueOfParameterNamed(externalIdParamName);
+        final boolean isInterestCalculationFromProduct = command.booleanPrimitiveValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
 
         final String currencyCode = command.stringValueOfParameterNamed(currencyCodeParamName);
         final Integer digitsAfterDecimal = command.integerValueOfParameterNamed(digitsAfterDecimalParamName);
@@ -274,7 +277,8 @@ public class DepositProductAssembler {
         RecurringDepositProduct recurringDepositProduct = RecurringDepositProduct.createNew(name, shortName, description, currency,
                 interestRate, interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType,
                 interestCalculationDaysInYearType, lockinPeriodFrequency, lockinPeriodFrequencyType, accountingRuleType, charges,
-                productTermAndPreClosure, productRecurringDetail, charts, minBalanceForInterestCalculation, taxGroup, withHoldTax, externalId);
+                productTermAndPreClosure, productRecurringDetail, charts, minBalanceForInterestCalculation, taxGroup, withHoldTax, externalId,
+                isInterestCalculationFromProduct);
 
         // update product reference
         productTermAndPreClosure.updateProductReference(recurringDepositProduct);

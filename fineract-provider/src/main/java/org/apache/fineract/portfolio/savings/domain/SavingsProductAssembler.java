@@ -41,6 +41,7 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interest
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestRateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isDeletedParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isDormancyTrackingActiveParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isInterestCalculationFromProductChartParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.minBalanceForInterestCalculationParamName;
@@ -213,13 +214,15 @@ public class SavingsProductAssembler {
         final Long daysToInactive = command.longValueOfParameterNamed(daysToInactiveParamName);
         final Long daysToDormancy = command.longValueOfParameterNamed(daysToDormancyParamName);
         final Long daysToEscheat = command.longValueOfParameterNamed(daysToEscheatParamName);
+        final boolean isInterestCalculationFromProduct = command.booleanPrimitiveValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
 
         final SavingsProduct savingsProduct = SavingsProduct.createNew(name, shortName, description, currency, interestRate,
                 interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                 minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer,
                 accountingRuleType, charges, allowOverdraft, overdraftLimit, enforceMinRequiredBalance, minRequiredBalance,
                 minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
-                taxGroup, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId, releaseguarantor);
+                taxGroup, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId,
+                isInterestCalculationFromProduct, releaseguarantor);
 
         /**
          * Construct Savings Product Drawing Power Details

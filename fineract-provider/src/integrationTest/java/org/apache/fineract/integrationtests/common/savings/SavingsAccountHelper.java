@@ -693,4 +693,14 @@ public class SavingsAccountHelper {
         return SavingsProductHelper.createSavingsProduct(savingsProductJSON, requestSpec, responseSpec);
     }
 
+    public Integer applyForSavingsApplicationWithAllowDpLimit(final Integer ID, final Integer savingsProductID, final String accountType,
+            final String submittedOnDate) {
+        System.out.println("--------------------------------APPLYING FOR SAVINGS APPLICATION--------------------------------");
+        final SavingsApplicationTestBuilder savingsApplicationTestBuilder = new SavingsApplicationTestBuilder();
+        savingsApplicationTestBuilder.withSubmittedOnDate(submittedOnDate);
+        savingsApplicationTestBuilder.withAllowDpLimit();
+        final String savingsApplicationJSON = savingsApplicationTestBuilder.build(ID.toString(), savingsProductID.toString(), accountType);
+        return Utils.performServerPost(this.requestSpec, this.responseSpec, SAVINGS_ACCOUNT_URL + "?" + Utils.TENANT_IDENTIFIER,
+                savingsApplicationJSON, "savingsId");
+    }
 }

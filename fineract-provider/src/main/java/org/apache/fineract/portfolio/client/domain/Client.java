@@ -250,7 +250,7 @@ public final class Client extends AbstractPersistable<Long> {
 
     public static Client createNew(final AppUser currentUser, final Office clientOffice, final Group clientParentGroup, final Staff staff,
             final SavingsProduct savingsProduct, final CodeValue gender, final CodeValue clientType, final CodeValue clientClassification,
-            final Integer legalForm, final JsonCommand command) {
+            final Integer legalForm, final JsonCommand command, final boolean isDisplayFirstNameLastLastNameFirstForClient) {
 
         final String accountNo = command.stringValueOfParameterNamed(ClientApiConstants.accountNoParamName);
         final String externalId = command.stringValueOfParameterNamed(ClientApiConstants.externalIdParamName);
@@ -290,7 +290,8 @@ public final class Client extends AbstractPersistable<Long> {
         final SavingsAccount account = null;
         return new Client(currentUser, status, clientOffice, clientParentGroup, accountNo, firstname, middlename, lastname, fullname,
                 activationDate, officeJoiningDate, externalId, mobileNo, alternateMobileNo, staff, submittedOnDate, savingsProduct, account,
-                dataOfBirth, gender, clientType, clientClassification, legalForm, emailId, nationalId);
+                dataOfBirth, gender, clientType, clientClassification, legalForm, emailId, isDisplayFirstNameLastLastNameFirstForClient,
+                nationalId);
     }
 
     protected Client() {
@@ -302,7 +303,8 @@ public final class Client extends AbstractPersistable<Long> {
             final LocalDate activationDate, final LocalDate officeJoiningDate, final String externalId, final String mobileNo,
             final String alternateMobileNo, final Staff staff, final LocalDate submittedOnDate, final SavingsProduct savingsProduct,
             final SavingsAccount savingsAccount, final LocalDate dateOfBirth, final CodeValue gender, final CodeValue clientType,
-            final CodeValue clientClassification, final Integer legalForm, final String emailId, final String nationalId) {
+            final CodeValue clientClassification, final Integer legalForm, final String emailId,
+            final boolean isDisplayFirstNameLastLastNameFirstForClient, final String nationalId) {
 
         if (StringUtils.isBlank(accountNo)) {
             this.accountNumber = new RandomPasswordGenerator(19).generate();
@@ -396,7 +398,7 @@ public final class Client extends AbstractPersistable<Long> {
         this.clientClassification = clientClassification;
         setLegalForm(legalForm);
 
-        deriveDisplayName();
+        deriveDisplayName(isDisplayFirstNameLastLastNameFirstForClient);
         validate();
     }
 
@@ -567,7 +569,7 @@ public final class Client extends AbstractPersistable<Long> {
         return this.office.getName();
     }
 
-    public Map<String, Object> update(final JsonCommand command) {
+    public Map<String, Object> update(final JsonCommand command, final boolean isDisplayFirstNameLastLastNameFirstForClient) {
 
         final Map<String, Object> actualChanges = new LinkedHashMap<>(9);
 
@@ -720,7 +722,7 @@ public final class Client extends AbstractPersistable<Long> {
 
         validateUpdate();
 
-        deriveDisplayName();
+        deriveDisplayName(isDisplayFirstNameLastLastNameFirstForClient);
 
         return actualChanges;
     }
@@ -798,21 +800,35 @@ public final class Client extends AbstractPersistable<Long> {
         }
     }
 
-    private void deriveDisplayName() {
+    private void deriveDisplayName(final boolean isDisplayFirstNameLastLastNameFirstForClient) {
 
         StringBuilder nameBuilder = new StringBuilder();
         final Integer legalForm = getLegalForm();
         if (legalForm == null || LegalForm.fromInt(legalForm).isPerson()) {
-            if (StringUtils.isNotBlank(this.firstname)) {
-                nameBuilder.append(this.firstname).append(' ');
-            }
+            if (isDisplayFirstNameLastLastNameFirstForClient) {
+                if (StringUtils.isNotBlank(this.lastname)) {
+                    nameBuilder.append(this.lastname).append(' ');
+                }
 
-            if (StringUtils.isNotBlank(this.middlename)) {
-                nameBuilder.append(this.middlename).append(' ');
-            }
+                if (StringUtils.isNotBlank(this.middlename)) {
+                    nameBuilder.append(this.middlename).append(' ');
+                }
 
-            if (StringUtils.isNotBlank(this.lastname)) {
-                nameBuilder.append(this.lastname);
+                if (StringUtils.isNotBlank(this.firstname)) {
+                    nameBuilder.append(this.firstname);
+                }
+            } else {
+                if (StringUtils.isNotBlank(this.firstname)) {
+                    nameBuilder.append(this.firstname).append(' ');
+                }
+
+                if (StringUtils.isNotBlank(this.middlename)) {
+                    nameBuilder.append(this.middlename).append(' ');
+                }
+
+                if (StringUtils.isNotBlank(this.lastname)) {
+                    nameBuilder.append(this.lastname);
+                }
             }
 
         } else if (LegalForm.fromInt(legalForm).isEntity()) {

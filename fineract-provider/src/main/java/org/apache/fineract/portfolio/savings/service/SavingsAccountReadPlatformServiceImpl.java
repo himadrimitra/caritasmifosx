@@ -46,6 +46,7 @@ import org.apache.fineract.portfolio.account.data.AccountTransferData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.domain.ClientStatus;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
@@ -117,7 +118,8 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
     // pagination
     private final PaginationHelper<SavingsAccountData> paginationHelper = new PaginationHelper<>();
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-
+    private final PaginationHelper<Long> paginationHelperForLong = new PaginationHelper<>();
+    
     @Autowired
     public SavingsAccountReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
             final ClientReadPlatformService clientReadPlatformService, final GroupReadPlatformService groupReadPlatformService,
@@ -1439,7 +1441,27 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         paramMap.put("officeId", officeId);
         return this.namedParameterJdbcTemplate.queryForList(sql.toString(), paramMap, Long.class);
     }
+    
+    @Override
+    public List<Long> retrieveAllActiveSavingsIdsForActiveClients() {
+        StringBuilder sqlBuilder = new StringBuilder("select sa.id as id");
+        sqlBuilder.append(" from m_savings_account as sa ");
+        sqlBuilder.append(" join m_client mc on mc.id = sa.client_id and mc.status_enum = ?");
+        sqlBuilder.append(" where sa.status_enum = ? ");
 
+        return this.jdbcTemplate.queryForList(sqlBuilder.toString(), Long.class, ClientStatus.ACTIVE.getValue(),
+                SavingsAccountStatusType.ACTIVE.getValue());
+    }
+    
+    class SavingsIdMapper implements RowMapper<Long> {
+
+        @Override
+        public Long mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return rs.getLong("id");
+        }
+
+    }
+    
     private void generateConditionBasedOnHoliday(final List<Holiday> holidays, final StringBuilder sql) {
         boolean isFirstTime = true;
         for (final Holiday holiday : holidays) {

@@ -68,8 +68,8 @@ public class RecurringDepositProduct extends FixedDepositProduct {
             final SavingsPeriodFrequencyType lockinPeriodFrequencyType, final AccountingRuleType accountingRuleType,
             final Set<Charge> charges, final DepositProductTermAndPreClosure productTermAndPreClosure,
             final DepositProductRecurringDetail recurringDetail, final Set<InterestRateChart> charts,
-            final BigDecimal minBalanceForInterestCalculation, final TaxGroup taxGroup, final boolean withHoldTax,
-            final String externalId) {
+            final BigDecimal minBalanceForInterestCalculation, final TaxGroup taxGroup, final boolean withHoldTax, final String externalId,
+            final boolean isInterestCalculationFromProductChart) {
 
         final BigDecimal minRequiredOpeningBalance = null;
         final boolean withdrawalFeeApplicableForTransfer = false;
@@ -81,7 +81,7 @@ public class RecurringDepositProduct extends FixedDepositProduct {
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
                 productTermAndPreClosure, recurringDetail, charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation,
-                withHoldTax, taxGroup, externalId, releaseguarantor);
+                withHoldTax, taxGroup, externalId, isInterestCalculationFromProductChart, releaseguarantor);
     }
 
     protected RecurringDepositProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
@@ -93,13 +93,13 @@ public class RecurringDepositProduct extends FixedDepositProduct {
             final DepositProductTermAndPreClosure productTermAndPreClosure, final DepositProductRecurringDetail recurringDetail,
             final Set<InterestRateChart> charts, final boolean allowOverdraft, final BigDecimal overdraftLimit,
             final BigDecimal minBalanceForInterestCalculation, final boolean withHoldTax, final TaxGroup taxGroup, final String externalId,
-            final boolean releaseguarantor) {
+            final boolean isInterestCalculationFromProductChart, final boolean releaseguarantor) {
 
         super(name, shortName, description, currency, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
                 lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges, productTermAndPreClosure,
                 charts, allowOverdraft, overdraftLimit, minBalanceForInterestCalculation, withHoldTax, taxGroup, externalId,
-                releaseguarantor);
+                isInterestCalculationFromProductChart, releaseguarantor);
 
         this.recurringDetail = recurringDetail;
     }

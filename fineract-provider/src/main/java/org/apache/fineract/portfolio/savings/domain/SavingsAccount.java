@@ -85,6 +85,8 @@ import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.exception.SavingsAccountChargeNotFoundException;
 import org.apache.fineract.portfolio.client.domain.Client;
@@ -144,11 +146,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @Column(name = "external_id", nullable = true)
     protected String externalId;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = true)
     protected Client client;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "group_id", nullable = true)
     protected Group group;
 
@@ -156,7 +158,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @JoinColumn(name = "product_id", nullable = false)
     protected SavingsProduct product;
 
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "field_officer_id", nullable = true)
     protected Staff savingsOfficer;
 
@@ -213,7 +215,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @Column(name = "closedon_date")
     protected Date closedOnDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "closedon_userid", nullable = true)
     protected AppUser closedBy;
 
@@ -313,11 +315,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "savingsAccount", orphanRemoval = true)
     protected Set<SavingsAccountCharge> charges = new HashSet<>();
 
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "savingsAccount", orphanRemoval = true)
     private Set<SavingsOfficerAssignmentHistory> savingsOfficerHistory;
 
-    @Transient
+	@Transient
     protected boolean accountNumberRequiresAutoGeneration = false;
     @Transient
     protected SavingsAccountTransactionSummaryWrapper savingsAccountTransactionSummaryWrapper;
@@ -337,8 +339,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @JoinColumn(name = "tax_group_id")
     private TaxGroup taxGroup;
     
-    @LazyCollection(LazyCollectionOption.FALSE)
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "savingsAccount", optional = true, orphanRemoval = true)
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "savingsAccount", optional = true, orphanRemoval = true,fetch = FetchType.LAZY)
     private SavingsAccountDpDetails savingsAccountDpDetails;
     
     @Column(name = "total_savings_amount_on_hold", scale = 6, precision = 19, nullable = true)
@@ -775,7 +776,6 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             periodStartingBalance = Money.zero(this.currency);
 
         final SavingsInterestCalculationType interestCalculationType = SavingsInterestCalculationType.fromInt(this.interestCalculationType);
-        BigDecimal interestRateAsFraction = getEffectiveInterestRateAsFraction(mc, upToInterestCalculationDate);
         final BigDecimal overdraftInterestRateAsFraction = getEffectiveOverdraftInterestRateAsFraction(mc);
         final Collection<Long> interestPostTransactions = this.savingsHelper.fetchPostInterestTransactionIds(getId());
         final Money minBalanceForInterestCalculation = Money.of(getCurrency(), minBalanceForInterestCalculation());
@@ -783,6 +783,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
         for (final LocalDateInterval periodInterval : postingPeriodIntervals) {
             
+        	BigDecimal interestRateAsFraction = getEffectiveInterestRateAsFraction(mc, upToInterestCalculationDate, periodInterval.startDate(), periodInterval.endDate());
             boolean isUserPosting = false;
             if(postedAsOnDates.contains(periodInterval.endDate().plusDays(1))){
                 isUserPosting = true;
@@ -836,7 +837,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
 
     @SuppressWarnings("unused")
-    protected BigDecimal getEffectiveInterestRateAsFraction(final MathContext mc, final LocalDate upToInterestCalculationDate) {
+    protected BigDecimal getEffectiveInterestRateAsFraction(final MathContext mc, final LocalDate upToInterestCalculationDate,
+    		final LocalDate periodStartDate, final LocalDate periodEndDate) {
         return this.nominalAnnualInterestRate.divide(BigDecimal.valueOf(100l), mc);
     }
 
@@ -1115,10 +1117,14 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
         return transactionBeforeLastInterestPosting;
     }
 
-    public void validateAccountBalanceDoesNotBecomeNegative(final BigDecimal transactionAmount, final boolean isException,
-            final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions) {
+    public void validateAccountBalanceDoesNotBecomeNegative(final SavingsAccountTransaction currentTransaction, final boolean isException,
+            final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions, final CalendarInstance calendarInstance) {
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
-        Money runningBalance = Money.zero(this.currency);
+        BigDecimal dpReductionAmount = BigDecimal.ZERO;
+        if (this.savingsAccountDpDetails != null) {
+            dpReductionAmount = getDPReductionAmount(calendarInstance, new LocalDate(currentTransaction.createdDate()));
+        }
+        Money runningBalance = Money.of(this.currency, dpReductionAmount);
         Money overdraftInterest = Money.zero(this.currency);
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
         LocalDate lastSavingsDate = null;
@@ -1165,19 +1171,23 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
             // enforceMinRequiredBalance
             if (!isException && transaction.canProcessBalanceCheck()) {
                 if (runningBalance.minus(minRequiredBalance).plus(overdraftInterest).isLessThanZero()) {
-                    insufficientBalanceException(transactionAmount, withdrawalFee);
+                    insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
                 }
             }
             lastSavingsDate = transaction.transactionLocalDate();
         }
         if (MathUtility.isGreaterThanZero(this.getSavingsHoldAmount())) {
             if (runningBalance.minus(this.getSavingsHoldAmount()).isLessThanZero()) {
-                insufficientBalanceException(transactionAmount, withdrawalFee);
+                insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
             }
         }
-
+        if (MathUtility.isGreaterThanZero(dpReductionAmount)) {
+            if (runningBalance.minus(minRequiredBalance).plus(overdraftInterest).minus(dpReductionAmount).isLessThanZero()) {
+                insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
+            }
+        }
     }
-    
+
     private void insufficientBalanceException(final BigDecimal transactionAmount, final BigDecimal withdrawalFee) {
         String errorMessage = product.shortName;
         if (client == null) {
@@ -1189,12 +1199,17 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
     }
 
     public void validateAccountBalanceDoesNotBecomeNegative(final String transactionAction,
-            final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions) {
+            final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions, CalendarInstance calendarInstance,
+            boolean isUndDepositOrWithdrawalTransaction) {
 
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
-        Money runningBalance = Money.zero(this.currency);
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
         LocalDate lastSavingsDate = null;
+        BigDecimal dpReductionAmount = BigDecimal.ZERO;
+        if (this.savingsAccountDpDetails != null && isUndDepositOrWithdrawalTransaction) {
+            dpReductionAmount = getDPReductionAmount(calendarInstance, DateUtils.getLocalDateOfTenant());
+        }
+        Money runningBalance = Money.of(this.currency, dpReductionAmount);
         for (final SavingsAccountTransaction transaction : transactionsSortedByDate) {
             if (transaction.isNotReversed() && transaction.isCredit()) {
                 runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
@@ -1225,21 +1240,34 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
             // enforceMinRequiredBalance
             if (transaction.canProcessBalanceCheck()) {
                 if (runningBalance.minus(minRequiredBalance).isLessThanZero()) {
-                    final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-                    final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                            .resource(depositAccountType().resourceName() + transactionAction);
-                    if (this.allowOverdraft) {
-                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("results.in.balance.exceeding.overdraft.limit");
-                    } else {
-                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("results.in.balance.going.negative");
-                    }
-                    if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+                    insufficientBalanceException(transactionAction);
                 }
-
             }
             lastSavingsDate = transaction.transactionLocalDate();
-
         }
+        
+        if (MathUtility.isGreaterThanZero(this.getSavingsHoldAmount())) {
+            if (runningBalance.minus(minRequiredBalance).minus(this.getSavingsHoldAmount()).isLessThanZero()) {
+                insufficientBalanceException(transactionAction);
+            }
+        }
+        
+        if (MathUtility.isGreaterThanZero(dpReductionAmount) && isUndDepositOrWithdrawalTransaction) {
+            if (runningBalance.minus(minRequiredBalance).minus(dpReductionAmount).isLessThanZero()) {
+                insufficientBalanceException(transactionAction);
+            }
+        }
+    }
+
+    private void insufficientBalanceException(final String transactionAction) {
+        StringBuilder errorMessage = new StringBuilder(depositAccountType().resourceName());
+        errorMessage.append(transactionAction);
+        if (this.allowOverdraft) {
+            errorMessage.append(".results.in.balance.exceeding.overdraft.limit");
+        } else {
+            errorMessage.append(".results.in.balance.going.negative");
+        }
+        throw new InsufficientAccountBalanceException(errorMessage.toString());
     }
 
     protected boolean isAccountLocked(final LocalDate transactionDate) {
@@ -3294,5 +3322,35 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
     public Group getGroup() {
         return this.group;
     }
+    
+    public BigDecimal getDPReductionAmount(final CalendarInstance calendarInstance, final LocalDate transactionDate) {
 
+        final SavingsAccountDpDetails savingsAccountDpDetails = this.savingsAccountDpDetails;
+        final String recurringRule = calendarInstance.getCalendar().getRecurrence();
+        final LocalDate seedDate = calendarInstance.getCalendar().getStartDateLocalDate();
+        final LocalDate periodStartDate = new LocalDate(this.activatedOnDate);
+        final LocalDate periodEndDate = transactionDate;
+        final Integer duration = savingsAccountDpDetails.getDuration();
+        final boolean isSkippMeetingOnFirstDay = false;
+        final Integer numberOfDays = null;
+        final Collection<LocalDate> localDates = CalendarUtils.getRecurringDates(recurringRule, seedDate, periodStartDate, periodEndDate,
+                duration, isSkippMeetingOnFirstDay, numberOfDays);
+        final int periodNumber = localDates.size();
+        if (periodNumber > 0) {
+            if (periodNumber < duration.intValue()) {
+                BigDecimal amount = savingsAccountDpDetails.getAmount();
+                return BigDecimal.valueOf(periodNumber).multiply(amount);
+            }
+        }
+        return BigDecimal.ZERO;
+    }
+    
+    public Set<SavingsOfficerAssignmentHistory> getSavingsOfficerHistory() {
+		return savingsOfficerHistory;
+	}
+
+    
+    public AppUser getClosedBy() {
+        return this.closedBy;
+    }
 }

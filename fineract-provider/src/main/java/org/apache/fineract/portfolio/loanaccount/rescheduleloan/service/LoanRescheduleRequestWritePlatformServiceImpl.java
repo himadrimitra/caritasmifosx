@@ -86,6 +86,7 @@ import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanResch
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequestRepository;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.exception.LoanRescheduleRequestNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAssembler;
+import org.apache.fineract.portfolio.loanaccount.service.LoanOverdueChargeService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
@@ -124,6 +125,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
     private final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository;
     private final CalendarHistoryRepository calendarHistoryRepository;
     private final GlimLoanRescheduleService glimLoanRescheduleService;
+    private final LoanOverdueChargeService loanOverdueChargeService;
 
     /**
      * LoanRescheduleRequestWritePlatformServiceImpl constructor
@@ -146,7 +148,8 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             final AccountTransfersWritePlatformService accountTransfersWritePlatformService,
             final LoanAccountDomainService loanAccountDomainService,
             final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository,
-            final CalendarHistoryRepository calendarHistoryRepository, final GlimLoanRescheduleService glimLoanRescheduleService) {
+            final CalendarHistoryRepository calendarHistoryRepository, final GlimLoanRescheduleService glimLoanRescheduleService,
+            final LoanOverdueChargeService loanOverdueChargeService) {
         this.codeValueRepositoryWrapper = codeValueRepositoryWrapper;
         this.platformSecurityContext = platformSecurityContext;
         this.loanRescheduleRequestDataValidator = loanRescheduleRequestDataValidator;
@@ -167,6 +170,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
         this.repaymentScheduleInstallmentRepository = repaymentScheduleInstallmentRepository;
         this.calendarHistoryRepository = calendarHistoryRepository;
         this.glimLoanRescheduleService = glimLoanRescheduleService;
+        this.loanOverdueChargeService = loanOverdueChargeService;
     }
 
     /**
@@ -555,6 +559,9 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             final LoanApplicationTerms loanApplicationTerms, final LocalDate rescheduleFromDate, final MathContext mathContext,
             final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor,
             final LoanScheduleGenerator loanScheduleGenerator) {
+        if (!loan.getLoanRecurringCharges().isEmpty() && rescheduleFromDate.isBefore(DateUtils.getLocalDateOfTenant())) {
+            this.loanOverdueChargeService.updateOverdueChargesAsOnDate(loan, rescheduleFromDate);
+        }
         final LoanScheduleDTO loanSchedule = loanScheduleGenerator.rescheduleNextInstallments(mathContext, loanApplicationTerms, loan,
                 loanApplicationTerms.getHolidayDetailDTO(), loan.getLoanTransactions(), loanRepaymentScheduleTransactionProcessor,
                 rescheduleFromDate);

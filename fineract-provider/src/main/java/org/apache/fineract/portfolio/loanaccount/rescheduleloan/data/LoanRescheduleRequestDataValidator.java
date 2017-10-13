@@ -21,7 +21,6 @@ package org.apache.fineract.portfolio.loanaccount.rescheduleloan.data;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,8 +38,9 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariations;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.RescheduleLoansApiConstants;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
 import org.joda.time.LocalDate;
@@ -213,9 +213,20 @@ public class LoanRescheduleRequestDataValidator {
                 && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.newInstallmentAmountParamName, jsonElement)) {
             dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.graceOnPrincipalParamName).notNull();
         }
-        if (!isBulkCreateAndApprove) {
-            validateForOverdueCharges(dataValidatorBuilder, loan, installment);
+        if (extraTerms != null) {
+            List<LoanTermVariations> loanTermVariations = new ArrayList<>();
+            loanTermVariations = loan.getLoanTermVariations();
+            if (!loanTermVariations.isEmpty()) {
+                for (LoanTermVariations loanTermVariation : loanTermVariations) {
+                    if (loanTermVariation.getTermType().getValue() == LoanTermVariationType.EMI_AMOUNT.getValue()) {
+                        dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.extraTermsParamName).failWithCode(
+                                "cannot.be.extend.repayment.period.of.loan.having.fixed.emi",
+                                "Cannot be extend repayment period of loan having fixed emi");
+                    }
+                }
+            }
         }
+        
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
 
@@ -240,21 +251,7 @@ public class LoanRescheduleRequestDataValidator {
             }
         }
     }
-
-    private void validateForOverdueCharges(final DataValidatorBuilder dataValidatorBuilder, final Loan loan,
-            final LoanRepaymentScheduleInstallment installment) {
-        if (installment != null) {
-            final LocalDate rescheduleFromDate = installment.getFromDate();
-            final Collection<LoanCharge> charges = loan.getLoanCharges();
-            for (final LoanCharge loanCharge : charges) {
-                if (loanCharge.isOverdueInstallmentCharge() && loanCharge.getDueLocalDate().isAfter(rescheduleFromDate)) {
-                    dataValidatorBuilder.failWithCodeNoParameterAddedToErrorCode("not.allowed.due.to.overdue.charges");
-                    break;
-                }
-            }
-        }
-    }
-
+    
     /**
      * Validates a user request to approve a loan reschedule request
      *
@@ -318,9 +315,7 @@ public class LoanRescheduleRequestDataValidator {
                 }
             }
         }
-
-        validateForOverdueCharges(dataValidatorBuilder, loan, installment);
-
+        
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
 
@@ -409,7 +404,6 @@ public class LoanRescheduleRequestDataValidator {
 
         }
 
-        validateForOverdueCharges(dataValidatorBuilder, loan, installment);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
     }

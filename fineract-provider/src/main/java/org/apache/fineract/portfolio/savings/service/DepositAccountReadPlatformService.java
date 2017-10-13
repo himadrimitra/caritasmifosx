@@ -58,4 +58,6 @@ public interface DepositAccountReadPlatformService {
     Collection<Map<String, Object>> retriveDataForRDScheduleCreation();
 
     Collection<DepositAccountData> getRDAccountsForTaskLookup(final SearchParameters searchParameters);
+    
+    SavingsAccountTransactionData retrieveRecurringAccountWithdrawTransactionTemplate(final Long accountId);
 }

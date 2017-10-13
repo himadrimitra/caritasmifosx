@@ -206,6 +206,9 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     @Column(name = "withhold_tax", nullable = false)
     private boolean withHoldTax;
 
+    @Column(name = "is_interest_calculation_from_product_chart", nullable = true)
+    private boolean isInterestCalculationFromProductChart;
+
     @ManyToOne
     @JoinColumn(name = "tax_group_id")
     private TaxGroup taxGroup;
@@ -242,14 +245,15 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             final BigDecimal minRequiredBalance, final BigDecimal minBalanceForInterestCalculation,
             final BigDecimal nominalAnnualInterestRateOverdraft, final BigDecimal minOverdraftForInterestCalculation,
             final boolean withHoldTax, final TaxGroup taxGroup, final Boolean isDormancyTrackingActive, final Long daysToInactive,
-            final Long daysToDormancy, final Long daysToEscheat, final String externalId, final boolean releaseguarantor) {
+            final Long daysToDormancy, final Long daysToEscheat, final String externalId,
+            final boolean isInterestCalculationFromProductChart, final boolean releaseguarantor) {
 
         return new SavingsProduct(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
                 allowOverdraft, overdraftLimit, enforceMinRequiredBalance, minRequiredBalance, minBalanceForInterestCalculation,
                 nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax, taxGroup, isDormancyTrackingActive,
-                daysToInactive, daysToDormancy, daysToEscheat, externalId, releaseguarantor);
+                daysToInactive, daysToDormancy, daysToEscheat, externalId, isInterestCalculationFromProductChart, releaseguarantor);
     }
 
     protected SavingsProduct() {
@@ -264,12 +268,13 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
             final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
             final boolean allowOverdraft, final BigDecimal overdraftLimit, final BigDecimal minBalanceForInterestCalculation,
-            final boolean withHoldTax, final TaxGroup taxGroup, final String externalId, final boolean releaseguarantor) {
+            final boolean withHoldTax, final TaxGroup taxGroup, final String externalId,
+            final boolean isInterestCalculationFromProductChart, final boolean releaseguarantor) {
         this(name, shortName, description, currency, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
                 lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges, allowOverdraft, overdraftLimit,
                 false, null, minBalanceForInterestCalculation, null, null, withHoldTax, taxGroup, null, null, null, null, externalId,
-                releaseguarantor);
+                isInterestCalculationFromProductChart, releaseguarantor);
     }
 
     protected SavingsProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
@@ -282,7 +287,8 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             final BigDecimal minRequiredBalance, final BigDecimal minBalanceForInterestCalculation,
             final BigDecimal nominalAnnualInterestRateOverdraft, final BigDecimal minOverdraftForInterestCalculation,
             final boolean withHoldTax, final TaxGroup taxGroup, final Boolean isDormancyTrackingActive, final Long daysToInactive,
-            final Long daysToDormancy, final Long daysToEscheat, final String externalId, final boolean releaseguarantor) {
+            final Long daysToDormancy, final Long daysToEscheat, final String externalId,
+            final boolean isInterestCalculationFromProductChart, final boolean releaseguarantor) {
 
         this.name = name;
         this.shortName = shortName;
@@ -296,6 +302,7 @@ public class SavingsProduct extends AbstractPersistable<Long> {
         this.interestPostingPeriodType = interestPostingPeriodType.getValue();
         this.interestCalculationType = interestCalculationType.getValue();
         this.interestCalculationDaysInYearType = interestCalculationDaysInYearType.getValue();
+        this.isInterestCalculationFromProductChart = isInterestCalculationFromProductChart;
 
         if (minRequiredOpeningBalance != null) {
             this.minRequiredOpeningBalance = Money.of(currency, minRequiredOpeningBalance).getAmount();
@@ -832,6 +839,14 @@ public class SavingsProduct extends AbstractPersistable<Long> {
 
     public List<FloatingInterestRateChart> getFloatingInterestRateChart() {
         return this.floatingInterestRateChart;
+    }
+
+    public boolean isInterestCalculationFromProductChart() {
+        return this.isInterestCalculationFromProductChart;
+    }
+
+    public void setInterestCalculationFromProductChart(final boolean isInterestCalculationFromProductChart) {
+        this.isInterestCalculationFromProductChart = isInterestCalculationFromProductChart;
     }
 
 }

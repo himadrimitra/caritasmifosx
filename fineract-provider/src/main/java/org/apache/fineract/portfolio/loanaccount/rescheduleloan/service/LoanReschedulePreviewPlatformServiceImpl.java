@@ -18,21 +18,32 @@
  */
 package org.apache.fineract.portfolio.loanaccount.rescheduleloan.service;
 
+import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
+import org.apache.fineract.portfolio.charge.domain.Charge;
+import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
+import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
+import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
+import org.apache.fineract.portfolio.loanaccount.data.LoanOverdueChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanLifecycleStateMachine;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRescheduleRequestToTermVariationMapping;
@@ -48,6 +59,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanSchedul
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequestRepository;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.exception.LoanRescheduleRequestNotFoundException;
+import org.apache.fineract.portfolio.loanaccount.service.LoanOverdueChargeService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,19 +75,24 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
     private final LoanSummaryWrapper loanSummaryWrapper;
     private final DefaultScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
     private final GlimLoanRescheduleService glimLoanRescheduleService;
+    private final LoanOverdueChargeService loanOverdueChargeService;
+    private final ChargeRepositoryWrapper chargeRepository;
 
     @Autowired
     public LoanReschedulePreviewPlatformServiceImpl(final LoanRescheduleRequestRepository loanRescheduleRequestRepository,
             final LoanUtilService loanUtilService,
             final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory,
             final LoanScheduleGeneratorFactory loanScheduleFactory, final LoanSummaryWrapper loanSummaryWrapper,
-            final GlimLoanRescheduleService glimLoanRescheduleService) {
+            final GlimLoanRescheduleService glimLoanRescheduleService,final LoanOverdueChargeService loanOverdueChargeService,
+            final ChargeRepositoryWrapper chargeRepository) {
         this.loanRescheduleRequestRepository = loanRescheduleRequestRepository;
         this.loanUtilService = loanUtilService;
         this.loanRepaymentScheduleTransactionProcessorFactory = loanRepaymentScheduleTransactionProcessorFactory;
         this.loanScheduleFactory = loanScheduleFactory;
         this.loanSummaryWrapper = loanSummaryWrapper;
         this.glimLoanRescheduleService = glimLoanRescheduleService;
+        this.loanOverdueChargeService = loanOverdueChargeService;
+        this.chargeRepository = chargeRepository;
     }
 
     @Override
@@ -176,13 +193,44 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
         loan.setHelpers(loanLifecycleStateMachine, this.loanSummaryWrapper, this.loanRepaymentScheduleTransactionProcessorFactory);
         if (loan.isGLIMLoan()) { return this.glimLoanRescheduleService.getGlimLoanScheduleModels(loan, scheduleGeneratorDTO,
                 loanApplicationTerms, rescheduleFromDate); }
-        final LoanScheduleDTO loanSchedule = loanScheduleGenerator.rescheduleNextInstallments(mathContext, loanApplicationTerms, loan,
-                loanApplicationTerms.getHolidayDetailDTO(), loan.getLoanTransactions(), loanRepaymentScheduleTransactionProcessor,
-                rescheduleFromDate);
+        Set<LoanCharge> charges = loan.chargesCopy();
+        if (!loan.getLoanRecurringCharges().isEmpty() && rescheduleFromDate.isBefore(DateUtils.getLocalDateOfTenant())) {
+            charges = deleteOverdueChargesAfter(rescheduleFromDate, charges);
+            LoanOverdueChargeData overdueChargeData = this.loanOverdueChargeService.calculateOverdueChargesAsOnDate(loan,
+                    rescheduleFromDate, rescheduleFromDate);
+            BigDecimal chargeAmount = overdueChargeData.getPenaltyToBePostedAsOnDate();
+            if (MathUtility.isGreaterThanZero(chargeAmount)) {
+                final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(loan.getLoanRecurringCharges().get(0)
+                        .getChargeId());
+                final BigDecimal percentage = null;
+                final boolean penalty = true;
+                LoanCharge loanCharge = new LoanCharge(loan, charge, chargeAmount, percentage, ChargeTimeType.OVERDUE_INSTALLMENT,
+                        ChargeCalculationType.FLAT, rescheduleFromDate, ChargePaymentMode.REGULAR, penalty, rescheduleFromDate);
+                charges.add(loanCharge);
+            }
+        }
+        
+        final LoanScheduleDTO loanSchedule = loanScheduleGenerator.rescheduleNextInstallments(mathContext, loanApplicationTerms,
+                loan, loanApplicationTerms.getHolidayDetailDTO(),loan.getLoanTransactions(),
+                loanRepaymentScheduleTransactionProcessor, rescheduleFromDate, charges);
         final LoanScheduleModel loanScheduleModel = loanSchedule.getLoanScheduleModel();
         final LoanScheduleModel loanScheduleModels = LoanScheduleModel.withLoanScheduleModelPeriods(loanScheduleModel.getPeriods(),
                 loanScheduleModel);
         return loanScheduleModels;
     }
-
+    
+    public Set<LoanCharge> deleteOverdueChargesAfter(final LocalDate date, final Set<LoanCharge> charges) {
+        final Set<LoanCharge> activeCharges = new HashSet<>(charges.size());
+        for (LoanCharge loanCharge : charges) {
+            if (loanCharge.isActive() && loanCharge.isOverdueInstallmentCharge()) {
+                if (loanCharge.getDueLocalDate().isAfter(date) && loanCharge.isChargePending()) {
+                    loanCharge.setActive(false);
+                }else{
+                    activeCharges.add(loanCharge);
+                }
+            }
+        }
+        return activeCharges;
+    }
+   
 }

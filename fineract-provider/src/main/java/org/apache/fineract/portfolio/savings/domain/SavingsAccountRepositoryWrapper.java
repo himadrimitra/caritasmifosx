@@ -18,8 +18,11 @@
  */
 package org.apache.fineract.portfolio.savings.domain;
 
+import java.util.List;
+
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.exception.SavingsAccountNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +32,7 @@ import org.springframework.stereotype.Service;
  * if {@link SavingsAccount} is returned when using <code>findOne</code>
  * repository method and throwing an appropriate not found exception.
  * </p>
- * 
+ *
  * <p>
  * This is to avoid need for checking and throwing in multiple areas of code
  * base where {@link SavingsAccountRepository} is required.
@@ -48,12 +51,20 @@ public class SavingsAccountRepositoryWrapper {
     public SavingsAccount findOneWithNotFoundDetection(final Long savingsId) {
         final SavingsAccount account = this.repository.findOne(savingsId);
         if (account == null) { throw new SavingsAccountNotFoundException(savingsId); }
+        lazyInitialize(account);
+        return account;
+    }
+
+    public SavingsAccount findOneWithoutLazyInitializeWithNotFoundDetection(final Long savingsId) {
+        final SavingsAccount account = this.repository.findOne(savingsId);
+        if (account == null) { throw new SavingsAccountNotFoundException(savingsId); }
         return account;
     }
 
     public SavingsAccount findOneWithNotFoundDetection(final Long savingsId, final DepositAccountType depositAccountType) {
         final SavingsAccount account = this.repository.findByIdAndDepositAccountType(savingsId, depositAccountType.getValue());
         if (account == null) { throw new SavingsAccountNotFoundException(savingsId); }
+        lazyInitialize(account);
         return account;
     }
 
@@ -69,9 +80,58 @@ public class SavingsAccountRepositoryWrapper {
         this.repository.saveAndFlush(account);
     }
 
-    public SavingsAccount findOneWithNotFoundDetection(String accountNumber) {
+    public SavingsAccount findOneWithNotFoundDetection(final String accountNumber) {
         final SavingsAccount account = this.repository.findByAccountNumber(accountNumber);
         if (account == null) { throw new SavingsAccountNotFoundException(accountNumber); }
+        lazyInitialize(account);
         return account;
+    }
+
+    public SavingsAccount findNonClosedAccountByAccountNumber(final String accountNumber) {
+        final SavingsAccount account = this.repository.findNonClosedAccountByAccountNumber(accountNumber);
+        lazyInitialize(account);
+        return account;
+    }
+
+    public List<SavingsAccount> findByGroupId(final Long groupId) {
+        final List<SavingsAccount> accounts = this.repository.findByGroupId(groupId);
+        for (final SavingsAccount account : accounts) {
+            lazyInitialize(account);
+        }
+        return accounts;
+    }
+
+    public List<SavingsAccount> findByClientIdAndGroupId(final Long clientId, final Long groupId) {
+        final List<SavingsAccount> accounts = this.repository.findByClientIdAndGroupId(clientId, groupId);
+        for (final SavingsAccount account : accounts) {
+            lazyInitialize(account);
+        }
+        return accounts;
+    }
+
+    public List<SavingsAccount> findSavingAccountByClientId(final Long clientId) {
+        final List<SavingsAccount> accounts = this.repository.findSavingAccountByClientId(clientId);
+        for (final SavingsAccount account : accounts) {
+            lazyInitialize(account);
+        }
+        return accounts;
+    }
+
+    public SavingsAccount findOne(final Long id) {
+        final SavingsAccount account = this.repository.findOne(id);
+        lazyInitialize(account);
+        return account;
+    }
+
+    public boolean doNonClosedSavingAccountsExistForClient(final Long clientId) {
+        return this.repository.doNonClosedSavingAccountsExistForClient(clientId);
+    }
+
+    private void lazyInitialize(final SavingsAccount account) {
+        Hibernate.initialize(account.getSavingsOfficerHistory());
+        Hibernate.initialize(account.getSavingsAccountDpDetails());
+        Hibernate.initialize(account.getClient());
+        Hibernate.initialize(account.getGroup());
+        Hibernate.initialize(account.getSavingsOfficer());
     }
 }

@@ -99,7 +99,7 @@ public class FixedDepositProductData extends DepositProductData {
         final boolean withHoldTax = false;
         final TaxGroupData taxGroup = null;
         final String externalId = null;
-
+        final boolean isInterestCalculationFromProductChart = false;
         return new FixedDepositProductData(id, name, shortName, description, currency, nominalAnnualInterestRate,
                 interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, minBalanceForInterestCalculation, accountingRule, accountingMappings,
@@ -110,7 +110,7 @@ public class FixedDepositProductData extends DepositProductData {
                 preClosurePenalApplicable, preClosurePenalInterest, preClosurePenalInterestOnType, preClosurePenalInterestOnTypeOptions,
                 minDepositTerm, maxDepositTerm, minDepositTermType, maxDepositTermType, inMultiplesOfDepositTerm,
                 inMultiplesOfDepositTermType, minDepositAmount, depositAmount, maxDepositAmount, periodFrequencyTypeOptions, withHoldTax,
-                taxGroup, taxGroupOptions, externalId);
+                taxGroup, taxGroupOptions, externalId, isInterestCalculationFromProductChart);
     }
 
     public static FixedDepositProductData withCharges(final FixedDepositProductData existingProduct, final Collection<ChargeData> charges) {
@@ -132,7 +132,7 @@ public class FixedDepositProductData extends DepositProductData {
                 existingProduct.maxDepositTermType, existingProduct.inMultiplesOfDepositTerm, existingProduct.inMultiplesOfDepositTermType,
                 existingProduct.minDepositAmount, existingProduct.depositAmount, existingProduct.maxDepositAmount,
                 existingProduct.periodFrequencyTypeOptions, existingProduct.withHoldTax, existingProduct.taxGroup,
-                existingProduct.taxGroupOptions, existingProduct.externalId);
+                existingProduct.taxGroupOptions, existingProduct.externalId, existingProduct.isInterestCalculationFromProductChart);
     }
 
     /**
@@ -171,7 +171,7 @@ public class FixedDepositProductData extends DepositProductData {
                 existingProduct.minDepositTermType, existingProduct.maxDepositTermType, existingProduct.inMultiplesOfDepositTerm,
                 existingProduct.inMultiplesOfDepositTermType, existingProduct.minDepositAmount, existingProduct.depositAmount,
                 existingProduct.maxDepositAmount, periodFrequencyTypeOptions, existingProduct.withHoldTax, existingProduct.taxGroup,
-                taxGroupOptions, existingProduct.externalId);
+                taxGroupOptions, existingProduct.externalId, existingProduct.isInterestCalculationFromProductChart);
     }
 
     public static FixedDepositProductData withAccountingDetails(final FixedDepositProductData existingProduct,
@@ -208,7 +208,7 @@ public class FixedDepositProductData extends DepositProductData {
                 existingProduct.maxDepositTermType, existingProduct.inMultiplesOfDepositTerm, existingProduct.inMultiplesOfDepositTermType,
                 existingProduct.minDepositAmount, existingProduct.depositAmount, existingProduct.maxDepositAmount,
                 existingProduct.periodFrequencyTypeOptions, existingProduct.withHoldTax, existingProduct.taxGroup,
-                existingProduct.taxGroupOptions, existingProduct.externalId);
+                existingProduct.taxGroupOptions, existingProduct.externalId, existingProduct.isInterestCalculationFromProductChart);
     }
 
     public static FixedDepositProductData instance(final DepositProductData depositProductData, final boolean preClosurePenalApplicable,
@@ -254,7 +254,8 @@ public class FixedDepositProductData extends DepositProductData {
                 preClosurePenalApplicable, preClosurePenalInterest, preClosurePenalInterestOnType, preClosurePenalInterestOnTypeOptions,
                 minDepositTerm, maxDepositTerm, minDepositTermType, maxDepositTermType, inMultiplesOfDepositTerm,
                 inMultiplesOfDepositTermType, minDepositAmount, depositAmount, maxDepositAmount, periodFrequencyTypeOptions,
-                depositProductData.withHoldTax, depositProductData.taxGroup, taxGroupOptions, depositProductData.externalId);
+                depositProductData.withHoldTax, depositProductData.taxGroup, taxGroupOptions, depositProductData.externalId,
+                depositProductData.isInterestCalculationFromProductChart);
     }
 
     public static FixedDepositProductData lookup(final Long id, final String name) {
@@ -309,6 +310,7 @@ public class FixedDepositProductData extends DepositProductData {
         final TaxGroupData taxGroup = null;
         final Collection<TaxGroupData> taxGroupOptions = null;
         final String externalId = null;
+        final boolean isInterestCalculationFromProductChart = false;
 
         return new FixedDepositProductData(id, name, shortName, description, currency, nominalAnnualInterestRate,
                 interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
@@ -320,7 +322,7 @@ public class FixedDepositProductData extends DepositProductData {
                 preClosurePenalApplicable, preClosurePenalInterest, preClosurePenalInterestOnType, preClosurePenalInterestOnTypeOptions,
                 minDepositTerm, maxDepositTerm, minDepositTermType, maxDepositTermType, inMultiplesOfDepositTerm,
                 inMultiplesOfDepositTermType, minDepositAmount, depositAmount, maxDepositAmount, periodFrequencyTypeOptions, withHoldTax,
-                taxGroup, taxGroupOptions, externalId);
+                taxGroup, taxGroupOptions, externalId, isInterestCalculationFromProductChart);
     }
 
     public static FixedDepositProductData withInterestChart(final FixedDepositProductData existingProduct,
@@ -343,7 +345,7 @@ public class FixedDepositProductData extends DepositProductData {
                 existingProduct.maxDepositTermType, existingProduct.inMultiplesOfDepositTerm, existingProduct.inMultiplesOfDepositTermType,
                 existingProduct.minDepositAmount, existingProduct.depositAmount, existingProduct.maxDepositAmount,
                 existingProduct.periodFrequencyTypeOptions, existingProduct.withHoldTax, existingProduct.taxGroup,
-                existingProduct.taxGroupOptions, existingProduct.externalId);
+                existingProduct.taxGroupOptions, existingProduct.externalId, existingProduct.isInterestCalculationFromProductChart);
 
     }
 
@@ -371,7 +373,8 @@ public class FixedDepositProductData extends DepositProductData {
             final EnumOptionData maxDepositTermType, final Integer inMultiplesOfDepositTerm,
             final EnumOptionData inMultiplesOfDepositTermType, final BigDecimal minDepositAmount, final BigDecimal depositAmount,
             final BigDecimal maxDepositAmount, final Collection<EnumOptionData> periodFrequencyTypeOptions, final boolean withHoldTax,
-            final TaxGroupData taxGroup, final Collection<TaxGroupData> taxGroupOptions, final String externalId) {
+            final TaxGroupData taxGroup, final Collection<TaxGroupData> taxGroupOptions, final String externalId,
+            final boolean isInterestCalculationFromProductChart) {
 
         super(id, name, shortName, description, currency, nominalAnnualInterestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, lockinPeriodFrequency,
@@ -380,7 +383,7 @@ public class FixedDepositProductData extends DepositProductData {
                 interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, paymentTypeOptions,
                 accountingRuleOptions, accountingMappingOptions, charges, chargeOptions, penaltyOptions, feeToIncomeAccountMappings,
                 penaltyToIncomeAccountMappings, interestRateCharts, chartTemplate, minBalanceForInterestCalculation, withHoldTax, taxGroup,
-                taxGroupOptions, externalId);
+                taxGroupOptions, externalId, isInterestCalculationFromProductChart);
 
         // fixed deposit additional fields
         this.preClosurePenalApplicable = preClosurePenalApplicable;

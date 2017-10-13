@@ -84,6 +84,7 @@ public interface LoanProductConstants {
     public static final String minimumPeriodsBetweenDisbursalAndFirstRepayment = "minimumPeriodsBetweenDisbursalAndFirstRepayment";
     public static final String isMinDurationApplicableForAllDisbursementsParamName = "isMinDurationApplicableForAllDisbursements";
     public static final String accountMovesOutOfNPAOnlyOnArrearsCompletionParamName = "accountMovesOutOfNPAOnlyOnArrearsCompletion";
+    public static final String stopLoanProcessingOnNpa = "stopLoanProcessingOnNpa";
 
     // Interest recalculation related
     public static final String isInterestRecalculationEnabledParameterName = "isInterestRecalculationEnabled";

@@ -86,6 +86,7 @@ public class SavingsApiConstants {
     public static final String idParamName = "id";
     public static final String accountNoParamName = "accountNo";
     public static final String externalIdParamName = "externalId";
+    public static final String isInterestCalculationFromProductChartParamName = "isInterestCalculationFromProductChart";
     public static final String statusParamName = "status";
     public static final String subStatusParamName = "subStatus";
     public static final String clientIdParamName = "clientId";

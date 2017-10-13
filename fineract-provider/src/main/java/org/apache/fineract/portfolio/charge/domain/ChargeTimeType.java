@@ -42,6 +42,7 @@ public enum ChargeTimeType {
     SHARE_REDEEM(15, "chargeTimeType.sharesredeem"), //
 
     SAVINGS_NOACTIVITY_FEE(16, "chargeTimeType.savingsNoActivityFee"), // 0
+    DAILY_FEE(17, "chargeTimeType.dailyFee"), // only for svings account
     UPFRONT_FEE(50, "chargeTimeType.upfrontFee"), //
     LATE_DEPOSITE_FEE(51, "chargeTimeType.lateDepositeFee"); // only for savings
 
@@ -81,7 +82,7 @@ public enum ChargeTimeType {
 
     public static Object[] validClientValues() {
         return new Integer[] { ChargeTimeType.SPECIFIED_DUE_DATE.getValue(), ChargeTimeType.ANNUAL_FEE.getValue(),
-                ChargeTimeType.MONTHLY_FEE.getValue(), ChargeTimeType.WEEKLY_FEE.getValue() };
+                ChargeTimeType.MONTHLY_FEE.getValue(), ChargeTimeType.WEEKLY_FEE.getValue(), ChargeTimeType.DAILY_FEE.getValue() };
     }
 
     public static Object[] validShareValues() {
@@ -141,6 +142,9 @@ public enum ChargeTimeType {
                 case 16:
                     chargeTimeType = SAVINGS_NOACTIVITY_FEE;
                 break;
+                case 17:
+                    chargeTimeType = DAILY_FEE;
+                break;
                 case 50:
                     chargeTimeType = UPFRONT_FEE;
                 break;
@@ -189,6 +193,10 @@ public enum ChargeTimeType {
 
     public boolean isWeeklyFee() {
         return this.value.equals(ChargeTimeType.WEEKLY_FEE.getValue());
+    }
+
+    public boolean isDailyFee() {
+        return this.value.equals(ChargeTimeType.DAILY_FEE.getValue());
     }
 
     public boolean isLateDepositeFee() {
@@ -244,6 +252,9 @@ public enum ChargeTimeType {
     public boolean isSameFrequency(final CalendarFrequencyType calendarFrequencyType) {
         boolean sameFrequency = false;
         switch (calendarFrequencyType) {
+            case DAILY:
+                sameFrequency = isDailyFee();
+            break;
             case WEEKLY:
                 sameFrequency = isWeeklyFee();
             break;
@@ -265,6 +276,9 @@ public enum ChargeTimeType {
         PeriodFrequencyType periodFrequencyType = PeriodFrequencyType.INVALID;
         final ChargeTimeType chargeTimeType = fromInt(chargeTime);
         switch (chargeTimeType) {
+            case DAILY_FEE:
+                periodFrequencyType = PeriodFrequencyType.DAYS;
+            break;
             case WEEKLY_FEE:
                 periodFrequencyType = PeriodFrequencyType.WEEKS;
             break;

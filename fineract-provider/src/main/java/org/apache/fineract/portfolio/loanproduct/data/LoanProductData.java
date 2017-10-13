@@ -222,6 +222,7 @@ public class LoanProductData {
     private final Boolean allowNegativeLoanBalance;
     private final Boolean allowUpfrontCollection;
     private final BigDecimal percentageOfDisbursementToBeTransferred;
+    private final Boolean stopLoanProcessingOnNpa;
 
     /**
      * Loan Product related template data
@@ -295,6 +296,7 @@ public class LoanProductData {
         final Boolean holdGuaranteeFunds = false;
         final BigDecimal principalThresholdForLastInstallment = null;
         final boolean accountMovesOutOfNPAOnlyOnArrearsCompletion = false;
+        final boolean stopLoanProcessingOnNpa = false;
 
         final EnumOptionData daysInMonthType = null;
         final EnumOptionData daysInYearType = null;
@@ -348,7 +350,8 @@ public class LoanProductData {
                 weeksInYear, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType,
                 isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance,
                 considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, allowUpfrontCollection,
-                percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod, templateData, applicableForLoanType);
+                percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod, templateData, applicableForLoanType,
+                stopLoanProcessingOnNpa);
     }
 
     public static LoanProductData lookupWithCurrency(final Long id, final String name, final CurrencyData currency) {
@@ -448,6 +451,7 @@ public class LoanProductData {
         final Collection<Float> interestRatesListPerPeriod = null;
         final LoanProductTemplateData templateData = null;
         final EnumOptionData applicableForLoanType = null;
+        final Boolean stopLoanProcessingOnNpa = false;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                 minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType, interestRateFrequencyType,
@@ -467,7 +471,8 @@ public class LoanProductData {
                 weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType,
                 isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance,
                 considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, allowUpfrontCollection,
-                percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod, templateData, applicableForLoanType);
+                percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod, templateData, applicableForLoanType,
+                stopLoanProcessingOnNpa);
     }
 
     public static LoanProductData sensibleDefaultsForNewLoanProductCreation() {
@@ -573,6 +578,7 @@ public class LoanProductData {
         final Collection<Float> interestRatesListPerPeriod = null;
         final LoanProductTemplateData templateData = null;
         final EnumOptionData applicableForLoanType = null;
+        final Boolean stopLoanProcessingOnNpa = false;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                 minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType, interestRateFrequencyType,
@@ -592,7 +598,8 @@ public class LoanProductData {
                 maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements,
                 installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType, isFlatInterestRate,
                 allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, allowUpfrontCollection,
-                percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod, templateData, applicableForLoanType);
+                percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod, templateData, applicableForLoanType,
+                stopLoanProcessingOnNpa);
     }
 
     public static LoanProductData withAccountingDetails(final LoanProductData productData, final Map<String, Object> accountingMappings,
@@ -644,7 +651,7 @@ public class LoanProductData {
             final Boolean isFlatInterestRate, final Boolean allowNegativeLoanBalance, final Boolean considerFutureDisbursementsInSchedule,
             final Boolean considerAllDisbursementsInSchedule, final Boolean allowUpfrontCollection,
             final BigDecimal percentageOfDisbursementToBeTransferred, final Collection<Float> interestRatesListPerPeriod,
-            final LoanProductTemplateData templateData, final EnumOptionData applicableForLoanType) {
+            final LoanProductTemplateData templateData, final EnumOptionData applicableForLoanType, final Boolean stopLoanProcessingOnNpa) {
         this.id = id;
         this.name = name;
         this.shortName = shortName;
@@ -777,6 +784,7 @@ public class LoanProductData {
         this.interestRatesListPerPeriod = interestRatesListPerPeriod;
         this.templateData = templateData;
         this.applicableForLoanType = applicableForLoanType;
+        this.stopLoanProcessingOnNpa = stopLoanProcessingOnNpa;
     }
 
     public LoanProductData(final LoanProductData productData, final Collection<ChargeData> chargeOptions,
@@ -897,6 +905,7 @@ public class LoanProductData {
         this.productGuaranteeData = productData.productGuaranteeData;
         this.principalThresholdForLastInstallment = productData.principalThresholdForLastInstallment;
         this.accountMovesOutOfNPAOnlyOnArrearsCompletion = productData.accountMovesOutOfNPAOnlyOnArrearsCompletion;
+        this.stopLoanProcessingOnNpa = productData.stopLoanProcessingOnNpa;
 
         this.daysInMonthTypeOptions = daysInMonthTypeOptions;
         this.daysInYearTypeOptions = daysInYearTypeOptions;
@@ -1044,6 +1053,7 @@ public class LoanProductData {
         final Collection<Float> interestRatesListPerPeriod = null;
         final LoanProductTemplateData templateData = null;
         final EnumOptionData applicableForLoanType = null;
+        final Boolean stopLoanProcessingOnNpa = false;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                 minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType, interestRateFrequencyType,
@@ -1063,7 +1073,8 @@ public class LoanProductData {
                 maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements,
                 installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType, isFlatInterestRate,
                 allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, allowUpfrontCollection,
-                percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod, templateData, applicableForLoanType);
+                percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod, templateData, applicableForLoanType,
+                stopLoanProcessingOnNpa);
     }
 
     private Collection<ProductLoanChargeData> nullIfEmpty(final Collection<ProductLoanChargeData> charges) {

@@ -873,6 +873,10 @@ public class Charge extends AbstractPersistable<Long> {
         return ChargeTimeType.fromInt(this.chargeTimeType).isWeeklyFee();
     }
 
+    public boolean isDailyFee() {
+        return ChargeTimeType.fromInt(this.chargeTimeType).isDailyFee();
+    }
+
     public boolean isEmiRoundingGoalSeek() {
         return this.emiRoundingGoalSeek;
     }

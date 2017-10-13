@@ -148,7 +148,7 @@ public class DepositProductReadPlatformServiceImpl implements DepositProductRead
             sqlBuilder.append("sp.accounting_type as accountingType, ");
             sqlBuilder.append("sp.min_balance_for_interest_calculation as minBalanceForInterestCalculation, ");
             sqlBuilder.append("sp.withhold_tax as withHoldTax,");
-            sqlBuilder.append("tg.id as taxGroupId, tg.name as taxGroupName ");
+            sqlBuilder.append("tg.id as taxGroupId, tg.name as taxGroupName, sp.is_interest_calculation_from_product_chart as isInterestCalculationFromProductChart ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -191,6 +191,8 @@ public class DepositProductReadPlatformServiceImpl implements DepositProductRead
                         .interestCalculationDaysInYearType(interestCalculationDaysInYearTypeValue);
             }
 
+            final boolean isInterestCalculationFromProductChart = rs.getBoolean("isInterestCalculationFromProductChart");
+            
             final Integer accountingRuleId = JdbcSupport.getInteger(rs, "accountingType");
             final EnumOptionData accountingRuleType = AccountingEnumerations.accountingRuleType(accountingRuleId);
 
@@ -213,7 +215,7 @@ public class DepositProductReadPlatformServiceImpl implements DepositProductRead
             return DepositProductData.instance(id, name, shortName, description, currency, nominalAnnualInterestRate,
                     compoundingInterestPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                     lockinPeriodFrequency, lockinPeriodFrequencyType, accountingRuleType, minBalanceForInterestCalculation, withHoldTax,
-                    taxGroupData, externalId);
+                    taxGroupData, externalId, isInterestCalculationFromProductChart);
         }
     }
 

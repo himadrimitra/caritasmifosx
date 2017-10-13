@@ -15,23 +15,38 @@ import com.finflux.risk.creditbureau.provider.exception.MandatoryDataNotFoundExc
 public class EquifaxRequestValidator {
 
     public void validateEnquiryRequest(RequestBodyType request) {
-        if (request
-                .getFamilyDetails() == null) { throw new MandatoryDataNotFoundException("error.msg.mandatory.data.familydetails.not.found",
+        if (request.getFamilyDetails() == null) { 
+            throw new MandatoryDataNotFoundException("error.msg.mandatory.data.familydetails.not.found",
                         "CB Request cannot be processed as family details for applicant:" + request.getFirstName() + " can not be found.",
-                        request.getFirstName()); }
-        if (request.getInquiryAddresses() == null) { throw new MandatoryDataNotFoundException(
-                "error.msg.mandatory.data.address.not.found",
+                        request.getFirstName()); 
+                }
+        if (request.getInquiryAddresses() == null) { 
+            throw new MandatoryDataNotFoundException("error.msg.mandatory.data.address.not.found",
                 "CB Request cannot be processed as address details for applicant:" + request.getFirstName() + " can not be found.",
-                request.getFirstName()); }
+                request.getFirstName()); 
+        }
         if (request.getDOB() == null) { throw new MandatoryDataNotFoundException("error.msg.mandatory.data.dob.not.found",
                 "CB Request cannot be processed as date of birth for applicant:" + request.getFirstName() + " can not be found.",
-                request.getFirstName());
-
+                request.getFirstName()); 
         }
         if (request.getInquiryPhones() == null) { throw new MandatoryDataNotFoundException("error.msg.mandatory.phone.not.found",
                 "CB Request cannot be processed as phone number for applicant:" + request.getFirstName() + " can not be found.",
-                request.getFirstName());
-
+                request.getFirstName()); 
         }
+        if(!isAtleastOneIdentifierPresent(request)) {
+            throw new MandatoryDataNotFoundException("error.msg.mandatory.identifier.not.found",
+                    "CB Request cannot be processed as ateleast one indetifier should be present:",
+                    request.getFirstName()); 
+        }
+    }
+    
+    private boolean isAtleastOneIdentifierPresent(final RequestBodyType request) {
+        boolean isPresent = false;
+        if (request.getPANId() != null || request.getPassportId() != null || request.getVoterId() != null
+                || request.getNationalIdCard() != null || request.getRationCard() != null || request.getDriverLicense() != null
+                || request.getAdditionalId1() != null || request.getAdditionalId2() != null) {
+            isPresent = true;
+        }
+        return isPresent;
     }
 }

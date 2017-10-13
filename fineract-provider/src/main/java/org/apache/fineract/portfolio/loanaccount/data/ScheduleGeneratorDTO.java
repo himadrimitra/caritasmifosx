@@ -49,6 +49,7 @@ public class ScheduleGeneratorDTO {
     final boolean considerAllDisbursmentsInSchedule;
     BigDecimal calculatedInstallmentAmount;
     BUSINESS_EVENTS businessEvent;
+    boolean isChargeProcessingRequired;
 
     public ScheduleGeneratorDTO(final LoanScheduleGeneratorFactory loanScheduleFactory, final ApplicationCurrency applicationCurrency,
             final LocalDate calculatedRepaymentsStartingFromDate, final HolidayDetailDTO holidayDetailDTO,
@@ -164,4 +165,13 @@ public class ScheduleGeneratorDTO {
     public void setCalculatedRepaymentsStartingFromDate(final LocalDate calculatedRepaymentsStartingFromDate) {
         this.calculatedRepaymentsStartingFromDate = calculatedRepaymentsStartingFromDate;
     }
+
+    public boolean isChargeProcessingRequired() {
+        return this.isChargeProcessingRequired;
+    }
+
+    public void setChargeProcessingRequired(boolean isChargeProcessingRequired) {
+        this.isChargeProcessingRequired = isChargeProcessingRequired;
+    }
+
 }

@@ -22,6 +22,7 @@ import static org.apache.fineract.portfolio.savings.DepositsApiConstants.RECURRI
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accountingRuleParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargesParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroupIdParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isInterestCalculationFromProductChartParamName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -145,7 +146,13 @@ public class RecurringDepositProductWritePlatformServiceJpaRepositoryImpl implem
                     .updateSavingsProductToGLAccountMapping(product.getId(), command, accountingTypeChanged, product.getAccountingType(),
                             DepositAccountType.RECURRING_DEPOSIT);
             changes.putAll(accountingMappingChanges);
-
+            
+            //interest calculation based on product charts flag
+			if (command.hasParameter("isInterestCalculationFromProductChart")) {
+				final boolean isInterestCalculationFromProductChart = command.booleanPrimitiveValueOfParameterNamed(isInterestCalculationFromProductChartParamName);
+				product.setInterestCalculationFromProductChart(isInterestCalculationFromProductChart);
+			}
+            
             if (!changes.isEmpty()) {
                 this.recurringDepositProductRepository.save(product);
             }

@@ -37,6 +37,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.portfolio.self.account.data.SelfBeneficiariesTPTDataValidator;
 import org.apache.fineract.portfolio.self.account.domain.SelfBeneficiariesTPT;
 import org.apache.fineract.portfolio.self.account.domain.SelfBeneficiariesTPTRepository;
@@ -59,7 +60,7 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl implements
 	private final SelfBeneficiariesTPTRepository repository;
 	private final SelfBeneficiariesTPTDataValidator validator;
 	private final LoanRepository loanRepo;
-	private final SavingsAccountRepository savingRepo;
+	private final SavingsAccountRepositoryWrapper savingRepo;
 
 	@Autowired
 	public SelfBeneficiariesTPTWritePlatformServiceImpl(
@@ -67,7 +68,7 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl implements
 			final SelfBeneficiariesTPTRepository repository,
 			final SelfBeneficiariesTPTDataValidator validator,
 			final LoanRepository loanRepo,
-			final SavingsAccountRepository savingRepo) {
+			final SavingsAccountRepositoryWrapper savingRepo) {
 		this.context = context;
 		this.repository = repository;
 		this.validator = validator;

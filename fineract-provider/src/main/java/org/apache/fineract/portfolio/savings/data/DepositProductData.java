@@ -87,6 +87,7 @@ public class DepositProductData {
     protected final Collection<ChargeData> penaltyOptions;
     protected final InterestRateChartData chartTemplate;
     protected final Collection<TaxGroupData> taxGroupOptions;
+    protected final boolean isInterestCalculationFromProductChart;
 
     public static DepositProductData template(final CurrencyData currency, final EnumOptionData interestCompoundingPeriodType,
             final EnumOptionData interestPostingPeriodType, final EnumOptionData interestCalculationType,
@@ -99,7 +100,7 @@ public class DepositProductData {
             final Collection<PaymentTypeData> paymentTypeOptions, final Collection<EnumOptionData> accountingRuleOptions,
             final Map<String, List<GLAccountData>> accountingMappingOptions, final Collection<ChargeData> chargeOptions,
             final Collection<ChargeData> penaltyOptions, final InterestRateChartData chartTemplate,
-            final Collection<TaxGroupData> taxGroupOptions) {
+            final Collection<TaxGroupData> taxGroupOptions, final boolean isInterestCalculationFromProductChart) {
 
         final Long id = null;
         final String name = null;
@@ -126,7 +127,7 @@ public class DepositProductData {
                 interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, paymentTypeOptions,
                 accountingRuleOptions, accountingMappingOptions, charges, chargeOptions, penaltyOptions, feeToIncomeAccountMappings,
                 penaltyToIncomeAccountMappings, interestRateCharts, chartTemplate, minBalanceForInterestCalculation, withHoldTax, taxGroup,
-                taxGroupOptions, externalId);
+                taxGroupOptions, externalId, isInterestCalculationFromProductChart);
     }
 
     public static DepositProductData withCharges(final DepositProductData existingProduct, final Collection<ChargeData> charges) {
@@ -143,7 +144,7 @@ public class DepositProductData {
                 charges, existingProduct.chargeOptions, existingProduct.penaltyOptions, existingProduct.feeToIncomeAccountMappings,
                 existingProduct.penaltyToIncomeAccountMappings, existingProduct.interestRateCharts, existingProduct.chartTemplate,
                 existingProduct.minBalanceForInterestCalculation, existingProduct.withHoldTax, existingProduct.taxGroup,
-                existingProduct.taxGroupOptions, existingProduct.externalId);
+                existingProduct.taxGroupOptions, existingProduct.externalId, existingProduct.isInterestCalculationFromProductChart);
     }
 
     /**
@@ -175,7 +176,8 @@ public class DepositProductData {
                 accountingMappingOptions, existingProduct.charges, chargeOptions, penaltyOptions,
                 existingProduct.feeToIncomeAccountMappings, existingProduct.penaltyToIncomeAccountMappings,
                 existingProduct.interestRateCharts, chartTemplate, existingProduct.minBalanceForInterestCalculation,
-                existingProduct.withHoldTax, existingProduct.taxGroup, taxGroupOptions, existingProduct.externalId);
+                existingProduct.withHoldTax, existingProduct.taxGroup, taxGroupOptions, existingProduct.externalId,
+                existingProduct.isInterestCalculationFromProductChart);
     }
 
     public static DepositProductData withAccountingDetails(final DepositProductData existingProduct,
@@ -207,7 +209,8 @@ public class DepositProductData {
                 withdrawalFeeTypeOptions, paymentTypeOptions, accountingRuleOptions, accountingMappingOptions, existingProduct.charges,
                 chargeOptions, penaltyOptions, feeToIncomeAccountMappings, penaltyToIncomeAccountMappings,
                 existingProduct.interestRateCharts, existingProduct.chartTemplate, existingProduct.minBalanceForInterestCalculation,
-                existingProduct.withHoldTax, existingProduct.taxGroup, taxGroupOptions, existingProduct.externalId);
+                existingProduct.withHoldTax, existingProduct.taxGroup, taxGroupOptions, existingProduct.externalId,
+                existingProduct.isInterestCalculationFromProductChart);
     }
 
     public static DepositProductData instance(final Long id, final String name, final String shortName, final String description,
@@ -216,7 +219,7 @@ public class DepositProductData {
             final EnumOptionData interestCalculationDaysInYearType, final Integer lockinPeriodFrequency,
             final EnumOptionData lockinPeriodFrequencyType, final EnumOptionData accountingType,
             final BigDecimal minBalanceForInterestCalculation, final boolean withHoldTax, final TaxGroupData taxGroup,
-            final String externalId) {
+            final String externalId, final boolean isInterestCalculationFromProductChart) {
 
         final Map<String, Object> accountingMappings = null;
         final Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings = null;
@@ -247,7 +250,7 @@ public class DepositProductData {
                 interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, paymentTypeOptions,
                 accountingRuleOptions, accountingMappingOptions, charges, chargeOptions, penaltyOptions, feeToIncomeAccountMappings,
                 penaltyToIncomeAccountMappings, interestRateCharts, chartTemplate, minBalanceForInterestCalculation, withHoldTax, taxGroup,
-                taxGroupOptions, externalId);
+                taxGroupOptions, externalId, isInterestCalculationFromProductChart);
     }
 
     public static DepositProductData lookup(final Long id, final String name) {
@@ -289,6 +292,7 @@ public class DepositProductData {
         final TaxGroupData taxGroup = null;
         final Collection<TaxGroupData> taxGroupOptions = null;
         final String externalId = null;
+        final boolean isInterestCalculationFromProductChart = false;
 
         return new DepositProductData(id, name, shortName, description, currency, nominalAnnualInterestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, lockinPeriodFrequency,
@@ -297,7 +301,7 @@ public class DepositProductData {
                 interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, paymentTypeOptions,
                 accountingRuleOptions, accountingMappingOptions, charges, chargeOptions, penaltyOptions, feeToIncomeAccountMappings,
                 penaltyToIncomeAccountMappings, interestRateCharts, chartTemplate, minBalanceForInterestCalculation, withHoldTax, taxGroup,
-                taxGroupOptions, externalId);
+                taxGroupOptions, externalId, isInterestCalculationFromProductChart);
     }
 
     public static DepositProductData withInterestChart(final DepositProductData existingProduct,
@@ -315,7 +319,8 @@ public class DepositProductData {
                 existingProduct.charges, existingProduct.chargeOptions, existingProduct.penaltyOptions,
                 existingProduct.feeToIncomeAccountMappings, existingProduct.penaltyToIncomeAccountMappings, interestRateCharts,
                 existingProduct.chartTemplate, existingProduct.minBalanceForInterestCalculation, existingProduct.withHoldTax,
-                existingProduct.taxGroup, existingProduct.taxGroupOptions, existingProduct.externalId);
+                existingProduct.taxGroup, existingProduct.taxGroupOptions, existingProduct.externalId,
+                existingProduct.isInterestCalculationFromProductChart);
     }
 
     protected DepositProductData(final Long id, final String name, final String shortName, final String description,
@@ -336,7 +341,7 @@ public class DepositProductData {
             final Collection<ChargeToGLAccountMapper> penaltyToIncomeAccountMappings,
             final Collection<InterestRateChartData> interestRateCharts, final InterestRateChartData chartTemplate,
             final BigDecimal minBalanceForInterestCalculation, final boolean withHoldTax, final TaxGroupData taxGroup,
-            final Collection<TaxGroupData> taxGroupOptions, final String externalId) {
+            final Collection<TaxGroupData> taxGroupOptions, final String externalId, final boolean isInterestCalculationFromProductChart) {
 
         this.id = id;
         this.name = name;
@@ -386,6 +391,7 @@ public class DepositProductData {
         this.taxGroup = taxGroup;
         this.withHoldTax = withHoldTax;
         this.taxGroupOptions = taxGroupOptions;
+        this.isInterestCalculationFromProductChart = isInterestCalculationFromProductChart;
     }
 
     public static InterestRateChartData activeChart(final Collection<InterestRateChartData> interestRateCharts) {

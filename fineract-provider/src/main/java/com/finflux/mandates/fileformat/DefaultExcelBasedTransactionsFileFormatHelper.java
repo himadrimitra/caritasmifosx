@@ -16,11 +16,13 @@ import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.NumberToTextConverter;
+import org.joda.time.LocalDate;
 import org.springframework.stereotype.Component;
 
 import com.finflux.mandates.data.MandateTransactionsData;
@@ -97,8 +99,7 @@ public class DefaultExcelBasedTransactionsFileFormatHelper implements Transactio
                                 if(cell == null) {
                                         continue;
                                 }
-                                String cellValue = getCellValueAsString(cell);
-                                extractSpecialValues(colIx, cellValue, data);
+                                extractSpecialValues(colIx, cell, data);
                         }
                         data.setRowId(rowIx);
                         if(!StringUtils.isEmpty(data.getReference()) && data.getTransactionDate() != null) {
@@ -133,8 +134,9 @@ public class DefaultExcelBasedTransactionsFileFormatHelper implements Transactio
                         fileData.name(), fileData.contentType());
         }
 
-        private void extractSpecialValues(short colIx, String cellValue, ProcessResponseData data) throws ParseException {
+        private void extractSpecialValues(short colIx,  Cell cell, ProcessResponseData data) throws ParseException {
                 int[] specialValueColumnNumbers = getSpecialValueColumnNumbers();
+                String cellValue =  getCellValueAsString(cell);
                 if(specialValueColumnNumbers[0] != -1 && specialValueColumnNumbers[0] == colIx){
                         data.setReference(cellValue);
                 }
@@ -151,6 +153,10 @@ public class DefaultExcelBasedTransactionsFileFormatHelper implements Transactio
                 }
                 if(specialValueColumnNumbers[4] != -1 && specialValueColumnNumbers[4] == colIx){
                     if(!StringUtils.isEmpty(cellValue)) {
+                        if(cell.getCellType() != Cell.CELL_TYPE_STRING && DateUtil.isCellDateFormatted(cell)){
+                            LocalDate tempDate = new LocalDate(cell.getDateCellValue());
+                            cellValue =  new LocalDate(tempDate.getYear(), tempDate.getMonthOfYear(), tempDate.getDayOfMonth()).toString(getDateFormatForTransactionUpload());
+                        }
                         data.setTransactionDate(new SimpleDateFormat(getDateFormatForTransactionUpload()).parse(cellValue));
                     }
                         

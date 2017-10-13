@@ -10,12 +10,10 @@ import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.organisation.staff.domain.Staff;
-import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.apache.fineract.useradministration.domain.AppUserRepositoryWrapper;
 import org.apache.fineract.useradministration.exception.UserNotFoundException;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,16 +32,14 @@ import com.google.gson.JsonObject;
 public class LoanUtilizationCheckDataAssembler {
 
     private final FromJsonHelper fromApiJsonHelper;
-    private final StaffRepositoryWrapper staffRepository;
-    private final AppUserRepository appUserRepository;
+    private final AppUserRepositoryWrapper appUserRepository;
     private final LoanRepositoryWrapper loanRepository;
     private final LoanUtilizationCheckReadPlatformService readPlatformService;
 
     @Autowired
-    public LoanUtilizationCheckDataAssembler(final FromJsonHelper fromApiJsonHelper, final StaffRepositoryWrapper staffRepository,
-            final AppUserRepository appUserRepository, final LoanRepositoryWrapper loanRepository,final LoanUtilizationCheckReadPlatformService readPlatformService) {
+    public LoanUtilizationCheckDataAssembler(final FromJsonHelper fromApiJsonHelper, final AppUserRepositoryWrapper appUserRepository,
+            final LoanRepositoryWrapper loanRepository, final LoanUtilizationCheckReadPlatformService readPlatformService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
-        this.staffRepository = staffRepository;
         this.appUserRepository = appUserRepository;
         this.loanRepository = loanRepository;
         this.readPlatformService = readPlatformService;
@@ -79,7 +75,7 @@ public class LoanUtilizationCheckDataAssembler {
         final Long toBeAuditedById = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName,
                 element);
         if (toBeAuditedById != null) {
-            toBeAuditedBy = this.appUserRepository.findOne(toBeAuditedById);
+            toBeAuditedBy = this.appUserRepository.findOneWithNotFoundDetection(toBeAuditedById);
             if (toBeAuditedBy == null) { throw new UserNotFoundException(toBeAuditedById); }
         }
 
@@ -90,11 +86,11 @@ public class LoanUtilizationCheckDataAssembler {
             auditeScheduledOn = localDateAuditeScheduledOn.toDate();
         }
 
-        Staff auditDoneBy = null;
+        AppUser auditDoneBy = null;
         final Long auditDoneById = this.fromApiJsonHelper
                 .extractLongNamed(LoanUtilizationCheckApiConstants.auditDoneByIdParamName, element);
         if (auditDoneById != null) {
-            auditDoneBy = this.staffRepository.findOneWithNotFoundDetection(auditDoneById);
+            auditDoneBy = this.appUserRepository.findOneWithNotFoundDetection(auditDoneById);
         }
 
         Date auditDoneOn = null;
@@ -181,19 +177,13 @@ public class LoanUtilizationCheckDataAssembler {
         }
         if (changes.containsKey(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName)) {
             final Long toBeAuditedById = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName);
-            final AppUser toBeAuditedBy = this.appUserRepository.findOne(toBeAuditedById);
-            if (toBeAuditedBy == null) { throw new UserNotFoundException(toBeAuditedById); }
-            loanUtilizationCheck.updateToBeAuditedBy(toBeAuditedBy);
-        }
-        if (changes.containsKey(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName)) {
-            final Long toBeAuditedById = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName);
-            final AppUser toBeAuditedBy = this.appUserRepository.findOne(toBeAuditedById);
+            final AppUser toBeAuditedBy = this.appUserRepository.findOneWithNotFoundDetection(toBeAuditedById);
             if (toBeAuditedBy == null) { throw new UserNotFoundException(toBeAuditedById); }
             loanUtilizationCheck.updateToBeAuditedBy(toBeAuditedBy);
         }
         if (changes.containsKey(LoanUtilizationCheckApiConstants.auditDoneByIdParamName)) {
             final Long auditDoneById = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.auditDoneByIdParamName);
-            final Staff auditDoneBy = this.staffRepository.findOneWithNotFoundDetection(auditDoneById);
+            final AppUser auditDoneBy = this.appUserRepository.findOneWithNotFoundDetection(auditDoneById);
             loanUtilizationCheck.updateAuditDoneBy(auditDoneBy);
         }
         if (changes.containsKey(LoanUtilizationCheckApiConstants.auditDoneOnParamName)) {

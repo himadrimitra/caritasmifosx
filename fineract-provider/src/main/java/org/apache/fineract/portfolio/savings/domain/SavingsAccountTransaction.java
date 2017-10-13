@@ -69,9 +69,8 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     @JoinColumn(name = "savings_account_id", nullable = false)
     private SavingsAccount savingsAccount;
 
-    @ManyToOne
-    @JoinColumn(name = "office_id", nullable = false)
-    private Office office;
+    @Column(name = "office_id", nullable = false)
+    private Long officeId;
 
     @ManyToOne(optional = true)
     @JoinColumn(name = "payment_detail_id", nullable = true)
@@ -114,17 +113,16 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     @Column(name = "created_date", nullable = false)
     private final Date createdDate;
 
-    @ManyToOne
-    @JoinColumn(name = "appuser_id", nullable = true)
-    private AppUser appUser;
-
+    @Column(name = "appuser_id", nullable = true)
+    private Long appUserId;
+    
     @Column(name = "is_manual", length = 1, nullable = true)
     private boolean isManualTransaction;
 
     @Column(name = "release_id_of_hold_amount", length = 20)
     private Long releaseIdOfHoldAmountTransaction;
 
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "savings_transaction_id", referencedColumnName = "id", nullable = false)
     private final List<SavingsAccountTransactionTaxDetails> taxDetails = new ArrayList<>();
@@ -276,12 +274,12 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
         }
     }
 
-    public static SavingsAccountTransaction copyTransaction(final SavingsAccountTransaction accountTransaction) {
-        final SavingsAccountTransaction savingsAccountTransaction = new SavingsAccountTransaction(accountTransaction.savingsAccount,
-                accountTransaction.office, accountTransaction.paymentDetail, accountTransaction.typeOf,
+    public static SavingsAccountTransaction copyTransaction(SavingsAccountTransaction accountTransaction) {
+        SavingsAccountTransaction savingsAccountTransaction = new SavingsAccountTransaction(accountTransaction.savingsAccount,
+                accountTransaction.officeId, accountTransaction.paymentDetail, accountTransaction.typeOf,
                 accountTransaction.transactionLocalDate(), accountTransaction.createdDate, accountTransaction.amount,
-                accountTransaction.reversed, accountTransaction.appUser, accountTransaction.isManualTransaction);
-        for (final SavingsAccountChargePaidBy chargesPaidBy : accountTransaction.getSavingsAccountChargesPaid()) {
+                accountTransaction.reversed, accountTransaction.appUserId, accountTransaction.isManualTransaction);
+        for (SavingsAccountChargePaidBy chargesPaidBy : accountTransaction.getSavingsAccountChargesPaid()) {
             savingsAccountTransaction.getSavingsAccountChargesPaid().add(SavingsAccountChargePaidBy.instance(savingsAccountTransaction,
                     chargesPaidBy.getSavingsAccountCharge(), chargesPaidBy.getAmount()));
         }
@@ -296,11 +294,12 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
                 date, createdDate, amount, isReversed, appUser, isManualTransaction);
     }
 
-    public static SavingsAccountTransaction releaseAmount(final SavingsAccountTransaction accountTransaction,
-            final LocalDate transactionDate, final Date createdDate, final AppUser appUser) {
-        return new SavingsAccountTransaction(accountTransaction.savingsAccount, accountTransaction.office, accountTransaction.paymentDetail,
-                SavingsAccountTransactionType.AMOUNT_RELEASE.getValue(), transactionDate, createdDate, accountTransaction.amount,
-                accountTransaction.reversed, appUser, accountTransaction.isManualTransaction);
+    public static SavingsAccountTransaction releaseAmount(SavingsAccountTransaction accountTransaction,LocalDate transactionDate, Date createdDate,
+            final AppUser appUser) {
+        final Long appUserId = appUser == null ? null : appUser.getId();
+        return new SavingsAccountTransaction(accountTransaction.savingsAccount, accountTransaction.officeId, accountTransaction.paymentDetail,
+                SavingsAccountTransactionType.AMOUNT_RELEASE.getValue(),transactionDate , createdDate,
+                accountTransaction.amount, accountTransaction.reversed, appUserId, accountTransaction.isManualTransaction);
     }
 
     private SavingsAccountTransaction(final SavingsAccount savingsAccount, final Office office, final Integer typeOf,
@@ -320,14 +319,29 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
             final Integer typeOf, final LocalDate transactionLocalDate, final Date createdDate, final BigDecimal amount,
             final boolean isReversed, final AppUser appUser, final boolean isManualTransaction) {
         this.savingsAccount = savingsAccount;
-        this.office = office;
+        this.officeId = office == null ? null : office.getId();
         this.typeOf = typeOf;
         this.dateOf = transactionLocalDate.toDate();
         this.amount = amount;
         this.reversed = isReversed;
         this.paymentDetail = paymentDetail;
         this.createdDate = createdDate;
-        this.appUser = appUser;
+        this.appUserId = appUser == null ? null : appUser.getId();
+        this.isManualTransaction = isManualTransaction;
+    }
+    
+    private SavingsAccountTransaction(final SavingsAccount savingsAccount, final Long officeId, final PaymentDetail paymentDetail,
+            final Integer typeOf, final LocalDate transactionLocalDate, final Date createdDate, final BigDecimal amount,
+            final boolean isReversed, final Long appUserId, final boolean isManualTransaction) {
+        this.savingsAccount = savingsAccount;
+        this.officeId = officeId;
+        this.typeOf = typeOf;
+        this.dateOf = transactionLocalDate.toDate();
+        this.amount = amount;
+        this.reversed = isReversed;
+        this.paymentDetail = paymentDetail;
+        this.createdDate = createdDate;
+        this.appUserId = appUserId;
         this.isManualTransaction = isManualTransaction;
     }
 
@@ -487,7 +501,7 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
         final SavingsAccountTransactionEnumData transactionType = SavingsEnumerations.transactionType(this.typeOf);
 
         thisTransactionData.put("id", getId());
-        thisTransactionData.put("officeId", this.office.getId());
+        thisTransactionData.put("officeId", this.officeId);
         thisTransactionData.put("type", transactionType);
         thisTransactionData.put("reversed", Boolean.valueOf(isReversed()));
         thisTransactionData.put("date", getTransactionLocalDate());

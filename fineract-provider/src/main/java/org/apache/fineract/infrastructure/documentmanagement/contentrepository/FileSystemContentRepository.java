@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
@@ -44,6 +45,12 @@ public class FileSystemContentRepository implements ContentRepository {
 
     public static final String FINERACT_BASE_DIR = System.getProperty("user.home") + File.separator + ".fineract";
 
+    public ConfigurationDomainService configurationDomainService;
+
+    public FileSystemContentRepository(final ConfigurationDomainService configurationDomainService) {
+        this.configurationDomainService = configurationDomainService;
+    }
+
     @Override
     public String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand) {
         return saveFile(uploadedInputStream, documentCommand, true);
@@ -56,7 +63,8 @@ public class FileSystemContentRepository implements ContentRepository {
                 documentCommand.getParentEntityId());
 
         if(checkUploadSize){
-            ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+            final int maxAllowedFileSize = this.configurationDomainService.getMaxAllowedFileSizeToUpload();
+            ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName,maxAllowedFileSize);
         }
         return saveFile(fileName, uploadDocumentLocation, uploadedInputStream);
     }
@@ -74,8 +82,8 @@ public class FileSystemContentRepository implements ContentRepository {
     @Override
     public String saveImage(final InputStream uploadedInputStream, final Long resourceId, final String imageName, final Long fileSize,String entityName) {
         final String uploadImageLocation = generateClientImageParentDirectory(resourceId,entityName);
-
-        ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(fileSize, imageName);
+        final int maxAllowedFileSize = this.configurationDomainService.getMaxAllowedFileSizeToUpload();
+        ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(fileSize, imageName, maxAllowedFileSize);
         makeDirectories(uploadImageLocation);
 
         final String fileLocation = uploadImageLocation + File.separator + imageName;

@@ -15,6 +15,7 @@ public class PenaltyPeriod {
     private LocalDate startDate;
     private LocalDate postingDate;
     private LoanPeriodFrequencyType frequencyType;
+    private int numberofTimes;
 
     public PenaltyPeriod(double percentage, LocalDate actualStartDate, LocalDate actualEndDate, Money outstanding, LocalDate startDate,
             LocalDate postingDate, LoanPeriodFrequencyType frequencyType) {
@@ -25,6 +26,7 @@ public class PenaltyPeriod {
         this.startDate = startDate;
         this.postingDate = postingDate;
         this.frequencyType = frequencyType;
+        this.numberofTimes = 1;
     }
 
     public BigDecimal calcualteCharge() {
@@ -58,6 +60,16 @@ public class PenaltyPeriod {
 
     public LocalDate getActualEndDate() {
         return this.actualEndDate;
+    }
+
+    
+    public int getNumberofTimes() {
+        return this.numberofTimes;
+    }
+
+    
+    public void setNumberofTimes(int numberofTimes) {
+        this.numberofTimes = numberofTimes;
     }
 
 }

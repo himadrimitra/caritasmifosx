@@ -28,6 +28,9 @@ public class ChargeUtils {
         switch (feeFrequency) {
             case DAYS:
                 LocalDate date = fromDate;
+                if(isFlat){
+                    date = date.plusDays(1);
+                }
 
                 while (date.isBefore(toDate)) {
                     if (isFlat) {
@@ -44,15 +47,15 @@ public class ChargeUtils {
             break;
             case WEEKS:
                 String recurringRule = "FREQ=WEEKLY;INTERVAL=" + feeInterval;
-                recurrerDates.addAll(CalendarUtils.getRecurringDates(recurringRule, seedDate, seedDate, toDate));
+                recurrerDates.addAll(CalendarUtils.getRecurringDatesWithNoLimit(recurringRule, seedDate, seedDate, toDate.plusDays(1)));
             break;
             case MONTHS:
                 String recurringRuleMonthly = "FREQ=MONTHLY;INTERVAL=" + feeInterval;
-                recurrerDates.addAll(CalendarUtils.getRecurringDates(recurringRuleMonthly, seedDate, seedDate, toDate));
+                recurrerDates.addAll(CalendarUtils.getRecurringDatesWithNoLimit(recurringRuleMonthly, seedDate, seedDate, toDate.plusDays(1)));
             break;
             case YEARS:
                 String recurringRuleYearly = "FREQ=YEARLY;INTERVAL=" + feeInterval;
-                recurrerDates.addAll(CalendarUtils.getRecurringDates(recurringRuleYearly, seedDate, seedDate, toDate));
+                recurrerDates.addAll(CalendarUtils.getRecurringDatesWithNoLimit(recurringRuleYearly, seedDate, seedDate, toDate.plusDays(1)));
             break;
             case SAME_AS_REPAYMENT_PERIOD:
                 for (LocalDate scheduleDate : repaymentScheduledates) {

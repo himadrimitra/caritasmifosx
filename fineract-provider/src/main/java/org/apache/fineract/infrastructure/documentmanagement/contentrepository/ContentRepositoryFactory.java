@@ -31,29 +31,32 @@ public class ContentRepositoryFactory {
 
     private final ApplicationContext applicationContext;
     private final ExternalServicesPropertiesReadPlatformService externalServicesReadPlatformService;
+    public final ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public ContentRepositoryFactory(final ApplicationContext applicationContext,
-            final ExternalServicesPropertiesReadPlatformService externalServicesReadPlatformService) {
+            final ExternalServicesPropertiesReadPlatformService externalServicesReadPlatformService,
+            final ConfigurationDomainService configurationDomainService) {
         this.applicationContext = applicationContext;
         this.externalServicesReadPlatformService = externalServicesReadPlatformService;
+        this.configurationDomainService = configurationDomainService;
     }
 
     public ContentRepository getRepository() {
         final ConfigurationDomainService configurationDomainServiceJpa = this.applicationContext.getBean("configurationDomainServiceJpa",
                 ConfigurationDomainService.class);
         if (configurationDomainServiceJpa.isAmazonS3Enabled()) { return createS3DocumentStore(); }
-        return new FileSystemContentRepository();
+        return new FileSystemContentRepository(this.configurationDomainService);
     }
 
     public ContentRepository getRepository(final StorageType documentStoreType) {
-        if (documentStoreType == StorageType.FILE_SYSTEM) { return new FileSystemContentRepository(); }
+        if (documentStoreType == StorageType.FILE_SYSTEM) { return new FileSystemContentRepository(this.configurationDomainService); }
         return createS3DocumentStore();
     }
 
     private ContentRepository createS3DocumentStore() {
         final S3CredentialsData s3CredentialsData = this.externalServicesReadPlatformService.getS3Credentials();
         return new S3ContentRepository(s3CredentialsData.getBucketName(), s3CredentialsData.getSecretKey(),
-                s3CredentialsData.getAccessKey());
+                s3CredentialsData.getAccessKey(), this.configurationDomainService);
     }
 }

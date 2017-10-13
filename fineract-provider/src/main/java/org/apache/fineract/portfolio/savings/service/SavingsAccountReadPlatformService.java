@@ -82,4 +82,6 @@ public interface SavingsAccountReadPlatformService {
             final Collection<Integer> status, final LocalDate recalculateFrom);
 
     Long retrivePaymentDetailsIdWithSavingsAccountNumberAndTransactioId(final long transactionId, final String savingsAccountNumber);
+    
+    List<Long> retrieveAllActiveSavingsIdsForActiveClients();
 }

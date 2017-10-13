@@ -133,7 +133,7 @@ public final class LoanProductDataValidator {
             LoanProductConstants.percentageOfDisbursementToBeTransferred, LoanProductConstants.interestRatesListPerPeriod,
             LoanProductConstants.interestRatesListPerCycleParameterName, LoanProductConstants.applicableForLoanTypeParamName,
             LoanProductConstants.isEnableRestrictionForClientProfileParamName, LoanProductConstants.profileTypeParamName,
-            LoanProductConstants.selectedProfileTypeValuesParamName));
+            LoanProductConstants.selectedProfileTypeValuesParamName, LoanProductConstants.stopLoanProcessingOnNpa));
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
@@ -377,6 +377,12 @@ public final class LoanProductDataValidator {
                     .value(npaChangeConfig).notNull().isOneOfTheseValues(true, false);
         }
 
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.stopLoanProcessingOnNpa, element)) {
+            Boolean stopLoanProcessingOnNpa = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.stopLoanProcessingOnNpa, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.stopLoanProcessingOnNpa)
+                    .value(stopLoanProcessingOnNpa).notNull().isOneOfTheseValues(true, false);
+        }
         // Interest recalculation settings
         final Boolean isInterestRecalculationEnabled = this.fromApiJsonHelper
                 .extractBooleanNamed(LoanProductConstants.isInterestRecalculationEnabledParameterName, element);
@@ -1484,6 +1490,13 @@ public final class LoanProductDataValidator {
                     .extractBooleanNamed(LoanProductConstants.accountMovesOutOfNPAOnlyOnArrearsCompletionParamName, element);
             baseDataValidator.reset().parameter(LoanProductConstants.accountMovesOutOfNPAOnlyOnArrearsCompletionParamName)
                     .value(npaChangeConfig).notNull().isOneOfTheseValues(true, false);
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.stopLoanProcessingOnNpa, element)) {
+            Boolean stopLoanProcessingOnNpa = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.stopLoanProcessingOnNpa, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.stopLoanProcessingOnNpa)
+                    .value(stopLoanProcessingOnNpa).notNull().isOneOfTheseValues(true, false);
         }
 
         // Interest recalculation settings

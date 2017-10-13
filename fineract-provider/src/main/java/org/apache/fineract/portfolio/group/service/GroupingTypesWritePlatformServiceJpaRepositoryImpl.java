@@ -86,7 +86,7 @@ import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.portfolio.village.domain.Village;
 import org.apache.fineract.portfolio.village.domain.VillageRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -129,11 +129,10 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     private final GroupingTypesDataValidator fromApiJsonDeserializer;
     private final LoanRepository loanRepository;
     private final CodeValueRepositoryWrapper codeValueRepository;
-    private final SavingsAccountRepository savingsRepository;
     private final CommandProcessingService commandProcessingService;
     private final CalendarInstanceRepository calendarInstanceRepository;
     private final ConfigurationDomainService configurationDomainService;
-    private final SavingsAccountRepository savingsAccountRepository;
+    private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
     private final AccountNumberGenerator accountNumberGenerator;
@@ -150,10 +149,10 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final GroupRepositoryWrapper groupRepository, final ClientRepositoryWrapper clientRepositoryWrapper,
             final OfficeRepository officeRepository, final StaffRepositoryWrapper staffRepository, final NoteRepository noteRepository,
             final GroupLevelRepository groupLevelRepository, final GroupingTypesDataValidator fromApiJsonDeserializer,
-            final LoanRepository loanRepository, final SavingsAccountRepository savingsRepository,
+            final LoanRepository loanRepository, final SavingsAccountRepositoryWrapper savingsAccountRepository,
             final CodeValueRepositoryWrapper codeValueRepository, final CommandProcessingService commandProcessingService,
             final CalendarInstanceRepository calendarInstanceRepository, final ConfigurationDomainService configurationDomainService,
-            final SavingsAccountRepository savingsAccountRepository, final LoanRepositoryWrapper loanRepositoryWrapper,
+            final LoanRepositoryWrapper loanRepositoryWrapper, 
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final AccountNumberGenerator accountNumberGenerator,
             final VillageRepositoryWrapper villageRepository, final LoanReadPlatformService loanReadPlatformService,
             final BusinessEventNotifierService businessEventNotifierService,
@@ -171,7 +170,6 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         this.groupLevelRepository = groupLevelRepository;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.loanRepository = loanRepository;
-        this.savingsRepository = savingsRepository;
         this.codeValueRepository = codeValueRepository;
         this.commandProcessingService = commandProcessingService;
         this.calendarInstanceRepository = calendarInstanceRepository;
@@ -273,8 +271,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
             this.groupRepository.saveAndFlush(newGroup);
 
-            // Create Workflow
-            final boolean isWorkflowCreated = createGroupWorkflow(newGroup);
+            //Create Workflow
+            final boolean isWorkflowCreated = createWorkflow(newGroup);
             final Map<String, Object> changes = new LinkedHashMap<>(5);
 
             if (isWorkflowCreated) {
@@ -299,28 +297,34 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         }
     }
 
-    private boolean createGroupWorkflow(final Group group) {
+    private boolean createWorkflow(final Group group) {
 
         if (this.configurationDomainService.isWorkFlowEnabled()) {
-            /**
-             * Checking is loan product mapped with task configuration entity
-             * type LOAN_PRODUCT
-             */
-            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                    .findOneByEntityTypeAndEntityId(TaskConfigEntityType.GROUPONBARDING.getValue(), -1L);
-            if (taskConfigEntityTypeMapping != null) {
-                final Long groupId = group.getId();
-                final Map<TaskConfigKey, String> map = new HashMap<>();
+            final TaskConfigEntityType taskConfigEntityType;
+            final TaskEntityType taskEntityType;
+            final Map<TaskConfigKey, String> map = new HashMap<>();
+            final Long groupId = group.getId();
+            final String description, shortDescription;
+            if (group.isCenter()) {
+                taskConfigEntityType = TaskConfigEntityType.CENTERONBOARDING;
+                taskEntityType = TaskEntityType.CENTER;
+                map.put(TaskConfigKey.CENTER_ID, String.valueOf(groupId));
+                description = shortDescription = "On-boarding for center" + group.getName() + " (#" + groupId + ") ";
+            } else {
+                taskConfigEntityType = TaskConfigEntityType.GROUPONBARDING;
+                taskEntityType = TaskEntityType.GROUP_ONBOARDING;
                 map.put(TaskConfigKey.GROUP_ID, String.valueOf(groupId));
-                final Client client = null;
-                final AppUser assignedTo = null;
-                final Date dueDate = null;
-                final Date dueTime = null;
-                final String description, shortDescription;
-                description = shortDescription = "On-boarding for group" + group.getName() + " (#" + group.getId() + ") ";
-                this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-                        TaskEntityType.GROUP_ONBOARDING, group.getId(), client, assignedTo, dueDate, group.getOffice(), map, description,
-                        shortDescription, dueTime);
+                description = shortDescription = "On-boarding for group" + group.getName() + " (#" + groupId + ") ";
+            }
+            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                    .findOneByEntityTypeAndEntityId(taskConfigEntityType.getValue(), -1L);
+            if (taskConfigEntityTypeMapping != null) {
+                Client client = null;
+                AppUser assignedTo = null;
+                Date dueDate = null;
+                Date dueTime = null;
+                this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(), taskEntityType, groupId,
+                        client, assignedTo, dueDate, group.getOffice(), map, description, shortDescription, dueTime);
                 return true;
             }
         }
@@ -811,7 +815,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             }
         }
 
-        final List<SavingsAccount> groupSavingAccounts = this.savingsRepository.findByGroupId(groupOrCenter.getId());
+        final List<SavingsAccount> groupSavingAccounts = this.savingsAccountRepository.findByGroupId(groupOrCenter.getId());
 
         for (final SavingsAccount saving : groupSavingAccounts) {
             if (saving.isActive() || saving.isSubmittedAndPendingApproval() || saving.isApproved()) {
@@ -1095,7 +1099,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     @Transactional
     private void validateForJLGSavings(final Long groupId, final Set<Client> clientMembers) {
         for (final Client client : clientMembers) {
-            final Collection<SavingsAccount> savings = this.savingsRepository.findByClientIdAndGroupId(client.getId(), groupId);
+            final Collection<SavingsAccount> savings = this.savingsAccountRepository.findByClientIdAndGroupId(client.getId(), groupId);
             if (!CollectionUtils.isEmpty(savings)) {
                 final String defaultUserMessage = "Client with identifier " + client.getId()
                         + " cannot be disassociated it has group savings.";

@@ -109,6 +109,9 @@ public class ChargeEnumerations {
                 optionData = new EnumOptionData(ChargeTimeType.UPFRONT_FEE.getValue().longValue(), ChargeTimeType.UPFRONT_FEE.getCode(),
                         "Upfront Fee");
             break;
+            case DAILY_FEE:
+                optionData = new EnumOptionData(ChargeTimeType.DAILY_FEE.getValue().longValue(), ChargeTimeType.DAILY_FEE.getCode(), "Daily Fee");
+                break;
             default:
                 optionData = new EnumOptionData(ChargeTimeType.INVALID.getValue().longValue(), ChargeTimeType.INVALID.getCode(), "Invalid");
             break;

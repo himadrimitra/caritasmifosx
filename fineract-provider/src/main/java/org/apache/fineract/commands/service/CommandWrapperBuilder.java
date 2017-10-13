@@ -4349,4 +4349,21 @@ public class CommandWrapperBuilder {
         this.href = "/runoverduecharges";
         return this;
     }
+    
+    public CommandWrapperBuilder createTaskEntityMapping(final Long taskConfigId) {
+        this.actionName = "CREATE";
+        this.entityName = "TASK_CONFIG_ENTITYMAPPING";
+        this.entityId = taskConfigId;
+        this.href = "/taskconfigs/" + taskConfigId + "/mapping";
+        return this;
+    }
+
+    public CommandWrapperBuilder inActivateTaskConfigEntityMapping(final Long taskConfigId, final Integer taskConfigEntityTypeValue) {
+        this.actionName = "INACTIVATE";
+        this.entityName = "TASK_CONFIG_ENTITYMAPPING";
+        this.entityId = taskConfigId;
+        this.entityTypeId = taskConfigEntityTypeValue;
+        this.href = "/taskconfigs/mappings/" + taskConfigId + "/" + taskConfigEntityTypeValue;
+        return this;
+    }
 }
