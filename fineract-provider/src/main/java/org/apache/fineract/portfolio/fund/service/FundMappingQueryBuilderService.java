@@ -77,6 +77,7 @@ public class FundMappingQueryBuilderService {
         int groupCount = 0;
         joinSql.append(FundApiConstants.joinClauseMap.get(FundApiConstants.fundsParamName));
         joinSql.append(FundApiConstants.joinClauseMap.get(FundApiConstants.client));
+        joinSql.append(FundApiConstants.joinClauseMap.get(FundApiConstants.officesParamName));
         boolean isAddressJoinColumns = !Collections.disjoint(selectedCriteriaList, FundApiConstants.addressJoinColumns);
         if (isAddressJoinColumns) {
             joinSql.append(FundApiConstants.joinClauseMap.get(FundApiConstants.address));
@@ -109,7 +110,7 @@ public class FundMappingQueryBuilderService {
                     whereSql.append(" and " + FundApiConstants.whereClauseMap.get(param) + idsAsString);
                 }
                 
-                if(isFundsNotSelected){
+                if(isFundsNotSelected && !param.equals(FundApiConstants.officesParamName)){
                     joinSql.append(FundApiConstants.joinClauseMap.get(param));
                 }                
 

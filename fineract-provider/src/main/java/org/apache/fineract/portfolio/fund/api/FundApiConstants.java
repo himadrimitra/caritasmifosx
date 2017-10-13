@@ -57,6 +57,7 @@ public class FundApiConstants {
     public static final String activateOrDeactivateParamName = "activateOrDeactivate";
     public static final String externalIdParamName = "externalId";
     public static final String fundsParamName = "funds";
+    public static final String officesParamName = "offices";
     private final static DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     // code values name
