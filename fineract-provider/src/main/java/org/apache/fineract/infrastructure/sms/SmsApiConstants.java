@@ -33,20 +33,24 @@ public class SmsApiConstants {
     // request parameters
     public static final String idParamName = "id";
     public static final String groupIdParamName = "groupId";
+    public static final String externalIdParamName = "externalId";
     public static final String clientIdParamName = "clientId";
     public static final String staffIdParamName = "staffId";
     public static final String messageParamName = "message";
+    public static final String campaignIdParamName = "campaignId";
+
+    // response parameters
+    public static final String statusParamName = "status";
     
     //recurrence pattern for time
     public static final String secondly = "SECONDLY";
     public static final String minutely = "MINUTELY";
     public static final String hourly = "HOURLY";
-    // response parameters
-    public static final String statusParamName = "status";
 
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, groupIdParamName, clientIdParamName, staffIdParamName, messageParamName));
 
     public static final Set<String> UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(messageParamName));
+
 
 }

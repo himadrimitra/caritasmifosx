@@ -195,4 +195,8 @@ public final class PaymentDetail extends AbstractPersistable<Long> {
         this.receiptNumber = receiptNumber;
         this.bankNumber = paymentDetailBankNumber;
     }
+
+    public String getReceiptNumber() {
+        return this.receiptNumber;
+    }
 }

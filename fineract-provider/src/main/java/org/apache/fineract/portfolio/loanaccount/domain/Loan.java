@@ -8823,4 +8823,12 @@ public class Loan extends AbstractPersistable<Long> {
             transactions.add(accrualSuspenseReverseTransaction);
         }
     }
+
+    public boolean hasInvalidLoanType() {
+        return AccountType.fromInt(this.loanType).isInvalid();
+    }
+
+    public boolean isIndividualLoan() {
+        return AccountType.fromInt(this.loanType).isIndividualAccount();
+    }
 }

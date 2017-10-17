@@ -20,20 +20,19 @@ package org.apache.fineract.infrastructure.sms.data;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.accounting.journalentry.api.DateParam;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
-import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.sms.SmsApiConstants;
-import org.apache.fineract.infrastructure.sms.domain.SmsMessageStatusType;
-import org.apache.fineract.infrastructure.sms.exception.InvalidSmsStatusException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +43,13 @@ import com.google.gson.reflect.TypeToken;
 public final class SmsDataValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
+	private static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(
+			SmsApiConstants.localeParamName, SmsApiConstants.dateFormatParamName, SmsApiConstants.groupIdParamName,
+			SmsApiConstants.clientIdParamName, SmsApiConstants.staffIdParamName, SmsApiConstants.messageParamName,
+			SmsApiConstants.campaignIdParamName));
+
+	public static final Set<String> UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
+			Arrays.asList(SmsApiConstants.messageParamName, SmsApiConstants.campaignIdParamName));
 
     @Autowired
     public SmsDataValidator(final FromJsonHelper fromApiJsonHelper) {
@@ -55,7 +61,7 @@ public final class SmsDataValidator {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, SmsApiConstants.CREATE_REQUEST_DATA_PARAMETERS);
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, CREATE_REQUEST_DATA_PARAMETERS);
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -119,7 +125,7 @@ public final class SmsDataValidator {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, SmsApiConstants.UPDATE_REQUEST_DATA_PARAMETERS);
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, UPDATE_REQUEST_DATA_PARAMETERS);
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -133,18 +139,6 @@ public final class SmsDataValidator {
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
-    }
-
-    public void validateQueryParams(final Integer status, final DateParam dateFrom, final DateParam dateTo, final String dateFormat) {
-        if (status != null) {
-            if (SmsMessageStatusType
-                    .fromInt(status) == SmsMessageStatusType.INVALID) { throw new InvalidSmsStatusException(status.toString()); }
-        }
-
-        if (dateFrom != null || dateTo != null) {
-            if (dateFormat == null) { throw new GeneralPlatformDomainRuleException("error.msg.sms.dateformat.cannot.be.empty",
-                    "date format is not passed in query parameter.", "dateFormat"); }
-        }
     }
 
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {

@@ -829,4 +829,8 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     public void setPaymentDetail(final PaymentDetail paymentDetail) {
         this.paymentDetail = paymentDetail;
     }
+
+    public PaymentDetail getPaymentDetail() {
+        return this.paymentDetail ;
+    }
 }

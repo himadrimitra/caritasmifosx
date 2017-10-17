@@ -86,6 +86,7 @@
 	<jpa:repositories base-package="org.apache.fineract.mix.domain" />
 	<jpa:repositories base-package="org.apache.fineract.scheduledjobs.domain" />
 	<jpa:repositories base-package="org.apache.fineract.template.domain" />
+	<jpa:repositories base-package="org.apache.fineract.infrastructure.campaigns.sms.domain" />
 	<jpa:repositories base-package="com.finflux.*.domain" />
 	<jpa:repositories base-package="com.finflux.*.*.domain" />
 	<jpa:repositories base-package="com.finflux.*.*.*.domain" />

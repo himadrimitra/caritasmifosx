@@ -1211,6 +1211,10 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return MathUtility.zeroIfNull(this.penaltyChargesPortion);
     }
 
+    public BigDecimal getOutstandingLoanBalance() {
+        return this.outstandingLoanBalance;
+    }
+
     public boolean isPaidFromAndUpToAndIncluding(final LocalDate fromNotInclusive, final LocalDate upToAndInclusive) {
         final LocalDate dueDate = getTransactionDate();
         return occursOnDayFromAndUpToAndIncluding(fromNotInclusive, upToAndInclusive, dueDate);

@@ -23,7 +23,7 @@ package org.apache.fineract.infrastructure.sms.data;
  **/
 public class SmsMessageDeliveryReportData {
 	private Long id;
-	private Long externalId;
+	private String externalId;
 	private String addedOnDate;
 	private String deliveredOnDate;
 	private Integer deliveryStatus;
@@ -33,9 +33,9 @@ public class SmsMessageDeliveryReportData {
 	/** 
 	 * SmsMessageDeliveryReportData constructor
 	 * 
-	 * @return void 
+	 *  
 	 **/
-	private SmsMessageDeliveryReportData(Long id, Long externalId, String addedOnDate, String deliveredOnDate, 
+	private SmsMessageDeliveryReportData(Long id, String externalId, String addedOnDate, String deliveredOnDate, 
 			Integer deliveryStatus, Boolean hasError, String errorMessage) {
 		this.id = id;
 		this.externalId = externalId;
@@ -49,14 +49,14 @@ public class SmsMessageDeliveryReportData {
 	/** 
 	 * Default SmsMessageDeliveryReportData constructor 
 	 * 
-	 * @return void
+	 * 
 	 **/
 	protected SmsMessageDeliveryReportData() {}
 	
 	/** 
 	 * @return an instance of the SmsMessageDeliveryReportData class
 	 **/
-	public static SmsMessageDeliveryReportData getInstance(Long id, Long externalId, String addedOnDate, String deliveredOnDate, 
+	public static SmsMessageDeliveryReportData getInstance(Long id, String externalId, String addedOnDate, String deliveredOnDate, 
 			Integer deliveryStatus, Boolean hasError, String errorMessage) {
 		
 		return new SmsMessageDeliveryReportData(id, externalId, addedOnDate, deliveredOnDate, deliveryStatus, hasError, errorMessage);
@@ -72,7 +72,7 @@ public class SmsMessageDeliveryReportData {
 	/**
 	 * @return the externalId
 	 */
-	public Long getExternalId() {
+	public String getExternalId() {
 		return externalId;
 	}
 

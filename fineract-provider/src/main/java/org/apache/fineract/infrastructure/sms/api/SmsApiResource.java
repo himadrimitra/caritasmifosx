@@ -18,9 +18,8 @@
  */
 package org.apache.fineract.infrastructure.sms.api;
 
+import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -46,10 +45,7 @@ import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSer
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.infrastructure.sms.data.SmsConfigurationData;
 import org.apache.fineract.infrastructure.sms.data.SmsData;
-import org.apache.fineract.infrastructure.sms.data.SmsDataValidator;
-import org.apache.fineract.infrastructure.sms.service.SmsConfigurationReadPlatformService;
 import org.apache.fineract.infrastructure.sms.service.SmsReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -69,57 +65,27 @@ public class SmsApiResource {
     private final DefaultToApiJsonSerializer<SmsData> toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
-    private final SmsConfigurationReadPlatformService smsConfigurationReadPlatformService;
-    private final SmsDataValidator smsDataValidator;
 
     @Autowired
     public SmsApiResource(final PlatformSecurityContext context, final SmsReadPlatformService readPlatformService,
             final DefaultToApiJsonSerializer<SmsData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
-            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-            final SmsConfigurationReadPlatformService smsConfigurationReadPlatformService, final SmsDataValidator smsDataValidator) {
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
-        this.smsConfigurationReadPlatformService = smsConfigurationReadPlatformService;
-        this.smsDataValidator = smsDataValidator;
     }
 
     @GET
-    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("offset") final Integer offset,
-            @QueryParam("limit") final Integer limit, @QueryParam("status") final Integer status,
-            @QueryParam("fromDate") final DateParam fromDateParam, @QueryParam("toDate") final DateParam toDateParam,
-            @QueryParam("locale") final String locale, @QueryParam("dateFormat") final String dateFormat) {
+    public String retrieveAll(@Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-        this.smsDataValidator.validateQueryParams(status, fromDateParam, toDateParam, dateFormat);
-        Date fromDate = null;
-        if (fromDateParam != null) {
-            fromDate = fromDateParam.getDate("fromDate", dateFormat, locale);
-        }
-        Date toDate = null;
-        if (toDateParam != null) {
-            toDate = toDateParam.getDate("toDate", dateFormat, locale);
-        }
-        final SearchParameters searchParameters = SearchParameters.forSearch(null, offset, limit, status, fromDate, toDate);
-        final Page<SmsData> smsMessages = this.readPlatformService.retrieveAll(searchParameters);
+
+        final Collection<SmsData> smsMessages = this.readPlatformService.retrieveAll();
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, smsMessages);
-    }
-
-    @GET
-    @Path("smscredits")
-    public String retrieveSmsCredits() {
-        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final SmsConfigurationData smsConfigurationData = this.smsConfigurationReadPlatformService.retrieveOne("SMS_CREDITS");
-
-        final Map<String, String> smsCreditsMap = new HashMap<>();
-        smsCreditsMap.put("smsCredits", smsConfigurationData.getValue());
-
-        return this.toApiJsonSerializer.serialize(smsCreditsMap);
     }
 
     @POST
@@ -142,6 +108,35 @@ public class SmsApiResource {
         return this.toApiJsonSerializer.serialize(settings, smsMessage);
     }
 
+    @GET
+    @Path("{campaignId}/messageByStatus")
+    public String retrieveAllSmsByStatus(@PathParam("campaignId") final Long campaignId, @Context final UriInfo uriInfo,
+            @QueryParam("status") final Long status, @QueryParam("fromDate") final DateParam fromDateParam,
+            @QueryParam("toDate") final DateParam toDateParam, @QueryParam("locale") final String locale,
+            @QueryParam("dateFormat") final String dateFormat,
+            @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+            @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder) {
+
+        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
+
+        final SearchParameters searchParameters = SearchParameters.forSearch(null, offset, limit, orderBy, sortOrder);
+
+        Date fromDate = null;
+        if (fromDateParam != null) {
+            fromDate = fromDateParam.getDate("fromDate", dateFormat, locale);
+        }
+        Date toDate = null;
+        if (toDateParam != null) {
+            toDate = toDateParam.getDate("toDate", dateFormat, locale);
+        }
+
+        final Page<SmsData> smsMessages = this.readPlatformService.retrieveSmsByStatus(campaignId, searchParameters, status.intValue(), fromDate,
+                toDate);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, smsMessages);
+    }
+
     @PUT
     @Path("{resourceId}")
     public String update(@PathParam("resourceId") final Long resourceId, final String apiRequestBodyAsJson) {
@@ -162,6 +157,5 @@ public class SmsApiResource {
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
-
     }
 }

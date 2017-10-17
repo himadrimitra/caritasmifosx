@@ -639,7 +639,7 @@ public final class SearchParameters {
     }
 
     public SearchParameters(Map<String, String> searchConditions, final Date startDate, final Date endDate, final Integer offset,
-            final Integer limit, final Integer status) {
+            final Integer limit, final Integer status, final String orderBy, final String sortOrder) {
         if (searchConditions == null) {
             searchConditions = new LinkedHashMap<>(1);
         }
@@ -650,8 +650,8 @@ public final class SearchParameters {
         this.offset = offset;
         this.limit = limit;
         this.status = status;
-        this.orderBy = null;
-        this.sortOrder = null;
+        this.orderBy = orderBy;
+        this.sortOrder = sortOrder;
         this.officeId = null;
         this.externalId = null;
         this.name = null;
@@ -927,7 +927,18 @@ public final class SearchParameters {
     public static SearchParameters forSearch(final Map<String, String> searchConditions, final Integer offset, final Integer limit,
             final Integer status, final Date startDate, final Date endDate) {
         final Integer maxLimitAllowed = getCheckedLimit(limit);
-        return new SearchParameters(searchConditions, startDate, endDate, offset, maxLimitAllowed, status);
+        final String orderBy = null;
+        final String sortOrder = null;
+        return new SearchParameters(searchConditions, startDate, endDate, offset, maxLimitAllowed, status, orderBy, sortOrder);
+    }
+
+    public static SearchParameters forSearch(final Map<String, String> searchConditions, final Integer offset, final Integer limit
+            , final String orderBy, final String sortOrder) {
+        final Integer maxLimitAllowed = getCheckedLimit(limit);
+        final Date startDate = null;
+        final Date endDate = null;
+        final Integer status = null;
+        return new SearchParameters(searchConditions, startDate, endDate, offset, maxLimitAllowed, status, orderBy, sortOrder);
     }
 
     public Long getPaymentType() {

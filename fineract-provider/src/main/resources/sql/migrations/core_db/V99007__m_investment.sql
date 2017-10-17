@@ -9,10 +9,10 @@ DROP TABLE IF EXISTS m_investment;
 	`close_date` DATE NULL DEFAULT NULL,
 	`invested_amount` DECIMAL(10,0) NULL DEFAULT NULL,
 	PRIMARY KEY (`id`,`saving_id`, `loan_id`),
-	INDEX `FK__m_savings_account` (`saving_id`),
-	INDEX `FK__m_loan` (`loan_id`),
-	CONSTRAINT `FK__m_loan` FOREIGN KEY (`loan_id`) REFERENCES `m_loan` (`id`),
-	CONSTRAINT `FK__m_savings_account` FOREIGN KEY (`saving_id`) REFERENCES `m_savings_account` (`id`)
+	INDEX `FK__m_savings_account_invesment` (`saving_id`),
+	INDEX `FK__m_loan_invesment` (`loan_id`),
+	CONSTRAINT `FK__m_loan_invesment` FOREIGN KEY (`loan_id`) REFERENCES `m_loan` (`id`),
+	CONSTRAINT `FK__m_savings_account_invesment` FOREIGN KEY (`saving_id`) REFERENCES `m_savings_account` (`id`)
 )
 COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB

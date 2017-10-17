@@ -20,6 +20,7 @@ package org.apache.fineract.infrastructure.configuration.service;
 
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.campaigns.sms.data.MessageGatewayConfigurationData;
 import org.apache.fineract.infrastructure.configuration.data.*;
 
 public interface ExternalServicesPropertiesReadPlatformService {
@@ -38,4 +39,5 @@ public interface ExternalServicesPropertiesReadPlatformService {
     
     public CibilCredentialsData getCibilCredentials() ;
     
+    MessageGatewayConfigurationData getSMSGateway();
 }

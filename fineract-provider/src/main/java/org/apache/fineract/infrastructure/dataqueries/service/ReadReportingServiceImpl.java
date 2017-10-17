@@ -682,9 +682,10 @@ public class ReadReportingServiceImpl implements ReadReportingService {
         String sql = getSql(name, type);
 
         final Set<String> keys = queryParams.keySet();
-        for (final String key : keys) {
+        for (String key : keys) {
             final String pValue = queryParams.get(key);
             // logger.info("(" + key + " : " + pValue + ")");
+            key = "${" + key + "}";
             sql = this.genericDataService.replace(sql, key, pValue);
         }
 

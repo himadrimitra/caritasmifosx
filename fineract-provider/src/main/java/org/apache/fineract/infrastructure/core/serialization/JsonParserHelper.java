@@ -712,4 +712,17 @@ public class JsonParserHelper {
         }
         return clientApplicationLocale;
     }
+
+    public JsonObject extractJsonObjectNamed(final String parameterName, final JsonElement element) {
+        JsonObject jsonObject = null;
+
+        if (element.isJsonObject()) {
+            final JsonObject object = element.getAsJsonObject();
+            if (object.has(parameterName)) {
+                jsonObject = object.get(parameterName).getAsJsonObject();
+            }
+        }
+
+        return jsonObject;
+    }
 }

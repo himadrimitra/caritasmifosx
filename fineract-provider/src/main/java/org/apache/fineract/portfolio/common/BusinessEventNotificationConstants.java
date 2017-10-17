@@ -45,7 +45,9 @@ public class BusinessEventNotificationConstants {
                 "client_identifier_add"), CLIENT_IDENTIFIER_UPDATE("client_identifier_update"), CLIENT_IDENTIFIER_DELETE(
                 "client_identifier_delete"), CLIENT_INCOME_EXPENSE_UPDATE("client_income_expense_update"), EXISTING_LOAN_UPDATE(
                 "existing_loan_update"), EXISTING_LOAN_DELETE("existing_loan_delete"), BANK_ACCOUNT_DETAILS_UPDATE(
-                "bank_account_details_update"), BANK_ACCOUNT_DETAILS_DELETE("bank_account_details_delete");
+                "bank_account_details_update"), BANK_ACCOUNT_DETAILS_DELETE("bank_account_details_delete"), LOAN_REJECTED("loan_reject"),
+                CLIENTS_ACTIVATE("clients_activate"), CLIENTS_REJECT("clients_reject"), SAVINGS_ACTIVATE("savings_activated"),
+                SAVINGS_REJECT("savings_reject"), SAVINGS_DEPOSIT("savings_deposit");
 
         private final String value;
 

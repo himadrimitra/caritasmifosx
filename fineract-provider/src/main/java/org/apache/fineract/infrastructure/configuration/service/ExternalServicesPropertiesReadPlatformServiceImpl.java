@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.campaigns.sms.data.MessageGatewayConfigurationData;
 import org.apache.fineract.infrastructure.configuration.data.*;
 import org.apache.fineract.infrastructure.configuration.exception.ExternalServiceConfigurationNotFoundException;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -431,6 +432,10 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
                 serviceNameToUse = ExternalServicesConstants.NACH_SERVICE_NAME;
             break;
 
+            case "SMS":
+                serviceNameToUse = ExternalServicesConstants.SMS_SERVICE_NAME;
+            break;
+
             default:
                 throw new ExternalServiceConfigurationNotFoundException(serviceName);
         }
@@ -718,6 +723,39 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
             }
             return new NACHCredentialsData(PROCESSOR_QUALIFIER, CORPORATE_UTILITY_CODE, CORPORATE_UTILITY_NAME,
                     SPONSOR_BANK, SPONSOR_BANK_CODE);
+        }
+    }
+
+    @Override
+    public MessageGatewayConfigurationData getSMSGateway() {
+        final ResultSetExtractor<MessageGatewayConfigurationData> resultSetExtractor = new MessageGatewayDataExtractor();
+        final String sql = "SELECT esp.name, esp.value FROM c_external_service_properties esp inner join c_external_service es on esp.external_service_id = es.id where es.name = '"
+                + ExternalServicesConstants.SMS_SERVICE_NAME + "'";
+        final MessageGatewayConfigurationData messageGatewayConfigurationData = this.jdbcTemplate.query(sql, resultSetExtractor, new Object[] {});
+        return messageGatewayConfigurationData;
+    }
+    
+    private static final class MessageGatewayDataExtractor implements ResultSetExtractor<MessageGatewayConfigurationData> {
+
+        @Override
+        public MessageGatewayConfigurationData extractData(final ResultSet rs) throws SQLException, DataAccessException {
+            String host = null;
+            int port = 9191;
+            String endPoint = null;
+            String tenantAppKey = null;
+
+            while (rs.next()) {
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.SMS_HOST)) {
+                    host = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.SMS_PORT)) {
+                    port = rs.getInt("value");
+                } else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.SMS_END_POINT)) {
+                    endPoint = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.SMS_TENANT_APP_KEY)) {
+                    tenantAppKey = rs.getString("value");
+                }
+            }
+            return new MessageGatewayConfigurationData(null, null, host, port, endPoint, null, null, false, tenantAppKey);
         }
     }
 }

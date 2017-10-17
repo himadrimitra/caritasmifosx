@@ -62,6 +62,10 @@ public class ExternalServicesReadPlatformServiceImpl implements ExternalServices
                 serviceNameToUse = ExternalServicesConstants.NACH_SERVICE_NAME;
             break;
 
+            case "SMS":
+                serviceNameToUse = ExternalServicesConstants.SMS_SERVICE_NAME;
+            break;
+
             default:
                 throw new ExternalServiceConfigurationNotFoundException(serviceName);
         }
