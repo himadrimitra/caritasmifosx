@@ -1,7 +1,7 @@
 
 update stretchy_report sr
 
-set sr.report_sql = 'select msa.account_no as 'Group Account',
+set sr.report_sql = "select msa.account_no as 'Group Account',
 mg.display_name as 'Group Name',
 mi.invested_amount as 'Invested Amount',
 ctie.investment_start_date as 'Investment Start Date',
@@ -69,14 +69,14 @@ WHERE
      ELSE 1=1    
   END
 
-group by  mi.loan_id,  mi.saving_id'
+group by  mi.loan_id,  mi.saving_id"
 where sr.report_name = 'Investment Status Report' and sr.report_category = 'Investment Status Report';
 
 
 
 
 update stretchy_report sr
-set sr.report_sql = 'select mg.id as 'Group No',
+set sr.report_sql = "select mg.id as 'Group No',
 mg.display_name as 'Group Name',
 concat(mpl.name, ' - ', ml.external_id) as 'Invested In',
 ctie.investment_start_date as 'Investment Start Date',
@@ -147,6 +147,6 @@ WHERE
 		  END	 	  
      ELSE 1=1    
   END 
-group by mi.saving_id, mi.loan_id'
+group by mi.saving_id, mi.loan_id"
 where sr.report_name = 'Investment Distribution Report' 
 and sr.report_category = 'Investment Distribution Report';

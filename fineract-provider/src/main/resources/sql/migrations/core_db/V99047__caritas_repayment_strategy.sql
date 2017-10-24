@@ -1,1 +1,1 @@
-INSERT INTO `ref_loan_transaction_processing_strategy` (`id`, `code`, `name`) VALUES (8, 'Overdue-Due-Penalties-Fee-Interest-Principal', 'OverDue Penalties Fees Interest Principle Order');
+INSERT INTO `ref_loan_transaction_processing_strategy` (`code`, `name`) VALUES ('Overdue-Due-Penalties-Fee-Interest-Principal', 'OverDue Penalties Fees Interest Principle Order');
