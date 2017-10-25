@@ -219,9 +219,9 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
         final String hierarchySearchString = hierarchy + "%";
 
         final OfficeDropdownMapper rm = new OfficeDropdownMapper();
-        final String sql = "select " + rm.schema() + "where o.hierarchy like ? order by o.hierarchy";
+        final String sql = "select " + rm.schema() + "where o.hierarchy like ? and o.status_enum = ? order by o.hierarchy";
 
-        return this.jdbcTemplate.query(sql, rm, new Object[] { hierarchySearchString });
+        return this.jdbcTemplate.query(sql, rm, new Object[] { hierarchySearchString, OfficeStatus.ACTIVE.getValue() });
     }
 
     @Override
