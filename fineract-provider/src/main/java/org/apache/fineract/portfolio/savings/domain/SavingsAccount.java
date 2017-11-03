@@ -2918,7 +2918,7 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
     }
 
     private Money minRequiredBalanceDerived(final MonetaryCurrency currency) {
-        Money minReqBalance = Money.of(currency, this.onHoldFunds);
+        Money minReqBalance = Money.zero(currency);
         if (this.enforceMinRequiredBalance) {
             minReqBalance = minReqBalance.plus(this.minRequiredBalance);
         }
