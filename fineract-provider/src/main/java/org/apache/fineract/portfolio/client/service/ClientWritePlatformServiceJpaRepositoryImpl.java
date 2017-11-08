@@ -400,6 +400,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 
             }
 
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.CLIENT_CREATE,
+                    constructEntityMap(BUSINESS_ENTITY.CLIENT, newClient));
                     //
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
