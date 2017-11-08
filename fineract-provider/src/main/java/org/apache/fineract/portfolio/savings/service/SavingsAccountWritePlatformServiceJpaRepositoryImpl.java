@@ -805,6 +805,9 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         // disable all standing orders linked to the savings account
         disableStandingInstructionsLinkedToClosedSavings(account);
 
+        final Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.SAVING, account);
+        eventDetailMap.put(BUSINESS_ENTITY.SAVING_TRANSACTION, account);
+        this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.SAVINGS_CLOSED, eventDetailMap);
         return new CommandProcessingResultBuilder() //
                 .withEntityId(savingsId) //
                 .withOfficeId(account.officeId()) //

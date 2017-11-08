@@ -24,7 +24,7 @@ public class ListenerForSendingNotifications {
     public ListenerForSendingNotifications(final BusinessEventNotifierService businessEventNotifierService) {
         this.businessEventNotifierService = businessEventNotifierService;
     }
-
+/*
     @PostConstruct
     public void addListners() {
         // Read from Properties file to check which events need notifications to
@@ -45,6 +45,7 @@ public class ListenerForSendingNotifications {
             }
         }
     }
+*/
 
     private class ListenerSMSSender implements BusinessEventListner {
 
@@ -72,8 +73,8 @@ public class ListenerForSendingNotifications {
                             + loan.getClient().getDisplayName();
                     final String to = loan.getClient().mobileNo();
 
-                    final SMSSender smsSender = NotificationsConfiguration.getInstance().getSenderForSMSProvider();
-                    smsSender.send(to, message);
+//                    final SMSSender smsSender = NotificationsConfiguration.getInstance().getSenderForSMSProvider();
+//                    smsSender.send(to, message);
 
                 }
 

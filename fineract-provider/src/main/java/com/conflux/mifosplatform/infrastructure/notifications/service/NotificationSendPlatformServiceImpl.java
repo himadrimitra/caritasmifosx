@@ -1,12 +1,13 @@
 package com.conflux.mifosplatform.infrastructure.notifications.service;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -17,20 +18,18 @@ import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnHeader
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetRowData;
 import org.apache.fineract.infrastructure.dataqueries.service.ReadWriteNonCoreDataService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
+import org.apache.fineract.infrastructure.sms.scheduler.SmsMessageScheduledJobService;
+import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import com.conflux.mifosplatform.infrastructure.notifications.api.NotificationApiConstants;
 import com.conflux.mifosplatform.infrastructure.notifications.data.NotificationDataValidator;
-import com.conflux.mifosplatform.infrastructure.notifications.domain.SmsNotification;
-import com.conflux.mifosplatform.infrastructure.notifications.domain.SmsNotificationDetails;
-import com.conflux.mifosplatform.infrastructure.notifications.repository.SmsNotificationDetailRepository;
-import com.conflux.mifosplatform.infrastructure.notifications.repository.SmsNotificationRepository;
 import com.conflux.mifosplatform.infrastructure.notifications.service.email.EmailSender;
 
 @Service
@@ -39,25 +38,24 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
     private final PlatformSecurityContext context;
     private final NotificationDataValidator fromApiJsonDeserializer;
     private final EmailSender emailSender;
-    private final SmsNotificationRepository smsNotificationRepository;
-    private final SmsNotificationDetailRepository smsNotificationDetailRepository;
     private static final Logger logger = LoggerFactory.getLogger(NotificationSendPlatformServiceImpl.class);
     private final ReadWriteNonCoreDataService readWriteNonCoreDataService;
     private ExecutorService executorService;
+    private final SmsMessageScheduledJobService smsMessageScheduledJobService;
+    private final ClientRepositoryWrapper clientRepository;
 
     @Autowired
     public NotificationSendPlatformServiceImpl(final PlatformSecurityContext context,
             final NotificationDataValidator fromApiJsonDeserializer, final EmailSender emailSender,
-            final SmsNotificationRepository smsNotificationRepository,
-            final SmsNotificationDetailRepository smsNotificationDetailRepository,
-            final ReadWriteNonCoreDataService readWriteNonCoreDataService) {
+            final ReadWriteNonCoreDataService readWriteNonCoreDataService,
+            final SmsMessageScheduledJobService smsMessageScheduledJobService, final ClientRepositoryWrapper clientRepository) {
 
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.emailSender = emailSender;
-        this.smsNotificationRepository = smsNotificationRepository;
-        this.smsNotificationDetailRepository = smsNotificationDetailRepository;
         this.readWriteNonCoreDataService = readWriteNonCoreDataService;
+        this.smsMessageScheduledJobService = smsMessageScheduledJobService;
+        this.clientRepository = clientRepository;
     }
 
     @PostConstruct
@@ -75,7 +73,7 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
         final String subject = command.stringValueOfParameterNamed(NotificationApiConstants.subject);
         final String message = command.stringValueOfParameterNamed(NotificationApiConstants.message);
         final Long officeId = command.longValueOfParameterNamed(NotificationApiConstants.entitiyId);
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
+        final Long providerId = command.longValueOfParameterNamed(NotificationApiConstants.providerId);
 
         // This is added to remove new line from the number list.
         final String target = targetValueFromJson.replaceAll("\\r\\n|\\r|\\n", "");
@@ -101,17 +99,8 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
                 }
             }
             if (enabled) {
-                final Date now = new Date();
-                final SmsNotification smsNotification = new SmsNotification();
-                smsNotification.setEntity("Notification");
-                smsNotification.setAction("Send");
-                smsNotification.setTenantId(tenantIdentifier);
-                smsNotification.setPayload("manual sms");
-                smsNotification.setProcessed(Boolean.TRUE);
-                smsNotification.setCreatedOn(now);
-                smsNotification.setLastModifiedOn(now);
-                final Long eventId = this.smsNotificationRepository.save(smsNotification).getId();
-                this.executorService.execute(new SMSTask(eventId, target, message, ThreadLocalContextUtil.getTenant()));
+                this.executorService.execute(new SMSTask(target, message, ThreadLocalContextUtil.getTenant(),
+                        this.smsMessageScheduledJobService, providerId, this.clientRepository));
             }
         }
 
@@ -122,78 +111,52 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
 
     class SMSTask implements Runnable {
 
-        private final Long eventId;
         private final String targetJson;
         private final String message;
         private final FineractPlatformTenant tenant;
+        private final SmsMessageScheduledJobService smsMessageScheduledJobService;
+        private final Long providerId;
+        private final ClientRepositoryWrapper clientRepository;
 
-        SMSTask(final Long eventId, final String targetJson, final String message, final FineractPlatformTenant tenant) {
-            this.eventId = eventId;
+        SMSTask(final String targetJson, final String message, final FineractPlatformTenant tenant,
+                final SmsMessageScheduledJobService smsMessageScheduledJobService, final Long providerId,
+                final ClientRepositoryWrapper clientRepository) {
             this.targetJson = targetJson;
             this.message = message;
             this.tenant = tenant;
+            this.smsMessageScheduledJobService = smsMessageScheduledJobService;
+            this.providerId = providerId;
+            this.clientRepository = clientRepository;
         }
 
         @Override
         public void run() {
             logger.info("Trying to sent messages by executor----");
 
-            final Date now = new Date();
             // Setting the tenant to thread context before starting any activity
             ThreadLocalContextUtil.setTenant(this.tenant);
-            final SMSSender smsSender = NotificationsConfiguration.getInstance().getSenderForSMSProvider();
-            final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
             final String[] clientDetails = this.targetJson.split(",");
+            final List<SmsMessage> smsMessages = new ArrayList<>();
             for (int i = 0; i < clientDetails.length; i++) {
                 String clientName = " ";
                 String clientId = " ";
                 final String[] clientMobileNoAndName = clientDetails[i].split("-");
                 final int length = clientMobileNoAndName.length;
+                Client client = null;
                 if (length >= 2) {
                     clientName = clientMobileNoAndName[1];
                     clientId = clientMobileNoAndName[2];
+                    client = this.clientRepository.findOneWithNotFoundDetection(Long.valueOf(clientId));
                 }
                 final String mobileNo = clientMobileNoAndName[0];
                 logger.info("clientName-" + clientName + "," + "mobileNo" + mobileNo);
-                final SmsNotificationDetails SmsNotificationDetails = new SmsNotificationDetails();
-                SmsNotificationDetails.setAction("Send");
-                SmsNotificationDetails.setEntity("Notification");
-                SmsNotificationDetails.setEntity_Mobile_No(mobileNo);
-                SmsNotificationDetails.setEventId(this.eventId);
-                SmsNotificationDetails.setPayload("clientName:" + clientName + " " + "MobileNo:" + mobileNo);
-                SmsNotificationDetails.setMessage(this.message);
-                SmsNotificationDetails.setEntityName("Manual");
-                SmsNotificationDetails.setEntitydescription("clientId:" + clientId + " " + "clientName:" + clientName);
-                SmsNotificationDetails.setTenantId(tenantIdentifier);
-                SmsNotificationDetails.setProcessed(Boolean.FALSE);
-                SmsNotificationDetails.setCreatedOn(now);
-                SmsNotificationDetails.setLastModifiedOn(now);
-                if (mobileNo.equals("null") || mobileNo.equalsIgnoreCase("NA") || mobileNo.equalsIgnoreCase("  ")
-                        || mobileNo.length() <= 0) {
-                    SmsNotificationDetails.setErrorMessage("Mobile number is not Valid");
-                    NotificationSendPlatformServiceImpl.this.smsNotificationDetailRepository.save(SmsNotificationDetails);
-                } else {
-                    try {
-                        final JSONArray response = smsSender.sendmsg(mobileNo, this.message);
-                        if (response != null && response.length() != 0) {
-                            final JSONObject result = response.getJSONObject(0);
-                            logger.info(result.getString("status") + ",");
-                            logger.info(result.getString("number") + ",");
-                            logger.info(result.getString("messageId") + ",");
-                            logger.info(result.getString("cost"));
-
-                            if (result.getString("status").equals("success") || result.getString("status").equalsIgnoreCase("success")) {
-                                SmsNotificationDetails.setProcessed(Boolean.TRUE);
-                            }
-                            SmsNotificationDetails.setCreatedOn(now);
-                            SmsNotificationDetails.setLastModifiedOn(now);
-                            NotificationSendPlatformServiceImpl.this.smsNotificationDetailRepository.save(SmsNotificationDetails);
-                        }
-                    } catch (final JSONException e) {
-                        e.printStackTrace();
-                    }
+                if (StringUtils.isNotBlank(mobileNo) && !mobileNo.equals("null") && !mobileNo.equalsIgnoreCase("NA")) {
+                    final SmsMessage smsMessage = SmsMessage.pendingSms(null, null, client, null, this.message, mobileNo, null);
+                    smsMessages.add(smsMessage);
                 }
-
+            }
+            if (!CollectionUtils.isEmpty(smsMessages)) {
+                this.smsMessageScheduledJobService.sendTriggeredMessage(smsMessages, this.providerId);
             }
         }
 

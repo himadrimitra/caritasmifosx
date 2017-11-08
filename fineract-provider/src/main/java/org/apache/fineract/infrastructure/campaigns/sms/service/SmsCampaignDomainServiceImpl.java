@@ -105,6 +105,21 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_DEPOSIT, new SavingsAccountTransactionListener(true));
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVING_WITHDRAWAL, new SavingsAccountTransactionListener(false));
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_DISBURSAL, new SendSmsOnLoanDisbursed());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.CLIENT_CREATE, new ClientCreatedListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_CLOSED, new SavingsAccountClosedListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.CLIENT_PAYMENTS, new ClientPaymentsListener());
+/*        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_REPAYMENT_SMS_REMINNDER, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_FIRST_AND_SECOND_OVERDUE_REPAYMENT_REMINDER, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_THIRD_AND_FOURTH_OVERDUE_REPAYMENT_REMINDER, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.MESSAGE_FOR_DEFAULT_WARNING_TO_CLIENT, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.MESSAGE_FOR_DEFAULT_WARNING_TO_GURANTOR, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.UNREGISTERD_MOBILE_NUMBER, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_AND_SAVINGS_BALANCE, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.MESSAGE_FOR_DORMACY_WARNING_TO_CLIENT, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_AND_SAVINGS_TRANSACTION, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.INVALID_TEXT, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.MINI_STATEMENT, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.BALANCE, new ClientPaymentsListener());*/
     }
 
 	private void notifyRejectedLoanOwner(Loan loan) {
@@ -136,6 +151,26 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
             }
         }
     }
+    
+    private void notifyClientCreated(final Client client) {
+        List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Client Created");
+        if(smsCampaigns.size()>0){
+            for (SmsCampaign campaign:smsCampaigns){
+                this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign);
+            }
+        }
+        
+   }
+
+    private void notifyClientPaymentDone(final Client client) {
+        List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Client Payments");
+        if (smsCampaigns.size() > 0) {
+            for (SmsCampaign campaign : smsCampaigns) {
+                this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign);
+            }
+        }
+
+    }
 
     private void notifyClientActivated(final Client client) {
     	 List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Client Activated");
@@ -156,7 +191,16 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
         }
    	 
    }
-    
+
+    private void notifySavingsAccountClosed(final SavingsAccount savingsAccount) {
+        List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Savings Closed");
+        if (smsCampaigns.size() > 0) {
+            for (SmsCampaign campaign : smsCampaigns) {
+                this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(savingsAccount, campaign);
+            }
+        }
+    }
+
 	private void notifySavingsAccountActivated(final SavingsAccount savingsAccount) {
 		List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Savings Activated");
 		if (smsCampaigns.size() > 0) {
@@ -445,7 +489,29 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
             }
         }
     }
-    
+
+    private class ClientCreatedListener extends SmsBusinessEventAdapter {
+
+        @Override
+        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            Object entity = businessEventEntity.get(BusinessEventNotificationConstants.BUSINESS_ENTITY.CLIENT);
+            if (entity instanceof Client) {
+                notifyClientCreated((Client) entity);
+            }
+        }
+    }
+
+    private class ClientPaymentsListener extends SmsBusinessEventAdapter {
+
+        @Override
+        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            Object entity = businessEventEntity.get(BusinessEventNotificationConstants.BUSINESS_ENTITY.CLIENT);
+            if (entity instanceof Client) {
+                notifyClientPaymentDone((Client) entity);
+            }
+        }
+    }
+
     private class ClientActivatedListener extends SmsBusinessEventAdapter {
 
 		@Override
@@ -468,7 +534,19 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
 			
 		}
     }
-    
+
+    private class SavingsAccountClosedListener extends SmsBusinessEventAdapter {
+
+        @Override
+        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            Object entity = businessEventEntity.get(BusinessEventNotificationConstants.BUSINESS_ENTITY.SAVING);
+            if (entity instanceof SavingsAccount) {
+                notifySavingsAccountClosed((SavingsAccount) entity);
+            }
+
+        }
+    }
+
     private class SavingsAccountActivatedListener extends SmsBusinessEventAdapter{
 
 		@Override

@@ -117,6 +117,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
@@ -925,7 +927,13 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     @Override
     @CronTarget(jobName = JobName.LOAN_REPAYMENT_SMS_REMINDER_TO_CLIENT)
     public void loanRepaymentSmsReminder() {
-        final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
+        /*final NamedParameterJdbcTemplate jdbcTemplate = new NamedParameterJdbcTemplate(this.dataSourceServiceFactory.determineDataSourceService().retrieveDataSource());
+        final String repaymentsReminderSchema = "";
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("officeId", 0);
+        paramMap.put("startDate", DateUtils.getLocalDateOfTenant().toString("yyyy-MM-dd"));
+        final List<Map<String, Object>> clients = jdbcTemplate.queryForList(repaymentsReminderSchema, paramMap);
+        */final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
         final String apikey = this.hookRepository.retriveApiKey();
         final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
         final HttpClient httpClient = new DefaultHttpClient();
