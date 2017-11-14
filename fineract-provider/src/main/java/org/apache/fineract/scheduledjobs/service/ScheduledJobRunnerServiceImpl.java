@@ -18,8 +18,6 @@
  */
 package org.apache.fineract.scheduledjobs.service;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DateFormat;
@@ -37,7 +35,6 @@ import java.util.Set;
 
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
-import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
@@ -46,17 +43,12 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSourceServiceFactory;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
-import org.apache.fineract.infrastructure.hooks.domain.HookConfigurationRepository;
-import org.apache.fineract.infrastructure.hooks.domain.HookRepository;
-import org.apache.fineract.infrastructure.hooks.service.HookReadPlatformServiceImpl;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.office.data.OfficeData;
@@ -80,20 +72,14 @@ import org.apache.fineract.portfolio.investment.data.InvestmentBatchJobData;
 import org.apache.fineract.portfolio.investment.exception.NoAnyInvestmentFoundForDistributionException;
 import org.apache.fineract.portfolio.investment.service.InvestmentBatchJobReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
-import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanSchedularService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
-import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailRepository;
-import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
-import org.apache.fineract.portfolio.savings.api.SavingsAccountTransactionsApiResource;
 import org.apache.fineract.portfolio.savings.data.DepositAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingIdListData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountAnnualFeeData;
 import org.apache.fineract.portfolio.savings.data.SavingsIdOfChargeData;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
 import org.apache.fineract.portfolio.savings.service.DepositAccountReadPlatformService;
 import org.apache.fineract.portfolio.savings.service.DepositAccountWritePlatformService;
@@ -102,11 +88,6 @@ import org.apache.fineract.portfolio.savings.service.SavingsAccountChargeReadPla
 import org.apache.fineract.portfolio.savings.service.SavingsAccountWritePlatformService;
 import org.apache.fineract.portfolio.shareaccounts.service.ShareAccountDividendReadPlatformService;
 import org.apache.fineract.portfolio.shareaccounts.service.ShareAccountSchedularService;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
@@ -117,15 +98,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import com.amazonaws.util.json.JSONException;
-import com.amazonaws.util.json.JSONObject;
 import com.finflux.common.util.ScheduleDateGeneratorUtil;
 import com.finflux.common.util.WorkingDaysAndHolidaysUtil;
 import com.finflux.task.data.TaskEntityType;
@@ -142,7 +119,6 @@ import com.finflux.transaction.execution.provider.BankTransferService;
 import com.finflux.transaction.execution.service.BankTransactionService;
 import com.google.gson.JsonElement;
 
-@SuppressWarnings("deprecation")
 @Service(value = "scheduledJobRunnerService")
 public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService {
 
@@ -157,19 +133,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     private final DepositAccountWritePlatformService depositAccountWritePlatformService;
 
     private final ChargeReadPlatformService chargeReadPlatformService;
-    private final ToApiJsonSerializer<CommandProcessingResult> toApiResultJsonSerializer;
-    private final HookReadPlatformServiceImpl hookReadPlatformServiceImpl;
-    private final HookRepository hookRepository;
-    private final HookConfigurationRepository hookConfigurationRepository;
-    private final LoanReadPlatformService loanReadPlatformService;
     private final InvestmentBatchJobReadPlatformService investmentBatchJobReadPlatformService;
-    private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
-    private final SavingsAccountDomainService savingsAccountDomainService;
-    private final SavingsAccountAssembler savingAccountAssembler;
-    private final PaymentTypeRepositoryWrapper paymentTyperepositoryWrapper;
-    private final PaymentDetailRepository paymentDetailRepository;
-    private final SavingsAccountTransactionsApiResource savingsAccountTransactionsApiResource;
-    private final PlatformSecurityContext context;
     private final FromJsonHelper fromApiJsonHelper;
     private final SavingsAccountRepository savingAccount;
 
@@ -195,14 +159,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
             final DepositAccountReadPlatformService depositAccountReadPlatformService,
             final DepositAccountWritePlatformService depositAccountWritePlatformService,
             final ChargeReadPlatformService chargeReadPlatformService,
-            final ToApiJsonSerializer<CommandProcessingResult> toApiResultJsonSerializer,
-            final HookReadPlatformServiceImpl hookReadPlatformServiceImpl, final HookRepository hookRepository,
-            final HookConfigurationRepository hookConfigurationRepository, final LoanReadPlatformService loanReadPlatformService,
             final InvestmentBatchJobReadPlatformService investmentBatchJobReadPlatformService,
-            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-            final SavingsAccountDomainService savingsAccountDomainService, final SavingsAccountAssembler savingAccountAssembler,
-            final PaymentTypeRepositoryWrapper paymentTyperepositoryWrapper, final PaymentDetailRepository paymentDetailRepository,
-            final SavingsAccountTransactionsApiResource savingsAccountTransactionsApiResource, final PlatformSecurityContext context,
             final FromJsonHelper fromApiJsonHelper, final SavingsAccountRepository savingAccount,
             final ShareAccountDividendReadPlatformService shareAccountDividendReadPlatformService,
             final ShareAccountSchedularService shareAccountSchedularService,
@@ -220,19 +177,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         this.depositAccountReadPlatformService = depositAccountReadPlatformService;
         this.depositAccountWritePlatformService = depositAccountWritePlatformService;
         this.chargeReadPlatformService = chargeReadPlatformService;
-        this.toApiResultJsonSerializer = toApiResultJsonSerializer;
-        this.hookReadPlatformServiceImpl = hookReadPlatformServiceImpl;
-        this.hookRepository = hookRepository;
-        this.hookConfigurationRepository = hookConfigurationRepository;
-        this.loanReadPlatformService = loanReadPlatformService;
         this.investmentBatchJobReadPlatformService = investmentBatchJobReadPlatformService;
-        this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
-        this.savingsAccountDomainService = savingsAccountDomainService;
-        this.savingAccountAssembler = savingAccountAssembler;
-        this.paymentTyperepositoryWrapper = paymentTyperepositoryWrapper;
-        this.paymentDetailRepository = paymentDetailRepository;
-        this.savingsAccountTransactionsApiResource = savingsAccountTransactionsApiResource;
-        this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.savingAccount = savingAccount;
         this.shareAccountDividendReadPlatformService = shareAccountDividendReadPlatformService;
@@ -543,7 +488,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     @Override
     @CronTarget(jobName = JobName.APPY_SAVING_DEPOSITE_LATE_FEE)
     public void doAppySavingLateFeeCharge() throws JobExecutionException {
-        final PeriodFrequencyType frequencyType = null;
 
         String startingDate = new String();
         final SimpleDateFormat formateDate = new SimpleDateFormat("yyyy-MM-dd");
@@ -589,7 +533,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                 Date startFeeCharge = new Date();
                 LocalDate maxOfTransactionDate = new LocalDate();
                 LocalDate maxOfchargeDueDate = new LocalDate();
-                LocalDate startChargeDate = new LocalDate();
                 boolean isInsert = true;
                 boolean isValideForCharge = false;
                 boolean isMaxOfChargeDue = false;
@@ -684,17 +627,13 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                         if (isMaxOfChargeDue == true) {
                             if (dateOfTransaction.isAfter(maxOfchargeDueDate) || dateOfTransaction.equals(maxOfChargeDueDate)) {
                                 startFeeCharge = dateOfTransaction.toDate();
-                                startChargeDate = dateOfTransaction;
                             } else {
                                 startFeeCharge = maxOfchargeDueDate.toDate();
-                                startChargeDate = maxOfchargeDueDate;
                             }
                         } else if (dateOfTransaction.isAfter(startFeeChargeDate)) {
                             startFeeCharge = dateOfTransaction.toDate();
-                            startChargeDate = dateOfTransaction;
                         } else {
                             startFeeCharge = startFeeChargeDate.toDate();
-                            startChargeDate = startFeeChargeDate;
                         }
 
                         break;
@@ -925,316 +864,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     }
 
     @Override
-    @CronTarget(jobName = JobName.LOAN_REPAYMENT_SMS_REMINDER_TO_CLIENT)
-    public void loanRepaymentSmsReminder() {
-        /*final NamedParameterJdbcTemplate jdbcTemplate = new NamedParameterJdbcTemplate(this.dataSourceServiceFactory.determineDataSourceService().retrieveDataSource());
-        final String repaymentsReminderSchema = "";
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("officeId", 0);
-        paramMap.put("startDate", DateUtils.getLocalDateOfTenant().toString("yyyy-MM-dd"));
-        final List<Map<String, Object>> clients = jdbcTemplate.queryForList(repaymentsReminderSchema, paramMap);
-        */final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
-        final String apikey = this.hookRepository.retriveApiKey();
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final HttpClient httpClient = new DefaultHttpClient();
-        final HttpPost httpPost = new HttpPost(payLoadUrl);
-        httpPost.addHeader("X-Mifos-Action", "EXECUTEJOB");
-        httpPost.addHeader("X-Mifos-Entity", "SCHEDULER");
-        httpPost.addHeader("X-Mifos-Platform-TenantId", tenantIdentifier);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("X-Mifos-API-Key", apikey);
-        StringEntity entity;
-        try {
-            final Date now = new Date();
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            final String date = df.format(now);
-            final JSONObject jsonObj = new JSONObject("{\"reportName\":\"Loan Repayment Reminders\",\"date\":\"" + date + "\"}");
-            entity = new StringEntity(jsonObj.toString());
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-        } catch (final UnsupportedEncodingException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final ClientProtocolException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final IOException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final JSONException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    @CronTarget(jobName = JobName.LOAN_FIRST_OVERDUE_REPAYMENT_REMINDER_SMS)
-    public void loanFirstOverdueRepaymentReminder() {
-        final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
-        final String apikey = this.hookRepository.retriveApiKey();
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final HttpClient httpClient = new DefaultHttpClient();
-        final HttpPost httpPost = new HttpPost(payLoadUrl);
-        httpPost.addHeader("X-Mifos-Action", "EXECUTEJOB");
-        httpPost.addHeader("X-Mifos-Entity", "SCHEDULER");
-        httpPost.addHeader("X-Mifos-Platform-TenantId", tenantIdentifier);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("X-Mifos-API-Key", apikey);
-        StringEntity entity;
-        try {
-            final Date now = new Date();
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            final String date = df.format(now);
-            final JSONObject jsonObj = new JSONObject(
-                    "{\"reportName\":\"Loan First Overdue Repayment Reminder\",\"date\":\"" + date + "\"}");
-            entity = new StringEntity(jsonObj.toString());
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-        } catch (final UnsupportedEncodingException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final ClientProtocolException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final IOException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final JSONException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    @CronTarget(jobName = JobName.LOAN_SECOND_OVERDUE_REPAYMENT_REMINDER_SMS)
-    public void loanSecondOverdueRepaymentReminder() {
-        final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
-        final String apikey = this.hookRepository.retriveApiKey();
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final HttpClient httpClient = new DefaultHttpClient();
-        final HttpPost httpPost = new HttpPost(payLoadUrl);
-        httpPost.addHeader("X-Mifos-Action", "EXECUTEJOB");
-        httpPost.addHeader("X-Mifos-Entity", "SCHEDULER");
-        httpPost.addHeader("X-Mifos-Platform-TenantId", tenantIdentifier);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("X-Mifos-API-Key", apikey);
-        StringEntity entity;
-        try {
-            final Date now = new Date();
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            final String date = df.format(now);
-
-            final JSONObject jsonObj = new JSONObject(
-                    "{\"reportName\":\"Loan Second Overdue Repayment Reminder\",\"date\":\"" + date + "\"}");
-            entity = new StringEntity(jsonObj.toString());
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-        } catch (final UnsupportedEncodingException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final ClientProtocolException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final IOException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final JSONException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    @CronTarget(jobName = JobName.LOAN_THIRD_OVERDUE_REPAYMENT_REMINDER_SMS)
-    public void loanThirdOverdueRepaymentReminder() {
-        final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
-        final String apikey = this.hookRepository.retriveApiKey();
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final HttpClient httpClient = new DefaultHttpClient();
-        final HttpPost httpPost = new HttpPost(payLoadUrl);
-        httpPost.addHeader("X-Mifos-Action", "EXECUTEJOB");
-        httpPost.addHeader("X-Mifos-Entity", "SCHEDULER");
-        httpPost.addHeader("X-Mifos-Platform-TenantId", tenantIdentifier);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("X-Mifos-API-Key", apikey);
-        StringEntity entity;
-        try {
-            final Date now = new Date();
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            final String date = df.format(now);
-            final JSONObject jsonObj = new JSONObject(
-                    "{\"reportName\":\"Loan Third Overdue Repayment Reminder\",\"date\":\"" + date + "\"}");
-            entity = new StringEntity(jsonObj.toString());
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-        } catch (final UnsupportedEncodingException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final ClientProtocolException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final IOException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final JSONException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    @CronTarget(jobName = JobName.LOAN_FOURTH_OVERDUE_REPAYMENT_REMINDER_SMS)
-    public void loanFourthOverdueRepaymentReminder() {
-        final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
-        final String apikey = this.hookRepository.retriveApiKey();
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final HttpClient httpClient = new DefaultHttpClient();
-        final HttpPost httpPost = new HttpPost(payLoadUrl);
-        httpPost.addHeader("X-Mifos-Action", "EXECUTEJOB");
-        httpPost.addHeader("X-Mifos-Entity", "SCHEDULER");
-        httpPost.addHeader("X-Mifos-Platform-TenantId", tenantIdentifier);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("X-Mifos-API-Key", apikey);
-        StringEntity entity;
-        try {
-            final Date now = new Date();
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            final String date = df.format(now);
-            final JSONObject jsonObj = new JSONObject(
-                    "{\"reportName\":\"Loan Fourth Overdue Repayment Reminder\",\"date\":\"" + date + "\"}");
-            entity = new StringEntity(jsonObj.toString());
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-        } catch (final UnsupportedEncodingException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final ClientProtocolException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final IOException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final JSONException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    @CronTarget(jobName = JobName.DEFAULT_WARNING_SMS_TO_CLIENT)
-    public void defaultWarningToClients() {
-        final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
-        final String apikey = this.hookRepository.retriveApiKey();
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final HttpClient httpClient = new DefaultHttpClient();
-        final HttpPost httpPost = new HttpPost(payLoadUrl);
-        httpPost.addHeader("X-Mifos-Action", "EXECUTEJOB");
-        httpPost.addHeader("X-Mifos-Entity", "SCHEDULER");
-        httpPost.addHeader("X-Mifos-Platform-TenantId", tenantIdentifier);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("X-Mifos-API-Key", apikey);
-        StringEntity entity;
-        try {
-            final Date now = new Date();
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            final String date = df.format(now);
-            final JSONObject jsonObj = new JSONObject("{\"reportName\":\"DefaultWarning - Clients\",\"date\":\"" + date + "\"}");
-            entity = new StringEntity(jsonObj.toString());
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-        } catch (final UnsupportedEncodingException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final ClientProtocolException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final IOException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final JSONException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    @CronTarget(jobName = JobName.DEFAULT_WARNING_SMS_TO_GURANTOR)
-    public void defaultWarningToGuarantors() {
-        final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
-        final String apikey = this.hookRepository.retriveApiKey();
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final HttpClient httpClient = new DefaultHttpClient();
-        final HttpPost httpPost = new HttpPost(payLoadUrl);
-        httpPost.addHeader("X-Mifos-Action", "EXECUTEJOB");
-        httpPost.addHeader("X-Mifos-Entity", "SCHEDULER");
-        httpPost.addHeader("X-Mifos-Platform-TenantId", tenantIdentifier);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("X-Mifos-API-Key", apikey);
-        StringEntity entity;
-        try {
-            final Date now = new Date();
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            final String date = df.format(now);
-            final JSONObject jsonObj = new JSONObject("{\"reportName\":\"DefaultWarning -  guarantors\",\"date\":\"" + date + "\"}");
-            entity = new StringEntity(jsonObj.toString());
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-        } catch (final UnsupportedEncodingException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final ClientProtocolException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final IOException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final JSONException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    @CronTarget(jobName = JobName.DORMANCY_WARNING_SMS_TO_CLIENT)
-    public void dormancyWarningToClients() {
-        final String payLoadUrl = "http://54.72.21.49:9191/modules/sms";
-        final String apikey = this.hookRepository.retriveApiKey();
-        final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final HttpClient httpClient = new DefaultHttpClient();
-        final HttpPost httpPost = new HttpPost(payLoadUrl);
-        httpPost.addHeader("X-Mifos-Action", "EXECUTEJOB");
-        httpPost.addHeader("X-Mifos-Entity", "SCHEDULER");
-        httpPost.addHeader("X-Mifos-Platform-TenantId", tenantIdentifier);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("X-Mifos-API-Key", apikey);
-        StringEntity entity;
-        try {
-            final Date now = new Date();
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            final String date = df.format(now);
-            final JSONObject jsonObj = new JSONObject("{\"reportName\":\"DormancyWarning - Clients\",\"date\":\"" + date + "\"}");
-            entity = new StringEntity(jsonObj.toString());
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-        } catch (final UnsupportedEncodingException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final ClientProtocolException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final IOException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        } catch (final JSONException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
     @CronTarget(jobName = JobName.DO_INVESTMENT_DISTRIBUTION)
     public void distributeInvestmentEarning() {
 
@@ -1276,15 +905,11 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
     public CommandProcessingResult distributeInvestment(final String[] productIds, final String date, final String investmentId) {
 
         final String distributionDate = date;
-        final List<Long> investmentIdFromData = new ArrayList<>();
         CommandProcessingResult result = null;
         final Date today = new Date();
         final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 
-        final DateTimeFormatter fmt = DateTimeFormat.forPattern("dd MMMM yyyy");
         final String statusDate = df.format(today);
-        final StringBuilder sb = new StringBuilder();
-
         final JdbcTemplate jdbcTemplate = new JdbcTemplate(this.dataSourceServiceFactory.determineDataSourceService().retrieveDataSource());
 
         /**
@@ -1342,9 +967,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                 final BigDecimal sumOfLoanChargeAmount = getTotalLoanCharge.getSumOfLoanCharge();
 
                 final BigDecimal interestAmountOfLoan = loanData.getTotalInterest();
-
-                // New Total Earning = total earning - total Charge
-                final BigDecimal interestAmountAfterRemovedLoanCharges = interestAmountOfLoan.subtract(sumOfLoanChargeAmount);
 
                 final BigDecimal totalInvestedAmount = loanData.getTotalInvestedAmount();
 

@@ -1225,4 +1225,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return target != null && target.isAfter(fromNotInclusive) && !target.isAfter(upToAndInclusive);
     }
 
+    public Long getOfficeId() {
+        return this.officeId;
+    }
 }

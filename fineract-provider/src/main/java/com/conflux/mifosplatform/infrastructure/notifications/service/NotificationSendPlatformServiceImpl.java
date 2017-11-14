@@ -19,6 +19,7 @@ import org.apache.fineract.infrastructure.dataqueries.data.ResultsetRowData;
 import org.apache.fineract.infrastructure.dataqueries.service.ReadWriteNonCoreDataService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
+import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.scheduler.SmsMessageScheduledJobService;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
@@ -43,12 +44,14 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
     private ExecutorService executorService;
     private final SmsMessageScheduledJobService smsMessageScheduledJobService;
     private final ClientRepositoryWrapper clientRepository;
+    private final SmsMessageRepository smsMessageRepository;
 
     @Autowired
     public NotificationSendPlatformServiceImpl(final PlatformSecurityContext context,
             final NotificationDataValidator fromApiJsonDeserializer, final EmailSender emailSender,
             final ReadWriteNonCoreDataService readWriteNonCoreDataService,
-            final SmsMessageScheduledJobService smsMessageScheduledJobService, final ClientRepositoryWrapper clientRepository) {
+            final SmsMessageScheduledJobService smsMessageScheduledJobService, final ClientRepositoryWrapper clientRepository,
+            final SmsMessageRepository smsMessageRepository) {
 
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
@@ -56,6 +59,7 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
         this.readWriteNonCoreDataService = readWriteNonCoreDataService;
         this.smsMessageScheduledJobService = smsMessageScheduledJobService;
         this.clientRepository = clientRepository;
+        this.smsMessageRepository = smsMessageRepository;
     }
 
     @PostConstruct
@@ -100,7 +104,7 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
             }
             if (enabled) {
                 this.executorService.execute(new SMSTask(target, message, ThreadLocalContextUtil.getTenant(),
-                        this.smsMessageScheduledJobService, providerId, this.clientRepository));
+                        this.smsMessageScheduledJobService, providerId, this.clientRepository, this.smsMessageRepository));
             }
         }
 
@@ -117,16 +121,18 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
         private final SmsMessageScheduledJobService smsMessageScheduledJobService;
         private final Long providerId;
         private final ClientRepositoryWrapper clientRepository;
+        private final SmsMessageRepository smsMessageRepository;
 
         SMSTask(final String targetJson, final String message, final FineractPlatformTenant tenant,
                 final SmsMessageScheduledJobService smsMessageScheduledJobService, final Long providerId,
-                final ClientRepositoryWrapper clientRepository) {
+                final ClientRepositoryWrapper clientRepository, final SmsMessageRepository smsMessageRepository) {
             this.targetJson = targetJson;
             this.message = message;
             this.tenant = tenant;
             this.smsMessageScheduledJobService = smsMessageScheduledJobService;
             this.providerId = providerId;
             this.clientRepository = clientRepository;
+            this.smsMessageRepository = smsMessageRepository;
         }
 
         @Override
@@ -156,6 +162,7 @@ public class NotificationSendPlatformServiceImpl implements NotificationSendPlat
                 }
             }
             if (!CollectionUtils.isEmpty(smsMessages)) {
+                this.smsMessageRepository.save(smsMessages);
                 this.smsMessageScheduledJobService.sendTriggeredMessage(smsMessages, this.providerId);
             }
         }
