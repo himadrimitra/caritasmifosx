@@ -42,13 +42,18 @@ public interface ProductToGLAccountMappingReadPlatformService {
     public List<ChargeToGLAccountMapper> fetchFeeToIncomeAccountMappingsForSavingsProduct(final Long savingsProductId);
 
     public List<ChargeToGLAccountMapper> fetchPenaltyToIncomeAccountMappingsForSavingsProduct(final Long savingsProductId);
-    
+
     public Map<String, Object> fetchAccountMappingDetailsForShareProduct(final Long productId, final Integer accountingType);
 
     public List<PaymentTypeToGLAccountMapper> fetchPaymentTypeToFundSourceMappingsForShareProduct(final Long productId);
 
     public List<ChargeToGLAccountMapper> fetchFeeToIncomeAccountMappingsForShareProduct(final Long productId);
-    
+
     public List<CodeValueToGLAccountMapper> fetchCodeValueToExpenseAccountMappingsForLoanProduct(final Long loanProductId);
 
+    public Map<String, Object> fetchAccountMappingDetailsForInvestmentProduct(final Long investmentProductId, final Integer accountingType);
+
+    public List<PaymentTypeToGLAccountMapper> fetchPaymentTypeToFundSourceMappingsForInvestmentProduct(final Long investmentProductId);
+
+    List<ChargeToGLAccountMapper> fetchFeeToExpenseAccountMappingsForInvestmentProduct(final Long investmentProductId);
 }

@@ -48,6 +48,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeInvestmentData;
 import org.apache.fineract.portfolio.charge.data.ChargeOverdueData;
 import org.apache.fineract.portfolio.charge.exception.ChargeDueAtDisbursementCannotBePenaltyException;
 import org.apache.fineract.portfolio.charge.exception.ChargeMustBePenaltyException;
@@ -157,6 +158,9 @@ public class Charge extends AbstractPersistable<Long> {
 
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "charge", optional = true, orphanRemoval = true, fetch = FetchType.EAGER)
     private ChargeOverueDetail chargeOverueDetail;
+    
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "charge", optional = true, orphanRemoval = true, fetch = FetchType.EAGER)
+    private  ChargeInvestmentDetails chargeInvestmentDetails;
 
     public static Charge fromJson(final JsonCommand command, final GLAccount account, final TaxGroup taxGroup) {
 
@@ -210,9 +214,15 @@ public class Charge extends AbstractPersistable<Long> {
             chargeOverueDetail = ChargeOverueDetail.fromJson(overdueCommand, command.extractLocale());
         }
 
+        ChargeInvestmentDetails investmentCharge = null;
+        if((chargeAppliesTo.getValue()).compareTo(ChargeAppliesTo.EXTERNALINVESTMENT.getValue()) == 0){
+        	final Boolean applyToLinkedSavingsAccount = command.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.applyToLinkedSavingsAccountParamName);
+            final Boolean notApplyToInvestmentAccount = command.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.doNotApplyToInvestmentAccountParamName);
+             investmentCharge =  ChargeInvestmentDetails.create(applyToLinkedSavingsAccount,notApplyToInvestmentAccount);
+        }
         return new Charge(name, amount, currencyCode, chargeAppliesTo, chargeTimeType, chargeCalculationType, penalty, active, paymentMode,
                 feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, account, taxGroup, emiRoundingGoalSeek, isGlimCharge,
-                glimChargeCalculation, isCapitalized, chargeSlabs, chargeOverueDetail, chargePercentageType, chargePercentagePeriodType);
+                glimChargeCalculation, isCapitalized, chargeSlabs, chargeOverueDetail, chargePercentageType, chargePercentagePeriodType, investmentCharge);
     }
 
     public static List<ChargeSlab> assambleSlabsFromJson(final JsonCommand command) {
@@ -287,7 +297,7 @@ public class Charge extends AbstractPersistable<Long> {
             final BigDecimal maxCap, final Integer feeFrequency, final GLAccount account, final TaxGroup taxGroup,
             final boolean emiRoundingGoalSeek, final boolean isGlimCharge, final GlimChargeCalculationType glimChargeCalculation,
             final boolean isCapitalized, final List<ChargeSlab> chargeSlab, final ChargeOverueDetail chargeOverueDetail,
-            final ChargePercentageType percentageType, final ChargePercentagePeriodType percentagePeriodType) {
+            final ChargePercentageType percentageType, final ChargePercentagePeriodType percentagePeriodType, final ChargeInvestmentDetails chargeInvestmentDetails) {
         this.name = name;
         this.amount = amount;
         this.currencyCode = currencyCode;
@@ -362,6 +372,10 @@ public class Charge extends AbstractPersistable<Long> {
         this.minCap = minCap;
         this.maxCap = maxCap;
         // }
+        this.chargeInvestmentDetails = chargeInvestmentDetails;
+        if(this.chargeInvestmentDetails != null){
+        	this.chargeInvestmentDetails.setCharge(this);
+        }
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
@@ -749,6 +763,16 @@ public class Charge extends AbstractPersistable<Long> {
         } else {
             this.chargeOverueDetail = null;
         }
+        
+        if(this.chargeInvestmentDetails != null)
+        if (command.isChangeInBooleanParameterNamed(ChargesApiConstants.applyToLinkedSavingsAccountParamName, this.chargeInvestmentDetails.isApplyToLinkedSavingsAccount())) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.applyToLinkedSavingsAccountParamName);
+            actualChanges.put(ChargesApiConstants.applyToLinkedSavingsAccountParamName, newValue);
+            final boolean newValueTemp = command.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.doNotApplyToInvestmentAccountParamName);
+            actualChanges.put(ChargesApiConstants.doNotApplyToInvestmentAccountParamName, newValueTemp);
+            this.chargeInvestmentDetails.setApplyToLinkedSavingsAccount(newValue);
+            this.chargeInvestmentDetails.setDoNotApplyToInvestmentAccount(newValueTemp);
+        }
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
@@ -787,13 +811,17 @@ public class Charge extends AbstractPersistable<Long> {
         if (this.chargeOverueDetail != null) {
             chargeOverueData = this.chargeOverueDetail.toData();
         }
+        ChargeInvestmentData chargeInvestmentData = null;
+        if(this.chargeInvestmentDetails != null){
+        	chargeInvestmentData = this.chargeInvestmentDetails.toData();
+        }
 
         final CurrencyData currency = new CurrencyData(this.currencyCode, null, 0, 0, null, null);
         final EnumOptionData glimChargeCalculation = ChargeEnumerations.glimChargeCalculationType(this.glimChargeCalculation);
         return ChargeData.instance(getId(), this.name, this.amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType,
                 chargePaymentmode, getFeeOnMonthDay(), this.feeInterval, this.penalty, this.active, this.minCap, this.maxCap,
                 feeFrequencyType, accountData, taxGroupData, this.emiRoundingGoalSeek, this.isGlimCharge, glimChargeCalculation,
-                this.isCapitalized, percentageType, percentagePeriodType, chargeOverueData);
+                this.isCapitalized, percentageType, percentagePeriodType, chargeOverueData, chargeInvestmentData);
     }
 
     public Integer getChargePaymentMode() {
@@ -944,5 +972,18 @@ public class Charge extends AbstractPersistable<Long> {
     public ChargeOverueDetail getChargeOverueDetail() {
         return this.chargeOverueDetail;
     }
+
+	public ChargeInvestmentDetails getChargeInvestmentDetails() {
+		return this.chargeInvestmentDetails;
+	}
+
+	public void setChargeInvestmentDetails(
+			ChargeInvestmentDetails chargeInvestmentDetails) {
+		this.chargeInvestmentDetails = chargeInvestmentDetails;
+	}
+	
+	 public boolean isExternalInvestmentCharge() {
+	        return ChargeAppliesTo.fromInt(this.chargeAppliesTo).isExternalInvestmentCharge();
+	    }
 
 }

@@ -58,9 +58,9 @@ public class CommandWrapperBuilder {
     }
 
     public CommandWrapper build() {
-        return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName, this.entityName,
-                this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId, this.templateId, this.option,
-                this.entityTypeId, this.formDataMultiPart);
+        return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
+                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId,
+                this.templateId, this.option, this.entityTypeId, this.formDataMultiPart);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -2149,8 +2149,7 @@ public class CommandWrapperBuilder {
         return this;
     }
 
-    public CommandWrapperBuilder saveOrUpdateAttendance(final Long entityId, final String supportedEntityType,
-            final Long supportedEntityId) {
+    public CommandWrapperBuilder saveOrUpdateAttendance(final Long entityId, final String supportedEntityType, final Long supportedEntityId) {
         this.actionName = "SAVEORUPDATEATTENDANCE";
         this.entityName = "MEETING";
         this.entityId = entityId;
@@ -4349,7 +4348,7 @@ public class CommandWrapperBuilder {
         this.href = "/runoverduecharges";
         return this;
     }
-    
+
     public CommandWrapperBuilder createTaskEntityMapping(final Long taskConfigId) {
         this.actionName = "CREATE";
         this.entityName = "TASK_CONFIG_ENTITYMAPPING";
@@ -4364,6 +4363,46 @@ public class CommandWrapperBuilder {
         this.entityId = taskConfigId;
         this.entityTypeId = taskConfigEntityTypeValue;
         this.href = "/taskconfigs/mappings/" + taskConfigId + "/" + taskConfigEntityTypeValue;
+        return this;
+    }
+
+    public CommandWrapperBuilder createInvestmentProduct() {
+        this.actionName = "CREATE";
+        this.entityName = "INVESTMENT_PRODUCT";
+        this.entityId = null;
+        this.href = "/investmentproducts";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateInvestmentProduct(final Long investmentProductId) {
+        this.actionName = "UPDATE";
+        this.entityName = "INVESTMENT_PRODUCT";
+        this.entityId = investmentProductId;
+        this.href = "/investmentproducts/" + investmentProductId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder createInvestmentAccountt() {
+        this.actionName = "CREATE";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = null;
+        this.href = "/investmentaccounts";
+        return this;
+    }
+    
+    public CommandWrapperBuilder approveInvestmentAccount(final Long ivestmentAccountId) {
+        this.actionName = "APPROVE";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=approve";
+        return this;
+    }
+    
+    public CommandWrapperBuilder activateInvestmentAccount(final Long ivestmentAccountId) {
+        this.actionName = "ACTIVE";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=active";
         return this;
     }
 }

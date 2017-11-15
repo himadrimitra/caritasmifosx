@@ -276,13 +276,15 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
         final Collection<EnumOptionData> percentagePeriodTypeOptions = this.chargeDropdownReadPlatformService
                 .retriveChargePercentagePeriodTypes();
         final Collection<EnumOptionData> penaltyGraceTypeOptions = this.chargeDropdownReadPlatformService.retrivePenaltyGraceTypes();
-
+        final List<EnumOptionData> investmentChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> investmentChargeTimeTypeOptions = null;
+        
         return ChargeData.template(null, allowedChargeCalculationTypeOptions, null, allowedChargeTimeOptions, null,
                 loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions,
                 savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions, clientChargeTimeTypeOptions, feeFrequencyOptions,
                 incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,
                 glimChargeCalculationOptions, slabChargeTypeOptions, percentageTypeOptions, percentagePeriodTypeOptions,
-                penaltyGraceTypeOptions);
+                penaltyGraceTypeOptions, investmentChargeCalculationTypeOptions, investmentChargeTimeTypeOptions);
     }
 
     @Override

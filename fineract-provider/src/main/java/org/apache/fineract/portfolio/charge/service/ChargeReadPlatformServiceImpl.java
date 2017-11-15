@@ -37,6 +37,7 @@ import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAcc
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeInvestmentData;
 import org.apache.fineract.portfolio.charge.data.ChargeOverdueData;
 import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
@@ -205,13 +206,16 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         final Collection<EnumOptionData> percentagePeriodTypeOptions = this.chargeDropdownReadPlatformService
                 .retriveChargePercentagePeriodTypes();
         final Collection<EnumOptionData> penaltyGraceTypeOptions = this.chargeDropdownReadPlatformService.retrivePenaltyGraceTypes();
-
+        final List<EnumOptionData> investmentChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService.retrieveInvestmentChargeCalculationTypes();
+        final List<EnumOptionData> investmentChargeTimeTypeOptions = this.chargeDropdownReadPlatformService.retrieveInvestmentChargeTimeTypes();
+        
         return ChargeData.template(currencyOptions, allowedChargeCalculationTypeOptions, allowedChargeAppliesToOptions,
                 allowedChargeTimeOptions, chargePaymentOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
                 savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
                 clientChargeTimeTypeOptions, feeFrequencyOptions, incomeOrLiabilityAccountOptions, taxGroupOptions,
                 shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, glimChargeCalculationTypeOptions, slabChargeTypeOptions,
-                percentageTypeOptions, percentagePeriodTypeOptions, penaltyGraceTypeOptions);
+                percentageTypeOptions, percentagePeriodTypeOptions, penaltyGraceTypeOptions, investmentChargeCalculationTypeOptions, 
+                investmentChargeTimeTypeOptions);
     }
 
     @Override
@@ -353,11 +357,13 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, "
                     + "cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,"
                     + "cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue,cod.min_overdue_amount_required as minOverdueAmountRequired,"
-                    + "cod.stop_charge_on_npa as stopChargeOnNPA," + "tg.id as taxGroupId, tg.name as taxGroupName " + "from m_charge c "
+                    + "cod.stop_charge_on_npa as stopChargeOnNPA," + "tg.id as taxGroupId, tg.name as taxGroupName, " 
+                    + "cid.id as chargeInvestmentDetailsId, cid.apply_to_linked_savings_account , cid.not_apply_to_investment_account "
+                    + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
                     + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id " + " LEFT JOIN f_charge_slab cs on cs.charge_id = c.id "
-                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id ";
+                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id "  + " LEFT JOIN f_charge_investment_details cid on cid.charge_id = c.id ";
         }
 
         public String chargeSchema() {
@@ -375,11 +381,14 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, "
                     + "cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,"
                     + "cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue, cod.min_overdue_amount_required as minOverdueAmountRequired, "
-                    + "cod.stop_charge_on_npa as stopChargeOnNPA," + "tg.id as taxGroupId, tg.name as taxGroupName " + "from m_charge c "
+                    + "cod.stop_charge_on_npa as stopChargeOnNPA," + "tg.id as taxGroupId, tg.name as taxGroupName, " 
+                    + "cid.id as chargeInvestmentDetailsId, cid.apply_to_linked_savings_account , cid.not_apply_to_investment_account "
+                    + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
                     + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id "
-                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id ";
+                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id "
+                    + " LEFT JOIN f_charge_investment_details cid on cid.charge_id = c.id ";
         }
 
         public String loanProductChargeSchema() {
@@ -392,6 +401,10 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
         public String shareProductChargeSchema() {
             return chargeSchema() + " join m_share_product_charge mspc on mspc.charge_id = c.id";
+        }
+        
+        public String ivestmentProductChargeSchema() {
+            return chargeSchema() + " join f_investment_product_charge ipc on ipc.charge_id = c.id";
         }
 
         @Override
@@ -473,11 +486,18 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             if (chargeTimeTypeEnum.isOverdueInstallment()) {
                 chargeOverdueData = this.chargeOverdueDetailMapper.mapRow(rs, rowNum);
             }
+            ChargeInvestmentData chargeInvestmentData = null;
+            if((ChargeAppliesTo.EXTERNALINVESTMENT.getValue()).intValue() == chargeAppliesTo){
+            	if(JdbcSupport.getLong(rs, "chargeInvestmentDetailsId") != null){
+            		chargeInvestmentData = new ChargeInvestmentData(JdbcSupport.getLong(rs, "chargeInvestmentDetailsId"),
+            				rs.getBoolean("apply_to_linked_savings_account"),rs.getBoolean("not_apply_to_investment_account"));
+            	}    	
+            }
 
             return ChargeData.instance(id, name, amount, currency, chargeTimeType, chargeAppliesToType, chargeCalculationType,
                     chargePaymentMode, feeOnMonthDay, feeInterval, penalty, active, minCap, maxCap, feeFrequencyType, glAccountData,
                     taxGroupData, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation, isCapitalized, percentageTypeOptionData,
-                    percentagePeriodTypeOptionData, chargeOverdueData);
+                    percentagePeriodTypeOptionData, chargeOverdueData,chargeInvestmentData);
         }
     }
 
@@ -613,4 +633,23 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { ChargeAppliesTo.SHARES.getValue() });
     }
+    
+    @Override
+    public Collection<ChargeData> retrieveInvestmentProductApplicableCharges() {
+        final ChargeMapper rm = new ChargeMapper();
+        
+        String sql = "select " + rm.chargeSchema() + " where c.is_deleted=0 and c.is_active=1 and c.charge_applies_to_enum=? order by c.name ";
+        
+        return this.jdbcTemplate.query(sql, rm, new Object[] { ChargeAppliesTo.EXTERNALINVESTMENT.getValue() });
+    }
+
+	@Override
+	public Collection<ChargeData> retrieveInvestmentProductApplicableCharges(
+			Long investmentProductId) {
+        final ChargeMapper rm = new ChargeMapper();
+
+        String sql = "select " + rm.ivestmentProductChargeSchema() + " where c.is_deleted=0 and c.is_active=1 and ipc.investment_product_id=? ";
+
+        return this.jdbcTemplate.query(sql, rm, new Object[] { investmentProductId });
+	}
 }
