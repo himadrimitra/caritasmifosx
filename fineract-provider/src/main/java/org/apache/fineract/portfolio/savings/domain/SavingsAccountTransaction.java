@@ -833,4 +833,8 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     public PaymentDetail getPaymentDetail() {
         return this.paymentDetail ;
     }
+
+    public Long getOfficeId() {
+        return this.officeId;
+    }
 }

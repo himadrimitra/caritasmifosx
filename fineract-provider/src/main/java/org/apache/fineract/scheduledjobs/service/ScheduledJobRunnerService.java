@@ -42,22 +42,6 @@ public interface ScheduledJobRunnerService {
 
     void updateClientSubStatus();
 
-    void loanRepaymentSmsReminder();
-
-    void loanFirstOverdueRepaymentReminder();
-
-    void loanSecondOverdueRepaymentReminder();
-
-    void loanThirdOverdueRepaymentReminder();
-
-    void loanFourthOverdueRepaymentReminder();
-
-    void defaultWarningToClients();
-
-    void defaultWarningToGuarantors();
-
-    void dormancyWarningToClients();
-
     void doAppySavingLateFeeCharge() throws JobExecutionException;
 
     // the following method will call if any user manually wanted to run the job

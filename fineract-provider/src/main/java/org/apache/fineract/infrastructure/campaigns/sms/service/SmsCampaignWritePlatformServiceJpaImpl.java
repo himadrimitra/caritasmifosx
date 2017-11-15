@@ -217,6 +217,9 @@ public class SmsCampaignWritePlatformServiceJpaImpl implements SmsCampaignWriteP
 
             HashMap<String, String> queryParamForRunReport = new ObjectMapper().readValue(smsCampaign.getParamValue(),
                     new TypeReference<HashMap<String, String>>() {});
+            if (queryParamForRunReport.containsKey("startDate")) {
+                queryParamForRunReport.put("startDate", DateUtils.getLocalDateOfTenant().toString("yyyy-MM-dd"));
+            }
 
             List<HashMap<String, Object>> runReportObject = this.getRunReportByServiceImpl(campaignParams.get("reportName"),
                     queryParamForRunReport);
