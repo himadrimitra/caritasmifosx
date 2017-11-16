@@ -139,9 +139,16 @@ public class InvestmentAccountApiResource {
             commandRequest = builder.approveInvestmentAccount(investmentAccountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }else if(is(commandParam, "active")){
-            commandRequest = builder.approveInvestmentAccount(investmentAccountId).build();
+            commandRequest = builder.activateInvestmentAccount(investmentAccountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }else if(is(commandParam, "reject")){
+            commandRequest = builder.activateInvestmentAccount(investmentAccountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }else if(is(commandParam, "undoapproval")){
+            commandRequest = builder.activateInvestmentAccount(investmentAccountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
+        
         
         return this.toApiJsonSerializer.serialize(result);
     }

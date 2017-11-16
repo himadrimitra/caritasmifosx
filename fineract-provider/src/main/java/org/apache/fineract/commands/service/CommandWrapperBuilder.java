@@ -4405,4 +4405,18 @@ public class CommandWrapperBuilder {
         this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=active";
         return this;
     }
+    public CommandWrapperBuilder rejectInvestmentAccount(final Long ivestmentAccountId) {
+        this.actionName = "REJECT";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=reject";
+        return this;
+    }
+    public CommandWrapperBuilder undoInvestmentAccountApproval(final Long ivestmentAccountId) {
+        this.actionName = "UNDOAPPROVAL";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=undoapproval";
+        return this;
+    }
 }

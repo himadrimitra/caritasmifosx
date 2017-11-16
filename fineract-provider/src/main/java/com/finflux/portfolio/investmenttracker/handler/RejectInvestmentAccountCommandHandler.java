@@ -10,19 +10,19 @@ import org.springframework.stereotype.Service;
 import com.finflux.portfolio.investmenttracker.service.InvestmentAccountWritePlatformService;
 
 @Service
-@CommandType(entity = "INVESTMENT_ACCOUNT", action = "ACTIVE")
-public class ActivateInvestmentAccountCommandHandler implements NewCommandSourceHandler {
+@CommandType(entity = "INVESTMENT_ACCOUNT", action = "REJECT")
+public class RejectInvestmentAccountCommandHandler implements NewCommandSourceHandler {
 
     private InvestmentAccountWritePlatformService investmentAccountWritePlatformService;
 
     @Autowired
-    public ActivateInvestmentAccountCommandHandler(final InvestmentAccountWritePlatformService investmentAccountWritePlatformService) {
+    public RejectInvestmentAccountCommandHandler(final InvestmentAccountWritePlatformService investmentAccountWritePlatformService) {
         this.investmentAccountWritePlatformService = investmentAccountWritePlatformService;
     }
     
     @Override
     public CommandProcessingResult processCommand(JsonCommand command) {
-        return this.investmentAccountWritePlatformService.activateInvestmentAccount(command.entityId(), command);
+        return this.investmentAccountWritePlatformService.rejectInvestmentAccount(command.entityId(),command);
     }
 
 }

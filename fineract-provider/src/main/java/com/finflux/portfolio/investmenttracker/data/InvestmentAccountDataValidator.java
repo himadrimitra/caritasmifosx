@@ -10,12 +10,14 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountStateTransitionException;
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
@@ -175,9 +177,27 @@ public class InvestmentAccountDataValidator {
        
     }
     
-    public void validateForInvestmentAccountActivate(InvestmentAccount investmentAccount) {
+    public void validateForInvestmentAccountToActivate(InvestmentAccount investmentAccount) {
         if(InvestmentAccountStatus.APPROVED.getValue().compareTo(investmentAccount.getStatus()) != 0){
-            
+            String defaultErrorMessage = "Investment Account should be in Approve status to Activate";
+            String action = InvestmentAccountStatus.ACTIVE.name();
+            throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
+        }
+    }
+    
+    public void validateForInvestmentAccountToApprove(InvestmentAccount investmentAccount) {
+        if(InvestmentAccountStatus.PENDING_APPROVAL.getValue().compareTo(investmentAccount.getStatus()) != 0){
+            String defaultErrorMessage = "Investment Account should be in PENDING_APPROVAL status to Approve";
+            String action = InvestmentAccountStatus.APPROVED.name();
+            throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
+        }
+    }
+    
+    public void validateForInvestmentAccountToReject(InvestmentAccount investmentAccount) {
+        if(InvestmentAccountStatus.PENDING_APPROVAL.getValue().compareTo(investmentAccount.getStatus()) != 0){
+            String defaultErrorMessage = "Investment Account should be in PENDING_APPROVAL status to Reject";
+            String action = InvestmentAccountStatus.REJECTED.name();
+            throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
         }
     }
     
