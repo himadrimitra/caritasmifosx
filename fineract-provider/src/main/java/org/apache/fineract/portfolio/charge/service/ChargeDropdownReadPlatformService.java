@@ -58,4 +58,8 @@ public interface ChargeDropdownReadPlatformService {
     Collection<EnumOptionData> retriveChargePercentagePeriodTypes();
 
     Collection<EnumOptionData> retrivePenaltyGraceTypes();
+    
+    List<EnumOptionData> retrieveInvestmentChargeCalculationTypes();
+
+    List<EnumOptionData> retrieveInvestmentChargeTimeTypes();
 }

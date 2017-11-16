@@ -44,7 +44,8 @@ public enum ChargeTimeType {
     SAVINGS_NOACTIVITY_FEE(16, "chargeTimeType.savingsNoActivityFee"), // 0
     DAILY_FEE(17, "chargeTimeType.dailyFee"), // only for svings account
     UPFRONT_FEE(50, "chargeTimeType.upfrontFee"), //
-    LATE_DEPOSITE_FEE(51, "chargeTimeType.lateDepositeFee"); // only for savings
+    LATE_DEPOSITE_FEE(51, "chargeTimeType.lateDepositeFee"), // only for savings
+    MATURITY(52,"chargeTimeType.maturity");
 
     private final Integer value;
     private final String code;
@@ -150,6 +151,9 @@ public enum ChargeTimeType {
                 break;
                 case 51:
                     chargeTimeType = LATE_DEPOSITE_FEE;
+                break;
+                case 52:
+                	chargeTimeType = MATURITY;
                 break;
                 default:
                     chargeTimeType = INVALID;
@@ -292,6 +296,10 @@ public enum ChargeTimeType {
             break;
         }
         return periodFrequencyType;
+    }
+    
+    public static Object[] validExternalInvestmentValues() {
+        return new Integer[] { ChargeTimeType.MATURITY.getValue()};
     }
 
 }

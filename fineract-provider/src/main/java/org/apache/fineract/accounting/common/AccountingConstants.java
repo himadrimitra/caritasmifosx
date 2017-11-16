@@ -64,8 +64,8 @@ public class AccountingConstants {
     /*** Accounting placeholders for accrual based accounting for loan products ***/
     public static enum ACCRUAL_ACCOUNTS_FOR_LOAN {
         FUND_SOURCE(1), LOAN_PORTFOLIO(2), INTEREST_ON_LOANS(3), INCOME_FROM_FEES(4), INCOME_FROM_PENALTIES(5), LOSSES_WRITTEN_OFF(6), INTEREST_RECEIVABLE(
-                7), FEES_RECEIVABLE(8), PENALTIES_RECEIVABLE(9), TRANSFERS_SUSPENSE(10), OVERPAYMENT(11), INCOME_FROM_RECOVERY(12), SUBSIDY_FUND_SOURCE(50), SUBSIDY_ACCOUNT(51),
-                NPA_INTEREST_SUSPENSE(52), NPA_FEES_SUSPENSE(53),NPA_PENALTIES_SUSPENSE(54);
+                7), FEES_RECEIVABLE(8), PENALTIES_RECEIVABLE(9), TRANSFERS_SUSPENSE(10), OVERPAYMENT(11), INCOME_FROM_RECOVERY(12), SUBSIDY_FUND_SOURCE(
+                50), SUBSIDY_ACCOUNT(51), NPA_INTEREST_SUSPENSE(52), NPA_FEES_SUSPENSE(53), NPA_PENALTIES_SUSPENSE(54);
 
         private final Integer value;
 
@@ -108,11 +108,10 @@ public class AccountingConstants {
                 "transfersInSuspenseAccountId"), PAYMENT_CHANNEL_FUND_SOURCE_MAPPING("paymentChannelToFundSourceMappings"), PAYMENT_TYPE(
                 "paymentTypeId"), FEE_INCOME_ACCOUNT_MAPPING("feeToIncomeAccountMappings"), PENALTY_INCOME_ACCOUNT_MAPPING(
                 "penaltyToIncomeAccountMappings"), CHARGE_ID("chargeId"), INCOME_ACCOUNT_ID("incomeAccountId"), INCOME_FROM_RECOVERY(
-                "incomeFromRecoveryAccountId"), SUBSIDY_FUND_SOURCE("subsidyFundSourceId"), 
-                EXPENSE_ACCOUNT_ID("expenseAccountId"), SUBSIDY_ACCOUNT("subsidyAccountId"),
-                CODE_VALUE_ID("codeValueId"), CODE_VALUE_ACCOUNTING_MAPPING("codeValueSpecificAccountMapping"),
-                NPA_INTEREST_SUSPENSE("npaInterestSuspenseAccountId"), NPA_FEES_SUSPENSE("npaFeeSuspenseAccountId"),
-                NPA_PENALTIES_SUSPENSE("npaPenaltySuspenseAccountId");
+                "incomeFromRecoveryAccountId"), SUBSIDY_FUND_SOURCE("subsidyFundSourceId"), EXPENSE_ACCOUNT_ID("expenseAccountId"), SUBSIDY_ACCOUNT(
+                "subsidyAccountId"), CODE_VALUE_ID("codeValueId"), CODE_VALUE_ACCOUNTING_MAPPING("codeValueSpecificAccountMapping"), NPA_INTEREST_SUSPENSE(
+                "npaInterestSuspenseAccountId"), NPA_FEES_SUSPENSE("npaFeeSuspenseAccountId"), NPA_PENALTIES_SUSPENSE(
+                "npaPenaltySuspenseAccountId");
 
         private final String value;
 
@@ -136,8 +135,8 @@ public class AccountingConstants {
                 "overpaymentLiabilityAccount"), INTEREST_RECEIVABLE("receivableInterestAccount"), FEES_RECEIVABLE("receivableFeeAccount"), PENALTIES_RECEIVABLE(
                 "receivablePenaltyAccount"), TRANSFERS_SUSPENSE("transfersInSuspenseAccount"), INCOME_ACCOUNT_ID("incomeAccount"), INCOME_FROM_RECOVERY(
                 "incomeFromRecoveryAccount"), LIABILITY_TRANSFER_SUSPENSE("liabilityTransferInSuspenseAccount"), SUBSIDY_FUND_SOURCE(
-                "subsidyFundSourceId"), SUBSIDY_ACCOUNT("subsidyAccountId"), NPA_INTEREST_SUSPENSE("npaInterestSuspenseAccount"), 
-                NPA_FEES_SUSPENSE("npaFeeSuspenseAccount"),NPA_PENALTIES_SUSPENSE("npaPenaltySuspenseAccount");
+                "subsidyFundSourceId"), SUBSIDY_ACCOUNT("subsidyAccountId"), NPA_INTEREST_SUSPENSE("npaInterestSuspenseAccount"), NPA_FEES_SUSPENSE(
+                "npaFeeSuspenseAccount"), NPA_PENALTIES_SUSPENSE("npaPenaltySuspenseAccount");
 
         private final String value;
 
@@ -222,8 +221,8 @@ public class AccountingConstants {
                 "incomeFromPenaltyAccount"), INTEREST_ON_SAVINGS("interestOnSavingsAccount"), PAYMENT_TYPE("paymentType"), FUND_SOURCE(
                 "fundSourceAccount"), TRANSFERS_SUSPENSE("transfersInSuspenseAccount"), PENALTY_INCOME_ACCOUNT_MAPPING(
                 "penaltyToIncomeAccountMappings"), CHARGE_ID("charge"), INCOME_ACCOUNT_ID("incomeAccount"), OVERDRAFT_PORTFOLIO_CONTROL(
-                "overdraftPortfolioControl"), INCOME_FROM_INTEREST("incomeFromInterest"), LOSSES_WRITTEN_OFF("writeOffAccount"),
-                ESCHEAT_LIABILITY("escheatLiabilityAccount");
+                "overdraftPortfolioControl"), INCOME_FROM_INTEREST("incomeFromInterest"), LOSSES_WRITTEN_OFF("writeOffAccount"), ESCHEAT_LIABILITY(
+                "escheatLiabilityAccount");
 
         private final String value;
 
@@ -245,8 +244,7 @@ public class AccountingConstants {
         ASSET_TRANSFER(100, "assetTransfer", GLAccountType.ASSET), LIABILITY_TRANSFER(200, "liabilityTransfer", GLAccountType.LIABILITY), CASH_AT_MAINVAULT(
                 101, "cashAtMainVault", GLAccountType.ASSET), CASH_AT_TELLER(102, "cashAtTeller", GLAccountType.ASSET), OPENING_BALANCES_TRANSFER_CONTRA(
                 300, "openingBalancesTransferContra", GLAccountType.EQUITY), ASSET_FUND_SOURCE(103, "fundSource", GLAccountType.ASSET), PAYABLE_DIVIDENDS(
-                201, "payableDividends", GLAccountType.LIABILITY), INTERBRANCH_TRANSFER(
-                        104, "interbranchtransfer", GLAccountType.ASSET) ;
+                201, "payableDividends", GLAccountType.LIABILITY), INTERBRANCH_TRANSFER(104, "interbranchtransfer", GLAccountType.ASSET);
 
         private final Integer value;
         private final String code;
@@ -376,4 +374,82 @@ public class AccountingConstants {
     public static final String INCOME_TAG_OPTION_CODE_NAME = "IncomeAccountTags";
     public static final String EXPENSES_TAG_OPTION_CODE_NAME = "ExpenseAccountTags";
 
+    /***
+     * Enum of all accounting related input parameter names used while
+     * creating/updating a investment product
+     ***/
+    public static enum INVESTMENT_PRODUCT_ACCOUNTING_PARAMS {
+        FUND_SOURCE("fundSourceAccountId"), INVESTMENT_ACCOUNT("investmentAccountId"), INCOME_FROM_INTEREST("incomeFromInterestAccountId"), FEE_EXPENSE(
+                "feeExpenseAccountId"), PAYMENT_CHANNEL_FUND_SOURCE_MAPPING("paymentChannelToFundSourceMappings"), PAYMENT_TYPE(
+                "paymentTypeId"), FEE_EXPENSE_ACCOUNT_MAPPING("feeToExpenseAccountMappings"), CHARGE_ID("chargeId");
+
+        private final String value;
+
+        private INVESTMENT_PRODUCT_ACCOUNTING_PARAMS(final String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return name().toString().replaceAll("_", " ");
+        }
+
+        public String getValue() {
+            return this.value;
+        }
+    }
+
+    /***
+     * Accounting placeholders for cash based accounting for Investment products
+     ***/
+    public static enum CASH_ACCOUNTS_FOR_INVESTMENT {
+        FUND_SOURCE(1), INVESTMENT_PARTNER_ACCOUNT(2), INCOME_FROM_INVESTMENT_INTEREST(3), BANK_FEE_EXPENSE(4);
+
+        private final Integer value;
+
+        private CASH_ACCOUNTS_FOR_INVESTMENT(final Integer value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return name().toString().replaceAll("_", " ");
+        }
+
+        public Integer getValue() {
+            return this.value;
+        }
+
+        private static final Map<Integer, CASH_ACCOUNTS_FOR_INVESTMENT> intToEnumMap = new HashMap<>();
+        static {
+            for (final CASH_ACCOUNTS_FOR_INVESTMENT type : CASH_ACCOUNTS_FOR_INVESTMENT.values()) {
+                intToEnumMap.put(type.value, type);
+            }
+        }
+
+        public static CASH_ACCOUNTS_FOR_INVESTMENT fromInt(final int i) {
+            final CASH_ACCOUNTS_FOR_INVESTMENT type = intToEnumMap.get(Integer.valueOf(i));
+            return type;
+        }
+    }
+
+    public static enum INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS {
+        FUND_SOURCE("fundSourceAccount"), INVESTMENT_ACCOUNT("investmentAccount"), INCOME_FROM_INTEREST("incomeFromInterestAccount"), FEE_EXPENSE(
+                "feeExpenseAccount");
+
+        private final String value;
+
+        private INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS(final String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return name().toString().replaceAll("_", " ");
+        }
+
+        public String getValue() {
+            return this.value;
+        }
+    }
 }

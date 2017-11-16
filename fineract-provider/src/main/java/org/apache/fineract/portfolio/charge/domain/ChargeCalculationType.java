@@ -144,4 +144,8 @@ public enum ChargeCalculationType {
     public boolean isPercentageOfAmountInterestAndFees() {
         return this.value.equals(ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES.getValue());
     }
+    
+    public static Object[] validValuesForExternalIvestments() {
+        return new Integer[] { ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.PERCENT_OF_INTEREST.getValue()};
+    }
 }

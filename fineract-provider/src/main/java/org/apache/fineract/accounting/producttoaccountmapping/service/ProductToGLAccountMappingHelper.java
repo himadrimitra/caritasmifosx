@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.fineract.accounting.common.AccountingConstants.ACCRUAL_ACCOUNTS_FOR_LOAN;
+import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_INVESTMENT;
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_LOAN;
+import org.apache.fineract.accounting.common.AccountingConstants.INVESTMENT_PRODUCT_ACCOUNTING_PARAMS;
 import org.apache.fineract.accounting.common.AccountingConstants.LOAN_PRODUCT_ACCOUNTING_PARAMS;
 import org.apache.fineract.accounting.glaccount.domain.GLAccount;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountRepository;
@@ -609,4 +611,32 @@ public class ProductToGLAccountMappingHelper {
             this.accountMappingRepository.deleteInBatch(productToGLAccountMappings);
         }
     }
+    
+    public void saveChargesToExpenseAccountMappings(final JsonCommand command, final JsonElement element, final Long productId,
+             final PortfolioProductType portfolioProductType) {
+
+        final JsonArray chargeToExpenseAccountMappingArray = this.fromApiJsonHelper.extractJsonArrayNamed(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE_ACCOUNT_MAPPING.getValue(), element);
+        if (chargeToExpenseAccountMappingArray != null) {
+            for (int i = 0; i < chargeToExpenseAccountMappingArray.size(); i++) {
+                final JsonObject jsonObject = chargeToExpenseAccountMappingArray.get(i).getAsJsonObject();
+                final Long chargeId = jsonObject.get(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.CHARGE_ID.getValue()).getAsLong();
+                final Long expenseAccountId = jsonObject.get(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue()).getAsLong();
+                saveChargeToExpenseAccountMapping(productId, chargeId, expenseAccountId, portfolioProductType);
+            }
+        }
+    }
+    
+    public void saveChargeToExpenseAccountMapping(final Long productId, final Long chargeId, final Long expenseAccountId,
+            final PortfolioProductType portfolioProductType) {
+        final Charge charge = this.chargeRepositoryWrapper.findOneWithNotFoundDetection(chargeId);
+        CASH_ACCOUNTS_FOR_INVESTMENT placeHolderAccountType = CASH_ACCOUNTS_FOR_INVESTMENT.BANK_FEE_EXPENSE;
+        final List<GLAccountType> allowedAccountTypes = new ArrayList<>();
+            allowedAccountTypes.add(GLAccountType.EXPENSE);
+        GLAccount  glAccount = getAccountByIdAndType(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue(), allowedAccountTypes,
+        		expenseAccountId);
+        final ProductToGLAccountMapping accountMapping = new ProductToGLAccountMapping(glAccount, productId,
+                portfolioProductType.getValue(), placeHolderAccountType.getValue(), charge);
+        this.accountMappingRepository.save(accountMapping);
+    }
+
 }

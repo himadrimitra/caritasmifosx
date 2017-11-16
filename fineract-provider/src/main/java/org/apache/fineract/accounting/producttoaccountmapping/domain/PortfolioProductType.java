@@ -28,7 +28,7 @@ public enum PortfolioProductType {
     SAVING(2, "productType.saving"), //
     CLIENT(5, "productType.client"), //
     PROVISIONING(3, "productType.provisioning"), //
-    SHARES(4, "productType.shares");
+    SHARES(4, "productType.shares"), INVESTMENT(5, "productType.investment");
 
     private final Integer value;
     private final String code;

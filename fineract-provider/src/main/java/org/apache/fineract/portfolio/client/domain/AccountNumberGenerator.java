@@ -33,6 +33,8 @@ import org.apache.fineract.portfolio.shareaccounts.domain.ShareAccount;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
+
 /**
  * Example {@link AccountNumberGenerator} for clients that takes an entities
  * auto generated database id and zero fills it ensuring the identifier is
@@ -152,4 +154,10 @@ public class AccountNumberGenerator {
         return generateAccountNumber(propertyMap, accountNumberFormat);
     }
 
+    public String generateInvestmentAccountNumber(final InvestmentAccount investmentAccount, final AccountNumberFormat accountNumberFormat) {
+        final Map<String, String> propertyMap = new HashMap<>();
+        propertyMap.put(ID, investmentAccount.getId().toString());
+        propertyMap.put(OFFICE_CODE, investmentAccount.getOffice().getOfficeCodeId());
+        return generateAccountNumber(propertyMap, accountNumberFormat);
+    }
 }

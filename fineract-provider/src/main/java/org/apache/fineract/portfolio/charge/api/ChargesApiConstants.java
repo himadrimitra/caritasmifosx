@@ -48,6 +48,10 @@ public class ChargesApiConstants {
     public static final String considerOnlyPostedInterestParamName = "considerOnlyPostedInterest";
     public static final String calculateChargeOnCurrentOverdueParamName = "calculateChargeOnCurrentOverdue";   
     public static final String stopChargeOnNPAParamName = "stopChargeOnNPA";
-    public static final String minOverdueAmountRequiredParamName = "minOverdueAmountRequired";    
+    public static final String minOverdueAmountRequiredParamName = "minOverdueAmountRequired";  
+    
+    //investment charge releated parameters
+    public static final String applyToLinkedSavingsAccountParamName = "applyToLinkedSavingsAccount";
+    public static final String doNotApplyToInvestmentAccountParamName = "doNotApplyToInvestmentAccount";
 
 }

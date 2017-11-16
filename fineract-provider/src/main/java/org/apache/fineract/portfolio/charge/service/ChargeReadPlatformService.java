@@ -125,4 +125,8 @@ public interface ChargeReadPlatformService {
     Collection<ChargeData> retrieveSharesApplicableCharges();
 
     public Collection<ChargeData> retrieveShareProductCharges(final Long shareProductId) ;
+    
+    Collection<ChargeData> retrieveInvestmentProductApplicableCharges();
+    
+    Collection<ChargeData> retrieveInvestmentProductApplicableCharges(Long investmentProductId);
 }

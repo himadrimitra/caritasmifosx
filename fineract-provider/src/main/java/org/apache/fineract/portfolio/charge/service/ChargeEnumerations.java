@@ -112,6 +112,9 @@ public class ChargeEnumerations {
             case DAILY_FEE:
                 optionData = new EnumOptionData(ChargeTimeType.DAILY_FEE.getValue().longValue(), ChargeTimeType.DAILY_FEE.getCode(), "Daily Fee");
                 break;
+            case MATURITY:
+                optionData = new EnumOptionData(ChargeTimeType.MATURITY.getValue().longValue(), ChargeTimeType.MATURITY.getCode(), "Maturity");
+                break;    
             default:
                 optionData = new EnumOptionData(ChargeTimeType.INVALID.getValue().longValue(), ChargeTimeType.INVALID.getCode(), "Invalid");
             break;
@@ -138,6 +141,9 @@ public class ChargeEnumerations {
             break;
             case SHARES:
                 optionData = new EnumOptionData(ChargeAppliesTo.SHARES.getValue().longValue(), ChargeAppliesTo.SHARES.getCode(), "Shares");
+            break;
+            case EXTERNALINVESTMENT:
+                optionData = new EnumOptionData(ChargeAppliesTo.EXTERNALINVESTMENT.getValue().longValue(), ChargeAppliesTo.EXTERNALINVESTMENT.getCode(), "ExternalInvestment");
             break;
             default:
                 optionData = new EnumOptionData(ChargeAppliesTo.INVALID.getValue().longValue(), ChargeAppliesTo.INVALID.getCode(),

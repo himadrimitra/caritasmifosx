@@ -172,4 +172,15 @@ public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownRead
     public Collection<EnumOptionData> retrivePenaltyGraceTypes() {
         return PenaltyGraceType.penaltyGraceTypeOptions();
     }
+
+	@Override
+	public List<EnumOptionData> retrieveInvestmentChargeCalculationTypes() {
+		 return Arrays.asList(chargeCalculationType(ChargeCalculationType.FLAT),
+	                chargeCalculationType(ChargeCalculationType.PERCENT_OF_INTEREST));
+	}
+
+	@Override
+	public List<EnumOptionData> retrieveInvestmentChargeTimeTypes() {
+		return Arrays.asList(chargeTimeType(ChargeTimeType.MATURITY));
+	}
 }
