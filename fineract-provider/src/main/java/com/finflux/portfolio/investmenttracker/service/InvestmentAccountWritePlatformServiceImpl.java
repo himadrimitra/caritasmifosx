@@ -1,5 +1,8 @@
 package com.finflux.portfolio.investmenttracker.service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormat;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormatRepositoryWrapper;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
@@ -7,6 +10,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -14,11 +18,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountDataValidator;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountDataAssembler;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepository;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositoryWrapper;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
 
 @Service
 public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAccountWritePlatformService {
@@ -90,14 +96,71 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
 
     @Override
     public CommandProcessingResult approveInvestmentAccount(Long investmentAccountId, JsonCommand command) {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            AppUser appUser = this.context.authenticatedUser();
+            InvestmentAccount investmentAccount = this.investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
+            this.fromApiJsonDataValidator.validateForInvestmentAccountToApprove(investmentAccount);
+            Map<String, Object> changes = new HashMap<>();
+            changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.APPROVED.name());
+            investmentAccount.setStatus(InvestmentAccountStatus.APPROVED.getValue());
+            investmentAccount.setApprovedBy(appUser);
+            investmentAccount.setApprovedOnDate(DateUtils.getLocalDateOfTenant().toDate());
+            this.investmentAccountRepository.save(investmentAccount);
+            return new CommandProcessingResultBuilder() //
+                    .withEntityId(investmentAccount.getId()) //
+                    .with(changes).build();
+        } catch (final DataIntegrityViolationException e) {
+            handleDataIntegrityIssues(command, e);
+            return CommandProcessingResult.empty();
+        }
     }
 
     @Override
-    public CommandProcessingResult activataeInvestmentAccount(Long investmentAccountId, JsonCommand command) {
-        InvestmentAccount investmentAccount = this.investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
-        this.fromApiJsonDataValidator.validateForInvestmentAccountActivate(investmentAccount);
+    public CommandProcessingResult activateInvestmentAccount(Long investmentAccountId, JsonCommand command) {
+        try {
+            AppUser appUser = this.context.authenticatedUser();
+            InvestmentAccount investmentAccount = this.investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
+            this.fromApiJsonDataValidator.validateForInvestmentAccountToActivate(investmentAccount);
+            Map<String, Object> changes = new HashMap<>();
+            changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.ACTIVE.name());
+            investmentAccount.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
+            investmentAccount.setActivatedBy(appUser);
+            investmentAccount.setApprovedOnDate(DateUtils.getLocalDateOfTenant().toDate());
+            this.investmentAccountRepository.save(investmentAccount);
+            return new CommandProcessingResultBuilder() //
+                    .withEntityId(investmentAccount.getId()) //
+                    .with(changes).build();
+        } catch (final DataIntegrityViolationException e) {
+            handleDataIntegrityIssues(command, e);
+            return CommandProcessingResult.empty();
+        }
+    }
+    
+
+    @Override
+    public CommandProcessingResult rejectInvestmentAccount(Long investmentAccountId, JsonCommand command) {
+        try {
+            AppUser appUser = this.context.authenticatedUser();
+            InvestmentAccount investmentAccount = this.investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
+            this.fromApiJsonDataValidator.validateForInvestmentAccountToReject(investmentAccount);
+            Map<String, Object> changes = new HashMap<>();
+            changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.REJECTED.name());
+            investmentAccount.setStatus(InvestmentAccountStatus.REJECTED.getValue());
+            //investmentAccount.s(appUser);
+            //investmentAccount.setApprovedOnDate(DateUtils.getLocalDateOfTenant().toDate());
+            this.investmentAccountRepository.save(investmentAccount);
+            return new CommandProcessingResultBuilder() //
+                    .withEntityId(investmentAccount.getId()) //
+                    .with(changes).build();
+        } catch (final DataIntegrityViolationException e) {
+            handleDataIntegrityIssues(command, e);
+            return CommandProcessingResult.empty();
+        }
+    }
+
+    @Override
+    public CommandProcessingResult undoInvestmentAccountApproval(Long investmentAccountId, JsonCommand command) {
+        // TODO Auto-generated method stub
         return null;
     }
 }

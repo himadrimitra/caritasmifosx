@@ -124,6 +124,10 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     
     @Transient
     protected boolean accountNumberRequiresAutoGeneration = false;
+    
+    protected InvestmentAccount(){
+        
+    }
 
     private InvestmentAccount(String accountNumber, String externalId, Office office, CodeValue partner,
             InvestmentProduct investmentProduct, Integer status, MonetaryCurrency currency, Date submittedOnDate, AppUser submittedBy,
@@ -325,4 +329,31 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
         this.accountNumber = accountIdentifier;
         this.accountNumberRequiresAutoGeneration = false;
     }
+
+    
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    
+    public void setApprovedOnDate(Date approvedOnDate) {
+        this.approvedOnDate = approvedOnDate;
+    }
+
+    
+    public void setApprovedBy(AppUser approvedBy) {
+        this.approvedBy = approvedBy;
+    }
+
+    
+    public void setActivatedOnDate(Date activatedOnDate) {
+        this.activatedOnDate = activatedOnDate;
+    }
+
+    
+    public void setActivatedBy(AppUser activatedBy) {
+        this.activatedBy = activatedBy;
+    }
+    
+    
 }

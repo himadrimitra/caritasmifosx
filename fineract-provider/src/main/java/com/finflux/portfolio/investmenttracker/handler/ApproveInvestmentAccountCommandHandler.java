@@ -22,7 +22,7 @@ public class ApproveInvestmentAccountCommandHandler implements NewCommandSourceH
     
     @Override
     public CommandProcessingResult processCommand(JsonCommand command) {
-        return this.investmentAccountWritePlatformService.createInvestmentAccount(command);
+        return this.investmentAccountWritePlatformService.approveInvestmentAccount(command.entityId(), command);
     }
 
 }
