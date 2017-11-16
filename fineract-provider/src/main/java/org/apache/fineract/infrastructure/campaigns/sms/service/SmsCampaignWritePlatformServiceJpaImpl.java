@@ -87,6 +87,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
@@ -303,7 +304,7 @@ public class SmsCampaignWritePlatformServiceJpaImpl implements SmsCampaignWriteP
     }
 
     @Override
-    public void insertDirectCampaignIntoSmsOutboundTable(final Client client, final SmsCampaign smsCampaign) {
+    public void insertDirectCampaignIntoSmsOutboundTable(final Client client, final SmsCampaign smsCampaign, final Map<String, String> smsParams) {
         try {
             HashMap<String, String> campaignParams = new ObjectMapper().readValue(smsCampaign.getParamValue(),
                     new TypeReference<HashMap<String, String>>() {});
@@ -313,6 +314,9 @@ public class SmsCampaignWritePlatformServiceJpaImpl implements SmsCampaignWriteP
             
 			campaignParams.put("clientId", client.getId().toString());
 			queryParamForRunReport.put("clientId", client.getId().toString());
+			if (!CollectionUtils.isEmpty(smsParams)) {
+			    queryParamForRunReport.putAll(smsParams);
+                        }
 			
 			List<HashMap<String, Object>> runReportObject = this
 					.getRunReportByServiceImpl(campaignParams.get("reportName"), queryParamForRunReport);

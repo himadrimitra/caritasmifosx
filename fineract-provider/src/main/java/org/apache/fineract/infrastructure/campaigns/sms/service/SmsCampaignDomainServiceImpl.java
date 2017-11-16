@@ -31,6 +31,7 @@ import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.campaigns.sms.constants.SmsCampaignTriggerType;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaign;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaignRepository;
@@ -149,17 +150,21 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
         List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Client Created");
         if(smsCampaigns.size()>0){
             for (SmsCampaign campaign:smsCampaigns){
-                this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign);
+                this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign, null);
             }
         }
         
    }
 
-    private void notifyClientPaymentDone(final Client client) {
+    private void notifyClientPaymentDone(final Client client, final String receiptNo) {
         List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Client Payments");
+        final Map<String, String> smsParams = new HashMap<>();
+        if (StringUtils.isNotBlank(receiptNo)) {
+            smsParams.put("reciptNo", receiptNo);
+        }
         if (smsCampaigns.size() > 0) {
             for (SmsCampaign campaign : smsCampaigns) {
-                this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign);
+                this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign, smsParams);
             }
         }
 
@@ -169,7 +174,7 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
     	 List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Client Activated");
     	 if(smsCampaigns.size()>0){
              for (SmsCampaign campaign:smsCampaigns){
-            	 this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign);
+            	 this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign, null);
              }
          }
     	 
@@ -179,7 +184,7 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
    	 List<SmsCampaign> smsCampaigns = retrieveSmsCampaigns("Client Rejected");
    	 if(smsCampaigns.size()>0){
             for (SmsCampaign campaign:smsCampaigns){
-            	this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign);
+            	this.smsCampaignWritePlatformCommandHandler.insertDirectCampaignIntoSmsOutboundTable(client, campaign, null);
             }
         }
    	 
@@ -522,7 +527,8 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
             if (entity instanceof Client) {
                 Client client = (Client) entity;
                 if (isSMSConfigurationEnabledForOffice(client.officeId())) {
-                    notifyClientPaymentDone(client);
+                    final String receiptNo = (String) businessEventEntity.get(BusinessEventNotificationConstants.BUSINESS_ENTITY.RECEIPT_NO);
+                    notifyClientPaymentDone(client, receiptNo);
                 }
             }
         }

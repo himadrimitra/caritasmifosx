@@ -117,6 +117,8 @@ public class CommandStrategyProvider {
                 "activateRecurringDepositCommandStrategy");
         this.commandStrategies.put(CommandContext.resource("rescheduleloans\\/\\d+\\?command=approve").method("POST").build(),
                 "approveLoanRescheduleCommandStrategy");
+        this.commandStrategies.put(CommandContext.resource("clientPayments\\/\\d+").method("POST").build(),
+                "clientPaymentsCommandStrategy");
     }
 
 }

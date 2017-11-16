@@ -88,7 +88,8 @@ public class BusinessEventNotificationConstants {
         LOAN("loan"), LOAN_TRANSACTION("loan_transaction"), LOAN_CHARGE("loan_charge"), LOAN_ADJUSTED_TRANSACTION(
                 "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT(
                 "transfer_client"), CHANGED_TRANSACTION_DETAIL("changed_transaction_detail"), JSON_COMMAND("json_command"), BUSINESS_EVENT(
-                "business_event"), SAVING("saving"), SAVING_TRANSACTION("saving_transaction"), GL_CLOSURE("gl_closure"), ENTITY_LOCK_STATUS("is_locked");
+                "business_event"), SAVING("saving"), SAVING_TRANSACTION("saving_transaction"), GL_CLOSURE("gl_closure"),
+                ENTITY_LOCK_STATUS("is_locked"), RECEIPT_NO("receipt_no");
 
         private final String value;
 
