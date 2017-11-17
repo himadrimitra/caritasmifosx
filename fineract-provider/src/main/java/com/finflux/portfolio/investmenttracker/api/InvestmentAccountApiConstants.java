@@ -30,6 +30,8 @@ public class InvestmentAccountApiConstants {
     public static final String maturityOnDateParamName = "maturityOnDate";
     public static final String maturityAmountParamName = "maturityAmount";
     public static final String reinvestAfterMaturityParamName = "reinvestAfterMaturity";
+    public static final String trackSourceAccountsParamName = "trackSourceAccounts";
+    public static final String staffIdParamName = "staffId";
     //savings account
     public static final String savingsAccountsParamName = "savingsAccounts";
     public static final String savingsAccountIdParamName = "savingsAccountId";
@@ -50,5 +52,6 @@ public class InvestmentAccountApiConstants {
             digitsAfterDecimalParamName,inMultiplesOfParamName,submittedOnDateParamName,approvedOnDateParamName,
             investmentOnDateParamName,investmentAmountParamName,interestRateParamName,interestRateTypeParamName,
             investmentTermParamName,investmentTermTypeParamName,maturityOnDateParamName,maturityAmountParamName,
-            reinvestAfterMaturityParamName,savingsAccountsParamName,chargesParamName,localeParamName,dateFormatParamName));
+            reinvestAfterMaturityParamName,savingsAccountsParamName,chargesParamName,localeParamName,dateFormatParamName,
+            trackSourceAccountsParamName, staffIdParamName));
 }

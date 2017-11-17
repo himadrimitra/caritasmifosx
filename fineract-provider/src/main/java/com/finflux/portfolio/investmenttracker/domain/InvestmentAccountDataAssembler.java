@@ -13,6 +13,8 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepositoryWrapper;
+import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
@@ -34,6 +36,7 @@ public  class InvestmentAccountDataAssembler {
     private final InvestmentProductRepositoryWrapper investmentProductRepository;
     private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     private final FromJsonHelper fromApiJsonHelper;
+    private final StaffRepositoryWrapper staffRepositoryWrapper;
 
     @Autowired
     public InvestmentAccountDataAssembler(final ChargeRepositoryWrapper chargeRepository,
@@ -41,13 +44,15 @@ public  class InvestmentAccountDataAssembler {
             final CodeValueRepositoryWrapper codeValueRepository,
             final InvestmentProductRepositoryWrapper investmentProductRepository,
             final SavingsAccountRepositoryWrapper savingsAccountRepository,
-            final FromJsonHelper fromApiJsonHelper) {
+            final FromJsonHelper fromApiJsonHelper,
+            final StaffRepositoryWrapper staffRepositoryWrapper) {
         this.chargeRepository = chargeRepository;
         this.officeReposiotory = officeReposiotory;
         this.codeValueRepository = codeValueRepository;
         this.investmentProductRepository = investmentProductRepository;
         this.savingsAccountRepository = savingsAccountRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.staffRepositoryWrapper = staffRepositoryWrapper;
     }
     
     public InvestmentAccount createAssemble(final JsonCommand command, final AppUser appUser) {
@@ -90,13 +95,20 @@ public  class InvestmentAccountDataAssembler {
         final Date maturityOnDate = command.localDateValueOfParameterNamed(InvestmentAccountApiConstants.maturityOnDateParamName).toDate();
         final BigDecimal maturityAmount = command.bigDecimalValueOfParameterNamed(InvestmentAccountApiConstants.maturityAmountParamName);
         boolean reinvestAfterMaturity = command.booleanPrimitiveValueOfParameterNamed(InvestmentAccountApiConstants.reinvestAfterMaturityParamName);
-      
+        boolean trackSourceAccounts = command.booleanPrimitiveValueOfParameterNamed(InvestmentAccountApiConstants.trackSourceAccountsParamName);
+        final Long staffId =  command.longValueOfParameterNamed(InvestmentAccountApiConstants.staffIdParamName);
+        Staff staff = null;
+        if(staffId != null){
+             staff = this.staffRepositoryWrapper.findOneWithNotFoundDetection(staffId);
+        }
         
         InvestmentAccount investmentAccount = InvestmentAccount.create(null, externalId,  office,  partner, investmentProduct, status,  currency,  submittedOnDate, appUser,
                 approvedOnDate, null,  activatedOnDate,  null, investmentOnDate, appUser, investmentAmount,interestRate, interestRateType, 
-                investmentTerm, investmentTermType, maturityOnDate,  appUser,  maturityAmount, reinvestAfterMaturity,null,null);
-        
-         investmentAccount = assembleInvestmentAccountSavingsLinkages(command,investmentAccount);
+                investmentTerm, investmentTermType, maturityOnDate,  appUser,  maturityAmount, reinvestAfterMaturity,null,null,null,null,null,null,
+                staff,trackSourceAccounts);
+         if(trackSourceAccounts){
+             investmentAccount = assembleInvestmentAccountSavingsLinkages(command,investmentAccount);
+         }      
          investmentAccount =  assembleInvestmentAccountCharges(command,investmentAccount);
          
          return investmentAccount;
@@ -113,7 +125,9 @@ public  class InvestmentAccountDataAssembler {
                 final Long savingsAccountId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.savingsAccountIdParamName, actionElement);
                 final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsAccountId);
                 final BigDecimal individualInvestmentAmount = this.fromApiJsonHelper.extractBigDecimalNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, actionElement,locale);
-                InvestmentAccountSavingsLinkages accountLink = new InvestmentAccountSavingsLinkages(investmentAccount, savingsAccount, individualInvestmentAmount);
+                final Integer status = InvestmentAccountStatus.PENDING_APPROVAL.getValue();
+                InvestmentAccountSavingsLinkages accountLink = new InvestmentAccountSavingsLinkages(investmentAccount, savingsAccount, individualInvestmentAmount,
+                         status, null, null);
                 savingsAccountlinkages.add(accountLink);
             }      
             investmentAccount.setInvestmentAccountSavingsLinkages(savingsAccountlinkages);

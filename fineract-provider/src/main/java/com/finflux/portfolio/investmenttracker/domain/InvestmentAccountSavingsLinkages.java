@@ -1,6 +1,7 @@
 package com.finflux.portfolio.investmenttracker.domain;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -8,6 +9,8 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -26,14 +29,41 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
     
     @Column(name="investment_amount", precision = 19, scale = 6, nullable = false)
     private BigDecimal investmentAmount;
+    
+    @Column(name = "status", nullable = false)
+    private Integer status;
+    
+    @Temporal(TemporalType.DATE)
+    @Column(name = "active_from_date", nullable = true)
+    private Date activeFromDate;
+    
+    @Temporal(TemporalType.DATE)
+    @Column(name = "active_to_date", nullable = true)
+    private Date activeToDate;
+    
 
-    public InvestmentAccountSavingsLinkages(InvestmentAccount investmentAccount, SavingsAccount savingsAccount, BigDecimal investmentAmount) {
+    public InvestmentAccountSavingsLinkages(InvestmentAccount investmentAccount, SavingsAccount savingsAccount, BigDecimal investmentAmount,
+            Integer status, Date activeFromDate, Date activeToDate) {
         this.savingsAccount = savingsAccount;
         this.investmentAmount = investmentAmount;
         this.investmentAccount = investmentAccount;
+        this.status = status;
+        this.activeFromDate = activeFromDate;
+        this.activeToDate = activeToDate;
+    }
+    
+    public Integer getStatus() {
+        return this.status;
     }
 
-    
+    public Date getActiveFromDate() {
+        return this.activeFromDate;
+    }
+
+    public Date getActiveToDate() {
+        return this.activeToDate;
+    }
+
     public InvestmentAccount getInvestmentAccount() {
         return this.investmentAccount;
     }
@@ -61,6 +91,21 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
     
     public void setInvestmentAmount(BigDecimal investmentAmount) {
         this.investmentAmount = investmentAmount;
+    }
+
+    
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    
+    public void setActiveFromDate(Date activeFromDate) {
+        this.activeFromDate = activeFromDate;
+    }
+
+    
+    public void setActiveToDate(Date activeToDate) {
+        this.activeToDate = activeToDate;
     }
     
 }

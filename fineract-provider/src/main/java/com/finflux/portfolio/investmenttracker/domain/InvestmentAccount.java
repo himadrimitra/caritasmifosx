@@ -23,6 +23,7 @@ import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerator;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
+import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
@@ -125,6 +126,29 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     @Transient
     protected boolean accountNumberRequiresAutoGeneration = false;
     
+    @Temporal(TemporalType.DATE)
+    @Column(name = "rejecton_date", nullable = true)
+    protected Date rejectOnDate;
+    
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
+    @JoinColumn(name = "rejecton_userid", nullable = true)
+    protected AppUser rejectBy;
+    
+    @Temporal(TemporalType.DATE)
+    @Column(name = "closeon_date", nullable = true)
+    protected Date closeOnDate;
+    
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
+    @JoinColumn(name = "closeon_userid", nullable = true)
+    protected AppUser closeBy;
+    
+    @ManyToOne
+    @JoinColumn(name = "staff_id", nullable = true)
+    private Staff staff;
+    
+    @Column(name = "track_source_accounts", nullable = false)
+    private boolean trackSourceAccounts;
+    
     protected InvestmentAccount(){
         
     }
@@ -134,7 +158,8 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
             Date approvedOnDate, AppUser approvedBy, Date activatedOnDate, AppUser activatedBy, Date investmentOnDate, AppUser investedBy,
             BigDecimal investmentAmount, BigDecimal interestRate, Integer interestRateType, Integer investmentTerm, Integer investmentTermType,
             Date maturityOnDate, AppUser maturityBy, BigDecimal maturityAmount, boolean reinvestAfterMaturity,
-            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages, Set<InvestmentAccountCharge> investmentAccountCharges) {
+            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages, Set<InvestmentAccountCharge> investmentAccountCharges,
+            Date rejectOnDate, AppUser rejectBy, Date closeOnDate, AppUser closeBy, Staff staff, boolean trackSourceAccounts) {
         if (StringUtils.isBlank(accountNumber)) {
             this.accountNumber = new RandomPasswordGenerator(19).generate();
             this.accountNumberRequiresAutoGeneration = true;
@@ -166,6 +191,12 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
         this.reinvestAfterMaturity = reinvestAfterMaturity;
         this.investmentAccountSavingsLinkages = investmentAccountSavingsLinkages;
         this.investmentAccountCharges = investmentAccountCharges;
+        this.rejectOnDate = rejectOnDate;
+        this.rejectBy = rejectBy;
+        this.closeBy = closeBy;
+        this.closeOnDate = closeOnDate;
+        this.staff = staff;
+        this.trackSourceAccounts = trackSourceAccounts;
     }
     
     public static InvestmentAccount create(String accountNumber, String externalId, Office office, CodeValue partner,
@@ -173,11 +204,12 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
             Date approvedOnDate, AppUser approvedBy, Date activatedOnDate, AppUser activatedBy, Date investmentOnDate, AppUser investedBy,
             BigDecimal investmentAmount, BigDecimal interestRate, Integer interestRateType, Integer investmentTerm, Integer investmentTermType,
             Date maturityOnDate, AppUser maturityBy, BigDecimal maturityAmount, boolean reinvestAfterMaturity,
-            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages, Set<InvestmentAccountCharge> investmentAccountCharges) {
+            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages, Set<InvestmentAccountCharge> investmentAccountCharges,
+            Date rejectOnDate, AppUser rejectBy, Date closeOnDate, AppUser closeBy, Staff staff, boolean trackSourceAccounts) {
       return new InvestmentAccount(accountNumber, externalId,  office,  partner, investmentProduct, status,  currency,  submittedOnDate, submittedBy,
               approvedOnDate, approvedBy,  activatedOnDate,  activatedBy, investmentOnDate, investedBy, investmentAmount,interestRate, interestRateType, 
                investmentTerm, investmentTermType, maturityOnDate,  maturityBy,  maturityAmount, reinvestAfterMaturity,investmentAccountSavingsLinkages,
-               investmentAccountCharges);
+               investmentAccountCharges, rejectOnDate, rejectBy, closeOnDate, closeBy, staff, trackSourceAccounts);
     }
 
     
@@ -354,6 +386,35 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     public void setActivatedBy(AppUser activatedBy) {
         this.activatedBy = activatedBy;
     }
+
     
+    public Date getRejectOnDate() {
+        return this.rejectOnDate;
+    }
+
+    
+    public void setRejectOnDate(Date rejectOnDate) {
+        this.rejectOnDate = rejectOnDate;
+    }
+
+    
+    public AppUser getRejectBy() {
+        return this.rejectBy;
+    }
+
+    
+    public void setRejectBy(AppUser rejectBy) {
+        this.rejectBy = rejectBy;
+    }
+
+    
+    public void setSubmittedOnDate(Date submittedOnDate) {
+        this.submittedOnDate = submittedOnDate;
+    }
+
+    
+    public void setSubmittedBy(AppUser submittedBy) {
+        this.submittedBy = submittedBy;
+    }
     
 }

@@ -133,23 +133,36 @@ public class InvestmentAccountDataValidator {
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.reinvestAfterMaturityParamName).value(reinvestAfterMaturity)
                 .notNull().trueOrFalseRequired(reinvestAfterMaturity);
         
-        final JsonArray savingsAccountActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.savingsAccountsParamName, element);
-        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountsParamName).value(savingsAccountActions).jsonArrayNotEmpty();
+        final Long staffId = this.fromApiJsonHelper.extractLongNamed(
+                InvestmentAccountApiConstants.staffIdParamName, element);
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.staffIdParamName)
+                .value(staffId).ignoreIfNull().longGreaterThanZero();
+        
+        boolean trackSourceAccounts = this.fromApiJsonHelper.extractBooleanNamed(
+                InvestmentAccountApiConstants.trackSourceAccountsParamName, element);
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.trackSourceAccountsParamName).value(trackSourceAccounts)
+                .notNull();
         
         Locale locale =this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.localeParamName).value(locale).notNull();
         
-        //investment account and savings account linkages validation
-        for (JsonElement savingsAccountElement : savingsAccountActions) {             
-            Long savingsAccountId = this.fromApiJsonHelper.extractLongNamed(
-                    InvestmentAccountApiConstants.savingsAccountIdParamName, savingsAccountElement);
-            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountIdParamName)
-                    .value(savingsAccountId).notNull().longGreaterThanZero();
+        if(trackSourceAccounts){
+            final JsonArray savingsAccountActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.savingsAccountsParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountsParamName).value(savingsAccountActions).jsonArrayNotEmpty();
             
-            Integer individualInvestmentAmount = this.fromApiJsonHelper.extractIntegerNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, savingsAccountElement,locale);
-             baseDataValidator.reset().parameter(InvestmentAccountApiConstants.individualInvestmentAmountParamName).value(individualInvestmentAmount)
-                            .notNull().positiveAmount();      
+            //investment account and savings account linkages validation
+            for (JsonElement savingsAccountElement : savingsAccountActions) {             
+                Long savingsAccountId = this.fromApiJsonHelper.extractLongNamed(
+                        InvestmentAccountApiConstants.savingsAccountIdParamName, savingsAccountElement);
+                baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountIdParamName)
+                        .value(savingsAccountId).notNull().longGreaterThanZero();
+                
+                Integer individualInvestmentAmount = this.fromApiJsonHelper.extractIntegerNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, savingsAccountElement,locale);
+                 baseDataValidator.reset().parameter(InvestmentAccountApiConstants.individualInvestmentAmountParamName).value(individualInvestmentAmount)
+                                .notNull().positiveAmount();      
+            }
         }
+
         
         final JsonArray chargesActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.chargesParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).jsonArrayNotEmpty();
@@ -201,4 +214,11 @@ public class InvestmentAccountDataValidator {
         }
     }
     
+    public void validateForInvestmentAccountToUndoApproval(InvestmentAccount investmentAccount) {
+        if(InvestmentAccountStatus.APPROVED.getValue().compareTo(investmentAccount.getStatus()) != 0){
+            String defaultErrorMessage = "Investment Account should be in APPROVED status to UndoApproval";
+            String action = "UndoApproval";
+            throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
+        }
+    }
 }

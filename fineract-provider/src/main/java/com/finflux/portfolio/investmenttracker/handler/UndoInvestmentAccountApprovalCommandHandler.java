@@ -21,7 +21,7 @@ public class UndoInvestmentAccountApprovalCommandHandler implements NewCommandSo
     @Override
     public CommandProcessingResult processCommand(JsonCommand command) {
 
-        return null;
+        return this.investmentAccountWritePlatformService.undoInvestmentAccountApproval(command.entityId(), command);
     }
 
 }

@@ -4419,4 +4419,5 @@ public class CommandWrapperBuilder {
         this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=undoapproval";
         return this;
     }
+
 }

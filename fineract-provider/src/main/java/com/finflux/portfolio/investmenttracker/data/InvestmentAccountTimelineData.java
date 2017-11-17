@@ -30,12 +30,26 @@ public class InvestmentAccountTimelineData {
     private final String maturityByFirstname;
     private final String maturityByLastname;
     
+    private final LocalDate rejectOnData;
+    private final String rejectByUsername;
+    private final String rejectByFirstname;
+    private final String rejectByLastname;
+    
+    private final LocalDate closeOnDate;
+    private final String closeByUsername;
+    private final String closeByFirstname;
+    private final String closeByLastname;
+    
+
+
+    
     public InvestmentAccountTimelineData(LocalDate submittedOnDate, String submittedByUsername, String submittedByFirstname,
             String submittedByLastname, LocalDate approvedOnDate, String approvedByUsername, String approvedByFirstname,
             String approvedByLastname, LocalDate activatedOnDate, String activatedByUsername, String activatedByFirstname,
             String activatedByLastname, LocalDate investmentOnData, String investedByUsername, String investedByFirstname,
             String investedByLastname, LocalDate maturityOnDate, String maturityByUsername, String maturityByFirstname,
-            String maturityByLastname) {
+            String maturityByLastname, LocalDate rejectOnData, String rejectByUsername, String rejectByFirstname, String rejectByLastname,
+            LocalDate closeOnDate, String closeByUsername, String closeByFirstname, String closeByLastname) {
         this.submittedOnDate = submittedOnDate;
         this.submittedByUsername = submittedByUsername;
         this.submittedByFirstname = submittedByFirstname;
@@ -56,9 +70,17 @@ public class InvestmentAccountTimelineData {
         this.maturityByUsername = maturityByUsername;
         this.maturityByFirstname = maturityByFirstname;
         this.maturityByLastname = maturityByLastname;
+        this.rejectOnData = rejectOnData;
+        this.rejectByUsername = rejectByUsername;
+        this.rejectByFirstname = rejectByFirstname;
+        this.rejectByLastname = rejectByLastname;
+        this.closeOnDate = closeOnDate;
+        this.closeByUsername = closeByUsername;
+        this.closeByFirstname = closeByFirstname;
+        this.closeByLastname = closeByLastname;
     }
 
-    
+
     public LocalDate getSubmittedOnDate() {
         return this.submittedOnDate;
     }
@@ -156,7 +178,53 @@ public class InvestmentAccountTimelineData {
     
     public String getMaturityByLastname() {
         return this.maturityByLastname;
-    } 
+    }
+
+
     
+    public LocalDate getRejectOnData() {
+        return this.rejectOnData;
+    }
+
+
+    
+    public String getRejectByUsername() {
+        return this.rejectByUsername;
+    }
+
+
+    
+    public String getRejectByFirstname() {
+        return this.rejectByFirstname;
+    }
+
+
+    
+    public String getRejectByLastname() {
+        return this.rejectByLastname;
+    }
+
+
+    
+    public LocalDate getCloseOnDate() {
+        return this.closeOnDate;
+    }
+
+
+    
+    public String getCloseByUsername() {
+        return this.closeByUsername;
+    }
+
+
+    
+    public String getCloseByFirstname() {
+        return this.closeByFirstname;
+    }
+
+    
+    public String getCloseByLastname() {
+        return this.closeByLastname;
+    } 
     
 }
