@@ -1,7 +1,9 @@
 package com.finflux.portfolio.investmenttracker.domain;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.CascadeType;
@@ -12,6 +14,7 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -25,6 +28,8 @@ import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -122,6 +127,11 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     
     @OneToMany(fetch=FetchType.LAZY, cascade = CascadeType.ALL, mappedBy="investmentAccount", orphanRemoval = true)
     private Set<InvestmentAccountCharge> investmentAccountCharges;
+    
+    @OrderBy(value = "dateOf, createdDate, id")
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "investmentAccount", orphanRemoval = true)
+    protected final List<InvestmentTransaction> transactions = new ArrayList<>();
     
     @Transient
     protected boolean accountNumberRequiresAutoGeneration = false;
@@ -387,7 +397,6 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
         this.activatedBy = activatedBy;
     }
 
-    
     public Date getRejectOnDate() {
         return this.rejectOnDate;
     }
@@ -402,6 +411,9 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
         return this.rejectBy;
     }
 
+    public List<InvestmentTransaction> getTransactions() {
+        return this.transactions;
+    }
     
     public void setRejectBy(AppUser rejectBy) {
         this.rejectBy = rejectBy;

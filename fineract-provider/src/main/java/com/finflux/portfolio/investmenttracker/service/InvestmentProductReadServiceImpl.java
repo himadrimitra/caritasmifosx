@@ -20,10 +20,12 @@ import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.portfolio.investmenttracker.Exception.InvestmentProductNotFoundException;
 import com.finflux.portfolio.investmenttracker.data.InvestmentProductData;
 
 @Service
@@ -89,10 +91,15 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
 
     @Override
     public InvestmentProductData retrieveOne(Long investmentProductId) {
-        InvestmentProductMapper investmentProductMapper = new InvestmentProductMapper();
-        String sql = "SELECT " + investmentProductMapper.schema() + " where fip.id = ?";
-        InvestmentProductData investmentProduct = this.jdbcTemplate.queryForObject(sql, investmentProductMapper, investmentProductId);
-        return investmentProduct;
+        try {
+            InvestmentProductMapper investmentProductMapper = new InvestmentProductMapper();
+            String sql = "SELECT " + investmentProductMapper.schema() + " where fip.id = ?";
+            InvestmentProductData investmentProduct = this.jdbcTemplate.queryForObject(sql, investmentProductMapper, investmentProductId);
+            return investmentProduct;
+        } catch (final EmptyResultDataAccessException e) {
+            throw new InvestmentProductNotFoundException(investmentProductId);
+        }
+
     }
 
     private static final class InvestmentProductMapper implements RowMapper<InvestmentProductData> {

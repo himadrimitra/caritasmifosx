@@ -1,5 +1,6 @@
 package com.finflux.portfolio.investmenttracker.service;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,7 @@ import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositor
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositoryWrapper;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountSavingsLinkages;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentTransaction;
 
 @Service
 public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAccountWritePlatformService {
@@ -140,7 +142,10 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             }
             investmentAccount.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
             investmentAccount.setActivatedBy(appUser);
-            investmentAccount.setActivatedOnDate(DateUtils.getLocalDateOfTenant().toDate());
+            Date currentDate = DateUtils.getLocalDateOfTenant().toDate();
+            investmentAccount.setActivatedOnDate(currentDate);
+            InvestmentTransaction investmentTransaction = InvestmentTransaction.deposit(investmentAccount, investmentAccount.getOffice().getId(), currentDate, investmentAccount.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
+            investmentAccount.getTransactions().add(investmentTransaction);            
             this.investmentAccountRepository.save(investmentAccount);
             return new CommandProcessingResultBuilder() //
                     .withEntityId(investmentAccount.getId()) //
