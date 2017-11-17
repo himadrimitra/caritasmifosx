@@ -8,6 +8,7 @@ import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 
 
@@ -32,6 +33,8 @@ public class InvestmentAccountData {
     private CodeValueData partnerData;
     private InvestmentProductData investmentProductData;
     private EnumOptionData statusEnum;
+    private StaffData staffData;
+    private Boolean trackSourceAccounts;
     
     //template
     private Collection<CodeValueData> partnerOptions;
@@ -49,7 +52,7 @@ public class InvestmentAccountData {
             CodeValueData partnerData,  InvestmentProductData investmentProductData, EnumOptionData statusEnum,Collection<CodeValueData> partnerOptions,
             Collection<InvestmentProductData> investmentProductOptions, Collection<ChargeData> investmentChargeOptions,
             Collection<OfficeData> officeDataOptions,List<EnumOptionData> interestRateFrequencyTypeOptions,
-            List<EnumOptionData> investmentTermFrequencyTypeOptions) {
+            List<EnumOptionData> investmentTermFrequencyTypeOptions, StaffData staffData, Boolean trackSourceAccounts) {
         this.id = id;
         this.accountNo = accountNo;
         this.externalId = externalId;
@@ -74,6 +77,8 @@ public class InvestmentAccountData {
         this.statusEnum = statusEnum;
         this.interestRateFrequencyTypeOptions = interestRateFrequencyTypeOptions;
         this.investmentTermFrequencyTypeOptions = investmentTermFrequencyTypeOptions;
+        this.staffData = staffData;
+        this.trackSourceAccounts = trackSourceAccounts;
     }
 
     public static InvestmentAccountData onlyTemplateData( Collection<CodeValueData> partnerOptions,
@@ -99,12 +104,14 @@ public class InvestmentAccountData {
         CodeValueData partnerData = null;
         InvestmentProductData investmentProductData = null;
         EnumOptionData statusEnum = null;
+        StaffData staffData = null; 
+        Boolean trackSourceAccounts = null;
         
         return new InvestmentAccountData(id,accountNo,externalId, currency,  interestRate, 
                 interestRateType, invesmentTermPeriod,invesmentTermPeriodType, timelineData, investmentAmount,
                  maturityAmount,  reinvestAfterMaturity,  investmentAccountCharges,investmentSavingsLinkagesData, officeData,
                  partnerData, investmentProductData,statusEnum, partnerOptions, investmentProductOptions,investmentChargeOptions, 
-                 officeDataOptions,interestRateFrequencyTypeOptions,investmentTermFrequencyTypeOptions);
+                 officeDataOptions,interestRateFrequencyTypeOptions,investmentTermFrequencyTypeOptions, staffData, trackSourceAccounts);
     }
     
     public static InvestmentAccountData instance(Long id, String accountNo, String externalId,
@@ -112,7 +119,8 @@ public class InvestmentAccountData {
             EnumOptionData invesmentTermPeriodType, InvestmentAccountTimelineData timelineData, BigDecimal investmentAmount,
             BigDecimal maturityAmount, Boolean reinvestAfterMaturity, Collection<InvestmentAccountChargeData> investmentAccountCharges,
             Collection<InvestmentAccountSavingsLinkagesData> investmentSavingsLinkagesData, OfficeData officeData,
-            CodeValueData partnerData,  InvestmentProductData investmentProductData, EnumOptionData statusEnum) {
+            CodeValueData partnerData,  InvestmentProductData investmentProductData, EnumOptionData statusEnum, StaffData staffData,
+            Boolean trackSourceAccounts) {
         
         Collection<CodeValueData> partnerOptions = null;
         Collection<InvestmentProductData> investmentProductOptions = null;
@@ -125,7 +133,7 @@ public class InvestmentAccountData {
                 interestRateType, invesmentTermPeriod,invesmentTermPeriodType, timelineData, investmentAmount,
                  maturityAmount,  reinvestAfterMaturity,  investmentAccountCharges,investmentSavingsLinkagesData, officeData,
                  partnerData, investmentProductData, statusEnum, partnerOptions, investmentProductOptions,investmentChargeOptions,
-                 officeDataOptions, interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions);
+                 officeDataOptions, interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions, staffData, trackSourceAccounts);
     }
     
     public static InvestmentAccountData withTemplateData(InvestmentAccountData investmentAccountData, Collection<CodeValueData> partnerOptions,
@@ -137,7 +145,7 @@ public class InvestmentAccountData {
                 investmentAccountData.getInterestRateType(), investmentAccountData.getInvesmentTermPeriod(),investmentAccountData.getInvesmentTermPeriodType(), investmentAccountData.getTimelineData(), investmentAccountData.getInvestmentAmount(),
                 investmentAccountData.getMaturityAmount(),  investmentAccountData.getReinvestAfterMaturity(),  investmentAccountData.getInvestmentAccountCharges(),investmentAccountData.getInvestmentSavingsLinkagesData(), investmentAccountData.getOfficeData(),
                 investmentAccountData.getPartnerData(), investmentAccountData.getInvestmentProductData(),investmentAccountData.getStatusEnum(), partnerOptions, investmentProductOptions,investmentChargeOptions, officeDataOptions,
-                interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions);
+                interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions, investmentAccountData.staffData, investmentAccountData.trackSourceAccounts);
     }
     
     public Long getId() {
@@ -269,5 +277,16 @@ public class InvestmentAccountData {
     public List<EnumOptionData> getInvestmentTermFrequencyTypeOptions() {
         return this.investmentTermFrequencyTypeOptions;
     }
+
+    
+    public StaffData getStaffData() {
+        return this.staffData;
+    }
+
+    
+    public Boolean getTrackSourceAccounts() {
+        return this.trackSourceAccounts;
+    }
+    
     
 }

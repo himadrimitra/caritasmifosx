@@ -14,7 +14,11 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
+import org.apache.fineract.organisation.staff.data.StaffData;
+import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,9 +135,11 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             sqlBuilder.append(" acu.username as activatedByUsername, acu.firstname as activatedByFirstname, acu.lastname as activatedByLastname,");
             sqlBuilder.append(" ivu.username as investedByUsername, ivu.firstname as investedByFirstname, ivu.lastname as investedByLastname,");
             sqlBuilder.append(" mu.username as maturityByUsername, mu.firstname as maturityByFirstname, mu.lastname as maturityByLastname,");
-            sqlBuilder.append(" off.id as officeId, off.name as officeName,");
-            sqlBuilder.append(" cv.id  as partnerId, cv.code_value as partnerName,");
-            sqlBuilder.append(" fip.id as investmentProductId, fip.name as investmentProductName");
+            sqlBuilder.append(" off.id as officeId, off.name as officeName, staff.display_name, fia.staff_id,");
+            sqlBuilder.append(" cv.id  as partnerId, cv.code_value as partnerName,fia.track_source_accounts,");
+            sqlBuilder.append(" fip.id as investmentProductId, fip.name as investmentProductName,");
+            sqlBuilder.append(" fia.rejecton_date,ru.username as rejectByUsername, ru.firstname as rejectByFirstname, ru.lastname as rejectByLastname,");
+            sqlBuilder.append(" fia.closeon_date,cu.username as closeByUsername, cu.firstname as closeByFirstname, cu.lastname as closeByLastname");
             sqlBuilder.append(" from f_investment_account fia");
             sqlBuilder.append(" join m_currency curr on curr.code = fia.currency_code");
             sqlBuilder.append(" join m_office off on off.id = fia.office_id");
@@ -144,6 +150,9 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             sqlBuilder.append(" left join m_appuser acu on acu.id = fia.activatedon_userid");
             sqlBuilder.append(" left join m_appuser ivu on ivu.id = fia.investmenton_userid");
             sqlBuilder.append(" left join m_appuser mu on mu.id = fia.maturityon_userid");
+            sqlBuilder.append(" left join m_appuser ru on ru.id = fia.rejecton_userid");
+            sqlBuilder.append(" left join m_appuser cu on cu.id = fia.closeon_userid");
+            sqlBuilder.append(" left join m_staff staff on staff.id = fia.staff_id");
             
             this.schemaSql = sqlBuilder.toString();
         }
@@ -203,6 +212,15 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
                 investmentProductData = InvestmentProductData.lookup(investmentProductId, investmentProductName);
             }
             
+            final boolean trackSourceAccounts = rs.getBoolean("track_source_accounts");
+            
+            final Long staffId = rs.getLong("staff_id");
+            final String staffName = rs.getString("display_name");
+            StaffData staffData = null;
+            if(staffId != null){
+                staffData = StaffData.lookup(staffId, staffName);
+            }
+            
             
             final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedon_date");
             final String submittedByUsername = rs.getString("submittedByUsername");
@@ -229,15 +247,28 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             final String maturityByFirstname = rs.getString("maturityByFirstname");
             final String maturityByLastname = rs.getString("maturityByLastname");
             
+            final LocalDate rejectOnDate = JdbcSupport.getLocalDate(rs, "rejecton_date");
+            final String rejectByUsername = rs.getString("rejectByUsername");
+            final String rejectByFirstname = rs.getString("rejectByFirstname");
+            final String rejectByLastname = rs.getString("rejectByLastname");
+            
+            final LocalDate closeOnDate = JdbcSupport.getLocalDate(rs, "closeon_date");
+            final String closeByUsername = rs.getString("closeByUsername");
+            final String closeByFirstname = rs.getString("closeByFirstname");
+            final String closeByLastname = rs.getString("closeByLastname");
+            
             InvestmentAccountTimelineData investmentAccountTimelineData = new InvestmentAccountTimelineData(submittedOnDate,submittedByUsername, submittedByFirstname,
                      submittedByLastname,  approvedOnDate, approvedByUsername, approvedByFirstname, approvedByLastname,  activatedOnDate, activatedByUsername,  activatedByFirstname,
                      activatedByLastname,  investmentOnData,  investedByUsername,  investedByFirstname,
-                     investedByLastname,  maturityOnDate,  maturityByUsername,  maturityByFirstname, maturityByLastname);
+                     investedByLastname,  maturityOnDate,  maturityByUsername,  maturityByFirstname, maturityByLastname,
+                     rejectOnDate,rejectByUsername,rejectByFirstname,rejectByLastname,
+                     closeOnDate,closeByUsername,closeByFirstname,closeByLastname);
 
 
             return InvestmentAccountData.instance(id, accountNo, externalId,currency, interestRate,  interestRateTypeEnum,  investmentTerm,
                     invesmentTermPeriodEnum, investmentAccountTimelineData,  investmentAmount,
-                     maturityAmount,  reinvestAfterMaturity, null, null,  officeData, partner, investmentProductData, statusEnumData);
+                     maturityAmount,  reinvestAfterMaturity, null, null,  officeData, partner, investmentProductData, statusEnumData,
+                     staffData,trackSourceAccounts);
         }
     }
     
@@ -248,7 +279,8 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         public InvestmentAccountSavingsLinkagesMapper(){
             StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append(" sa.id as savingsAccountId, sa.account_no as savingsAccountNumber, ias.investment_account_id as investmentAccountId,");
-            sqlBuilder.append(" ias.investment_amount as individualInvestmentAmount");
+            sqlBuilder.append(" ias.investment_amount as individualInvestmentAmount,");
+            sqlBuilder.append(" ias.status, ias.active_from_date, ias.active_to_date");
             sqlBuilder.append(" from m_savings_account sa");
             sqlBuilder.append(" join f_investment_account_savings_linkages ias on ias.savings_account_id = sa.id");
             sqlBuilder.append(" join f_investment_account ia on ia.id = ias.investment_account_id"); 
@@ -267,7 +299,15 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              String savingsAccountNumber = rs.getString("savingsAccountNumber");
              Long investmentAccountId = rs.getLong("investmentAccountId");
              BigDecimal individualInvestmentAmount = rs.getBigDecimal("individualInvestmentAmount");
-             InvestmentAccountSavingsLinkagesData data = new InvestmentAccountSavingsLinkagesData(savingsAccountId, savingsAccountNumber, investmentAccountId,individualInvestmentAmount);
+             Integer status = JdbcSupport.getInteger(rs, "status");
+             EnumOptionData statusEnumData = null;
+             if(status != null){
+                  statusEnumData =  InvestmentAccountStatus.fromInt(status).getEnumOptionData();
+             }
+             LocalDate activeFrom = JdbcSupport.getLocalDate(rs, "active_from_date");
+             LocalDate activeTo = JdbcSupport.getLocalDate(rs, "active_to_date");
+             InvestmentAccountSavingsLinkagesData data = new InvestmentAccountSavingsLinkagesData(savingsAccountId, savingsAccountNumber, investmentAccountId,individualInvestmentAmount,
+                     statusEnumData,activeFrom,activeTo);
             return data;
         }
     
@@ -280,7 +320,8 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         public InvestmentAccountChargesMapper(){
             StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append(" iac.charge_id as chargeId, iac.investment_account_id as investmentAccountId, iac.is_penalty,");
-            sqlBuilder.append(" iac.is_active, iac.inactivated_on_date");
+            sqlBuilder.append(" iac.is_active, iac.inactivated_on_date,");
+            sqlBuilder.append(" c.name, c.charge_time_enum, c.charge_calculation_enum, c.amount ");
             sqlBuilder.append(" from m_charge c");
             sqlBuilder.append(" join f_investment_account_charge iac on iac.charge_id = c.id");
             sqlBuilder.append(" join f_investment_account ia on ia.id = iac.investment_account_id"); 
@@ -300,7 +341,16 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              boolean isPenality =  rs.getBoolean("is_penalty");
              boolean isActive = rs.getBoolean("is_active");
              LocalDate inactivationDate = JdbcSupport.getLocalDate(rs, "inactivated_on_date");
-             InvestmentAccountChargeData data = new InvestmentAccountChargeData(chargeId, investmentAccountId, isActive,isPenality,inactivationDate);
+             int chargeTime = rs.getInt("charge_time_enum");
+             String chargeName = rs.getString("name");
+             BigDecimal chargeAmount = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "amount");
+             final ChargeTimeType chargeTimeTypeEnum = ChargeTimeType.fromInt(chargeTime);
+             final EnumOptionData chargeTimeType = ChargeEnumerations.chargeTimeType(chargeTimeTypeEnum);
+             final int chargeCalculation = rs.getInt("charge_calculation_enum");
+             final EnumOptionData chargeCalculationType = ChargeEnumerations.chargeCalculationType(chargeCalculation);
+
+             InvestmentAccountChargeData data = new InvestmentAccountChargeData(chargeId, investmentAccountId, isActive,isPenality,inactivationDate,
+                     chargeName, chargeAmount, chargeTimeType, chargeCalculationType);
             return data;
         }
     

@@ -2,6 +2,7 @@ package com.finflux.portfolio.investmenttracker.service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormat;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormatRepositoryWrapper;
@@ -24,6 +25,7 @@ import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountDataAssembler;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepository;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositoryWrapper;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountSavingsLinkages;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
 
 @Service
@@ -102,6 +104,12 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             this.fromApiJsonDataValidator.validateForInvestmentAccountToApprove(investmentAccount);
             Map<String, Object> changes = new HashMap<>();
             changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.APPROVED.name());
+            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
+            for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
+                if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
+                    savingsLinkage.setStatus(InvestmentAccountStatus.APPROVED.getValue());
+                }
+            }
             investmentAccount.setStatus(InvestmentAccountStatus.APPROVED.getValue());
             investmentAccount.setApprovedBy(appUser);
             investmentAccount.setApprovedOnDate(DateUtils.getLocalDateOfTenant().toDate());
@@ -123,9 +131,16 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             this.fromApiJsonDataValidator.validateForInvestmentAccountToActivate(investmentAccount);
             Map<String, Object> changes = new HashMap<>();
             changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.ACTIVE.name());
+            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
+            for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
+                if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
+                    savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
+                    savingsLinkage.setActiveFromDate(DateUtils.getLocalDateOfTenant().toDate());
+                }
+            }
             investmentAccount.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
             investmentAccount.setActivatedBy(appUser);
-            investmentAccount.setApprovedOnDate(DateUtils.getLocalDateOfTenant().toDate());
+            investmentAccount.setActivatedOnDate(DateUtils.getLocalDateOfTenant().toDate());
             this.investmentAccountRepository.save(investmentAccount);
             return new CommandProcessingResultBuilder() //
                     .withEntityId(investmentAccount.getId()) //
@@ -145,9 +160,15 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             this.fromApiJsonDataValidator.validateForInvestmentAccountToReject(investmentAccount);
             Map<String, Object> changes = new HashMap<>();
             changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.REJECTED.name());
+            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
+            for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
+                if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
+                    savingsLinkage.setStatus(InvestmentAccountStatus.REJECTED.getValue());
+                }
+            }
             investmentAccount.setStatus(InvestmentAccountStatus.REJECTED.getValue());
-            //investmentAccount.s(appUser);
-            //investmentAccount.setApprovedOnDate(DateUtils.getLocalDateOfTenant().toDate());
+            investmentAccount.setRejectBy(appUser);
+            investmentAccount.setRejectOnDate(DateUtils.getLocalDateOfTenant().toDate());
             this.investmentAccountRepository.save(investmentAccount);
             return new CommandProcessingResultBuilder() //
                     .withEntityId(investmentAccount.getId()) //
@@ -160,7 +181,28 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
 
     @Override
     public CommandProcessingResult undoInvestmentAccountApproval(Long investmentAccountId, JsonCommand command) {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            AppUser appUser = this.context.authenticatedUser();
+            InvestmentAccount investmentAccount = this.investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
+            this.fromApiJsonDataValidator.validateForInvestmentAccountToUndoApproval(investmentAccount);
+            Map<String, Object> changes = new HashMap<>();
+            changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.PENDING_APPROVAL.name());
+            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
+            for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
+                if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
+                    savingsLinkage.setStatus(InvestmentAccountStatus.PENDING_APPROVAL.getValue());
+                }
+            }
+            investmentAccount.setStatus(InvestmentAccountStatus.PENDING_APPROVAL.getValue());
+            investmentAccount.setApprovedBy(null);
+            investmentAccount.setApprovedOnDate(null);
+            this.investmentAccountRepository.save(investmentAccount);
+            return new CommandProcessingResultBuilder() //
+                    .withEntityId(investmentAccount.getId()) //
+                    .with(changes).build();
+        } catch (final DataIntegrityViolationException e) {
+            handleDataIntegrityIssues(command, e);
+            return CommandProcessingResult.empty();
+        }
     }
 }

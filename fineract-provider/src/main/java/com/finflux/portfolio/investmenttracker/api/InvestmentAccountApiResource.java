@@ -135,7 +135,7 @@ public class InvestmentAccountApiResource {
 
         CommandProcessingResult result = null;
         CommandWrapper commandRequest = null;
-        if (is(commandParam, "approved")) {
+        if (is(commandParam, "approve")) {
             commandRequest = builder.approveInvestmentAccount(investmentAccountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }else if(is(commandParam, "active")){
@@ -145,7 +145,7 @@ public class InvestmentAccountApiResource {
             commandRequest = builder.activateInvestmentAccount(investmentAccountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }else if(is(commandParam, "undoapproval")){
-            commandRequest = builder.activateInvestmentAccount(investmentAccountId).build();
+            commandRequest = builder.undoInvestmentAccountApproval(investmentAccountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
         

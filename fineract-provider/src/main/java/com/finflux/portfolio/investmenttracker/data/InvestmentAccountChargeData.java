@@ -1,5 +1,8 @@
 package com.finflux.portfolio.investmenttracker.data;
 
+import java.math.BigDecimal;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.joda.time.LocalDate;
 
 
@@ -10,17 +13,25 @@ public class InvestmentAccountChargeData {
     private boolean isActive;
     private boolean isPenality;
     private LocalDate inactivationDate;
+    private String chargeName;
+    private BigDecimal chargeAmount;
+    private EnumOptionData chargeTimeType;
+    private EnumOptionData chargeCalculationType;
     
     public InvestmentAccountChargeData(Long chargeId, Long investmentAccountId, boolean isActive, boolean isPenality,
-            LocalDate inactivationDate) {
+            LocalDate inactivationDate, String chargeName, BigDecimal chargeAmount, EnumOptionData chargeTimeType,
+            EnumOptionData chargeCalculationType) {
         this.chargeId = chargeId;
         this.investmentAccountId = investmentAccountId;
         this.isActive = isActive;
         this.isPenality = isPenality;
         this.inactivationDate = inactivationDate;
+        this.chargeName = chargeName;
+        this.chargeAmount = chargeAmount;
+        this.chargeTimeType = chargeTimeType;
+        this.chargeCalculationType = chargeCalculationType;
     }
 
-    
     public Long getChargeId() {
         return this.chargeId;
     }
@@ -64,11 +75,29 @@ public class InvestmentAccountChargeData {
     public LocalDate getInactivationDate() {
         return this.inactivationDate;
     }
-
     
     public void setInactivationDate(LocalDate inactivationDate) {
         this.inactivationDate = inactivationDate;
     }
- 
+
+    
+    public String getChargeName() {
+        return this.chargeName;
+    }
+
+    
+    public BigDecimal getChargeAmount() {
+        return this.chargeAmount;
+    }
+
+    
+    public EnumOptionData getChargeTimeType() {
+        return this.chargeTimeType;
+    }
+
+    
+    public EnumOptionData getChargeCalculationType() {
+        return this.chargeCalculationType;
+    }
 
 }
