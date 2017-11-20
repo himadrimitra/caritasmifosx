@@ -95,7 +95,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             final String accountNumber = command.stringValueOfParameterNamed("accountNumber");
             throw new PlatformDataIntegrityException("error.msg.investmentaccount.duplicate.accountnumber", "InvesetmentAccount  with account number `" + accountNumber
                     + "` already exists", "accountNumber", accountNumber);
-        } else if (realCause.getMessage().contains("external_id")) {
+        } else if (realCause.getMessage().contains("ia_externalid_UNIQUE")) {
             final String externalId = command.stringValueOfParameterNamed("externalId");
             throw new PlatformDataIntegrityException("error.msg.investmentaccount.duplicate.externalId", "InvesetmentAccount with externalId `" + externalId
                     + "` already exists");

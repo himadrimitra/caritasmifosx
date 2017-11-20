@@ -80,7 +80,9 @@ public class InvestmentAccountApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String createInvestmentAccount(final String apiRequestBodyAsJson) {
-         this.context.authenticatedUser();
+         
+        this.context.authenticatedUser();
+        
         final CommandWrapper commandRequest = new CommandWrapperBuilder().createInvestmentAccountt().withJson(apiRequestBodyAsJson).build();
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);

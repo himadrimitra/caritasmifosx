@@ -168,8 +168,7 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
             Date approvedOnDate, AppUser approvedBy, Date activatedOnDate, AppUser activatedBy, Date investmentOnDate, AppUser investedBy,
             BigDecimal investmentAmount, BigDecimal interestRate, Integer interestRateType, Integer investmentTerm, Integer investmentTermType,
             Date maturityOnDate, AppUser maturityBy, BigDecimal maturityAmount, boolean reinvestAfterMaturity,
-            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages, Set<InvestmentAccountCharge> investmentAccountCharges,
-            Date rejectOnDate, AppUser rejectBy, Date closeOnDate, AppUser closeBy, Staff staff, boolean trackSourceAccounts) {
+            Staff staff, boolean trackSourceAccounts) {
         if (StringUtils.isBlank(accountNumber)) {
             this.accountNumber = new RandomPasswordGenerator(19).generate();
             this.accountNumberRequiresAutoGeneration = true;
@@ -199,27 +198,27 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
         this.maturityBy = maturityBy;
         this.maturityAmount = maturityAmount;
         this.reinvestAfterMaturity = reinvestAfterMaturity;
-        this.investmentAccountSavingsLinkages = investmentAccountSavingsLinkages;
-        this.investmentAccountCharges = investmentAccountCharges;
-        this.rejectOnDate = rejectOnDate;
-        this.rejectBy = rejectBy;
-        this.closeBy = closeBy;
-        this.closeOnDate = closeOnDate;
+        this.investmentAccountSavingsLinkages = null;
+        this.investmentAccountCharges = null;
+        this.rejectOnDate = null;
+        this.rejectBy = null;
+        this.closeBy = null;
+        this.closeOnDate = null;
         this.staff = staff;
         this.trackSourceAccounts = trackSourceAccounts;
     }
     
-    public static InvestmentAccount create(String accountNumber, String externalId, Office office, CodeValue partner,
-            InvestmentProduct investmentProduct, Integer status, MonetaryCurrency currency, Date submittedOnDate, AppUser submittedBy,
-            Date approvedOnDate, AppUser approvedBy, Date activatedOnDate, AppUser activatedBy, Date investmentOnDate, AppUser investedBy,
-            BigDecimal investmentAmount, BigDecimal interestRate, Integer interestRateType, Integer investmentTerm, Integer investmentTermType,
-            Date maturityOnDate, AppUser maturityBy, BigDecimal maturityAmount, boolean reinvestAfterMaturity,
-            Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages, Set<InvestmentAccountCharge> investmentAccountCharges,
-            Date rejectOnDate, AppUser rejectBy, Date closeOnDate, AppUser closeBy, Staff staff, boolean trackSourceAccounts) {
+    public static InvestmentAccount create(String externalId, Office office, CodeValue partner, InvestmentProduct investmentProduct,
+            Integer status, MonetaryCurrency currency, Date submittedOnDate, AppUser submittedBy, Date approvedOnDate,
+            AppUser approvedBy, Date activatedOnDate, AppUser activatedBy, Date investmentOnDate, AppUser investedBy, BigDecimal investmentAmount,
+            BigDecimal interestRate, Integer interestRateType, Integer investmentTerm, Integer investmentTermType, Date maturityOnDate,
+            AppUser maturityBy, BigDecimal maturityAmount, boolean reinvestAfterMaturity, Staff staff,
+            boolean trackSourceAccounts) {
+       String accountNumber = null;
       return new InvestmentAccount(accountNumber, externalId,  office,  partner, investmentProduct, status,  currency,  submittedOnDate, submittedBy,
               approvedOnDate, approvedBy,  activatedOnDate,  activatedBy, investmentOnDate, investedBy, investmentAmount,interestRate, interestRateType, 
-               investmentTerm, investmentTermType, maturityOnDate,  maturityBy,  maturityAmount, reinvestAfterMaturity,investmentAccountSavingsLinkages,
-               investmentAccountCharges, rejectOnDate, rejectBy, closeOnDate, closeBy, staff, trackSourceAccounts);
+               investmentTerm, investmentTermType, maturityOnDate,  maturityBy,  maturityAmount, reinvestAfterMaturity,staff,
+               trackSourceAccounts);
     }
 
     

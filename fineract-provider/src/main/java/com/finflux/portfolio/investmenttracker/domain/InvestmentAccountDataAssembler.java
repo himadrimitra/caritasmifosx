@@ -106,10 +106,9 @@ public  class InvestmentAccountDataAssembler {
              staff = this.staffRepositoryWrapper.findOneWithNotFoundDetection(staffId);
         }
         
-        InvestmentAccount investmentAccount = InvestmentAccount.create(null, externalId,  office,  partner, investmentProduct, status,  currency,  submittedOnDate, appUser,
-                approvedOnDate, null,  activatedOnDate,  null, investmentOnDate, appUser, investmentAmount,interestRate, interestRateType, 
-                investmentTerm, investmentTermType, maturityOnDate,  appUser,  maturityAmount, reinvestAfterMaturity,null,null,null,null,null,null,
-                staff,trackSourceAccounts);
+        InvestmentAccount investmentAccount = InvestmentAccount.create(externalId, office,  partner,  investmentProduct, status, currency,  submittedOnDate,  appUser, approvedOnDate,
+                null, activatedOnDate,  null,  investmentOnDate, appUser, investmentAmount, interestRate,interestRateType, investmentTerm, 
+                investmentTermType, maturityOnDate, appUser,  maturityAmount,  reinvestAfterMaturity, staff,trackSourceAccounts);
          if(trackSourceAccounts){
              investmentAccount = assembleInvestmentAccountSavingsLinkages(command,investmentAccount);
          }      
@@ -141,10 +140,9 @@ public  class InvestmentAccountDataAssembler {
     }
     
     private InvestmentAccount assembleInvestmentAccountCharges( JsonCommand command, InvestmentAccount investmentAccount){
-        
+        Set<InvestmentAccountCharge> chargesSet = new HashSet<>();
         final JsonArray charges = command.arrayOfParameterNamed(InvestmentAccountApiConstants.chargesParamName);
         if (charges != null && charges.size() > 0) {
-            Set<InvestmentAccountCharge> chargesSet = new HashSet<>();
             for (int i = 0; i < charges.size(); i++) {
                 final JsonObject actionElement = charges.get(i).getAsJsonObject();
                 final Long chargeId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.chargeIdParamName, actionElement);
@@ -159,9 +157,9 @@ public  class InvestmentAccountDataAssembler {
                 InvestmentAccountCharge investmentAccountCharge = new InvestmentAccountCharge(investmentAccount, charge, isPenality, isActive,inactivationDate);
                 chargesSet.add(investmentAccountCharge);
             }      
-            investmentAccount.setInvestmentAccountCharges(chargesSet);
+            
         }
-        
+        investmentAccount.setInvestmentAccountCharges(chargesSet);
         return investmentAccount;
     }
     
