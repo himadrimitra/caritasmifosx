@@ -13,6 +13,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanceException;
 import org.joda.time.LocalDate;
@@ -152,7 +153,7 @@ public class InvestmentAccountDataValidator {
             final JsonArray savingsAccountActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.savingsAccountsParamName, element);
             baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountsParamName).value(savingsAccountActions).jsonArrayNotEmpty();
             
-            BigDecimal sumOfInvestmentAmount = new BigDecimal(0);
+            BigDecimal sumOfInvestmentAmount = BigDecimal.ZERO;
             //investment account and savings account linkages validation
             for (JsonElement savingsAccountElement : savingsAccountActions) {             
                  final Long savingsAccountId = this.fromApiJsonHelper.extractLongNamed(
@@ -165,7 +166,7 @@ public class InvestmentAccountDataValidator {
              
                  sumOfInvestmentAmount = sumOfInvestmentAmount.add(individualInvestmentAmount);
             }
-            if(sumOfInvestmentAmount.compareTo(investmentAmount) != 0){
+            if(!MathUtility.isEqual(sumOfInvestmentAmount, investmentAmount)){
                 baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentAmountParamName)
                 .failWithCode("parameter.should.be.equal.to.sum.of.savingsaccount.investmentamount", "Investment Amount Parameter should be equal to sum of savings account Investment Amount");
             }
@@ -174,7 +175,7 @@ public class InvestmentAccountDataValidator {
 
         
         final JsonArray chargesActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.chargesParamName, element);
-        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).ignoreIfNull();
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).ignoreIfNull().jsonArrayNotEmpty();
         
         for (JsonElement chargeElement : chargesActions) {             
             Long chargeId = this.fromApiJsonHelper.extractLongNamed(

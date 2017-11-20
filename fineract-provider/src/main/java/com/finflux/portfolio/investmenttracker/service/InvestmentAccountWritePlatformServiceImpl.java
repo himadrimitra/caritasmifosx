@@ -15,6 +15,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -140,9 +141,9 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.ACTIVE.name());
             Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
             for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
-                final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsLinkage.getSavingsAccount().getId());
-                this.fromApiJsonDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, savingsLinkage.getInvestmentAmount());
                 if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
+                    final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsLinkage.getSavingsAccount().getId());
+                    this.fromApiJsonDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, savingsLinkage.getInvestmentAmount());
                     savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
                     savingsLinkage.setActiveFromDate(DateUtils.getLocalDateOfTenant().toDate());
                 }

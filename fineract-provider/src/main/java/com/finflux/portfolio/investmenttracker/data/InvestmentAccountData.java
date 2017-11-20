@@ -36,6 +36,7 @@ public class InvestmentAccountData {
     private EnumOptionData statusEnum;
     private StaffData staffData;
     private Boolean trackSourceAccounts;
+    private Collection<InvestmentTransactionData> investmentAccountTransactions;
     
     //template
     private Collection<CodeValueData> partnerOptions;
@@ -57,7 +58,8 @@ public class InvestmentAccountData {
             Collection<InvestmentProductData> investmentProductOptions, Collection<ChargeData> investmentChargeOptions,
             Collection<OfficeData> officeDataOptions,List<EnumOptionData> interestRateFrequencyTypeOptions,
             List<EnumOptionData> investmentTermFrequencyTypeOptions, StaffData staffData, Boolean trackSourceAccounts,
-            Collection<StaffData> staffOptions, List<SavingsAccountData> savingsAccounts, Collection<EnumOptionData> investmentAccountStatus) {
+            Collection<StaffData> staffOptions, List<SavingsAccountData> savingsAccounts, Collection<EnumOptionData> investmentAccountStatus,
+            Collection<InvestmentTransactionData> investmentAccountTransactions) {
         this.id = id;
         this.accountNo = accountNo;
         this.externalId = externalId;
@@ -87,6 +89,7 @@ public class InvestmentAccountData {
         this.staffOptions = staffOptions;
         this.savingsAccounts = savingsAccounts;
         this.investmentAccountStatus = investmentAccountStatus;
+        this.investmentAccountTransactions = investmentAccountTransactions;
     }
 
     public static InvestmentAccountData onlyTemplateData( Collection<CodeValueData> partnerOptions,
@@ -115,13 +118,14 @@ public class InvestmentAccountData {
         EnumOptionData statusEnum = null;
         StaffData staffData = null; 
         Boolean trackSourceAccounts = null;
+        Collection<InvestmentTransactionData> investmentAccountTransactions = null;
         
         return new InvestmentAccountData(id,accountNo,externalId, currency,  interestRate, 
                 interestRateType, invesmentTermPeriod,invesmentTermPeriodType, timelineData, investmentAmount,
                  maturityAmount,  reinvestAfterMaturity,  investmentAccountCharges,investmentSavingsLinkagesData, officeData,
                  partnerData, investmentProductData,statusEnum, partnerOptions, investmentProductOptions,investmentChargeOptions, 
                  officeDataOptions,interestRateFrequencyTypeOptions,investmentTermFrequencyTypeOptions, staffData, trackSourceAccounts,
-                 staffOptions, savingsAccounts, investmentAccountStatus);
+                 staffOptions, savingsAccounts, investmentAccountStatus, investmentAccountTransactions);
     }
     
     public static InvestmentAccountData instance(Long id, String accountNo, String externalId,
@@ -130,7 +134,7 @@ public class InvestmentAccountData {
             BigDecimal maturityAmount, Boolean reinvestAfterMaturity, Collection<InvestmentAccountChargeData> investmentAccountCharges,
             Collection<InvestmentAccountSavingsLinkagesData> investmentSavingsLinkagesData, OfficeData officeData,
             CodeValueData partnerData,  InvestmentProductData investmentProductData, EnumOptionData statusEnum, StaffData staffData,
-            Boolean trackSourceAccounts) {
+            Boolean trackSourceAccounts,Collection<InvestmentTransactionData> investmentAccountTransactions) {
         
         Collection<CodeValueData> partnerOptions = null;
         Collection<InvestmentProductData> investmentProductOptions = null;
@@ -147,7 +151,7 @@ public class InvestmentAccountData {
                  maturityAmount,  reinvestAfterMaturity,  investmentAccountCharges,investmentSavingsLinkagesData, officeData,
                  partnerData, investmentProductData, statusEnum, partnerOptions, investmentProductOptions,investmentChargeOptions,
                  officeDataOptions, interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions, staffData, trackSourceAccounts,
-                 staffOptions, savingsAccounts, investmentAccountStatus);
+                 staffOptions, savingsAccounts, investmentAccountStatus, investmentAccountTransactions);
     }
     
     public static InvestmentAccountData withTemplateData(InvestmentAccountData investmentAccountData, Collection<CodeValueData> partnerOptions,
@@ -161,7 +165,7 @@ public class InvestmentAccountData {
                 investmentAccountData.getMaturityAmount(),  investmentAccountData.getReinvestAfterMaturity(),  investmentAccountData.getInvestmentAccountCharges(),investmentAccountData.getInvestmentSavingsLinkagesData(), investmentAccountData.getOfficeData(),
                 investmentAccountData.getPartnerData(), investmentAccountData.getInvestmentProductData(),investmentAccountData.getStatusEnum(), partnerOptions, investmentProductOptions,investmentChargeOptions, officeDataOptions,
                 interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions, investmentAccountData.staffData, investmentAccountData.trackSourceAccounts, staffOptions,savingsAccounts,
-                investmentAccountStatus);
+                investmentAccountStatus,investmentAccountData.getInvestmentAccountTransactions());
     }
     
     public Long getId() {
@@ -315,6 +319,16 @@ public class InvestmentAccountData {
     
     public Collection<EnumOptionData> getInvestmentAccountStatus() {
         return this.investmentAccountStatus;
+    }
+
+    
+    public Collection<InvestmentTransactionData> getInvestmentAccountTransactions() {
+        return this.investmentAccountTransactions;
+    }
+
+    
+    public void setInvestmentAccountTransactions(Collection<InvestmentTransactionData> investmentAccountTransactions) {
+        this.investmentAccountTransactions = investmentAccountTransactions;
     }
 
 }

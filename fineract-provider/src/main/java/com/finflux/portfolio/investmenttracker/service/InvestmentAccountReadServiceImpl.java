@@ -149,17 +149,13 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             else
                 queryParams.append(" WHERE fia.status_enum = ").append(status);
         }
-        if( maturityStartDate != null && maturityEndDate != null){
-            if(queryParams.length() > 0)
-                queryParams.append(" and fia.maturityon_date between ").append("'"+maturityStartDate+"'").append(" and ").append("'"+maturityEndDate+"'");
-            else
-                queryParams.append(" WHERE fia.maturityon_date between ").append("'"+maturityStartDate+"'").append(" and ").append("'"+maturityEndDate+"'");
-        }else if( maturityStartDate != null){
+        if( maturityStartDate != null){
             if(queryParams.length() > 0)
                 queryParams.append(" and fia.maturityon_date >= ").append("'"+maturityStartDate+"'");
             else
                 queryParams.append(" WHERE fia.maturityon_date >= ").append("'"+maturityStartDate+"'");
-        }else if( maturityEndDate != null){
+        }
+        if( maturityEndDate != null){
             if(queryParams.length() > 0)
                 queryParams.append(" and fia.maturityon_date <= ").append("'"+maturityEndDate+"'");
             else
@@ -169,7 +165,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         if(queryParams.length() > 0){
             sql = sql + queryParams.toString() + " ORDER BY fia.id";
         }else{
-            sql = sql + " ORDER BY fia.id";
+            sql = sql + " ORDER BY fia.id desc";
         }
         
         Collection<InvestmentAccountData> investmentAccountDetails = this.jdbcTemplate.query(sql, investmentAccountMapper);
@@ -356,7 +352,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             return InvestmentAccountData.instance(id, accountNo, externalId,currency, interestRate,  interestRateTypeEnum,  investmentTerm,
                     invesmentTermPeriodEnum, investmentAccountTimelineData,  investmentAmount,
                      maturityAmount,  reinvestAfterMaturity, null, null,  officeData, partner, investmentProductData, statusEnumData,
-                     staffData,trackSourceAccounts);
+                     staffData,trackSourceAccounts, null);
         }
     }
     

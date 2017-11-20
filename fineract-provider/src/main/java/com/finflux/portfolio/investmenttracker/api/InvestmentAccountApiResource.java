@@ -17,20 +17,15 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.accounting.producttoaccountmapping.data.ChargeToGLAccountMapper;
-import org.apache.fineract.accounting.producttoaccountmapping.data.PaymentTypeToGLAccountMapper;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
-import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.charge.data.ChargeData;
-import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -39,8 +34,9 @@ import com.finflux.common.util.FinfluxStringUtils;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountChargeData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountSavingsLinkagesData;
-import com.finflux.portfolio.investmenttracker.data.InvestmentProductData;
+import com.finflux.portfolio.investmenttracker.data.InvestmentTransactionData;
 import com.finflux.portfolio.investmenttracker.service.InvestmentAccountReadService;
+import com.finflux.portfolio.investmenttracker.service.InvestmentTransactionReadPlatformService;
 
 @Path("/investmentaccounts")
 @Component
@@ -52,17 +48,20 @@ public class InvestmentAccountApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final InvestmentAccountReadService investmentAccountReadService;
+    private final InvestmentTransactionReadPlatformService investmentTransactionReadPlatformService;
     
     @Autowired
     public InvestmentAccountApiResource(PlatformSecurityContext context, DefaultToApiJsonSerializer toApiJsonSerializer,
             ApiRequestParameterHelper apiRequestParameterHelper,
             PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-             InvestmentAccountReadService investmentAccountReadService) {
+            InvestmentAccountReadService investmentAccountReadService,
+            InvestmentTransactionReadPlatformService investmentTransactionReadPlatformService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.investmentAccountReadService = investmentAccountReadService;
+        this.investmentTransactionReadPlatformService = investmentTransactionReadPlatformService;
     }
     
     @GET
@@ -127,6 +126,10 @@ public class InvestmentAccountApiResource {
         Collection<InvestmentAccountChargeData> charges = this.investmentAccountReadService.retrieveInvestmentAccountCharges(investmentAccountId);
 
         investmentAccountData.setInvestmentAccountCharges(charges);
+        
+        Collection<InvestmentTransactionData> transactions = this.investmentTransactionReadPlatformService.findByAccountId(investmentAccountId);
+        
+        investmentAccountData.setInvestmentAccountTransactions(transactions);
         
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
