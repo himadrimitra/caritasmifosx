@@ -99,12 +99,12 @@ public class InvestmentProductDataValidator {
         Integer nominalInterestRateEnum = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                 InvestmentProductApiconstants.nominalInterestRateEnumParamName, element);
         baseDataValidator.reset().parameter(InvestmentProductApiconstants.nominalInterestRateEnumParamName).value(nominalInterestRateEnum)
-                .notNull().integerGreaterThanZero();
+                .notNull().integerZeroOrGreater();
 
         Integer interestCompoundingPeriodEnum = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                 InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName, element);
         baseDataValidator.reset().parameter(InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName)
-                .value(interestCompoundingPeriodEnum).notNull().integerGreaterThanZero();
+                .value(interestCompoundingPeriodEnum).notNull().integerZeroOrGreater();
 
         final Integer defaultInvestmentTermPeriod = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                 InvestmentProductApiconstants.defaultInvestmentTermPeriodParamName, element);
@@ -130,26 +130,25 @@ public class InvestmentProductDataValidator {
         Integer investmentTermEnum = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                 InvestmentProductApiconstants.investmentTermEnumParamName, element);
         baseDataValidator.reset().parameter(InvestmentProductApiconstants.investmentTermEnumParamName).value(investmentTermEnum).notNull()
-                .integerGreaterThanZero();
+                .integerZeroOrGreater();
 
         boolean overrideTermsInInvestmentAccounts = this.fromApiJsonHelper.extractBooleanNamed(
                 InvestmentProductApiconstants.overrideTermsParamName, element);
         baseDataValidator.reset().parameter(InvestmentProductApiconstants.overrideTermsParamName).value(overrideTermsInInvestmentAccounts)
-                .notNull().trueOrFalseRequired(overrideTermsInInvestmentAccounts);
+                .notNull();
 
         boolean nominalInterestRate = this.fromApiJsonHelper.extractBooleanNamed(
                 InvestmentProductApiconstants.nominalInterestRateParamName, element);
         baseDataValidator.reset().parameter(InvestmentProductApiconstants.nominalInterestRateParamName).value(nominalInterestRate)
-                .notNull().trueOrFalseRequired(nominalInterestRate);
+                .notNull();
 
         boolean investmentTerm = this.fromApiJsonHelper.extractBooleanNamed(InvestmentProductApiconstants.investmentTermParamName, element);
-        baseDataValidator.reset().parameter(InvestmentProductApiconstants.investmentTermParamName).value(investmentTerm).notNull()
-                .trueOrFalseRequired(investmentTerm);
+        baseDataValidator.reset().parameter(InvestmentProductApiconstants.investmentTermParamName).value(investmentTerm).notNull();
 
         Integer accountingType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                 InvestmentProductApiconstants.accountingTypeParamName, element);
         baseDataValidator.reset().parameter(InvestmentProductApiconstants.accountingTypeParamName).value(accountingType).notNull()
-                .inMinMaxRange(0, 1);
+                .inMinMaxRange(1, 2);
 
         if (AccountingRuleType.CASH_BASED.getValue().equals(accountingType)) {
             final Long fundAccountId = this.fromApiJsonHelper.extractLongNamed(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue(),
@@ -333,7 +332,7 @@ public class InvestmentProductDataValidator {
             Integer interestCompoundingPeriodEnum = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                     InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName, element);
             baseDataValidator.reset().parameter(InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName)
-                    .value(interestCompoundingPeriodEnum).notNull().integerGreaterThanZero();
+                    .value(interestCompoundingPeriodEnum).notNull().integerZeroOrGreater();
         }
 
         if (this.fromApiJsonHelper.parameterExists(InvestmentProductApiconstants.defaultInvestmentTermPeriodParamName, element)) {
@@ -361,41 +360,40 @@ public class InvestmentProductDataValidator {
             Integer investmentTermEnum = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                     InvestmentProductApiconstants.investmentTermEnumParamName, element);
             baseDataValidator.reset().parameter(InvestmentProductApiconstants.investmentTermEnumParamName).value(investmentTermEnum)
-                    .notNull().integerGreaterThanZero();
+                    .notNull().integerZeroOrGreater();
         }
 
         if (this.fromApiJsonHelper.parameterExists(InvestmentProductApiconstants.overrideTermsParamName, element)) {
             boolean overrideTermsInInvestmentAccounts = this.fromApiJsonHelper.extractBooleanNamed(
                     InvestmentProductApiconstants.overrideTermsParamName, element);
             baseDataValidator.reset().parameter(InvestmentProductApiconstants.overrideTermsParamName)
-                    .value(overrideTermsInInvestmentAccounts).notNull().trueOrFalseRequired(overrideTermsInInvestmentAccounts);
+                    .value(overrideTermsInInvestmentAccounts).notNull();
         }
 
         if (this.fromApiJsonHelper.parameterExists(InvestmentProductApiconstants.nominalInterestRateParamName, element)) {
             boolean nominalInterestRate = this.fromApiJsonHelper.extractBooleanNamed(
                     InvestmentProductApiconstants.nominalInterestRateParamName, element);
             baseDataValidator.reset().parameter(InvestmentProductApiconstants.nominalInterestRateParamName).value(nominalInterestRate)
-                    .notNull().trueOrFalseRequired(nominalInterestRate);
+                    .notNull();
         }
 
         if (this.fromApiJsonHelper.parameterExists(InvestmentProductApiconstants.investmentTermParamName, element)) {
             boolean investmentTerm = this.fromApiJsonHelper.extractBooleanNamed(InvestmentProductApiconstants.investmentTermParamName,
                     element);
-            baseDataValidator.reset().parameter(InvestmentProductApiconstants.investmentTermParamName).value(investmentTerm).notNull()
-                    .trueOrFalseRequired(investmentTerm);
+            baseDataValidator.reset().parameter(InvestmentProductApiconstants.investmentTermParamName).value(investmentTerm).notNull();
         }
 
         if (this.fromApiJsonHelper.parameterExists(InvestmentProductApiconstants.accountingTypeParamName, element)) {
             Integer accountingType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                     InvestmentProductApiconstants.accountingTypeParamName, element);
             baseDataValidator.reset().parameter(InvestmentProductApiconstants.accountingTypeParamName).value(accountingType).notNull()
-                    .inMinMaxRange(0, 1);
+                    .inMinMaxRange(1, 2);
         }
 
         Integer accountingType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                 InvestmentProductApiconstants.accountingTypeParamName, element);
         baseDataValidator.reset().parameter(InvestmentProductApiconstants.accountingTypeParamName).value(accountingType).notNull()
-                .inMinMaxRange(0, 1);
+                .inMinMaxRange(1, 2);
 
         if (AccountingRuleType.CASH_BASED.getValue().equals(accountingType)) {
             final Long fundAccountId = this.fromApiJsonHelper.extractLongNamed(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue(),

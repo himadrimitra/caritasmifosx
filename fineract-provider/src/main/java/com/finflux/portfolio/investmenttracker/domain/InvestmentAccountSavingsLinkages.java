@@ -41,8 +41,6 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
     @Column(name = "active_to_date", nullable = true)
     private Date activeToDate;
     
-    
-
     public InvestmentAccountSavingsLinkages() {
         super();
     }
