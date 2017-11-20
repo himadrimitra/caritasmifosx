@@ -144,4 +144,26 @@ public final class SmsDataValidator {
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
+
+    public void validateForInboundSMS(final String json) {
+
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, SmsApiConstants.INBOUND_SMS_REQUEST_DATA_PARAMETERS);
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(SmsApiConstants.RESOURCE_NAME);
+
+        final String mobileNumber = this.fromApiJsonHelper.extractStringNamed(SmsApiConstants.mobileNumberParamName, element);
+        baseDataValidator.reset().parameter(SmsApiConstants.mobileNumberParamName).value(mobileNumber).notBlank().notExceedingLengthOf(50);
+
+        final String ussdCode = this.fromApiJsonHelper.extractStringNamed(SmsApiConstants.ussdCodeParamName, element);
+        baseDataValidator.reset().parameter(SmsApiConstants.ussdCodeParamName).value(ussdCode).notBlank().notExceedingLengthOf(100);
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
 }

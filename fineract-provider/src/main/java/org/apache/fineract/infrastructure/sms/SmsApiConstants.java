@@ -52,5 +52,10 @@ public class SmsApiConstants {
 
     public static final Set<String> UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(messageParamName));
 
+    // Inbound parameters
+    public static final String mobileNumberParamName = "mobileNumber";
+    public static final String ussdCodeParamName = "ussdCode";
 
+    public static final Set<String> INBOUND_SMS_REQUEST_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(mobileNumberParamName, ussdCodeParamName));
 }

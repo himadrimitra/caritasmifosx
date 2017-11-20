@@ -33,16 +33,25 @@ import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.campaigns.sms.constants.SmsCampaignTriggerType;
+import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaign;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaignRepository;
 import org.apache.fineract.infrastructure.campaigns.sms.exception.SmsRuntimeException;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.sms.domain.InboundMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
+import org.apache.fineract.infrastructure.sms.domain.SmsMessageStatusType;
 import org.apache.fineract.infrastructure.sms.scheduler.SmsMessageScheduledJobService;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
+import org.apache.fineract.portfolio.accountdetails.PaymentDetailCollectionData;
+import org.apache.fineract.portfolio.accountdetails.SharesAccountBalanceCollectionData;
+import org.apache.fineract.portfolio.accountdetails.data.AccountSummaryCollectionData;
+import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
+import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPlatformService;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.client.domain.ClientRepository;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
@@ -65,6 +74,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 @Service
 public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
@@ -82,13 +92,19 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
 
     private final SmsMessageScheduledJobService smsMessageScheduledJobService;
     private final JdbcTemplate jdbcTemplate;
+    private final ClientRepository clientRepository;
+    private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
+    private final SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService;
     
     @Autowired
     public SmsCampaignDomainServiceImpl(final SmsCampaignRepository smsCampaignRepository, final SmsMessageRepository smsMessageRepository,
                                         final BusinessEventNotifierService businessEventNotifierService, final OfficeRepository officeRepository,
                                         final SmsCampaignWritePlatformService smsCampaignWritePlatformCommandHandler,
                                         final GroupRepository groupRepository,
-                                        final SmsMessageScheduledJobService smsMessageScheduledJobService, final RoutingDataSource dataSource){
+                                        final SmsMessageScheduledJobService smsMessageScheduledJobService, final RoutingDataSource dataSource,
+                                        final ClientRepository clientRepository,
+                                        final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
+                                        final SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService){
         this.smsCampaignRepository = smsCampaignRepository;
         this.smsMessageRepository = smsMessageRepository;
         this.businessEventNotifierService = businessEventNotifierService;
@@ -97,6 +113,9 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
         this.groupRepository = groupRepository;
         this.smsMessageScheduledJobService = smsMessageScheduledJobService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.clientRepository = clientRepository;
+        this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
+        this.smsCampaignDropdownReadPlatformService = smsCampaignDropdownReadPlatformService;
     }
 
     @PostConstruct
@@ -114,6 +133,7 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.CLIENT_CREATE, new ClientCreatedListener());
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_CLOSED, new SavingsAccountClosedListener());
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.CLIENT_PAYMENTS, new ClientPaymentsListener());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.INBOUND_MESSAGE, new InboundSMSListener());
     }
 
 	private void notifyRejectedLoanOwner(Loan loan) {
@@ -639,4 +659,136 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
             this.entity = entity ;
     	}
     }*/
+
+    private class InboundSMSListener extends SmsBusinessEventAdapter {
+
+        @Override
+        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            Object entity = businessEventEntity.get(BusinessEventNotificationConstants.BUSINESS_ENTITY.INBOUND_SMS);
+            if (entity instanceof InboundMessage) {
+                final InboundMessage message = (InboundMessage) entity;
+                final String mobileNumber = message.getMobileNumber();
+                final String ussdCode = message.getUssdCode();
+                final Client client = SmsCampaignDomainServiceImpl.this.clientRepository.findByMobileNo(mobileNumber);
+                final Collection<SmsProviderData> smsProviderOptions = SmsCampaignDomainServiceImpl.this.smsCampaignDropdownReadPlatformService
+                        .retrieveSmsProviders();
+                if (!CollectionUtils.isEmpty(smsProviderOptions)) {
+                    final Long providerId = smsProviderOptions.iterator().next().getId();
+                    if (client == null) {
+                        notifyMobileNotRegistered(mobileNumber, providerId);
+                    } else {
+                        if (isSMSConfigurationEnabledForOffice(client.officeId())) {
+                            if (StringUtils.isNotBlank(ussdCode) && ussdCode.contains("balance")) {
+                                final String balacesDescription = constructAccountBalancesMessage(client.getId());
+                                if (StringUtils.isNotBlank(balacesDescription)) {
+                                    notifyCustomerBalance(client, mobileNumber, providerId, balacesDescription);
+                                } else {
+                                    notifyCustomerNoAccountsExists(client, mobileNumber, providerId);
+                                }
+                            } else if (StringUtils.isNotBlank(ussdCode) && ussdCode.contains("mini")) {
+                                final String balacesDescription = constructMiniStatementBalancesMessage(client.getId());
+                                if (StringUtils.isNotBlank(balacesDescription)) {
+                                    notifyCustomerMiniStatementBalance(balacesDescription, client, mobileNumber, providerId);
+                                } else {
+                                    notifyCustomerCannotMakeTransaction(client, mobileNumber, providerId);
+                                }
+                            } else {
+                                notifyInvalidTextEntered(client, mobileNumber, providerId);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String constructMiniStatementBalancesMessage(final Long clientId) {
+        final Collection<PaymentDetailCollectionData> paymentDetails = this.accountDetailsReadPlatformService
+                .retrivePaymentDetail(clientId);
+        String balanceDescription = "";
+        if (!CollectionUtils.isEmpty(paymentDetails)) {
+            for (PaymentDetailCollectionData paymentDetailCollectionData : paymentDetails) {
+                String recno = paymentDetailCollectionData.getReceiptNumber();
+                if (recno == null || recno.contains("dummy")) {
+                    recno = "RPT: ";
+                }
+                balanceDescription = balanceDescription + "Rpt-" + recno + ":" + " " + paymentDetailCollectionData.getTransactionDate()
+                        + " " + paymentDetailCollectionData.getAmount().setScale(2) + "  ";
+            }
+        }
+        return balanceDescription;
+    }
+
+    private String constructAccountBalancesMessage(final Long clientId) {
+        final AccountSummaryCollectionData clientAccounts = this.accountDetailsReadPlatformService.retrieveClientAccountDetails(clientId);
+        final Collection<LoanAccountSummaryData> loanAccounts = clientAccounts.getLoanAccounts();
+        String balanceDescription = "";
+        if (!CollectionUtils.isEmpty(loanAccounts)) {
+            for (LoanAccountSummaryData loanaccount : loanAccounts) {
+                if (loanaccount.getLoanBalance() != null) {
+                    balanceDescription = balanceDescription + " Loan Bal(ACCNO:" + loanaccount.getId() + ")- "
+                            + loanaccount.getLoanBalance().setScale(2) + "";
+                }
+            }
+        }
+        final Collection<SharesAccountBalanceCollectionData> sharesBalance = this.accountDetailsReadPlatformService
+                .retriveSharesBalance(clientId);
+        if (!CollectionUtils.isEmpty(sharesBalance)) {
+            for (SharesAccountBalanceCollectionData sharesAccountDetails : sharesBalance) {
+                if (sharesAccountDetails.getAccountBalance() != null) {
+                    balanceDescription = balanceDescription + " Saving Bal(ACCNO:" + sharesAccountDetails.getAccountNo() + ")- "
+                            + sharesAccountDetails.getAccountBalance().setScale(2) + "";
+                } else {
+                    balanceDescription = balanceDescription + " Saving Bal(ACCNO:" + sharesAccountDetails.getAccountNo() + ")- " + "0.00"
+                            + " ";
+                }
+            }
+        }
+        return balanceDescription;
+    }
+
+    private void notifyMobileNotRegistered(final String mobileNo, final Long providerId) {
+        final String messageText = "Your MobileNo is not registered please contact to your branch.";
+        sendTriggeredOutboundMessage(messageText, mobileNo, providerId);
+    }
+
+    private void notifyInvalidTextEntered(final Client client, final String mobileNo, final Long providerId) {
+        final String messageText = "Dear " + client.getDisplayName()
+                + ",  for balance enquiry please,type Caritas Balance and for mini statement type Caritas Mini Thanks, "
+                + client.getOfficeName() + ".";
+        sendTriggeredOutboundMessage(messageText, mobileNo, providerId);
+    }
+
+    private void notifyCustomerBalance(final Client client, final String mobileNo, final Long providerId, final String balacesDescription) {
+        final String messageText = "Dear " + client.getDisplayName() + ",  Your " + balacesDescription + " thanks." + client.getOfficeName()
+                + ".";
+        sendTriggeredOutboundMessage(messageText, mobileNo, providerId);
+    }
+
+    private void notifyCustomerNoAccountsExists(final Client client, final String mobileNo, final Long providerId) {
+        final String messageText = "Dear " + client.getDisplayName() + ", you don't have Loan and Savings Account Thanks, "
+                + client.getOfficeName() + ".";
+        sendTriggeredOutboundMessage(messageText, mobileNo, providerId);
+    }
+
+    private void notifyCustomerMiniStatementBalance(final String balacesDescription, final Client client, final String mobileNo,
+            final Long providerId) {
+        final String messageText = "Dear " + client.getDisplayName() + ",  Your MiniStmt is " + balacesDescription + " thanks."
+                + client.getOfficeName() + ".";
+        sendTriggeredOutboundMessage(messageText, mobileNo, providerId);
+    }
+
+    private void notifyCustomerCannotMakeTransaction(final Client client, final String mobileNo, final Long providerId) {
+        final String messageText = "Dear " + client.getDisplayName() + ", cannot make a Transaction Thanks, " + client.getOfficeName()
+                + ".";
+        sendTriggeredOutboundMessage(messageText, mobileNo, providerId);
+    }
+
+    private void sendTriggeredOutboundMessage(final String messageText, final String mobileNo, final Long providerId) {
+        final SmsMessage message = SmsMessage.instance(null, null, null, null, SmsMessageStatusType.PENDING, messageText, mobileNo, null);
+        this.smsMessageRepository.save(message);
+        final List<SmsMessage> smsMessages = new ArrayList<>();
+        smsMessages.add(message);
+        this.smsMessageScheduledJobService.sendTriggeredMessage(smsMessages, providerId);
+    }
 }

@@ -48,15 +48,7 @@ public class BusinessEventNotificationConstants {
                 "bank_account_details_update"), BANK_ACCOUNT_DETAILS_DELETE("bank_account_details_delete"), LOAN_REJECTED("loan_reject"),
                 CLIENTS_ACTIVATE("clients_activate"), CLIENTS_REJECT("clients_reject"), SAVINGS_ACTIVATE("savings_activated"),
                 SAVINGS_REJECT("savings_reject"), SAVINGS_DEPOSIT("savings_deposit"), CLIENT_CREATE("client_create"), SAVINGS_CLOSED("savings_closed"),
-                CLIENT_PAYMENTS("client_payments"), LOAN_REPAYMENT_SMS_REMINNDER("loanrepaymentsmsreminder"),
-                LOAN_FIRST_AND_SECOND_OVERDUE_REPAYMENT_REMINDER("loanFirstAndSecondOverdueRepaymentReminder"),
-                LOAN_THIRD_AND_FOURTH_OVERDUE_REPAYMENT_REMINDER("loanThirdAndFourthOverdueRepaymentReminder"),
-                MESSAGE_FOR_DEFAULT_WARNING_TO_CLIENT("messageForDefaultWarningToClient"),
-                MESSAGE_FOR_DEFAULT_WARNING_TO_GURANTOR("messageForDefaultWarningTogurantor"),
-                UNREGISTERD_MOBILE_NUMBER("unregisteredmobilenumbers"),LOAN_AND_SAVINGS_BALANCE("loanAndSavingsBalance"),
-                MESSAGE_FOR_DORMACY_WARNING_TO_CLIENT("messageForDormancyWarningToclient"),
-                LOAN_AND_SAVINGS_TRANSACTION("loanAndSavingsTransaction"),
-                INVALID_TEXT("invalidText"), MINI_STATEMENT("miniStatement"), BALANCE("balance");
+                CLIENT_PAYMENTS("client_payments"), INBOUND_MESSAGE("inbound_message");
 
         private final String value;
 
@@ -89,7 +81,7 @@ public class BusinessEventNotificationConstants {
                 "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT(
                 "transfer_client"), CHANGED_TRANSACTION_DETAIL("changed_transaction_detail"), JSON_COMMAND("json_command"), BUSINESS_EVENT(
                 "business_event"), SAVING("saving"), SAVING_TRANSACTION("saving_transaction"), GL_CLOSURE("gl_closure"),
-                ENTITY_LOCK_STATUS("is_locked"), RECEIPT_NO("receipt_no");
+                ENTITY_LOCK_STATUS("is_locked"), RECEIPT_NO("receipt_no"), INBOUND_SMS("inbound_sms");
 
         private final String value;
 
