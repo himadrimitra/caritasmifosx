@@ -170,6 +170,27 @@ public class InvestmentProductDataValidator {
                     INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue(), element);
             baseDataValidator.reset().parameter(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue()).value(feeExpenseAccountId)
                     .notNull().integerGreaterThanZero();
+            
+            final Long interestOnSavingsAccountId = this.fromApiJsonHelper.extractLongNamed(
+                    INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue(), element);
+            baseDataValidator.reset().parameter(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue())
+                    .value(interestOnSavingsAccountId).notNull().integerGreaterThanZero();
+            
+            final Long savingsControlAccountId = this.fromApiJsonHelper.extractLongNamed(
+                    INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue(), element);
+            baseDataValidator.reset().parameter(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue())
+                    .value(savingsControlAccountId).notNull().integerGreaterThanZero();
+            
+            final Long incomeFromFeesAccountId = this.fromApiJsonHelper.extractLongNamed(
+                    INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), element);
+            baseDataValidator.reset().parameter(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue())
+                    .value(incomeFromFeesAccountId).notNull().integerGreaterThanZero();
+            
+            final Long partnerInterestReceviableAccountId = this.fromApiJsonHelper.extractLongNamed(
+                    INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue(), element);
+            baseDataValidator.reset().parameter(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue())
+                    .value(partnerInterestReceviableAccountId).notNull().integerGreaterThanZero();
+
 
             validatePaymentChannelFundSourceMappings(baseDataValidator, element);
             validateFeesToExpenseAccountMappings(baseDataValidator, element);
