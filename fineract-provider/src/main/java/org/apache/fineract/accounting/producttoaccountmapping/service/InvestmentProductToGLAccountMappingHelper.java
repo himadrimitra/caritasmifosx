@@ -211,4 +211,10 @@ public class InvestmentProductToGLAccountMappingHelper extends ProductToGLAccoun
             }
         }
     }
+    
+    public void saveInvestmentToLiabilityAccountMapping(final JsonElement element, final String paramName, final Long productId,
+            final int placeHolderTypeId) {
+        saveProductToAccountMapping(element, paramName, productId, placeHolderTypeId, GLAccountType.LIABILITY ,
+                PortfolioProductType.INVESTMENT);
+    }
 }

@@ -461,16 +461,33 @@ public class ProductToGLAccountMappingWritePlatformServiceImpl implements Produc
                 this.investmentProductToGLAccountMappingHelper.saveInvestmentToAssetAccountMapping(element,
                         INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INVESTMENT_ACCOUNT.getValue(), investmentProductId,
                         CASH_ACCOUNTS_FOR_INVESTMENT.INVESTMENT_PARTNER_ACCOUNT.getValue());
+                
+                this.investmentProductToGLAccountMappingHelper.saveInvestmentToAssetAccountMapping(element,
+                        INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue(), investmentProductId,
+                        CASH_ACCOUNTS_FOR_INVESTMENT.PARTNER_INTEREST_RECEIVABLE.getValue());
 
                 // income
                 this.investmentProductToGLAccountMappingHelper.saveInvestmentToIncomeAccountMapping(element,
                         INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_INTEREST.getValue(), investmentProductId,
                         CASH_ACCOUNTS_FOR_INVESTMENT.INCOME_FROM_INVESTMENT_INTEREST.getValue());
+                
+                this.investmentProductToGLAccountMappingHelper.saveInvestmentToIncomeAccountMapping(element,
+                        INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), investmentProductId,
+                        CASH_ACCOUNTS_FOR_INVESTMENT.INCOME_FROM_FEE.getValue());
 
                 // expenses
                 this.investmentProductToGLAccountMappingHelper.saveInvestmentToExpenseAccountMapping(element,
                         INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue(), investmentProductId,
                         CASH_ACCOUNTS_FOR_INVESTMENT.BANK_FEE_EXPENSE.getValue());
+                
+                this.investmentProductToGLAccountMappingHelper.saveInvestmentToExpenseAccountMapping(element,
+                        INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue(), investmentProductId,
+                        CASH_ACCOUNTS_FOR_INVESTMENT.INTEREST_ON_SAVINGS.getValue());
+                
+                // liability
+                this.investmentProductToGLAccountMappingHelper.saveInvestmentToLiabilityAccountMapping(element,
+                        INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue(), investmentProductId,
+                        CASH_ACCOUNTS_FOR_INVESTMENT.SAVINGS_CONTROL.getValue());
 
                 // advanced accounting mappings
                 this.investmentProductToGLAccountMappingHelper.savePaymentChannelToFundSourceMappings(command, element,

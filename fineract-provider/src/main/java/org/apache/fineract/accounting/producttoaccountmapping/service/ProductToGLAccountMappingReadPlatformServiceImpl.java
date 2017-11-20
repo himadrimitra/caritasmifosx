@@ -456,6 +456,14 @@ public class ProductToGLAccountMappingReadPlatformServiceImpl implements Product
                     accountMappingDetails.put(INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS.INCOME_FROM_INTEREST.getValue(), gLAccountData);
                 } else if (glAccountForInvestments.equals(CASH_ACCOUNTS_FOR_INVESTMENT.BANK_FEE_EXPENSE)) {
                     accountMappingDetails.put(INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS.FEE_EXPENSE.getValue(), gLAccountData);
+                } else if (glAccountForInvestments.equals(CASH_ACCOUNTS_FOR_INVESTMENT.INTEREST_ON_SAVINGS)) {
+                    accountMappingDetails.put(INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue(), gLAccountData);
+                } else if (glAccountForInvestments.equals(CASH_ACCOUNTS_FOR_INVESTMENT.SAVINGS_CONTROL)) {
+                    accountMappingDetails.put(INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue(), gLAccountData);
+                } else if (glAccountForInvestments.equals(CASH_ACCOUNTS_FOR_INVESTMENT.INCOME_FROM_FEE)) {
+                    accountMappingDetails.put(INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS.INCOME_FROM_FEES.getValue(), gLAccountData);
+                } else if (glAccountForInvestments.equals(CASH_ACCOUNTS_FOR_INVESTMENT.PARTNER_INTEREST_RECEIVABLE)) {
+                    accountMappingDetails.put(INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue(), gLAccountData);
                 }
             }
         }

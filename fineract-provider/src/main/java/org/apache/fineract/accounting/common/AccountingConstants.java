@@ -380,8 +380,10 @@ public class AccountingConstants {
      ***/
     public static enum INVESTMENT_PRODUCT_ACCOUNTING_PARAMS {
         FUND_SOURCE("fundSourceAccountId"), INVESTMENT_ACCOUNT("investmentAccountId"), INCOME_FROM_INTEREST("incomeFromInterestAccountId"), FEE_EXPENSE(
-                "feeExpenseAccountId"), PAYMENT_CHANNEL_FUND_SOURCE_MAPPING("paymentChannelToFundSourceMappings"), PAYMENT_TYPE(
-                "paymentTypeId"), FEE_EXPENSE_ACCOUNT_MAPPING("feeToExpenseAccountMappings"), CHARGE_ID("chargeId");
+                "feeExpenseAccountId"), PAYMENT_CHANNEL_FUND_SOURCE_MAPPING("paymentChannelToFundSourceMappings"), 
+                PAYMENT_TYPE("paymentTypeId"), FEE_EXPENSE_ACCOUNT_MAPPING("feeToExpenseAccountMappings"), CHARGE_ID("chargeId"),
+                INTEREST_ON_SAVINGS_ACCOUNT("interestOnSavingsAccountId"),SAVINGS_CONTROL_ACCOUNT("savingsControlAccountId"),
+                INCOME_FROM_FEES("incomeFromFeeAccountId"),PARTNER_INTEREST_RECEIVABLE("partnerInterestReceivableAccountId");
 
         private final String value;
 
@@ -436,7 +438,8 @@ public class AccountingConstants {
 
     public static enum INVESTMENT_PRODUCT_ACCOUNTING_DATA_PARAMS {
         FUND_SOURCE("fundSourceAccount"), INVESTMENT_ACCOUNT("investmentAccount"), INCOME_FROM_INTEREST("incomeFromInterestAccount"), FEE_EXPENSE(
-                "feeExpenseAccount");
+                "feeExpenseAccount"),INTEREST_ON_SAVINGS_ACCOUNT("interestOnSavingsAccount"),SAVINGS_CONTROL_ACCOUNT("savingsControlAccount"),
+                INCOME_FROM_FEES("incomeFromFeeAccount"),PARTNER_INTEREST_RECEIVABLE("partnerInterestReceivableAccount");
 
         private final String value;
 
