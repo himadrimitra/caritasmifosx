@@ -174,32 +174,38 @@ public class InvestmentAccountDataValidator {
         }
 
         
-        final JsonArray chargesActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.chargesParamName, element);
-        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).ignoreIfNull().jsonArrayNotEmpty();
-        
-        for (JsonElement chargeElement : chargesActions) {             
-            Long chargeId = this.fromApiJsonHelper.extractLongNamed(
-                    InvestmentAccountApiConstants.chargeIdParamName, chargeElement);
-            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargeIdParamName)
-                    .value(chargeId).notNull().longGreaterThanZero();
-            
-            boolean isPentality = this.fromApiJsonHelper.extractBooleanNamed(
-                    InvestmentAccountApiConstants.isPentalityParamName, chargeElement);
-            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.isPentalityParamName).value(isPentality)
-                    .notNull();
-            
-            boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(
-                    InvestmentAccountApiConstants.isActiveParamName, chargeElement);
-            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.isActiveParamName).value(isActive)
-                    .notNull();
-            
-            final LocalDate inactivationDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.inactivationDateParamName, chargeElement);
-            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.inactivationDateParamName).value(inactivationDate).ignoreIfNull();
-           
-        }
+        validateCharges(baseDataValidator, element);
         
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
        
+    }
+
+    private void validateCharges(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+        final JsonArray chargesActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.chargesParamName, element);
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).ignoreIfNull().jsonArrayNotEmpty();
+        if(chargesActions != null && chargesActions.size()>0){
+            for (JsonElement chargeElement : chargesActions) {             
+                Long chargeId = this.fromApiJsonHelper.extractLongNamed(
+                        InvestmentAccountApiConstants.chargeIdParamName, chargeElement);
+                baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargeIdParamName)
+                        .value(chargeId).notNull().longGreaterThanZero();
+                
+                boolean isPentality = this.fromApiJsonHelper.extractBooleanNamed(
+                        InvestmentAccountApiConstants.isPentalityParamName, chargeElement);
+                baseDataValidator.reset().parameter(InvestmentAccountApiConstants.isPentalityParamName).value(isPentality)
+                        .notNull();
+                
+                boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(
+                        InvestmentAccountApiConstants.isActiveParamName, chargeElement);
+                baseDataValidator.reset().parameter(InvestmentAccountApiConstants.isActiveParamName).value(isActive)
+                        .notNull();
+                
+                final LocalDate inactivationDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.inactivationDateParamName, chargeElement);
+                baseDataValidator.reset().parameter(InvestmentAccountApiConstants.inactivationDateParamName).value(inactivationDate).ignoreIfNull();
+               
+            } 
+        }
+        
     }
     
     public void validateForInvestmentAccountToActivate(InvestmentAccount investmentAccount) {

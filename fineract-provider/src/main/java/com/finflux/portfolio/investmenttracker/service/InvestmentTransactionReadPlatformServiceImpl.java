@@ -50,8 +50,8 @@ public class InvestmentTransactionReadPlatformServiceImpl implements InvestmentT
             sqlBuilder.append("tr.running_balance as runningBalance, tr.is_reversed as reversed,");
             sqlBuilder.append("tr.investment_account_id as investmentAccountId ,");
             sqlBuilder.append("o.id as officeId , o.name as officeName, ");
-            sqlBuilder.append("user.id as appUserId , user.username as userName, ");
-            sqlBuilder.append("from f_investment_account_transaction tr ");
+            sqlBuilder.append("user.id as appUserId , user.username as userName  ");
+            sqlBuilder.append("from f_investment_transaction tr ");
             sqlBuilder.append("left join m_office o on o.id = tr.office_id ");
             sqlBuilder.append("left join m_appuser user on user.id = tr.appuser_id ");
 
