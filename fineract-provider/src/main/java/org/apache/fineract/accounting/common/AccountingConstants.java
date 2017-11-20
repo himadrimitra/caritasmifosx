@@ -403,7 +403,8 @@ public class AccountingConstants {
      * Accounting placeholders for cash based accounting for Investment products
      ***/
     public static enum CASH_ACCOUNTS_FOR_INVESTMENT {
-        FUND_SOURCE(1), INVESTMENT_PARTNER_ACCOUNT(2), INCOME_FROM_INVESTMENT_INTEREST(3), BANK_FEE_EXPENSE(4);
+        FUND_SOURCE(1), PARTNER_INTEREST_RECEIVABLE(2), INVESTMENT_PARTNER_ACCOUNT(3),INCOME_FROM_FEE(4), INCOME_FROM_INVESTMENT_INTEREST(5), BANK_FEE_EXPENSE(6),
+        INTEREST_ON_SAVINGS(7),SAVINGS_CONTROL(8);
 
         private final Integer value;
 
