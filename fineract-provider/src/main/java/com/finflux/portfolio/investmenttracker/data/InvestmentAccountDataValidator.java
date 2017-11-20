@@ -10,9 +10,11 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
-import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
+import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
+import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanceException;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -131,7 +133,7 @@ public class InvestmentAccountDataValidator {
         boolean reinvestAfterMaturity = this.fromApiJsonHelper.extractBooleanNamed(
                 InvestmentAccountApiConstants.reinvestAfterMaturityParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.reinvestAfterMaturityParamName).value(reinvestAfterMaturity)
-                .notNull().trueOrFalseRequired(reinvestAfterMaturity);
+                .notNull();
         
         final Long staffId = this.fromApiJsonHelper.extractLongNamed(
                 InvestmentAccountApiConstants.staffIdParamName, element);
@@ -150,22 +152,29 @@ public class InvestmentAccountDataValidator {
             final JsonArray savingsAccountActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.savingsAccountsParamName, element);
             baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountsParamName).value(savingsAccountActions).jsonArrayNotEmpty();
             
+            BigDecimal sumOfInvestmentAmount = new BigDecimal(0);
             //investment account and savings account linkages validation
             for (JsonElement savingsAccountElement : savingsAccountActions) {             
-                Long savingsAccountId = this.fromApiJsonHelper.extractLongNamed(
+                 final Long savingsAccountId = this.fromApiJsonHelper.extractLongNamed(
                         InvestmentAccountApiConstants.savingsAccountIdParamName, savingsAccountElement);
-                baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountIdParamName)
+                 baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountIdParamName)
                         .value(savingsAccountId).notNull().longGreaterThanZero();
-                
-                Integer individualInvestmentAmount = this.fromApiJsonHelper.extractIntegerNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, savingsAccountElement,locale);
-                 baseDataValidator.reset().parameter(InvestmentAccountApiConstants.individualInvestmentAmountParamName).value(individualInvestmentAmount)
-                                .notNull().positiveAmount();      
+                 
+                 final BigDecimal individualInvestmentAmount = this.fromApiJsonHelper.extractBigDecimalNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, savingsAccountElement, locale);
+                 baseDataValidator.reset().parameter(InvestmentAccountApiConstants.individualInvestmentAmountParamName).value(individualInvestmentAmount).notNull().positiveAmount();
+             
+                 sumOfInvestmentAmount = sumOfInvestmentAmount.add(individualInvestmentAmount);
             }
+            if(sumOfInvestmentAmount.compareTo(investmentAmount) != 0){
+                baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentAmountParamName)
+                .failWithCode("parameter.should.be.equal.to.sum.of.savingsaccount.investmentamount", "Investment Amount Parameter should be equal to sum of savings account Investment Amount");
+            }
+           
         }
 
         
         final JsonArray chargesActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.chargesParamName, element);
-        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).jsonArrayNotEmpty();
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).ignoreIfNull();
         
         for (JsonElement chargeElement : chargesActions) {             
             Long chargeId = this.fromApiJsonHelper.extractLongNamed(
@@ -187,6 +196,8 @@ public class InvestmentAccountDataValidator {
             baseDataValidator.reset().parameter(InvestmentAccountApiConstants.inactivationDateParamName).value(inactivationDate).ignoreIfNull();
            
         }
+        
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
        
     }
     
@@ -219,6 +230,17 @@ public class InvestmentAccountDataValidator {
             String defaultErrorMessage = "Investment Account should be in APPROVED status to UndoApproval";
             String action = "UndoApproval";
             throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
+        }
+    }
+    
+    private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
+        if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+    }
+    
+    public void validateSavingsAccountBalanceForInvestment(final SavingsAccount savingAccount, final BigDecimal savingsAccountInvestmentAmount){
+        BigDecimal savingsAccountBalance = savingAccount.getWithdrawableBalance();
+        if(savingsAccountBalance.compareTo(savingsAccountInvestmentAmount) < 0){
+            throw new InsufficientAccountBalanceException(savingAccount.getAccountNumber(),savingAccount.getAccountNumber());
         }
     }
 }

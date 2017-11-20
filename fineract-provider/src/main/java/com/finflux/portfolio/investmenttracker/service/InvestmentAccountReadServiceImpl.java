@@ -4,13 +4,17 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
@@ -20,6 +24,8 @@ import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
+import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -42,6 +48,9 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
     private final OfficeReadPlatformService officeReadPlatformService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
     private final InvestmentTrackerDropDownReadService dropdownReadPlatformService;
+    private final PlatformSecurityContext context;
+    private final StaffReadPlatformService staffReadPlatformService;
+    private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
     
     @Autowired
     public InvestmentAccountReadServiceImpl(final RoutingDataSource dataSource,
@@ -49,17 +58,24 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              final InvestmentProductReadService investmentProductReadService,
              final OfficeReadPlatformService officeReadPlatformService,
              final CodeValueReadPlatformService codeValueReadPlatformService,
-             final InvestmentTrackerDropDownReadService dropdownReadPlatformService){
+             final InvestmentTrackerDropDownReadService dropdownReadPlatformService,
+             final PlatformSecurityContext context,
+             final StaffReadPlatformService staffReadPlatformService,
+             final SavingsAccountReadPlatformService savingsAccountReadPlatformService){
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.chargeReadPlatformService = chargeReadPlatformService;
         this.investmentProductReadService = investmentProductReadService;
         this.officeReadPlatformService = officeReadPlatformService;
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.dropdownReadPlatformService = dropdownReadPlatformService;
+        this.context = context;
+        this.staffReadPlatformService = staffReadPlatformService;
+        this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
     }
     
     @Override
-    public InvestmentAccountData retrieveInvestmentAccountTemplate(InvestmentAccountData investmentAccountData) {
+    public InvestmentAccountData retrieveInvestmentAccountTemplate(InvestmentAccountData investmentAccountData,
+            final boolean staffInSelectedOfficeOnly, final Long officeId) {
         
         Collection<ChargeData> investmentChargeOptions = this.chargeReadPlatformService.retrieveInvestmentProductApplicableCharges();
         Collection<CodeValueData> partnerOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("Investmentpartners");
@@ -70,20 +86,92 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         final List<EnumOptionData> investmentTermFrequencyTypeOptions = this.dropdownReadPlatformService
                 .retrieveInvestmentTermFrequencyTypeOptions();
         
+        final Long defaultOfficeId = defaultToUsersOfficeIfNull(officeId);
+        final boolean loanOfficersOnly = false;
+        Collection<StaffData> staffOptions = null;
+        if (staffInSelectedOfficeOnly) {
+            staffOptions = this.staffReadPlatformService.retrieveAllStaffForDropdown(defaultOfficeId);
+        } else {
+            staffOptions = this.staffReadPlatformService.retrieveAllStaffInOfficeAndItsParentOfficeHierarchy(defaultOfficeId,
+                    loanOfficersOnly);
+        }
+        SearchParameters searchParameters = SearchParameters.forSavings(null, null, null, null, null,
+                null, officeId);
+        final List<SavingsAccountData> savingsAccount = this.savingsAccountReadPlatformService.retrieveAll(searchParameters).getPageItems();
+        
+        Collection<EnumOptionData> investmentAccountStatus = InvestmentAccountStatus.investmentAccountStatusTypeOptions();
+        
         if(investmentAccountData != null){
             return InvestmentAccountData.withTemplateData(investmentAccountData,partnerOptions, investmentProductOptions, investmentChargeOptions, officeDataOptions,
-                    interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions);
+                    interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccount, investmentAccountStatus);
         }
         
         return InvestmentAccountData.onlyTemplateData(partnerOptions, investmentProductOptions, investmentChargeOptions, officeDataOptions,
-                interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions);
+                interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccount, investmentAccountStatus);
        
     }
 
     @Override
-    public Collection<InvestmentAccountData> retrieveAll() {
+    public Collection<InvestmentAccountData> retrieveAll(final SearchParameters searchParameters) {
         InvestmentAccountMapper investmentAccountMapper = new InvestmentAccountMapper();
         String sql = "SELECT " + investmentAccountMapper.schema();
+        Long officeId = searchParameters.getOfficeId();
+        Long partnerId = searchParameters.getCategoryId();
+        Long investmetnProductId = searchParameters.getProductId();
+        Integer status = searchParameters.getStatus();
+        LocalDate maturityStartDate = null;
+        if(searchParameters.getStartDate() != null){
+             maturityStartDate = new LocalDate(searchParameters.getStartDate()); 
+        }
+        LocalDate maturityEndDate = null;
+        if(searchParameters.getEndDate() != null){
+            maturityEndDate = new LocalDate(searchParameters.getEndDate()); 
+        }
+        StringBuilder queryParams = new StringBuilder();
+        if(officeId != null){
+            queryParams.append(" WHERE fia.office_id = ").append(officeId);      
+        }
+        if( partnerId != null){
+            if(queryParams.length() > 0)
+                queryParams.append(" and fia.partner_id = ").append(partnerId);
+            else
+                queryParams.append(" WHERE fia.partner_id = ").append(partnerId);
+        }
+        if( investmetnProductId != null){
+            if(queryParams.length() > 0)
+                queryParams.append(" and fia.investment_product_id = ").append(investmetnProductId);
+            else
+                queryParams.append(" WHERE fia.investment_product_id = ").append(investmetnProductId);
+        }
+        if( status != null){
+            if(queryParams.length() > 0)
+                queryParams.append(" and fia.status_enum = ").append(status);
+            else
+                queryParams.append(" WHERE fia.status_enum = ").append(status);
+        }
+        if( maturityStartDate != null && maturityEndDate != null){
+            if(queryParams.length() > 0)
+                queryParams.append(" and fia.maturityon_date between ").append("'"+maturityStartDate+"'").append(" and ").append("'"+maturityEndDate+"'");
+            else
+                queryParams.append(" WHERE fia.maturityon_date between ").append("'"+maturityStartDate+"'").append(" and ").append("'"+maturityEndDate+"'");
+        }else if( maturityStartDate != null){
+            if(queryParams.length() > 0)
+                queryParams.append(" and fia.maturityon_date >= ").append("'"+maturityStartDate+"'");
+            else
+                queryParams.append(" WHERE fia.maturityon_date >= ").append("'"+maturityStartDate+"'");
+        }else if( maturityEndDate != null){
+            if(queryParams.length() > 0)
+                queryParams.append(" and fia.maturityon_date <= ").append("'"+maturityEndDate+"'");
+            else
+                queryParams.append(" WHERE fia.maturityon_date <= ").append("'"+maturityEndDate+"'");
+        }
+        
+        if(queryParams.length() > 0){
+            sql = sql + queryParams.toString() + " ORDER BY fia.id";
+        }else{
+            sql = sql + " ORDER BY fia.id";
+        }
+        
         Collection<InvestmentAccountData> investmentAccountDetails = this.jdbcTemplate.query(sql, investmentAccountMapper);
         return investmentAccountDetails;
     }
@@ -354,6 +442,14 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             return data;
         }
     
+    }
+    
+    private Long defaultToUsersOfficeIfNull(final Long officeId) {
+        Long defaultOfficeId = officeId;
+        if (defaultOfficeId == null) {
+            defaultOfficeId = this.context.authenticatedUser().getOffice().getId();
+        }
+        return defaultOfficeId;
     }
 
 }
