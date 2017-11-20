@@ -15,6 +15,8 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,6 +42,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
     private final AccountNumberGenerator accountNumberGenerator; 
     private final InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper;
+    private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     
     
     @Autowired
@@ -47,7 +50,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             InvestmentAccountDataAssembler investmentAccountDataAssembler, InvestmentAccountRepository investmentAccountRepository,
             PlatformSecurityContext context, AccountNumberFormatRepositoryWrapper accountNumberFormatRepository,
             AccountNumberGenerator accountNumberGenerator,
-            InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper) {
+            InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper,
+            SavingsAccountRepositoryWrapper savingsAccountRepository) {
         this.fromApiJsonDataValidator = fromApiJsonDataValidator;
         this.investmentAccountDataAssembler = investmentAccountDataAssembler;
         this.investmentAccountRepository = investmentAccountRepository;
@@ -55,6 +59,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         this.accountNumberFormatRepository = accountNumberFormatRepository;
         this.accountNumberGenerator = accountNumberGenerator;
         this.investmentAccountRepositoryWrapper = investmentAccountRepositoryWrapper;
+        this.savingsAccountRepository = savingsAccountRepository;
     }
 
     @Override
@@ -108,7 +113,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.APPROVED.name());
             Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
             for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
-                if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
+               if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
                     savingsLinkage.setStatus(InvestmentAccountStatus.APPROVED.getValue());
                 }
             }
@@ -135,6 +140,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.ACTIVE.name());
             Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
             for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
+                final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsLinkage.getSavingsAccount().getId());
+                this.fromApiJsonDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, savingsLinkage.getInvestmentAmount());
                 if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
                     savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
                     savingsLinkage.setActiveFromDate(DateUtils.getLocalDateOfTenant().toDate());
@@ -187,7 +194,6 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     @Override
     public CommandProcessingResult undoInvestmentAccountApproval(Long investmentAccountId, JsonCommand command) {
         try {
-            AppUser appUser = this.context.authenticatedUser();
             InvestmentAccount investmentAccount = this.investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
             this.fromApiJsonDataValidator.validateForInvestmentAccountToUndoApproval(investmentAccount);
             Map<String, Object> changes = new HashMap<>();

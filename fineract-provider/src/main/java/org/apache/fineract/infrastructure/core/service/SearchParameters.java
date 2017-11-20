@@ -948,5 +948,74 @@ public final class SearchParameters {
     public Integer getStatus() {
         return this.status;
     }
+    
+    private SearchParameters(Map<String, String> searchConditions, final Long officeId, final String externalId, final String name,
+            final String hierarchy, final String firstname, final String lastname, final Integer offset, final Integer limit,
+            final String orderBy, final String sortOrder, final Long staffId, final String accountNo, final Long loanId,
+            final Long savingsId, final Boolean orphansOnly, final boolean isSelfUser, final Long centerId, final Long groupId,
+            final Long paymentTypeId, final Long clientId, final String voucherType, final String voucherNumber, final Date startDate,
+            final Date endDate, final Long productId, final Long categoryId, final Integer status) {
+        if (searchConditions == null) {
+            searchConditions = new LinkedHashMap<>(1);
+        }
+        this.searchConditions = searchConditions;
+        this.officeId = officeId;
+        this.externalId = externalId;
+        this.name = name;
+        this.hierarchy = hierarchy;
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.offset = offset;
+        this.limit = limit;
+        this.orderBy = orderBy;
+        this.sortOrder = sortOrder;
+        this.staffId = staffId;
+        this.accountNo = accountNo;
+        this.loanId = loanId;
+        this.savingsId = savingsId;
+        this.orphansOnly = orphansOnly;
+        this.currencyCode = null;
+        this.provisioningEntryId = null;
+        this.productId = productId;
+        this.categoryId = categoryId;
+        this.isSelfUser = isSelfUser;
+        this.centerId = centerId;
+        this.groupId = groupId;
+        this.paymentTypeId = paymentTypeId;
+        this.clientId = clientId;
+        this.status = status;
+        this.voucherType = voucherType;
+        this.voucherNumber = voucherNumber;
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
+    
+    public static SearchParameters forInvestmentAccount(final Map<String, String> searchConditions, final Long officeId,
+             final Long investmeproductId, final Long partnerId, final Integer status,final Date maturityStartDate,final Date maturityEndDate) {
+        final Integer maxLimitAllowed = null;
+        final Long staffId = null;
+        final String accountNo = null;
+        final Long loanId = null;
+        final Long savingsId = null;
+        final Long centerId = null;
+        final Long paymentTypeId = null;
+        final Long clientId = null;
+        final String voucherType = null;
+        final String voucherNumber = null;
+        final String externalId = null;
+        final String displayName = null;
+        final String firstname = null;
+        final String lastname = null;
+        final String hierarchy = null;
+        final Integer offset = null;
+        final String orderBy = null;
+        final String sortOrder = null;
+        final Boolean orphansOnly = null;
+        final Long groupId = null;
+        final boolean isSelfUser = false;
+        return new SearchParameters(searchConditions, officeId, externalId, displayName, hierarchy, firstname, lastname, offset,
+                maxLimitAllowed, orderBy, sortOrder, staffId, accountNo, loanId, savingsId, orphansOnly, isSelfUser, centerId, groupId,
+                paymentTypeId, clientId, voucherType, voucherNumber, maturityStartDate, maturityEndDate, investmeproductId, partnerId, status);
+    }
 
 }

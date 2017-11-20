@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
+import com.finflux.portfolio.investmenttracker.data.InvestmentAccountDataValidator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -37,6 +38,7 @@ public  class InvestmentAccountDataAssembler {
     private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     private final FromJsonHelper fromApiJsonHelper;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
+    private final InvestmentAccountDataValidator investmentAccountDataValidator;
 
     @Autowired
     public InvestmentAccountDataAssembler(final ChargeRepositoryWrapper chargeRepository,
@@ -45,7 +47,8 @@ public  class InvestmentAccountDataAssembler {
             final InvestmentProductRepositoryWrapper investmentProductRepository,
             final SavingsAccountRepositoryWrapper savingsAccountRepository,
             final FromJsonHelper fromApiJsonHelper,
-            final StaffRepositoryWrapper staffRepositoryWrapper) {
+            final StaffRepositoryWrapper staffRepositoryWrapper,
+            final InvestmentAccountDataValidator investmentAccountDataValidator) {
         this.chargeRepository = chargeRepository;
         this.officeReposiotory = officeReposiotory;
         this.codeValueRepository = codeValueRepository;
@@ -53,6 +56,7 @@ public  class InvestmentAccountDataAssembler {
         this.savingsAccountRepository = savingsAccountRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
+        this.investmentAccountDataValidator = investmentAccountDataValidator;
     }
     
     public InvestmentAccount createAssemble(final JsonCommand command, final AppUser appUser) {
@@ -139,7 +143,7 @@ public  class InvestmentAccountDataAssembler {
     private InvestmentAccount assembleInvestmentAccountCharges( JsonCommand command, InvestmentAccount investmentAccount){
         
         final JsonArray charges = command.arrayOfParameterNamed(InvestmentAccountApiConstants.chargesParamName);
-        if (charges != null) {
+        if (charges != null && charges.size() > 0) {
             Set<InvestmentAccountCharge> chargesSet = new HashSet<>();
             for (int i = 0; i < charges.size(); i++) {
                 final JsonObject actionElement = charges.get(i).getAsJsonObject();
@@ -160,4 +164,6 @@ public  class InvestmentAccountDataAssembler {
         
         return investmentAccount;
     }
+    
+
 }

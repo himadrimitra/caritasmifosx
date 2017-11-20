@@ -1,9 +1,11 @@
 package com.finflux.portfolio.investmenttracker.api;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -25,6 +27,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
@@ -32,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.common.util.FinfluxStringUtils;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountChargeData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountSavingsLinkagesData;
@@ -65,9 +69,10 @@ public class InvestmentAccountApiResource {
     @Path("template")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveTemplate(@Context final UriInfo uriInfo) {
+    public String retrieveTemplate(@Context final UriInfo uriInfo, @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
+            @QueryParam("officeId") final Long officeId) {
         this.context.authenticatedUser().validateHasReadPermission(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
-        final InvestmentAccountData investmentAccountData = this.investmentAccountReadService.retrieveInvestmentAccountTemplate(null);
+        final InvestmentAccountData investmentAccountData = this.investmentAccountReadService.retrieveInvestmentAccountTemplate(null, staffInSelectedOfficeOnly, officeId);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, investmentAccountData);
     }
@@ -87,11 +92,18 @@ public class InvestmentAccountApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo) {
+    public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("searchConditions") final String searchConditions, 
+            @QueryParam("officeId") final Long officeId, @QueryParam("partnerId") final Long partnerId, 
+            @QueryParam("investmentProductId") final Long investmentProductId, @QueryParam("investmentAccountStatus") final Integer investmentAccountStatus,
+            @QueryParam("marturityFromDate") final Date marturityFromDate, @QueryParam("marturityToDate") final Date marturityToDate) {
 
         this.context.authenticatedUser().validateHasReadPermission(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
-
-        final Collection<InvestmentAccountData> investmentAccounts = this.investmentAccountReadService.retrieveAll();
+        
+        final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
+        
+        SearchParameters searchParameters = SearchParameters.forInvestmentAccount(searchConditionsMap, officeId, investmentProductId, partnerId, investmentAccountStatus, marturityFromDate, marturityToDate);
+        
+        final Collection<InvestmentAccountData> investmentAccounts = this.investmentAccountReadService.retrieveAll(searchParameters);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         
@@ -119,7 +131,7 @@ public class InvestmentAccountApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
         if (settings.isTemplate()) {
-            investmentAccountData = this.investmentAccountReadService.retrieveInvestmentAccountTemplate(investmentAccountData);
+            investmentAccountData = this.investmentAccountReadService.retrieveInvestmentAccountTemplate(investmentAccountData, true, investmentAccountData.getOfficeData().getId());
         }
         return this.toApiJsonSerializer.serialize(settings, investmentAccountData);
     }

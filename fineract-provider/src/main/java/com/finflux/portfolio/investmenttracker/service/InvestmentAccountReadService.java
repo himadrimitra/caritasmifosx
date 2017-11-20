@@ -2,6 +2,8 @@ package com.finflux.portfolio.investmenttracker.service;
 
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
+
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountChargeData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountSavingsLinkagesData;
@@ -9,9 +11,10 @@ import com.finflux.portfolio.investmenttracker.data.InvestmentAccountSavingsLink
 
 public interface InvestmentAccountReadService {
 
-    InvestmentAccountData retrieveInvestmentAccountTemplate(InvestmentAccountData investmentAccountData);
+    InvestmentAccountData retrieveInvestmentAccountTemplate(InvestmentAccountData investmentAccountData,final boolean staffInSelectedOfficeOnly,
+            final Long OfficeId);
     
-    Collection<InvestmentAccountData> retrieveAll();
+    Collection<InvestmentAccountData> retrieveAll(final SearchParameters searchParameters);
     
     InvestmentAccountData retrieveInvestmentAccount(Long id);
     
