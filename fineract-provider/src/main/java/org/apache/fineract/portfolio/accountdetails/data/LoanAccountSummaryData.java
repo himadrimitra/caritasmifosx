@@ -97,4 +97,12 @@ public class LoanAccountSummaryData {
          return new LoanAccountSummaryData(id, accountNo, externalId, productId, loanProductName, shortLoanProductName, loanStatus,
                  loanType, loanCycle, timeline, inArrears, originalLoan, loanBalance, amountPaid, isCoApplicant);
      }
+
+    public BigDecimal getLoanBalance() {
+        return this.loanBalance;
+    }
+
+    public Long getId() {
+        return this.id;
+    }
 }

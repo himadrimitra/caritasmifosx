@@ -16,18 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.infrastructure.sms.service;
+package org.apache.fineract.infrastructure.sms.domain;
 
-import org.apache.fineract.infrastructure.core.api.JsonCommand;
-import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
 
-public interface SmsWritePlatformService {
+@Repository
+public interface InboundMessageRepository extends JpaRepository<InboundMessage, Long>, JpaSpecificationExecutor<InboundMessage> {
 
-    CommandProcessingResult create(JsonCommand command);
-
-    CommandProcessingResult update(Long resourceId, JsonCommand command);
-
-    CommandProcessingResult delete(Long resourceId);
-
-    CommandProcessingResult createInboundSMS(JsonCommand command);
 }

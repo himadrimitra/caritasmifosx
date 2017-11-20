@@ -338,6 +338,14 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder createInboundSms() {
+        this.actionName = "CREATE";
+        this.entityName = "SMS_INBOUND";
+        this.entityId = null;
+        this.href = "/sms/receivesms";
+        return this;
+    }
+
     public CommandWrapperBuilder uploadDetails() {
         this.actionName = "CREATE";
         this.entityName = "UPLOADSHEET";

@@ -18,16 +18,23 @@
  */
 package org.apache.fineract.infrastructure.sms.service;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.sms.SmsApiConstants;
 import org.apache.fineract.infrastructure.sms.data.SmsDataValidator;
+import org.apache.fineract.infrastructure.sms.domain.InboundMessage;
+import org.apache.fineract.infrastructure.sms.domain.InboundMessageRepository;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageAssembler;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,13 +50,18 @@ public class SmsWritePlatformServiceJpaRepositoryImpl implements SmsWritePlatfor
     private final SmsMessageAssembler assembler;
     private final SmsMessageRepository repository;
     private final SmsDataValidator validator;
+    private final InboundMessageRepository inboundMessageRepository;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public SmsWritePlatformServiceJpaRepositoryImpl(final SmsMessageAssembler assembler, final SmsMessageRepository repository,
-            final SmsDataValidator validator) {
+            final SmsDataValidator validator, final InboundMessageRepository inboundMessageRepository,
+            final BusinessEventNotifierService businessEventNotifierService) {
         this.assembler = assembler;
         this.repository = repository;
         this.validator = validator;
+        this.inboundMessageRepository = inboundMessageRepository;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Transactional
@@ -130,5 +142,35 @@ public class SmsWritePlatformServiceJpaRepositoryImpl implements SmsWritePlatfor
         logger.error(dve.getMessage(), dve);
         throw new PlatformDataIntegrityException("error.msg.sms.unknown.data.integrity.issue",
                 "Unknown data integrity issue with resource: " + realCause.getMessage());
+    }
+
+    @Transactional
+    @Override
+    public CommandProcessingResult createInboundSMS(final JsonCommand command) {
+        try {
+            this.validator.validateForInboundSMS(command.json());
+
+            final String mobileNumber = command.stringValueOfParameterNamed(SmsApiConstants.mobileNumberParamName);
+            final String ussdCode = command.stringValueOfParameterNamed(SmsApiConstants.ussdCodeParamName);
+            final InboundMessage message = InboundMessage.instance(mobileNumber, ussdCode);
+            this.inboundMessageRepository.save(message);
+
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.INBOUND_MESSAGE,
+                    constructEntityMap(BUSINESS_ENTITY.INBOUND_SMS, message));
+
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .withEntityId(message.getId()) //
+                    .build();
+        } catch (final DataIntegrityViolationException dve) {
+            handleDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
+    }
+
+    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, final Object entity) {
+        Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
+        map.put(entityEvent, entity);
+        return map;
     }
 }
