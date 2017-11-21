@@ -2,9 +2,11 @@ package com.finflux.portfolio.investmenttracker.service;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.fineract.accounting.journalentry.service.JournalEntryWritePlatformService;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormat;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormatRepositoryWrapper;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
@@ -14,6 +16,9 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
+import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
+import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
@@ -44,6 +49,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     private final AccountNumberGenerator accountNumberGenerator; 
     private final InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper;
     private final SavingsAccountRepositoryWrapper savingsAccountRepository;
+    private final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepositoryWrapper;
+    private final JournalEntryWritePlatformService journalEntryWritePlatformService;
     
     
     @Autowired
@@ -52,7 +59,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             PlatformSecurityContext context, AccountNumberFormatRepositoryWrapper accountNumberFormatRepository,
             AccountNumberGenerator accountNumberGenerator,
             InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper,
-            SavingsAccountRepositoryWrapper savingsAccountRepository) {
+            SavingsAccountRepositoryWrapper savingsAccountRepository, final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepositoryWrapper,
+            final JournalEntryWritePlatformService journalEntryWritePlatformService) {
         this.fromApiJsonDataValidator = fromApiJsonDataValidator;
         this.investmentAccountDataAssembler = investmentAccountDataAssembler;
         this.investmentAccountRepository = investmentAccountRepository;
@@ -61,6 +69,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         this.accountNumberGenerator = accountNumberGenerator;
         this.investmentAccountRepositoryWrapper = investmentAccountRepositoryWrapper;
         this.savingsAccountRepository = savingsAccountRepository;
+        this.applicationCurrencyRepositoryWrapper = applicationCurrencyRepositoryWrapper;
+        this.journalEntryWritePlatformService = journalEntryWritePlatformService;
     }
 
     @Override
@@ -148,13 +158,16 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
                     savingsLinkage.setActiveFromDate(DateUtils.getLocalDateOfTenant().toDate());
                 }
             }
+            final Set<Long> existingTransactionIds = new HashSet<>();
+            final Set<Long> existingReversedTransactionIds = new HashSet<>();
+            updateExistingTransactionsDetails(investmentAccount, existingTransactionIds, existingReversedTransactionIds);
             investmentAccount.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
             investmentAccount.setActivatedBy(appUser);
             Date currentDate = DateUtils.getLocalDateOfTenant().toDate();
             investmentAccount.setActivatedOnDate(currentDate);
-            InvestmentTransaction investmentTransaction = InvestmentTransaction.deposit(investmentAccount, investmentAccount.getOffice().getId(), currentDate, investmentAccount.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
-            investmentAccount.getTransactions().add(investmentTransaction);            
+            processTransactions(appUser, investmentAccount, currentDate);            
             this.investmentAccountRepository.save(investmentAccount);
+            postJournalEntries(investmentAccount, existingTransactionIds, existingReversedTransactionIds);
             return new CommandProcessingResultBuilder() //
                     .withEntityId(investmentAccount.getId()) //
                     .with(changes).build();
@@ -164,6 +177,26 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         }
     }
     
+    private void updateExistingTransactionsDetails(final InvestmentAccount account, final Set<Long> existingTransactionIds,
+            final Set<Long> existingReversedTransactionIds) {
+        existingTransactionIds.addAll(account.findExistingTransactionIds());
+        existingReversedTransactionIds.addAll(account.findExistingReversedTransactionIds());
+    }
+
+    private void processTransactions(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
+        InvestmentTransaction investmentTransaction = InvestmentTransaction.deposit(investmentAccount, investmentAccount.getOffice().getId(), currentDate, investmentAccount.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
+        investmentAccount.getTransactions().add(investmentTransaction);
+       
+    }
+    
+    private void postJournalEntries(final InvestmentAccount investmentAccount, final Set<Long> existingTransactionIds,
+            final Set<Long> existingReversedTransactionIds) {
+        final MonetaryCurrency currency = investmentAccount.getCurrency();
+        final ApplicationCurrency applicationCurrency = this.applicationCurrencyRepositoryWrapper.findOneWithNotFoundDetection(currency);
+        final Map<String, Object> accountingBridgeData = investmentAccount.deriveAccountingBridgeData(applicationCurrency.toData(),
+                existingTransactionIds, existingReversedTransactionIds);
+        this.journalEntryWritePlatformService.createJournalEntriesForInvestment(accountingBridgeData);
+    }
 
     @Override
     public CommandProcessingResult rejectInvestmentAccount(Long investmentAccountId, JsonCommand command) {

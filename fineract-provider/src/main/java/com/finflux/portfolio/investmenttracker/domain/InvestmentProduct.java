@@ -17,6 +17,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.portfolio.charge.domain.Charge;
@@ -393,5 +394,9 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
         }
         return updated;
     }
+    
+   public boolean isCashBasedAccountingEnabled(){
+       return this.accountingType.equals(AccountingRuleType.CASH_BASED.getValue());
+   }
 
 }

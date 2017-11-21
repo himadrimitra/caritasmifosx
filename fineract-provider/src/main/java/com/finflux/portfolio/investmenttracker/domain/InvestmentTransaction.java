@@ -2,6 +2,8 @@ package com.finflux.portfolio.investmenttracker.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -11,7 +13,12 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import org.apache.fineract.organisation.monetary.data.CurrencyData;
+import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
+
+import com.finflux.portfolio.investmenttracker.data.InvestmentTransactionEnumData;
+import com.finflux.portfolio.investmenttracker.service.InvestmentEnumerations;
 
 @Entity
 @Table(name = "f_investment_transaction")
@@ -115,12 +122,58 @@ public class InvestmentTransaction extends AbstractPersistable<Long> {
         return this.typeOf;
     }
 
-    public Date getDateOf() {
+    public Date getTransactionDate() {
         return this.dateOf;
     }
 
     public Date getCreatedDate() {
         return this.createdDate;
+    }
+
+    
+    public boolean isReversed() {
+        return this.reversed;
+    }
+
+    
+    public void setReversed(boolean reversed) {
+        this.reversed = reversed;
+    }
+
+    
+    public void setTypeOf(Integer typeOf) {
+        this.typeOf = typeOf;
+    }
+
+    
+    public void setDateOf(Date dateOf) {
+        this.dateOf = dateOf;
+    }
+
+    
+    public void setCreatedDate(Date createdDate) {
+        this.createdDate = createdDate;
+    }
+    
+
+    public Map<String, Object> toMapData(final CurrencyData currencyData) {
+        final Map<String, Object> thisTransactionData = new LinkedHashMap<>();
+
+        final InvestmentTransactionEnumData transactionType = InvestmentEnumerations.transactionType(this.typeOf);
+
+        thisTransactionData.put("id", getId());
+        thisTransactionData.put("officeId", this.officeId);
+        thisTransactionData.put("type", transactionType);
+        thisTransactionData.put("reversed", Boolean.valueOf(isReversed()));
+        thisTransactionData.put("date", getTransactionLocalDate());
+        thisTransactionData.put("currency", currencyData);
+        thisTransactionData.put("amount", this.amount);
+
+        return thisTransactionData;
+    }
+
+    private LocalDate getTransactionLocalDate() {
+        return new LocalDate(this.dateOf);
     }
 
 }

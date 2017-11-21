@@ -44,6 +44,7 @@ import org.apache.fineract.accounting.journalentry.api.JournalEntryJsonInputPara
 import org.apache.fineract.accounting.journalentry.command.JournalEntryCommand;
 import org.apache.fineract.accounting.journalentry.command.SingleDebitOrCreditEntryCommand;
 import org.apache.fineract.accounting.journalentry.data.ClientTransactionDTO;
+import org.apache.fineract.accounting.journalentry.data.InvestmentDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanDTO;
 import org.apache.fineract.accounting.journalentry.data.SavingsDTO;
 import org.apache.fineract.accounting.journalentry.data.SharesDTO;
@@ -111,6 +112,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
     private final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper;
     private final CashBasedAccountingProcessorForClientTransactions accountingProcessorForClientTransactions;
     private final JournalEntryReadPlatformService journalEntryReadPlatformService;
+    private final AccountingProcessorForInvestmentFactory accountingProcessorForInvestmentFactory;
 
     @Autowired
     public JournalEntryWritePlatformServiceJpaRepositoryImpl(final GLClosureRepository glClosureRepository,
@@ -126,7 +128,8 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
             final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper,
             final CashBasedAccountingProcessorForClientTransactions accountingProcessorForClientTransactions,
             final JournalEntryReadPlatformService journalEntryReadPlatformService,
-            final JournalEntryRepositoryWrapper journalEntryRepositoryWrapper) {
+            final JournalEntryRepositoryWrapper journalEntryRepositoryWrapper,
+            final AccountingProcessorForInvestmentFactory accountingProcessorForInvestmentFactory) {
         this.glClosureRepository = glClosureRepository;
         this.officeRepository = officeRepository;
         this.journalEntryRepository = journalEntryRepository;
@@ -145,6 +148,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
         this.financialActivityAccountRepositoryWrapper = financialActivityAccountRepositoryWrapper;
         this.accountingProcessorForClientTransactions = accountingProcessorForClientTransactions;
         this.journalEntryReadPlatformService = journalEntryReadPlatformService;
+        this.accountingProcessorForInvestmentFactory = accountingProcessorForInvestmentFactory;
     }
 
     @Transactional
@@ -800,6 +804,17 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
         public int hashCode() {
             return this.office.hashCode() + this.currency.hashCode();
         }
+    }
+
+    @Override
+    public void createJournalEntriesForInvestment(Map<String, Object> accountingBridgeData) {
+        final boolean cashBasedAccountingEnabled = (Boolean) accountingBridgeData.get("cashBasedAccountingEnabled");
+        if (cashBasedAccountingEnabled) {
+            final InvestmentDTO investmentDTO = this.helper.populateInvestmentDtoFromMap(accountingBridgeData, cashBasedAccountingEnabled);
+            final AccountingProcessorForInvestment accountingProcessorForInvestment = this.accountingProcessorForInvestmentFactory.determineProcessor(investmentDTO);
+            accountingProcessorForInvestment.createJournalEntriesForInvestment(investmentDTO);
+        }
+        
     }
 
 }
