@@ -732,7 +732,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
             sb.append(" ,(ifnull(mlt.fee_charges_portion_derived,0)+ifnull(mlt.penalty_charges_portion_derived,0))as loan_charges ");
             sb.append("  ,(mlt.amount-ifnull(mlt.fee_charges_portion_derived,0)-ifnull(mlt.penalty_charges_portion_derived,0))as amount ");
             sb.append("  from m_loan_transaction mlt ");
-            sb.append("  inner join m_appuser map on mlt.appuser_id = map.id ");
+            sb.append("  inner join m_appuser map on mlt.lastmodifiedby_id = map.id ");
             sb.append("  inner join m_loan ml on ml.id=mlt.loan_id ");
             sb.append("  left join m_client mc on mc.id=ml.client_id ");
             sb.append("  inner join m_product_loan mpl on mpl.id=ml.product_id ");
