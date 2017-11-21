@@ -47,11 +47,13 @@ public class CashBasedAccountingProcessorForInvestment implements AccountingProc
             final BigDecimal amount = investmentTransactionDTO.getAmount();
 
             this.helper.checkForBranchClosures(latestGLClosure, transactionDate);
-            final JournalEntry journalEntry = this.helper.createSavingsJournalEntry(currencyCode, transactionDate, transactionDate,
+            final JournalEntry journalEntry = this.helper.createInvestmentJournalEntry(currencyCode, transactionDate, transactionDate,
                     transactionDate, transactionId, officeId, investmentId);
 
             if (investmentTransactionDTO.getTransactionType().isDeposit()) {
-                this.helper.createCashBasedJournalEntriesAndReversalsForInvestment(CASH_ACCOUNTS_FOR_INVESTMENT.FUND_SOURCE.getValue(), CASH_ACCOUNTS_FOR_INVESTMENT.FUND_SOURCE.getValue(), investmentProductId, amount, isReversal, journalEntry);
+                this.helper.createCashBasedJournalEntriesAndReversalsForInvestment(CASH_ACCOUNTS_FOR_INVESTMENT.INVESTMENT_PARTNER_ACCOUNT.getValue(), CASH_ACCOUNTS_FOR_INVESTMENT.FUND_SOURCE.getValue(), investmentProductId, amount, isReversal, journalEntry);
+            }else if(investmentTransactionDTO.getTransactionType().isFeeDeduction()){
+                this.helper.createCashBasedJournalEntriesAndReversalsForInvestment(CASH_ACCOUNTS_FOR_INVESTMENT.BANK_FEE_EXPENSE.getValue(), CASH_ACCOUNTS_FOR_INVESTMENT.FUND_SOURCE.getValue(), investmentProductId, amount, isReversal, journalEntry);
             }
 
             if (!journalEntry.getJournalEntryDetails().isEmpty()) {

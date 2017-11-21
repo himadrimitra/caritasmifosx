@@ -31,8 +31,6 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
-import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -453,7 +451,7 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
             }
         }
 
-        accountingBridgeData.put("newSavingsTransactions", newSavingsTransactions);
+        accountingBridgeData.put("newInvestmentTransactions", newSavingsTransactions);
         return accountingBridgeData;
     }
     
