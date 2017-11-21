@@ -678,14 +678,14 @@ public class SmsCampaignDomainServiceImpl implements SmsCampaignDomainService {
                         notifyMobileNotRegistered(mobileNumber, providerId);
                     } else {
                         if (isSMSConfigurationEnabledForOffice(client.officeId())) {
-                            if (StringUtils.isNotBlank(ussdCode) && ussdCode.contains("balance")) {
+                            if (StringUtils.isNotBlank(ussdCode) && ussdCode.toLowerCase().contains("balance")) {
                                 final String balacesDescription = constructAccountBalancesMessage(client.getId());
                                 if (StringUtils.isNotBlank(balacesDescription)) {
                                     notifyCustomerBalance(client, mobileNumber, providerId, balacesDescription);
                                 } else {
                                     notifyCustomerNoAccountsExists(client, mobileNumber, providerId);
                                 }
-                            } else if (StringUtils.isNotBlank(ussdCode) && ussdCode.contains("mini")) {
+                            } else if (StringUtils.isNotBlank(ussdCode) && ussdCode.toLowerCase().contains("mini")) {
                                 final String balacesDescription = constructMiniStatementBalancesMessage(client.getId());
                                 if (StringUtils.isNotBlank(balacesDescription)) {
                                     notifyCustomerMiniStatementBalance(balacesDescription, client, mobileNumber, providerId);
