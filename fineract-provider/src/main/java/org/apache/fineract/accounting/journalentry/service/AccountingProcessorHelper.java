@@ -29,6 +29,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.closure.domain.GLClosure;
 import org.apache.fineract.accounting.closure.domain.GLClosureRepository;
 import org.apache.fineract.accounting.common.AccountingConstants.ACCRUAL_ACCOUNTS_FOR_LOAN;
+import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_INVESTMENT;
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_LOAN;
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_SAVINGS;
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_SHARES;
@@ -42,6 +43,8 @@ import org.apache.fineract.accounting.glaccount.domain.GLAccountRepositoryWrappe
 import org.apache.fineract.accounting.journalentry.data.ChargePaymentDTO;
 import org.apache.fineract.accounting.journalentry.data.ClientChargePaymentDTO;
 import org.apache.fineract.accounting.journalentry.data.ClientTransactionDTO;
+import org.apache.fineract.accounting.journalentry.data.InvestmentDTO;
+import org.apache.fineract.accounting.journalentry.data.InvestmentTransactionDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanTransactionDTO;
 import org.apache.fineract.accounting.journalentry.data.SavingsDTO;
@@ -74,11 +77,14 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.finflux.portfolio.investmenttracker.data.InvestmentTransactionEnumData;
+
 @Service
 public class AccountingProcessorHelper {
 
     public static final String LOAN_TRANSACTION_IDENTIFIER = "L";
     public static final String SAVINGS_TRANSACTION_IDENTIFIER = "S";
+    public static final String INVESTMENT_TRANSACTION_IDENTIFIER = "I";
     public static final String CLIENT_TRANSACTION_IDENTIFIER = "C";
     public static final String PROVISIONING_TRANSACTION_IDENTIFIER = "P";
     public static final String SHARE_TRANSACTION_IDENTIFIER = "SH";
@@ -557,6 +563,44 @@ public class AccountingProcessorHelper {
             accountTypeToCreditId = accountTypeToBeDebited;
         }
         createJournalEntriesForSavings(accountTypeToDebitId, accountTypeToCreditId, savingsProductId, paymentTypeId, amount, journalEntry);
+    }
+    
+    /**
+     * Convenience method that creates a pair of related Debits and Credits for
+     * Cash Based accounting.
+     *
+     * The target accounts for debits and credits are switched in case of a
+     * reversal
+     *
+     * @param accountTypeToBeDebited
+     *            Enum of the placeholder GLAccount to be debited
+     * @param accountTypeToBeCredited
+     *            Enum of the placeholder of the GLAccount to be credited
+     * @param investmentProductId
+     * @param amount
+     * @param isReversal
+     * @param journalEntry
+     *            TODO
+     */
+    public void createCashBasedJournalEntriesAndReversalsForInvestment(final Integer accountTypeToBeDebited,
+            final Integer accountTypeToBeCredited, final Long investmentProductId, final BigDecimal amount,
+            final Boolean isReversal, final JournalEntry journalEntry) {
+        int accountTypeToDebitId = accountTypeToBeDebited;
+        int accountTypeToCreditId = accountTypeToBeCredited;
+        // reverse debits and credits for reversals
+        if (isReversal) {
+            accountTypeToDebitId = accountTypeToBeCredited;
+            accountTypeToCreditId = accountTypeToBeDebited;
+        }
+        createJournalEntriesForInvestment(accountTypeToDebitId, accountTypeToCreditId, investmentProductId, amount, journalEntry);
+    }
+    
+    private void createJournalEntriesForInvestment(final int accountTypeToDebitId, final int accountTypeToCreditId,
+            final Long investmentProductId, final BigDecimal amount, final JournalEntry journalEntry) {
+        final GLAccount debitAccount = getLinkedGLAccountForInvestmentProduct(investmentProductId, accountTypeToDebitId);
+        final GLAccount creditAccount = getLinkedGLAccountForInvestmentProduct(investmentProductId, accountTypeToCreditId);
+        createDebitJournalEntry(debitAccount, amount, journalEntry);
+        createCreditJournalEntry(creditAccount, amount, journalEntry);
     }
 
     /**
@@ -1096,6 +1140,33 @@ public class AccountingProcessorHelper {
         }
         return glAccount;
     }
+    
+    private GLAccount getLinkedGLAccountForInvestmentProduct(final Long investmentProductId, final int accountMappingTypeId) {
+        GLAccount glAccount = null;
+        if (isOrganizationAccount(accountMappingTypeId)) {
+            final FinancialActivityAccount financialActivityAccount = this.financialActivityAccountRepository
+                    .findByFinancialActivityTypeWithNotFoundDetection(accountMappingTypeId);
+            glAccount = financialActivityAccount.getGlAccount();
+        } else {
+            ProductToGLAccountMapping accountMapping = this.accountMappingRepository.findCoreProductToFinAccountMapping(investmentProductId,
+                    PortfolioProductType.INVESTMENT.getValue(), accountMappingTypeId);
+            /****
+             * Get more specific mapping for FUND source accounts (based on
+             * payment channels). Note that fund source placeholder ID would be
+             * same for both cash and accrual accounts
+             ***/
+            if (accountMappingTypeId == CASH_ACCOUNTS_FOR_INVESTMENT.FUND_SOURCE.getValue()) {
+                final ProductToGLAccountMapping paymentChannelSpecificAccountMapping = this.accountMappingRepository
+                        .findByProductIdAndProductTypeAndFinancialAccountTypeAndPaymentTypeId(investmentProductId,
+                                PortfolioProductType.INVESTMENT.getValue(), accountMappingTypeId, null);
+                if (paymentChannelSpecificAccountMapping != null) {
+                    accountMapping = paymentChannelSpecificAccountMapping;
+                }
+            }
+            glAccount = accountMapping.getGlAccount();
+        }
+        return glAccount;
+    }
 
     private GLAccount getLinkedGLAccountForShareProduct(final Long shareProductId, final int accountMappingTypeId,
             final Long paymentTypeId) {
@@ -1354,6 +1425,20 @@ public class AccountingProcessorHelper {
                 transactionDate, valueDate, effectiveDate, entityType, savingsId, entityTransactionId);
         return journalEntry;
     }
+    
+    public JournalEntry createInvestmentJournalEntry(final String currencyCode, final Date transactionDate, final Date valueDate,
+            final Date effectiveDate, final String transactionId, final Long officeId, final Long investmentId) {
+        final int entityType = PortfolioProductType.INVESTMENT.getValue();
+        String transactionIdentifier = null;
+        Long entityTransactionId = null;
+        if (StringUtils.isNumeric(transactionId)) {
+            entityTransactionId = Long.parseLong(transactionId);
+            transactionIdentifier = AccountingProcessorHelper.INVESTMENT_TRANSACTION_IDENTIFIER + transactionId;
+        }
+        final JournalEntry journalEntry = JournalEntry.createNewForSystemEntries(officeId, currencyCode, transactionIdentifier,
+                transactionDate, valueDate, effectiveDate, entityType, investmentId, entityTransactionId);
+        return journalEntry;
+    }
 
     public JournalEntry createShareJournalEntry(final String currencyCode, final Date transactionDate, final Date valueDate,
             final Date effectiveDate, final String transactionId, final Long officeId, final Long shareAccountId) {
@@ -1389,5 +1474,32 @@ public class AccountingProcessorHelper {
         final JournalEntry journalEntry = JournalEntry.createNewForSystemEntries(officeId, currencyCode, transactionIdentifier,
                 transactionDate, valueDate, effectiveDate, entityType, provioningId, entityTransactionId);
         return journalEntry;
+    }
+    
+    public InvestmentDTO populateInvestmentDtoFromMap(final Map<String, Object> accountingBridgeData, final boolean cashBasedAccountingEnabled) {
+        final Long investmentId = (Long) accountingBridgeData.get("investmentId");
+        final Long investmentProductId = (Long) accountingBridgeData.get("investmentProductId");
+        final Long officeId = (Long) accountingBridgeData.get("officeId");
+        final CurrencyData currencyData = (CurrencyData) accountingBridgeData.get("currency");
+        final List<InvestmentTransactionDTO> newInvestmentTransactions = new ArrayList<>();
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> newTransactionsMap = (List<Map<String, Object>>) accountingBridgeData.get("newInvestmentTransactions");
+
+        for (final Map<String, Object> map : newTransactionsMap) {
+            final Long transactionOfficeId = (Long) map.get("officeId");
+            final String transactionId = ((Long) map.get("id")).toString();
+            final Date transactionDate = ((LocalDate) map.get("date")).toDate();
+            final InvestmentTransactionEnumData transactionType = (InvestmentTransactionEnumData) map.get("type");
+            final BigDecimal amount = (BigDecimal) map.get("amount");
+            final boolean reversed = (Boolean) map.get("reversed");
+
+            final InvestmentTransactionDTO transaction = new InvestmentTransactionDTO(transactionOfficeId, transactionId, transactionDate, transactionType, amount, reversed);
+
+            newInvestmentTransactions.add(transaction);
+
+        }
+
+        return new InvestmentDTO(investmentId, investmentProductId, officeId,currencyData.code(),cashBasedAccountingEnabled, newInvestmentTransactions );
     }
 }

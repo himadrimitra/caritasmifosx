@@ -2,8 +2,11 @@ package com.finflux.portfolio.investmenttracker.domain;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.CascadeType;
@@ -24,9 +27,12 @@ import javax.persistence.UniqueConstraint;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerator;
+import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
+import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -426,6 +432,65 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     
     public void setSubmittedBy(AppUser submittedBy) {
         this.submittedBy = submittedBy;
+    }
+    
+    public Map<String, Object> deriveAccountingBridgeData(final CurrencyData currencyData, final Set<Long> existingTransactionIds,
+            final Set<Long> existingReversedTransactionIds) {
+
+        final Map<String, Object> accountingBridgeData = new LinkedHashMap<>();
+        accountingBridgeData.put("investmentId", getId());
+        accountingBridgeData.put("investmentProductId", productId());
+        accountingBridgeData.put("currency", currencyData);
+        accountingBridgeData.put("officeId", getOfficeId());
+        accountingBridgeData.put("cashBasedAccountingEnabled", isCashBasedAccountingEnabledOnSavingsProduct());
+
+        final List<Map<String, Object>> newSavingsTransactions = new ArrayList<>();
+        for (final InvestmentTransaction transaction : this.transactions) {
+            if (transaction.isReversed() && !existingReversedTransactionIds.contains(transaction.getId())) {
+                newSavingsTransactions.add(transaction.toMapData(currencyData));
+            } else if (!existingTransactionIds.contains(transaction.getId())) {
+                newSavingsTransactions.add(transaction.toMapData(currencyData));
+            }
+        }
+
+        accountingBridgeData.put("newSavingsTransactions", newSavingsTransactions);
+        return accountingBridgeData;
+    }
+    
+    public Long getOfficeId(){
+        return this.office.getId();
+    }
+    
+    public Long productId() {
+        return this.investmentProduct.getId();
+    }
+
+    private Boolean isCashBasedAccountingEnabledOnSavingsProduct() {
+        return this.investmentProduct.isCashBasedAccountingEnabled();
+    }
+    
+    public Collection<Long> findExistingTransactionIds() {
+
+        final Collection<Long> ids = new ArrayList<>();
+
+        for (final InvestmentTransaction transaction : this.transactions) {
+            ids.add(transaction.getId());
+        }
+
+        return ids;
+    }
+
+    public Collection<Long> findExistingReversedTransactionIds() {
+
+        final Collection<Long> ids = new ArrayList<>();
+
+        for (final InvestmentTransaction transaction : this.transactions) {
+            if (transaction.isReversed()) {
+                ids.add(transaction.getId());
+            }
+        }
+
+        return ids;
     }
     
 }

@@ -51,4 +51,6 @@ public interface JournalEntryWritePlatformService {
     void revertShareAccountJournalEntries(final ArrayList<Long> transactionId, final Date transactionDate);
 
     JournalEntry revertJournalEntry(List<JournalEntry> journalEntry, String reversalComment);
+    
+    void createJournalEntriesForInvestment(Map<String, Object> accountingBridgeData);
 }
