@@ -80,7 +80,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         Collection<ChargeData> investmentChargeOptions = this.chargeReadPlatformService.retrieveInvestmentProductApplicableCharges();
         Collection<CodeValueData> partnerOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("Investmentpartners");
         Collection<OfficeData> officeDataOptions = this.officeReadPlatformService.retrieveAllOfficesForDropdown();
-        Collection<InvestmentProductData> investmentProductOptions = this.investmentProductReadService.retrieveAll();
+        Collection<InvestmentProductData> investmentProductOptions = this.investmentProductReadService.retrieveAllLookUpData();
         final List<EnumOptionData> interestRateFrequencyTypeOptions = this.dropdownReadPlatformService
                 .retrieveInterestRateFrequencyTypeOptions();
         final List<EnumOptionData> investmentTermFrequencyTypeOptions = this.dropdownReadPlatformService

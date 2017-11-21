@@ -153,6 +153,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
                 if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
                     final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsLinkage.getSavingsAccount().getId());
                     this.fromApiJsonDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, savingsLinkage.getInvestmentAmount());
+                    savingsAccount.holdAmount(savingsLinkage.getInvestmentAmount());
+                    this.savingsAccountRepository.saveAndFlush(savingsAccount);
                     savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
                     savingsLinkage.setActiveFromDate(DateUtils.getLocalDateOfTenant().toDate());
                 }

@@ -81,6 +81,15 @@ public class InvestmentProductToGLAccountMappingHelper extends ProductToGLAccoun
                 INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_INTEREST.getValue(), element);
         final Long feeExpenseAccountId = this.fromApiJsonHelper.extractLongNamed(
                 INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue(), element);
+        final Long interestOnSavingsAccountId = this.fromApiJsonHelper.extractLongNamed(
+                INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue(), element);
+        final Long savingsControlAccountId = this.fromApiJsonHelper.extractLongNamed(
+                INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue(), element);
+        final Long incomeFromFeesAccountId = this.fromApiJsonHelper.extractLongNamed(
+                INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), element);
+        final Long partnerInterestReceviableAccountId = this.fromApiJsonHelper.extractLongNamed(
+                INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue(), element);
+        
 
         switch (accountingRuleType) {
             case NONE:
@@ -90,6 +99,10 @@ public class InvestmentProductToGLAccountMappingHelper extends ProductToGLAccoun
                 changes.put(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INVESTMENT_ACCOUNT.getValue(), investmentAccountId);
                 changes.put(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_INTEREST.getValue(), incomeFromInterestAccountId);
                 changes.put(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue(), feeExpenseAccountId);
+                changes.put(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue(), interestOnSavingsAccountId);
+                changes.put(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue(), savingsControlAccountId);
+                changes.put(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), incomeFromFeesAccountId);
+                changes.put(INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue(), partnerInterestReceviableAccountId);
             break;
             default:
             break;
@@ -111,17 +124,33 @@ public class InvestmentProductToGLAccountMappingHelper extends ProductToGLAccoun
                 mergeInvestmentToAssetAccountMappingChanges(element, INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INVESTMENT_ACCOUNT.getValue(),
                         investmentProductId, CASH_ACCOUNTS_FOR_INVESTMENT.INVESTMENT_PARTNER_ACCOUNT.getValue(),
                         CASH_ACCOUNTS_FOR_INVESTMENT.INVESTMENT_PARTNER_ACCOUNT.toString(), changes);
+                
+                mergeInvestmentToAssetAccountMappingChanges(element, INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue(),
+                        investmentProductId, CASH_ACCOUNTS_FOR_INVESTMENT.PARTNER_INTEREST_RECEIVABLE.getValue(),
+                        CASH_ACCOUNTS_FOR_INVESTMENT.PARTNER_INTEREST_RECEIVABLE.toString(), changes);
 
                 // income
                 mergeInvestmentToIncomeAccountMappingChanges(element, INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_INTEREST.getValue(),
                         investmentProductId, CASH_ACCOUNTS_FOR_INVESTMENT.INCOME_FROM_INVESTMENT_INTEREST.getValue(),
                         CASH_ACCOUNTS_FOR_INVESTMENT.INCOME_FROM_INVESTMENT_INTEREST.toString(), changes);
 
+                mergeInvestmentToIncomeAccountMappingChanges(element, INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(),
+                        investmentProductId, CASH_ACCOUNTS_FOR_INVESTMENT.INCOME_FROM_FEE.getValue(),
+                        CASH_ACCOUNTS_FOR_INVESTMENT.INCOME_FROM_FEE.toString(), changes);
+                
                 // expenses
                 mergeInvestmentToExpenseAccountMappingChanges(element, INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue(),
                         investmentProductId, CASH_ACCOUNTS_FOR_INVESTMENT.BANK_FEE_EXPENSE.getValue(),
                         CASH_ACCOUNTS_FOR_INVESTMENT.BANK_FEE_EXPENSE.toString(), changes);
+                mergeInvestmentToExpenseAccountMappingChanges(element, INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue(),
+                        investmentProductId, CASH_ACCOUNTS_FOR_INVESTMENT.INTEREST_ON_SAVINGS.getValue(),
+                        CASH_ACCOUNTS_FOR_INVESTMENT.INTEREST_ON_SAVINGS.toString(), changes);
 
+                //Liability
+                mergeInvestmentToLiabilityAccountMappingChanges(element,
+                        INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue(), investmentProductId,
+                        CASH_ACCOUNTS_FOR_INVESTMENT.SAVINGS_CONTROL.getValue(), CASH_ACCOUNTS_FOR_INVESTMENT.SAVINGS_CONTROL.toString(),
+                        changes);
             break;
             default:
             break;
@@ -215,6 +244,12 @@ public class InvestmentProductToGLAccountMappingHelper extends ProductToGLAccoun
     public void saveInvestmentToLiabilityAccountMapping(final JsonElement element, final String paramName, final Long productId,
             final int placeHolderTypeId) {
         saveProductToAccountMapping(element, paramName, productId, placeHolderTypeId, GLAccountType.LIABILITY ,
+                PortfolioProductType.INVESTMENT);
+    }
+    
+    public void mergeInvestmentToLiabilityAccountMappingChanges(final JsonElement element, final String paramName, final Long productId,
+            final int accountTypeId, final String accountTypeName, final Map<String, Object> changes) {
+        mergeProductToAccountMappingChanges(element, paramName, productId, accountTypeId, accountTypeName, changes, GLAccountType.LIABILITY,
                 PortfolioProductType.INVESTMENT);
     }
 }
