@@ -92,7 +92,7 @@ public class ClientPaymentsCommandStrategy implements CommandStrategy {
             final JsonArray savingCharges = json.get("savingCharges").getAsJsonArray();
             for (final JsonElement jsonElement : savingCharges) {
                 final JsonObject charge = jsonElement.getAsJsonObject();
-                final Long savingsAccountId = charge.remove("savingAccountId").getAsLong();
+                final Long savingsAccountId = charge.remove("savingsAccountId").getAsLong();
                 final Long chargeId = charge.remove("savingsChargeId").getAsLong();
                 final String chargeResponse = this.savingsAccountChargesApiResource.payOrWaiveSavingsAccountCharge(savingsAccountId,
                         chargeId, "paycharge", charge.toString());
