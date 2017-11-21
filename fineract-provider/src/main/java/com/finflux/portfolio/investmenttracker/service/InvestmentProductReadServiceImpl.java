@@ -101,6 +101,14 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
         }
 
     }
+    
+    @Override
+    public Collection<InvestmentProductData> retrieveAllLookUpData() {
+        InvestmentProductLookUpMapper investmentProductMapper = new InvestmentProductLookUpMapper();
+        String sql = "SELECT " + investmentProductMapper.schema() + " order by fip.id";
+        Collection<InvestmentProductData> investmentProductDetails = this.jdbcTemplate.query(sql, investmentProductMapper);
+        return investmentProductDetails;
+    }
 
     private static final class InvestmentProductMapper implements RowMapper<InvestmentProductData> {
 
@@ -175,6 +183,31 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
                     defaultNominalInterestRate, maxNominalInterestRate, interestRateTypeEnum, compoundingPeriodTypeEnum,
                     minInvesmentTermPeriod, defaultInvesmentTermPeriod, maxInvesmentTermPeriod, invesmentTermPeriodEnum,
                     overrideTermsInvesmentAccounts, nominalIntersetRate, interestCompoundingPeriod, invesmentTerm, accountingRuleType);
+        }
+    }
+    
+    private static final class InvestmentProductLookUpMapper implements RowMapper<InvestmentProductData> {
+
+        private final String schemaSql;
+
+        public InvestmentProductLookUpMapper() {
+            StringBuilder sqlBuilder = new StringBuilder(300);
+            sqlBuilder.append(" fip.id as id, fip.name as name");
+            sqlBuilder.append(" from f_investment_product fip");
+            sqlBuilder.append(" join m_currency curr on curr.code = fip.currency_code");
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @Override
+        public InvestmentProductData mapRow(ResultSet rs, int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final String name = rs.getString("name");
+            return InvestmentProductData.lookup(id, name);
         }
     }
 

@@ -11,4 +11,6 @@ public interface InvestmentProductReadService {
     Collection<InvestmentProductData> retrieveAll();
 
     InvestmentProductData retrieveOne(final Long investmentProductId);
+    
+    Collection<InvestmentProductData> retrieveAllLookUpData();
 }
