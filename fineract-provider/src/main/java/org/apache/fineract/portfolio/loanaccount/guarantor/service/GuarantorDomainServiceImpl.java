@@ -115,6 +115,8 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
                 new ReverseFundsOnBusinessEvent());
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_UNDO_TRANSACTION,
                 new UndoReleaseFundIfUndoDeposit());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_FORECLOSURE,
+                new ReleaseFundsOnBusinessEvent());
     }
 
     @Override
