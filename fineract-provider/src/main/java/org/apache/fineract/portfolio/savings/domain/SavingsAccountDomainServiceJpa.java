@@ -330,7 +330,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
                         final List<GuarantorFundingDetails> fundingDetails = guarantor1.getGuarantorFundDetails();
 
                         for (final GuarantorFundingDetails guarantorFD : fundingDetails) {
-
+                            if (guarantorFD.getStatus().isActive()){
                             if (guarantor1.isSelfGuarantee()) {
                                 selfGuarantee = selfGuarantee.add(guarantorFD.getAmountRemaining());
                             } else if (guarantor1.isExistingCustomer()) {
@@ -350,6 +350,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
 
                                 }
                             }
+                          }
                         }
                     }
 
