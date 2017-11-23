@@ -17,6 +17,7 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -112,7 +113,7 @@ public  class InvestmentAccountDataAssembler {
          if(trackSourceAccounts){
              investmentAccount = assembleInvestmentAccountSavingsLinkages(command,investmentAccount);
          }      
-         investmentAccount =  assembleInvestmentAccountCharges(command,investmentAccount);
+         investmentAccount =  assembleInvestmentAccountCharges(command,investmentAccount, maturityAmount.subtract(investmentAmount));
          
          return investmentAccount;
     }
@@ -129,7 +130,13 @@ public  class InvestmentAccountDataAssembler {
                 final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsAccountId);
                 final BigDecimal individualInvestmentAmount = this.fromApiJsonHelper.extractBigDecimalNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, actionElement,locale);
                 final Integer status = InvestmentAccountStatus.PENDING_APPROVAL.getValue();
-                InvestmentAccountSavingsLinkages accountLink = new InvestmentAccountSavingsLinkages(investmentAccount, savingsAccount, individualInvestmentAmount,
+                String accountHolder = null;
+                if(savingsAccount.getClient() != null){
+                    accountHolder = savingsAccount.getClient().getDisplayName();
+                }else{
+                    accountHolder = savingsAccount.getGroup().getName();
+                }
+                InvestmentAccountSavingsLinkages accountLink = new InvestmentAccountSavingsLinkages(investmentAccount, accountHolder, savingsAccount, individualInvestmentAmount,
                          status, null, null);
                 savingsAccountlinkages.add(accountLink);
             }      
@@ -139,7 +146,7 @@ public  class InvestmentAccountDataAssembler {
         return investmentAccount;
     }
     
-    private InvestmentAccount assembleInvestmentAccountCharges( JsonCommand command, InvestmentAccount investmentAccount){
+    private InvestmentAccount assembleInvestmentAccountCharges( JsonCommand command, InvestmentAccount investmentAccount, BigDecimal interestAmount){
         Set<InvestmentAccountCharge> chargesSet = new HashSet<>();
         final JsonArray charges = command.arrayOfParameterNamed(InvestmentAccountApiConstants.chargesParamName);
         if (charges != null && charges.size() > 0) {
@@ -154,7 +161,14 @@ public  class InvestmentAccountDataAssembler {
                     inactivationDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.inactivationDateParamName, actionElement).toDate();
                     inactivationDate = command.localDateValueOfParameterNamed(InvestmentAccountApiConstants.inactivationDateParamName).toDate();
                 }
-                InvestmentAccountCharge investmentAccountCharge = new InvestmentAccountCharge(investmentAccount, charge, isPenality, isActive,inactivationDate);
+                InvestmentAccountCharge investmentAccountCharge = null;
+                if(charge.isPercentageOfInterest()){
+                    BigDecimal chargeAmount = MathUtility.percentageOf(interestAmount, charge.getAmount());
+                    investmentAccountCharge = new InvestmentAccountCharge(investmentAccount, charge, chargeAmount, isPenality, isActive,inactivationDate);
+                }else{
+                    investmentAccountCharge = new InvestmentAccountCharge(investmentAccount, charge, charge.getAmount(), isPenality, isActive,inactivationDate);
+                }
+                
                 chargesSet.add(investmentAccountCharge);
             }      
             

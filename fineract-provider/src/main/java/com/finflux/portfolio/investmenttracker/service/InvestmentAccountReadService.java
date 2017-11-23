@@ -21,4 +21,6 @@ public interface InvestmentAccountReadService {
     Collection<InvestmentAccountSavingsLinkagesData> retrieveInvestmentAccountSavingLinkages(final Long investmentAccountId);
     
     Collection<InvestmentAccountChargeData> retrieveInvestmentAccountCharges(final Long investmentAccountId);
+    
+    InvestmentAccountSavingsLinkagesData retrieveInvestmentSavingsLinkageAccountData(final Long investmentAccountId, final Long savingsLinkageAccountId);
 }

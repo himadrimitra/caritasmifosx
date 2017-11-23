@@ -6,10 +6,12 @@
 package org.apache.fineract.portfolio.loanaccount.api;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Random;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 
 public class MathUtility {
 
@@ -104,6 +106,18 @@ public class MathUtility {
             product = product.multiply(zeroIfNull(value));
         }
         return product;
+    }
+    
+    public static BigDecimal percentageOf(final BigDecimal value, final BigDecimal percentage) {
+
+        BigDecimal percentageOf = BigDecimal.ZERO;
+
+        if (isGreaterThanZero(value)) {
+            final MathContext mc = new MathContext(8, MoneyHelper.getRoundingMode());
+            final BigDecimal multiplicand = percentage.divide(BigDecimal.valueOf(100l), mc);
+            percentageOf = value.multiply(multiplicand, mc);
+        }
+        return percentageOf;
     }
 
     public static String randomStringGenerator(final String prefix, final int len, final String sourceSetString) {

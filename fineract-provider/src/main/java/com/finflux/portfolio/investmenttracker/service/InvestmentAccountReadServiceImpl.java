@@ -3,6 +3,7 @@ package com.finflux.portfolio.investmenttracker.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -95,9 +97,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             staffOptions = this.staffReadPlatformService.retrieveAllStaffInOfficeAndItsParentOfficeHierarchy(defaultOfficeId,
                     loanOfficersOnly);
         }
-        SearchParameters searchParameters = SearchParameters.forSavings(null, null, null, null, null,
-                null, officeId);
-        final List<SavingsAccountData> savingsAccount = this.savingsAccountReadPlatformService.retrieveAll(searchParameters).getPageItems();
+        final List<SavingsAccountData> savingsAccount = this.savingsAccountReadPlatformService.retrieveAllActiveSavingAccountByCurrentOffice();
         
         Collection<EnumOptionData> investmentAccountStatus = InvestmentAccountStatus.investmentAccountStatusTypeOptions();
         
@@ -182,6 +182,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
     
     @Override
     public Collection<InvestmentAccountSavingsLinkagesData> retrieveInvestmentAccountSavingLinkages(Long investmentAccountId) {
+        try{
         InvestmentAccountSavingsLinkagesMapper linkageMapper = new InvestmentAccountSavingsLinkagesMapper();
         
         String sql = "SELECT " + linkageMapper.schema() + " WHERE ia.id = ? order by sa.id;";
@@ -189,6 +190,21 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         Collection<InvestmentAccountSavingsLinkagesData> linkagesData = this.jdbcTemplate.query(sql, linkageMapper, investmentAccountId);
         
         return linkagesData;
+        } catch (final EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        }
+    }
+    
+    @Override
+    public InvestmentAccountSavingsLinkagesData retrieveInvestmentSavingsLinkageAccountData(final Long investmentAccountId, final Long savingsLinkageAccountId) {
+        InvestmentAccountSavingsLinkagesMapper linkageMapper = new InvestmentAccountSavingsLinkagesMapper();
+        
+        String sql = "SELECT " + linkageMapper.schema() + " WHERE ia.id = ? and ias.id = ? order by sa.id;";
+        
+        InvestmentAccountSavingsLinkagesData savingLinkageData = this.jdbcTemplate.queryForObject(sql, linkageMapper, new Object[]{ investmentAccountId, savingsLinkageAccountId});
+        
+        return savingLinkageData;
+        
     }
 
     @Override
@@ -363,8 +379,8 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         public InvestmentAccountSavingsLinkagesMapper(){
             StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append(" sa.id as savingsAccountId, sa.account_no as savingsAccountNumber, ias.investment_account_id as investmentAccountId,");
-            sqlBuilder.append(" ias.investment_amount as individualInvestmentAmount,");
-            sqlBuilder.append(" ias.status, ias.active_from_date, ias.active_to_date");
+            sqlBuilder.append(" ias.id as id, ias.investment_amount as individualInvestmentAmount,");
+            sqlBuilder.append(" ias.status, ias.account_holder as accountHolder , ias.active_from_date, ias.active_to_date");
             sqlBuilder.append(" from m_savings_account sa");
             sqlBuilder.append(" join f_investment_account_savings_linkages ias on ias.savings_account_id = sa.id");
             sqlBuilder.append(" join f_investment_account ia on ia.id = ias.investment_account_id"); 
@@ -379,6 +395,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
 
         @Override
         public InvestmentAccountSavingsLinkagesData mapRow(ResultSet rs, int rowNum) throws SQLException {
+             Long id = rs.getLong("id"); 
              Long savingsAccountId = rs.getLong("savingsAccountId");
              String savingsAccountNumber = rs.getString("savingsAccountNumber");
              Long investmentAccountId = rs.getLong("investmentAccountId");
@@ -390,8 +407,9 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              }
              LocalDate activeFrom = JdbcSupport.getLocalDate(rs, "active_from_date");
              LocalDate activeTo = JdbcSupport.getLocalDate(rs, "active_to_date");
-             InvestmentAccountSavingsLinkagesData data = new InvestmentAccountSavingsLinkagesData(savingsAccountId, savingsAccountNumber, investmentAccountId,individualInvestmentAmount,
-                     statusEnumData,activeFrom,activeTo);
+             String accountHolder = rs.getString("accountHolder");
+             InvestmentAccountSavingsLinkagesData data = new InvestmentAccountSavingsLinkagesData(id, savingsAccountId, savingsAccountNumber, investmentAccountId,individualInvestmentAmount,
+                     statusEnumData,activeFrom,activeTo, accountHolder);
             return data;
         }
     
@@ -404,8 +422,8 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         public InvestmentAccountChargesMapper(){
             StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append(" iac.charge_id as chargeId, iac.investment_account_id as investmentAccountId, iac.is_penalty,");
-            sqlBuilder.append(" iac.is_active, iac.inactivated_on_date,");
-            sqlBuilder.append(" c.name, c.charge_time_enum, c.charge_calculation_enum, c.amount ");
+            sqlBuilder.append(" iac.is_active, iac.inactivated_on_date, iac.amount as amount, ");
+            sqlBuilder.append(" c.name, c.charge_time_enum, c.charge_calculation_enum, c.amount as amountOrPercentage ");
             sqlBuilder.append(" from m_charge c");
             sqlBuilder.append(" join f_investment_account_charge iac on iac.charge_id = c.id");
             sqlBuilder.append(" join f_investment_account ia on ia.id = iac.investment_account_id"); 
@@ -427,14 +445,15 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              LocalDate inactivationDate = JdbcSupport.getLocalDate(rs, "inactivated_on_date");
              int chargeTime = rs.getInt("charge_time_enum");
              String chargeName = rs.getString("name");
-             BigDecimal chargeAmount = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "amount");
+             BigDecimal amountOrPercentage = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "amountOrPercentage");
              final ChargeTimeType chargeTimeTypeEnum = ChargeTimeType.fromInt(chargeTime);
              final EnumOptionData chargeTimeType = ChargeEnumerations.chargeTimeType(chargeTimeTypeEnum);
              final int chargeCalculation = rs.getInt("charge_calculation_enum");
              final EnumOptionData chargeCalculationType = ChargeEnumerations.chargeCalculationType(chargeCalculation);
+             BigDecimal amount = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "amount");
 
              InvestmentAccountChargeData data = new InvestmentAccountChargeData(chargeId, investmentAccountId, isActive,isPenality,inactivationDate,
-                     chargeName, chargeAmount, chargeTimeType, chargeCalculationType);
+                     chargeName, amountOrPercentage, chargeTimeType, chargeCalculationType, amount);
             return data;
         }
     

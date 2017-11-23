@@ -77,6 +77,22 @@ public class InvestmentTransaction extends AbstractPersistable<Long> {
         return new InvestmentTransaction(investmentAccount, officeId, type, dateOf, amount, runningBalance, reversed, createdDate,
                 appUserId);
     }
+    
+    public static InvestmentTransaction payCharge(final InvestmentAccount investmentAccount, final Long officeId, final Date dateOf,
+            final BigDecimal amount, final BigDecimal runningBalance, final Date createdDate, final Long appUserId) {
+        Integer type = InvestmentTransactionType.PAY_CHARGE.getValue();
+        boolean reversed = false;
+        return new InvestmentTransaction(investmentAccount, officeId, type, dateOf, amount, runningBalance, reversed, createdDate,
+                appUserId);
+    }
+    
+    public static InvestmentTransaction interestPosting(final InvestmentAccount investmentAccount, final Long officeId, final Date dateOf,
+            final BigDecimal amount, final BigDecimal runningBalance, final Date createdDate, final Long appUserId) {
+        Integer type = InvestmentTransactionType.INTEREST_POSTING.getValue();
+        boolean reversed = false;
+        return new InvestmentTransaction(investmentAccount, officeId, type, dateOf, amount, runningBalance, reversed, createdDate,
+                appUserId);
+    }
 
     public InvestmentAccount getInvestmentAccount() {
         return this.investmentAccount;

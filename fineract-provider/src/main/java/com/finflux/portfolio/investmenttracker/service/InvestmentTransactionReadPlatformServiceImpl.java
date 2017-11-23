@@ -3,12 +3,20 @@ package com.finflux.portfolio.investmenttracker.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.portfolio.account.data.AccountTransferData;
+import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
+import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionData;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionEnumData;
+import org.apache.fineract.portfolio.savings.service.SavingsEnumerations;
 import org.apache.fineract.useradministration.data.AppUserData;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +26,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountNotFoundException;
+import com.finflux.portfolio.investmenttracker.data.InvestmentSavingsTransactionData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentTransactionData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentTransactionEnumData;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentTransactionRepositoryWrapper;
@@ -101,6 +110,66 @@ public class InvestmentTransactionReadPlatformServiceImpl implements InvestmentT
             return this.jdbcTemplate.query(sqlBuilder.toString(), itm, queryParameters);
         } catch (final EmptyResultDataAccessException e) {
             throw new InvestmentAccountNotFoundException(accountId);
+        }
+
+    }
+    
+
+    private static final class InvestmentSavingsTransactionDataMapper implements RowMapper<InvestmentSavingsTransactionData> {
+
+        private final String schemaSql;
+
+        public InvestmentSavingsTransactionDataMapper() {
+
+            final StringBuilder sqlBuilder = new StringBuilder(400);
+            sqlBuilder.append("isat.id as id, isat.investment_id as investmentId, isat.description as description, ");
+            sqlBuilder.append("tr.id as transactionId, tr.transaction_type_enum as transactionType, ");
+            sqlBuilder.append("tr.transaction_date as transactionDate, tr.amount as transactionAmount, ");
+            sqlBuilder.append("o.id as officeId, o.name as officeName ");
+            sqlBuilder.append("from f_investment_saving_account_transaction isat ");
+            sqlBuilder.append("join  m_savings_account_transaction tr on tr.id = isat.transaction_id ");
+            sqlBuilder.append("join  m_office o on o.id = tr.office_id ");
+          
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @Override
+        public InvestmentSavingsTransactionData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+            final Long id = rs.getLong("id");
+            final Long investmentId = rs.getLong("investmentId");
+            final String description = rs.getString("description");
+            
+            final Long officeId = rs.getLong("officeId");
+            final String officeName = rs.getString("officeName");
+            
+            OfficeData officeData = OfficeData.lookup(officeId, officeName);
+            
+            final Long transactionId = rs.getLong("transactionId");
+            final int transactionTypeInt = JdbcSupport.getInteger(rs, "transactionType");
+            final SavingsAccountTransactionEnumData transactionType = SavingsEnumerations.transactionType(transactionTypeInt);
+            final LocalDate transactionDate = JdbcSupport.getLocalDate(rs, "transactionDate");
+            final BigDecimal amount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "transactionAmount");
+            
+            SavingsAccountTransactionData savingsAccountTransactionData = SavingsAccountTransactionData.create(transactionId, transactionType, transactionDate, amount);
+            
+            return InvestmentSavingsTransactionData.create(id, savingsAccountTransactionData, investmentId, description, officeData);
+        }
+    }
+
+
+    @Override
+    public List<InvestmentSavingsTransactionData> findByInvestmentIdAndSavingsId(Long accountId, Long savingsId) {
+        try{
+        InvestmentSavingsTransactionDataMapper mapper = new InvestmentSavingsTransactionDataMapper();
+        String sql = "select "+mapper.schema()+" where isat.investment_id = ? and isat.savings_id = ?  ";
+        final Object[] queryParameters = new Object[] { accountId ,savingsId };
+        return this.jdbcTemplate.query(sql, mapper, queryParameters);
+        } catch (final EmptyResultDataAccessException e) {
+            return null;
         }
 
     }

@@ -19,9 +19,14 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
+import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransactionRepository;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,11 +35,14 @@ import org.springframework.stereotype.Service;
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountDataValidator;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountCharge;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountDataAssembler;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepository;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositoryWrapper;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountSavingsLinkages;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentSavingsTransaction;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentSavingsTransactionRepository;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentTransaction;
 
 @Service
@@ -50,6 +58,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     private final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepositoryWrapper;
     private final JournalEntryWritePlatformService journalEntryWritePlatformService;
+    private final SavingsAccountTransactionRepository  savingsAccountTransactionRepository;
+    private final InvestmentSavingsTransactionRepository investmentSavingsTransactionRepository;
     
     
     @Autowired
@@ -59,7 +69,9 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             AccountNumberGenerator accountNumberGenerator,
             InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper,
             SavingsAccountRepositoryWrapper savingsAccountRepository, final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepositoryWrapper,
-            final JournalEntryWritePlatformService journalEntryWritePlatformService) {
+            final JournalEntryWritePlatformService journalEntryWritePlatformService,
+            final SavingsAccountTransactionRepository  savingsAccountTransactionRepository,
+            final InvestmentSavingsTransactionRepository investmentSavingsTransactionRepository) {
         this.fromApiJsonDataValidator = fromApiJsonDataValidator;
         this.investmentAccountDataAssembler = investmentAccountDataAssembler;
         this.investmentAccountRepository = investmentAccountRepository;
@@ -70,6 +82,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         this.savingsAccountRepository = savingsAccountRepository;
         this.applicationCurrencyRepositoryWrapper = applicationCurrencyRepositoryWrapper;
         this.journalEntryWritePlatformService = journalEntryWritePlatformService;
+        this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
+        this.investmentSavingsTransactionRepository = investmentSavingsTransactionRepository;
     }
 
     @Override
@@ -149,12 +163,18 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             Map<String, Object> changes = new HashMap<>();
             changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.ACTIVE.name());
             Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
+            Date currentDate = DateUtils.getLocalDateOfTenant().toDate();
             for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
                 if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
                     final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsLinkage.getSavingsAccount().getId());
                     this.fromApiJsonDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, savingsLinkage.getInvestmentAmount());
-                    savingsAccount.holdAmount(savingsLinkage.getInvestmentAmount());
-                    this.savingsAccountRepository.saveAndFlush(savingsAccount);
+                    final PaymentDetail paymentDetail =  null;
+                    SavingsAccountTransaction holdTransaction = SavingsAccountTransaction.holdAmount(savingsAccount, appUser.getOffice(), paymentDetail, DateUtils.getLocalDateOfTenant(), Money.of(savingsAccount.getCurrency(), savingsLinkage.getInvestmentAmount()), currentDate, appUser);
+                    this.savingsAccountTransactionRepository.save(holdTransaction);
+                    InvestmentSavingsTransaction investmentSavingsTransaction = InvestmentSavingsTransaction.create(savingsAccount.getId(), investmentAccountId, holdTransaction.getId(), "hold for new investment with id "+investmentAccountId);
+                    this.investmentSavingsTransactionRepository.save(investmentSavingsTransaction);
+                    /*savingsAccount.getTransactions().add(holdTransaction);
+                    this.savingsAccountRepository.save(savingsAccount);*/
                     savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
                     savingsLinkage.setActiveFromDate(DateUtils.getLocalDateOfTenant().toDate());
                 }
@@ -164,7 +184,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             updateExistingTransactionsDetails(investmentAccount, existingTransactionIds, existingReversedTransactionIds);
             investmentAccount.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
             investmentAccount.setActivatedBy(appUser);
-            Date currentDate = DateUtils.getLocalDateOfTenant().toDate();
+            
             investmentAccount.setActivatedOnDate(currentDate);
             processTransactions(appUser, investmentAccount, currentDate);            
             this.investmentAccountRepository.save(investmentAccount);
@@ -185,9 +205,29 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     }
 
     private void processTransactions(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
-        InvestmentTransaction investmentTransaction = InvestmentTransaction.deposit(investmentAccount, investmentAccount.getOffice().getId(), currentDate, investmentAccount.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
-        investmentAccount.getTransactions().add(investmentTransaction);
+        processDeposit(appUser, investmentAccount, currentDate);
+        processInterest(appUser, investmentAccount, currentDate);
+        processCharge(appUser, investmentAccount, currentDate);
        
+    }
+    
+    private void processCharge(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
+        if(investmentAccount.getInvestmentAccountCharges().size()>0){
+            for(InvestmentAccountCharge charge : investmentAccount.getInvestmentAccountCharges()){
+                InvestmentTransaction investmentTransaction = InvestmentTransaction.payCharge(investmentAccount, investmentAccount.getOfficeId(), currentDate, charge.getAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
+                investmentAccount.getTransactions().add(investmentTransaction);
+            }
+        }        
+    }
+    
+    private void processInterest(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
+        InvestmentTransaction investmentTransaction = InvestmentTransaction.interestPosting(investmentAccount, investmentAccount.getOfficeId(), currentDate, MathUtility.subtract(investmentAccount.getMaturityAmount(), investmentAccount.getInvestmentAmount()), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
+        investmentAccount.getTransactions().add(investmentTransaction);        
+    }
+
+    private void processDeposit(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
+        InvestmentTransaction investmentTransaction = InvestmentTransaction.deposit(investmentAccount, investmentAccount.getOfficeId(), currentDate, investmentAccount.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
+        investmentAccount.getTransactions().add(investmentTransaction);
     }
     
     private void postJournalEntries(final InvestmentAccount investmentAccount, final Set<Long> existingTransactionIds,

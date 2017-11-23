@@ -1,5 +1,6 @@
 package com.finflux.portfolio.investmenttracker.domain;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -12,6 +13,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.portfolio.charge.domain.Charge;
+import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -31,21 +33,30 @@ public class InvestmentAccountCharge extends AbstractPersistable<Long>{
 
     @Column(name = "is_active", nullable = false)
     private boolean status = true;
+    
+    @Column(name = "amount", scale = 6, precision = 19, nullable = false)
+    private BigDecimal amount;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "inactivated_on_date")
     private Date inactivationDate;
 
-    public InvestmentAccountCharge(InvestmentAccount investmentAccount, Charge charge, boolean penaltyCharge, boolean status,
+    public InvestmentAccountCharge(InvestmentAccount investmentAccount, Charge charge, BigDecimal amount, boolean penaltyCharge, boolean status,
             Date inactivationDate) {
         this.investmentAccount = investmentAccount;
         this.charge = charge;
+        this.amount = amount;
         this.penaltyCharge = penaltyCharge;
         this.status = status;
         this.inactivationDate = inactivationDate;
     }
 
     
+    public InvestmentAccountCharge() {
+        super();
+    }
+
+
     public InvestmentAccount getInvestmentAccount() {
         return this.investmentAccount;
     }
@@ -93,6 +104,21 @@ public class InvestmentAccountCharge extends AbstractPersistable<Long>{
     
     public void setInactivationDate(Date inactivationDate) {
         this.inactivationDate = inactivationDate;
+    }
+
+
+    
+    public BigDecimal getAmount() {
+        return this.amount;
+    }
+
+    
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+    
+    public boolean isExternalInvestmentCharge() {
+        return this.charge.isExternalInvestmentCharge();
     }
     
 }
