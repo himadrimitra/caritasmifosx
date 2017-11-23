@@ -23,6 +23,9 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
     @JoinColumn(name = "investment_account_id", referencedColumnName = "id", nullable = false)
     private InvestmentAccount investmentAccount;
     
+    @Column(name = "account_holder", nullable = false)
+    private String accountHolder;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "savings_account_id", referencedColumnName = "id", nullable = false)
     private SavingsAccount savingsAccount;
@@ -45,9 +48,10 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
         super();
     }
 
-    public InvestmentAccountSavingsLinkages(InvestmentAccount investmentAccount, SavingsAccount savingsAccount, BigDecimal investmentAmount,
+    public InvestmentAccountSavingsLinkages(InvestmentAccount investmentAccount, String accountHolder, SavingsAccount savingsAccount, BigDecimal investmentAmount,
             Integer status, Date activeFromDate, Date activeToDate) {
         this.savingsAccount = savingsAccount;
+        this.accountHolder = accountHolder;
         this.investmentAmount = investmentAmount;
         this.investmentAccount = investmentAccount;
         this.status = status;

@@ -62,6 +62,21 @@ public class SavingsAccountTransactionData {
         return new SavingsAccountTransactionData(id, transactionType, paymentDetailData, savingsId, savingsAccountNo, date, currency,
                 amount, runningBalance, reversed, transfer, paymentTypeOptions, interestedPostedAsOn);
     }
+    
+    public static SavingsAccountTransactionData create(final Long id, final SavingsAccountTransactionEnumData transactionType,
+            final LocalDate date,final BigDecimal amount) {
+        final Collection<PaymentTypeData> paymentTypeOptions = null;
+        final PaymentDetailData paymentDetailData = null;
+        final CurrencyData currency = null;
+        final BigDecimal runningBalance = null;
+        final String savingsAccountNo = null;
+        final boolean reversed = false;
+        final AccountTransferData transfer = null;
+        final boolean interestedPostedAsOn = false;
+        final Long savingsId = null;
+        return new SavingsAccountTransactionData(id, transactionType, paymentDetailData, savingsId, savingsAccountNo, date, currency,
+                amount, runningBalance, reversed, transfer, paymentTypeOptions, interestedPostedAsOn);
+    }
 
     public static SavingsAccountTransactionData create(final Long id, final SavingsAccountTransactionEnumData transactionType,
             final PaymentDetailData paymentDetailData, final Long savingsId, final String savingsAccountNo, final LocalDate date,

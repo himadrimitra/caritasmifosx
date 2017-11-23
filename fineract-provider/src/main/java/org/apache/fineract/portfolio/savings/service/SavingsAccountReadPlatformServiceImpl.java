@@ -95,6 +95,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import com.finflux.common.constant.CommonConstants;
+import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountNotFoundException;
 
 @Service
 public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountReadPlatformService {
@@ -1475,5 +1476,65 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             sql.append("'");
             isFirstTime = false;
         }
+    }
+    
+    
+    private static final class SavingAccountOptionsMapper implements RowMapper<SavingsAccountData> {
+
+        private final String schemaSql;
+
+        public SavingAccountOptionsMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder(400);
+            sqlBuilder.append("sa.id as id, sa.account_no as accountNo, sa.external_id as externalId, ");
+            sqlBuilder.append("sa.deposit_type_enum as depositType, ");
+            sqlBuilder.append("c.id as clientId, c.display_name as clientName, ");
+            sqlBuilder.append("g.id as groupId, g.display_name as groupName, ");
+            sqlBuilder.append("sa.status_enum as statusEnum ");            
+            sqlBuilder.append("from m_savings_account sa ");
+            sqlBuilder.append("left join m_client c ON c.id = sa.client_id ");
+            sqlBuilder.append("left join m_group g ON g.id = sa.group_id ");
+            sqlBuilder.append("left join m_office o ON (o.id = c.office_id or o.id = g.office_id) ");
+
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @Override
+        public SavingsAccountData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final String accountNo = rs.getString("accountNo");
+            final String externalId = rs.getString("externalId");
+            final Integer depositTypeId = rs.getInt("depositType");
+            final EnumOptionData depositType = SavingsEnumerations.depositType(depositTypeId);
+
+            final Long groupId = JdbcSupport.getLong(rs, "groupId");
+            final String groupName = rs.getString("groupName");
+            final Long clientId = JdbcSupport.getLong(rs, "clientId");
+            final String clientName = rs.getString("clientName");
+            
+            return SavingsAccountData.lookupWithClientAndGroupDetails(id, accountNo, externalId, depositType, clientId, clientName, groupId, groupName);
+        }
+    }
+
+
+    @Override
+    public List<SavingsAccountData> retrieveAllActiveSavingAccountByCurrentOffice() {
+        try{
+        this.context.authenticatedUser();
+        SavingAccountOptionsMapper sapm = new SavingAccountOptionsMapper();
+        final String userOfficeHierarchy = this.context.officeHierarchy();
+        final String underHierarchySearchString = userOfficeHierarchy + "%";
+        final StringBuilder sqlBuilder = new StringBuilder("select " + sapm.schema());
+        sqlBuilder.append(" where ( o.hierarchy like ? )and sa.status_enum = 300 ");
+        final Object[] queryParameters = new Object[] { underHierarchySearchString};
+        return this.jdbcTemplate.query(sqlBuilder.toString(), sapm, queryParameters);
+        } catch (final EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        }
+
     }
 }

@@ -14,22 +14,24 @@ public class InvestmentAccountChargeData {
     private boolean isPenality;
     private LocalDate inactivationDate;
     private String chargeName;
-    private BigDecimal chargeAmount;
+    private BigDecimal amountOrPercentage;
     private EnumOptionData chargeTimeType;
     private EnumOptionData chargeCalculationType;
+    private BigDecimal amount;
     
-    public InvestmentAccountChargeData(Long chargeId, Long investmentAccountId, boolean isActive, boolean isPenality,
-            LocalDate inactivationDate, String chargeName, BigDecimal chargeAmount, EnumOptionData chargeTimeType,
-            EnumOptionData chargeCalculationType) {
+    public InvestmentAccountChargeData(final Long chargeId, final Long investmentAccountId, final boolean isActive, final boolean isPenality,
+            final LocalDate inactivationDate, final String chargeName, final BigDecimal amountOrPercentage, final EnumOptionData chargeTimeType,
+            final EnumOptionData chargeCalculationType, final BigDecimal amount) {
         this.chargeId = chargeId;
         this.investmentAccountId = investmentAccountId;
         this.isActive = isActive;
         this.isPenality = isPenality;
         this.inactivationDate = inactivationDate;
         this.chargeName = chargeName;
-        this.chargeAmount = chargeAmount;
+        this.amountOrPercentage = amountOrPercentage;
         this.chargeTimeType = chargeTimeType;
         this.chargeCalculationType = chargeCalculationType;
+        this.amount = amount;
     }
 
     public Long getChargeId() {
@@ -87,7 +89,7 @@ public class InvestmentAccountChargeData {
 
     
     public BigDecimal getChargeAmount() {
-        return this.chargeAmount;
+        return this.amountOrPercentage;
     }
 
     
@@ -99,5 +101,7 @@ public class InvestmentAccountChargeData {
     public EnumOptionData getChargeCalculationType() {
         return this.chargeCalculationType;
     }
+    
+    
 
 }

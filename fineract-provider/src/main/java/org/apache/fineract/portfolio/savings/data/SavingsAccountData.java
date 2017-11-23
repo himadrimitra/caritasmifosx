@@ -436,6 +436,77 @@ public class SavingsAccountData {
                 isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, savingsDpLimitCalculationTypeOptions,
                 savingsAccountDpDetailsData, savingsAmountOnHold, guarantors);
     }
+    
+    public static SavingsAccountData lookupWithClientAndGroupDetails(final Long accountId, final String
+            accountNo, final String externalId, final EnumOptionData depositType,final Long clientId, final String clientName,
+            final Long groupId,final String groupName) {
+
+        final Long productId = null;
+        final String productName = null;
+        final Long fieldOfficerId = null;
+        final String fieldOfficerName = null;
+        final SavingsAccountStatusEnumData status = null;
+        final SavingsAccountApplicationTimelineData timeline = null;
+        final CurrencyData currency = null;
+        final BigDecimal nominalAnnualInterestRate = null;
+        final EnumOptionData interestPeriodType = null;
+        final EnumOptionData interestPostingPeriodType = null;
+        final EnumOptionData interestCalculationType = null;
+        final EnumOptionData interestCalculationDaysInYearType = null;
+        final BigDecimal minRequiredOpeningBalance = null;
+        final Integer lockinPeriodFrequency = null;
+        final EnumOptionData lockinPeriodFrequencyType = null;
+        final boolean releaseguarantor = false;
+        final boolean withdrawalFeeForTransfers = false;
+        final boolean allowOverdraft = false;
+        final BigDecimal overdraftLimit = null;
+        final BigDecimal nominalAnnualInterestRateOverdraft = null;
+        final BigDecimal minOverdraftForInterestCalculation = null;
+        final BigDecimal minRequiredBalance = null;
+        final boolean enforceMinRequiredBalance = false;
+        final BigDecimal minBalanceForInterestCalculation = null;
+        final BigDecimal onHoldFunds = null;
+
+        final SavingsAccountSummaryData summary = null;
+        final Collection<SavingsAccountTransactionData> transactions = null;
+
+        final Collection<SavingsProductData> productOptions = null;
+        final Collection<StaffData> fieldOfficerOptions = null;
+        final Collection<EnumOptionData> interestCompoundingPeriodTypeOptions = null;
+        final Collection<EnumOptionData> interestPostingPeriodTypeOptions = null;
+        final Collection<EnumOptionData> interestCalculationTypeOptions = null;
+        final Collection<EnumOptionData> interestCalculationDaysInYearTypeOptions = null;
+        final Collection<EnumOptionData> lockinPeriodFrequencyTypeOptions = null;
+        final Collection<EnumOptionData> withdrawalFeeTypeOptions = null;
+
+        final Collection<SavingsAccountChargeData> charges = null;
+        final Collection<ChargeData> chargeOptions = null;
+        final Collection<GuarantorData> guarantors = null;
+
+        final boolean withHoldTax = false;
+        final TaxGroupData taxGroup = null;
+        final SavingsAccountSubStatusEnumData subStatus = null;
+        final LocalDate lastActiveTransactionDate = null;
+        final boolean isDormancyTrackingActive = false;
+        final Integer daysToInactive = null;
+        final Integer daysToDormancy = null;
+        final Integer daysToEscheat = null;
+        final Collection<EnumOptionData> savingsDpLimitCalculationTypeOptions = null;
+        final SavingsAccountDpDetailsData savingsAccountDpDetailsData = null;
+        final BigDecimal savingsAmountOnHold = null;
+
+        return new SavingsAccountData(accountId, accountNo, depositType, externalId, groupId, groupName, clientId, clientName, productId,
+                productName, fieldOfficerId, fieldOfficerName, status, subStatus, timeline, currency, nominalAnnualInterestRate,
+                interestPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
+                minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeForTransfers, summary,
+                transactions, productOptions, fieldOfficerOptions, interestCompoundingPeriodTypeOptions, interestPostingPeriodTypeOptions,
+                interestCalculationTypeOptions, interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions,
+                withdrawalFeeTypeOptions, charges, chargeOptions, allowOverdraft, overdraftLimit, minRequiredBalance,
+                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds, releaseguarantor,
+                nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax, taxGroup, lastActiveTransactionDate,
+                isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, savingsDpLimitCalculationTypeOptions,
+                savingsAccountDpDetailsData, savingsAmountOnHold, guarantors);
+    }
 
     private SavingsAccountData(final Long id, final String accountNo, final EnumOptionData depositType, final String externalId,
             final Long groupId, final String groupName, final Long clientId, final String clientName, final Long productId,
