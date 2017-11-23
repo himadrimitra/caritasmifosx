@@ -1,9 +1,6 @@
 package com.finflux.portfolio.investmenttracker.data;
 
-import java.util.List;
-
 import org.apache.fineract.organisation.office.data.OfficeData;
-import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionData;
 
 public class InvestmentSavingsTransactionData {

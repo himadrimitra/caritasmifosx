@@ -25,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
-import com.finflux.portfolio.investmenttracker.data.InvestmentAccountDataValidator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -39,7 +38,6 @@ public  class InvestmentAccountDataAssembler {
     private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     private final FromJsonHelper fromApiJsonHelper;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
-    private final InvestmentAccountDataValidator investmentAccountDataValidator;
 
     @Autowired
     public InvestmentAccountDataAssembler(final ChargeRepositoryWrapper chargeRepository,
@@ -48,8 +46,7 @@ public  class InvestmentAccountDataAssembler {
             final InvestmentProductRepositoryWrapper investmentProductRepository,
             final SavingsAccountRepositoryWrapper savingsAccountRepository,
             final FromJsonHelper fromApiJsonHelper,
-            final StaffRepositoryWrapper staffRepositoryWrapper,
-            final InvestmentAccountDataValidator investmentAccountDataValidator) {
+            final StaffRepositoryWrapper staffRepositoryWrapper) {
         this.chargeRepository = chargeRepository;
         this.officeReposiotory = officeReposiotory;
         this.codeValueRepository = codeValueRepository;
@@ -57,7 +54,6 @@ public  class InvestmentAccountDataAssembler {
         this.savingsAccountRepository = savingsAccountRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
-        this.investmentAccountDataValidator = investmentAccountDataValidator;
     }
     
     public InvestmentAccount createAssemble(final JsonCommand command, final AppUser appUser) {

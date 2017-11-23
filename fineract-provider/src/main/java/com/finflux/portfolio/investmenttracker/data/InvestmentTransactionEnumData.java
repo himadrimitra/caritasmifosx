@@ -39,4 +39,21 @@ public class InvestmentTransactionEnumData {
         return this.feeDeduction;
     }
 
+    
+    public Long getId() {
+        return this.id;
+    }
+
+    
+    public String getCode() {
+        return this.code;
+    }
+
+    
+    public String getValue() {
+        return this.value;
+    }
+    
+    
+
 }

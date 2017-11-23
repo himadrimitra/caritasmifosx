@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.portfolio.investmenttracker.api.InvestmentProductApiconstants;
-import com.finflux.portfolio.investmenttracker.domain.InvestmentProduct;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -269,7 +268,7 @@ public class InvestmentProductDataValidator {
         }
     }
 
-    public void validateForUpdate(final String json, final InvestmentProduct product) {
+    public void validateForUpdate(final String json) {
 
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 

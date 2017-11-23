@@ -98,7 +98,7 @@ public class InvestmentProductWriteServiceImpl implements InvestmentProductWrite
             final InvestmentProduct product = this.investmentProductRepository.findOne(investmentProductId);
             if (product == null) { throw new InvestmentProductNotFoundException(investmentProductId); }
 
-            this.fromApiJsonDataValidator.validateForUpdate(command.json(), product);
+            this.fromApiJsonDataValidator.validateForUpdate(command.json());
             final Collection<Long> requestedChargeIds = extractChargeIds(command);
 
             final Map<String, Object> changes = product.update(command);
