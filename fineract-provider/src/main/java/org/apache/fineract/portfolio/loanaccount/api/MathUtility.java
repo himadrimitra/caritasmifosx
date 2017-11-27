@@ -84,6 +84,12 @@ public class MathUtility {
         Money amount = Money.of(currency, BigDecimal.valueOf((givenValue.multiply(shareAmount).doubleValue() / totalAmount.doubleValue())));
         return amount.getAmount();
     }
+    
+    public static BigDecimal getShare(final BigDecimal givenValue, final Integer share, final Integer total,
+            final MonetaryCurrency currency) {
+        Money amount = Money.of(currency, BigDecimal.valueOf((multiply(givenValue, share).doubleValue() / total.doubleValue())));
+        return amount.getAmount();
+    }
 
     public static BigDecimal multiply(final BigDecimal amount, final int val) {
         return amount.multiply(BigDecimal.valueOf(Double.valueOf(val)));

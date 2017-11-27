@@ -13,6 +13,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
+import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -33,6 +34,24 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
     @Column(name="investment_amount", precision = 19, scale = 6, nullable = false)
     private BigDecimal investmentAmount;
     
+    @Column(name="expected_interest_amount", precision = 19, scale = 6, nullable = true)
+    private BigDecimal expectedInterestAmount;
+    
+    @Column(name="expected_charge_amount", precision = 19, scale = 6, nullable = true)
+    private BigDecimal expectedChargeAmount;
+    
+    @Column(name="expected_maturity_amount", precision = 19, scale = 6, nullable = true)
+    private BigDecimal expectedMaturityAmount;
+    
+    @Column(name="interest_amount", precision = 19, scale = 6, nullable = true)
+    private BigDecimal interestAmount;
+    
+    @Column(name="charge_amount", precision = 19, scale = 6, nullable = true)
+    private BigDecimal chargeAmount;
+    
+    @Column(name="maturity_amount", precision = 19, scale = 6, nullable = true)
+    private BigDecimal maturityAmount;
+    
     @Column(name = "status", nullable = false)
     private Integer status;
     
@@ -49,26 +68,32 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
     }
 
     public InvestmentAccountSavingsLinkages(InvestmentAccount investmentAccount, String accountHolder, SavingsAccount savingsAccount, BigDecimal investmentAmount,
-            Integer status, Date activeFromDate, Date activeToDate) {
+            Integer status) {
         this.savingsAccount = savingsAccount;
         this.accountHolder = accountHolder;
         this.investmentAmount = investmentAmount;
         this.investmentAccount = investmentAccount;
         this.status = status;
-        this.activeFromDate = activeFromDate;
-        this.activeToDate = activeToDate;
+        this.activeFromDate = null;
+        this.activeToDate = null;
+        this.expectedInterestAmount = null;
+        this.expectedChargeAmount = null;
+        this.expectedMaturityAmount = null;
+        this.chargeAmount = null;
+        this.maturityAmount = null;
+        this.interestAmount = null;
     }
     
     public Integer getStatus() {
         return this.status;
     }
 
-    public Date getActiveFromDate() {
-        return this.activeFromDate;
+    public LocalDate getActiveFromDate() {
+        return new LocalDate(this.activeFromDate);
     }
 
-    public Date getActiveToDate() {
-        return this.activeToDate;
+    public LocalDate getActiveToDate() {
+        return new LocalDate(this.activeToDate);
     }
 
     public InvestmentAccount getInvestmentAccount() {
@@ -114,5 +139,77 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
     public void setActiveToDate(Date activeToDate) {
         this.activeToDate = activeToDate;
     }
+
+    
+    public String getAccountHolder() {
+        return this.accountHolder;
+    }
+
+    
+    public void setAccountHolder(String accountHolder) {
+        this.accountHolder = accountHolder;
+    }
+
+    
+    public BigDecimal getExpectedInterestAmount() {
+        return this.expectedInterestAmount;
+    }
+
+    
+    public void setExpectedInterestAmount(BigDecimal expectedInterestAmount) {
+        this.expectedInterestAmount = expectedInterestAmount;
+    }
+
+    
+    public BigDecimal getExpectedChargeAmount() {
+        return this.expectedChargeAmount;
+    }
+
+    
+    public void setExpectedChargeAmount(BigDecimal expectedChargeAmount) {
+        this.expectedChargeAmount = expectedChargeAmount;
+    }
+
+    
+    public BigDecimal getExpectedMaturityAmount() {
+        return this.expectedMaturityAmount;
+    }
+
+    
+    public void setExpectedMaturityAmount(BigDecimal expectedMaturityAmount) {
+        this.expectedMaturityAmount = expectedMaturityAmount;
+    }
+
+    
+    public BigDecimal getInterestAmount() {
+        return this.interestAmount;
+    }
+
+    
+    public void setInterestAmount(BigDecimal interestAmount) {
+        this.interestAmount = interestAmount;
+    }
+
+    
+    public BigDecimal getChargeAmount() {
+        return this.chargeAmount;
+    }
+
+    
+    public void setChargeAmount(BigDecimal chargeAmount) {
+        this.chargeAmount = chargeAmount;
+    }
+
+    
+    public BigDecimal getMaturityAmount() {
+        return this.maturityAmount;
+    }
+
+    
+    public void setMaturityAmount(BigDecimal maturityAmount) {
+        this.maturityAmount = maturityAmount;
+    }
+    
+    
     
 }

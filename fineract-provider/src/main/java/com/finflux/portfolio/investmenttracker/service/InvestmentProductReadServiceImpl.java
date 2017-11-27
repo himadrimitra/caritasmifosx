@@ -138,7 +138,7 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
         }
 
         @Override
-        public InvestmentProductData mapRow(ResultSet rs, int rowNum) throws SQLException {
+        public InvestmentProductData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
 
             final Long id = rs.getLong("id");
             final String name = rs.getString("name");
@@ -202,6 +202,7 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
             return this.schemaSql;
         }
 
+        @SuppressWarnings("unused")
         @Override
         public InvestmentProductData mapRow(ResultSet rs, int rowNum) throws SQLException {
 

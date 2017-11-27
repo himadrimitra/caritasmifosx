@@ -13,7 +13,6 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.portfolio.charge.domain.Charge;
-import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity

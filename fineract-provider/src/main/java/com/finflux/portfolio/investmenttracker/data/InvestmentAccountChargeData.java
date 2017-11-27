@@ -101,6 +101,16 @@ public class InvestmentAccountChargeData {
     public EnumOptionData getChargeCalculationType() {
         return this.chargeCalculationType;
     }
+
+    
+    public BigDecimal getAmount() {
+        return this.amount;
+    }
+
+    
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
     
     
 

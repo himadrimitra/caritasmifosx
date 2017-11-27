@@ -39,6 +39,8 @@ import com.finflux.portfolio.investmenttracker.data.InvestmentAccountData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountSavingsLinkagesData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountTimelineData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentProductData;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositoryWrapper;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
 
 @Service
@@ -53,6 +55,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
     private final PlatformSecurityContext context;
     private final StaffReadPlatformService staffReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
+    private final InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper;
     
     @Autowired
     public InvestmentAccountReadServiceImpl(final RoutingDataSource dataSource,
@@ -63,7 +66,8 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              final InvestmentTrackerDropDownReadService dropdownReadPlatformService,
              final PlatformSecurityContext context,
              final StaffReadPlatformService staffReadPlatformService,
-             final SavingsAccountReadPlatformService savingsAccountReadPlatformService){
+             final SavingsAccountReadPlatformService savingsAccountReadPlatformService,
+             final InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper){
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.chargeReadPlatformService = chargeReadPlatformService;
         this.investmentProductReadService = investmentProductReadService;
@@ -73,6 +77,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         this.context = context;
         this.staffReadPlatformService = staffReadPlatformService;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
+        this.investmentAccountRepositoryWrapper = investmentAccountRepositoryWrapper;
     }
     
     @Override
@@ -380,6 +385,11 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append(" sa.id as savingsAccountId, sa.account_no as savingsAccountNumber, ias.investment_account_id as investmentAccountId,");
             sqlBuilder.append(" ias.id as id, ias.investment_amount as individualInvestmentAmount,");
+            
+            sqlBuilder.append(" ias.expected_interest_amount as expectedInterestAmount, ias.interest_amount as interestAmount,");
+            sqlBuilder.append(" ias.expected_charge_amount as expectedChargeAmount, ias.charge_amount as chargeAmount,");
+            sqlBuilder.append(" ias.expected_maturity_amount as expectedMaturityAmount, ias.maturity_amount as maturityAmount,");
+
             sqlBuilder.append(" ias.status, ias.account_holder as accountHolder , ias.active_from_date, ias.active_to_date");
             sqlBuilder.append(" from m_savings_account sa");
             sqlBuilder.append(" join f_investment_account_savings_linkages ias on ias.savings_account_id = sa.id");
@@ -399,7 +409,14 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              Long savingsAccountId = rs.getLong("savingsAccountId");
              String savingsAccountNumber = rs.getString("savingsAccountNumber");
              Long investmentAccountId = rs.getLong("investmentAccountId");
-             BigDecimal individualInvestmentAmount = rs.getBigDecimal("individualInvestmentAmount");
+             BigDecimal individualInvestmentAmount = rs.getBigDecimal("individualInvestmentAmount");             
+             BigDecimal expectedInterestAmount = rs.getBigDecimal("expectedInterestAmount");
+             BigDecimal interestAmount = rs.getBigDecimal("interestAmount");
+             BigDecimal expectedChargeAmount = rs.getBigDecimal("expectedChargeAmount");
+             BigDecimal chargeAmount = rs.getBigDecimal("chargeAmount");
+             BigDecimal expectedMaturityAmount = rs.getBigDecimal("expectedMaturityAmount");
+             BigDecimal maturityAmount = rs.getBigDecimal("maturityAmount");
+             
              Integer status = JdbcSupport.getInteger(rs, "status");
              EnumOptionData statusEnumData = null;
              if(status != null){
@@ -409,7 +426,8 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              LocalDate activeTo = JdbcSupport.getLocalDate(rs, "active_to_date");
              String accountHolder = rs.getString("accountHolder");
              InvestmentAccountSavingsLinkagesData data = new InvestmentAccountSavingsLinkagesData(id, savingsAccountId, savingsAccountNumber, investmentAccountId,individualInvestmentAmount,
-                     statusEnumData,activeFrom,activeTo, accountHolder);
+                     statusEnumData,activeFrom,activeTo, accountHolder, expectedInterestAmount, expectedChargeAmount, expectedMaturityAmount,
+                     interestAmount, chargeAmount, maturityAmount);
             return data;
         }
     
@@ -465,6 +483,13 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             defaultOfficeId = this.context.authenticatedUser().getOffice().getId();
         }
         return defaultOfficeId;
+    }
+
+    @Override
+    public BigDecimal checkReleaseAmount(Long investmentAccountId, Long savingsLinkageAccountId, String apiRequestBody) {
+        InvestmentAccount investmentAccount = this.investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
+        
+        return null;
     }
 
 }

@@ -10,6 +10,7 @@ import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepositoryWrapper;
@@ -25,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
-import com.finflux.portfolio.investmenttracker.data.InvestmentAccountDataValidator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -39,7 +39,6 @@ public  class InvestmentAccountDataAssembler {
     private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     private final FromJsonHelper fromApiJsonHelper;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
-    private final InvestmentAccountDataValidator investmentAccountDataValidator;
 
     @Autowired
     public InvestmentAccountDataAssembler(final ChargeRepositoryWrapper chargeRepository,
@@ -48,8 +47,7 @@ public  class InvestmentAccountDataAssembler {
             final InvestmentProductRepositoryWrapper investmentProductRepository,
             final SavingsAccountRepositoryWrapper savingsAccountRepository,
             final FromJsonHelper fromApiJsonHelper,
-            final StaffRepositoryWrapper staffRepositoryWrapper,
-            final InvestmentAccountDataValidator investmentAccountDataValidator) {
+            final StaffRepositoryWrapper staffRepositoryWrapper) {
         this.chargeRepository = chargeRepository;
         this.officeReposiotory = officeReposiotory;
         this.codeValueRepository = codeValueRepository;
@@ -57,7 +55,6 @@ public  class InvestmentAccountDataAssembler {
         this.savingsAccountRepository = savingsAccountRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
-        this.investmentAccountDataValidator = investmentAccountDataValidator;
     }
     
     public InvestmentAccount createAssemble(final JsonCommand command, final AppUser appUser) {
@@ -137,7 +134,7 @@ public  class InvestmentAccountDataAssembler {
                     accountHolder = savingsAccount.getGroup().getName();
                 }
                 InvestmentAccountSavingsLinkages accountLink = new InvestmentAccountSavingsLinkages(investmentAccount, accountHolder, savingsAccount, individualInvestmentAmount,
-                         status, null, null);
+                         status);
                 savingsAccountlinkages.add(accountLink);
             }      
             investmentAccount.setInvestmentAccountSavingsLinkages(savingsAccountlinkages);

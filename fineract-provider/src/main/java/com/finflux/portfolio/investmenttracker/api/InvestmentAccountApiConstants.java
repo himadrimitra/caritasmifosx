@@ -32,6 +32,7 @@ public class InvestmentAccountApiConstants {
     public static final String reinvestAfterMaturityParamName = "reinvestAfterMaturity";
     public static final String trackSourceAccountsParamName = "trackSourceAccounts";
     public static final String staffIdParamName = "staffId";
+    public static final String dateParamName = "date";
     //savings account
     public static final String savingsAccountsParamName = "savingsAccounts";
     public static final String savingsAccountIdParamName = "savingsAccountId";
