@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -21,12 +22,17 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -179,6 +185,29 @@ public class InvestmentAccountApiResource {
         }
 
         return this.toApiJsonSerializer.serialize(savingLinkageAccountData);
+    }
+    
+    @POST
+    @Path("{investmentAccountId}/savingslinkage/{savingsLinkageAccountId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String releaseLinkedSavingAccount(@PathParam("investmentAccountId") Long investmentAccountId,
+            @PathParam("savingsLinkageAccountId") Long savingsLinkageAccountId, @QueryParam("command") final String commandParam, final String apiRequestBodyAsJson , @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser();
+        CommandProcessingResult result = null;
+        CommandWrapper commandRequest = null;
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
+        if (is(commandParam, "release")) {
+            commandRequest = builder.releaseSavingLinkageAccount(investmentAccountId, savingsLinkageAccountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "transfer")) {
+            commandRequest = builder.transferSavingLinkageAccount(investmentAccountId, savingsLinkageAccountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else {
+            throw new UnrecognizedQueryParamException("command", commandParam);
+        }
+        return null;
     }
 
     @POST

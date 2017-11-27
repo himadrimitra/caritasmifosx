@@ -10,6 +10,7 @@ import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepositoryWrapper;
@@ -133,7 +134,7 @@ public  class InvestmentAccountDataAssembler {
                     accountHolder = savingsAccount.getGroup().getName();
                 }
                 InvestmentAccountSavingsLinkages accountLink = new InvestmentAccountSavingsLinkages(investmentAccount, accountHolder, savingsAccount, individualInvestmentAmount,
-                         status, null, null);
+                         status);
                 savingsAccountlinkages.add(accountLink);
             }      
             investmentAccount.setInvestmentAccountSavingsLinkages(savingsAccountlinkages);

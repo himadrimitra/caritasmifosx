@@ -1,5 +1,6 @@
 package com.finflux.portfolio.investmenttracker.service;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,8 @@ import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrap
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransactionRepository;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -40,6 +43,7 @@ import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountDataAssem
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepository;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositoryWrapper;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountSavingsLinkages;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountSavingsLinkagesRepositoryWrapper;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentSavingsTransaction;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentSavingsTransactionRepository;
@@ -60,6 +64,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     private final JournalEntryWritePlatformService journalEntryWritePlatformService;
     private final SavingsAccountTransactionRepository  savingsAccountTransactionRepository;
     private final InvestmentSavingsTransactionRepository investmentSavingsTransactionRepository;
+    private final InvestmentAccountSavingsLinkagesRepositoryWrapper investmentAccountSavingsLinkagesRepositoryWrapper;
     
     
     @Autowired
@@ -71,7 +76,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             SavingsAccountRepositoryWrapper savingsAccountRepository, final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepositoryWrapper,
             final JournalEntryWritePlatformService journalEntryWritePlatformService,
             final SavingsAccountTransactionRepository  savingsAccountTransactionRepository,
-            final InvestmentSavingsTransactionRepository investmentSavingsTransactionRepository) {
+            final InvestmentSavingsTransactionRepository investmentSavingsTransactionRepository,
+            final InvestmentAccountSavingsLinkagesRepositoryWrapper investmentAccountSavingsLinkagesRepositoryWrapper) {
         this.fromApiJsonDataValidator = fromApiJsonDataValidator;
         this.investmentAccountDataAssembler = investmentAccountDataAssembler;
         this.investmentAccountRepository = investmentAccountRepository;
@@ -84,6 +90,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         this.journalEntryWritePlatformService = journalEntryWritePlatformService;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
         this.investmentSavingsTransactionRepository = investmentSavingsTransactionRepository;
+        this.investmentAccountSavingsLinkagesRepositoryWrapper = investmentAccountSavingsLinkagesRepositoryWrapper;
     }
 
     @Override
@@ -164,7 +171,11 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             changes.put(InvestmentAccountApiConstants.statusParamName, InvestmentAccountStatus.ACTIVE.name());
             Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages = investmentAccount.getInvestmentAccountSavingsLinkages();
             Date currentDate = DateUtils.getLocalDateOfTenant().toDate();
+            BigDecimal cumulativeInterestAmount = BigDecimal.ZERO;
+            BigDecimal totalInterest = investmentAccount.getMaturityAmount().subtract(investmentAccount.getInvestmentAmount());
+            int i= 0;
             for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
+                ++i;
                 if(savingsLinkage.getStatus().compareTo(investmentAccount.getStatus()) == 0){
                     final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsLinkage.getSavingsAccount().getId());
                     this.fromApiJsonDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, savingsLinkage.getInvestmentAmount());
@@ -173,10 +184,18 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
                     this.savingsAccountTransactionRepository.save(holdTransaction);
                     InvestmentSavingsTransaction investmentSavingsTransaction = InvestmentSavingsTransaction.create(savingsAccount.getId(), investmentAccountId, holdTransaction.getId(), "hold for new investment with id "+investmentAccountId);
                     this.investmentSavingsTransactionRepository.save(investmentSavingsTransaction);
-                    /*savingsAccount.getTransactions().add(holdTransaction);
-                    this.savingsAccountRepository.save(savingsAccount);*/
                     savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
-                    savingsLinkage.setActiveFromDate(DateUtils.getLocalDateOfTenant().toDate());
+                    savingsLinkage.setActiveFromDate(currentDate);
+                    BigDecimal expectedInterestAmount = null;
+                    if(i!=investmentAccountSavingsLinkages.size()){
+                        expectedInterestAmount = MathUtility.getShare(totalInterest, savingsLinkage.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), investmentAccount.getCurrency());
+                        cumulativeInterestAmount = cumulativeInterestAmount.add(expectedInterestAmount);
+                    }else{
+                        expectedInterestAmount = totalInterest.subtract(cumulativeInterestAmount);
+                    }
+                    savingsLinkage.setExpectedInterestAmount(expectedInterestAmount);
+                    savingsLinkage.setExpectedMaturityAmount(MathUtility.add(savingsLinkage.getInvestmentAmount().add(expectedInterestAmount)));
+                    
                 }
             }
             final Set<Long> existingTransactionIds = new HashSet<>();
@@ -290,5 +309,35 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             handleDataIntegrityIssues(command, e);
             return CommandProcessingResult.empty();
         }
+    }
+
+    @Override
+    public CommandProcessingResult releaseSavingLinkageAccount(Long investmentAccountId, Long savingLinkageAccountId, JsonCommand command) {
+        System.out.println("investmentAccountId "+investmentAccountId);
+        System.out.println("savingLinkageAccountId "+savingLinkageAccountId);
+        InvestmentAccount investmentAccount = this.investmentAccountRepository.findOne(investmentAccountId);
+        final LocalDate releaseDate = command.localDateValueOfParameterNamed(InvestmentAccountApiConstants.dateParamName);
+        InvestmentAccountSavingsLinkages investmentAccountSavingsLinkage = this.investmentAccountSavingsLinkagesRepositoryWrapper.findOneWithNotFoundDetection(savingLinkageAccountId);
+        Integer totalNumberOfDays = getNumberOfDays(investmentAccountSavingsLinkage.getActiveFromDate(),investmentAccountSavingsLinkage.getActiveToDate());
+        Integer numberOfDaysForInterest = getNumberOfDays(new LocalDate(investmentAccountSavingsLinkage.getActiveFromDate()),releaseDate);
+        
+        BigDecimal interestEarned = MathUtility.getShare(investmentAccountSavingsLinkage.getExpectedInterestAmount(),numberOfDaysForInterest,totalNumberOfDays, investmentAccount.getCurrency());
+        investmentAccountSavingsLinkage.setInterestAmount(interestEarned);
+        investmentAccountSavingsLinkage.setActiveToDate(releaseDate.toDate());
+        investmentAccountSavingsLinkage.setMaturityAmount(investmentAccountSavingsLinkage.getInvestmentAmount().add(interestEarned));
+        investmentAccountSavingsLinkage.setStatus(InvestmentAccountStatus.CLOSED.getValue());
+        return null;
+    }
+    
+    public int getNumberOfDays(LocalDate startDate, LocalDate endDate){
+        return Days.daysBetween(startDate, endDate).getDays();
+    }
+    
+    
+
+    @Override
+    public CommandProcessingResult transferSavingLinkageAccount(Long investmentAccountId, Long savingLinkageAccountId, JsonCommand command) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

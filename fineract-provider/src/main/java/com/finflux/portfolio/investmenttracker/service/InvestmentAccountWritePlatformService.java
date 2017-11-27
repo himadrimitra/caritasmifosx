@@ -15,4 +15,8 @@ public interface InvestmentAccountWritePlatformService {
     CommandProcessingResult rejectInvestmentAccount(final Long investmentAccountId, final JsonCommand command);
     
     CommandProcessingResult undoInvestmentAccountApproval(final Long investmentAccountId, final JsonCommand command);
+    
+    CommandProcessingResult releaseSavingLinkageAccount(final Long investmentAccountId, final Long savingLinkageAccountId, final JsonCommand command);
+    
+    CommandProcessingResult transferSavingLinkageAccount(final Long investmentAccountId, final Long savingLinkageAccountId, final JsonCommand command);
 }

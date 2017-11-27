@@ -4427,5 +4427,21 @@ public class CommandWrapperBuilder {
         this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=undoapproval";
         return this;
     }
+    public CommandWrapperBuilder releaseSavingLinkageAccount(final Long ivestmentAccountId , Long savingLinkageAccountId) {
+        this.actionName = "RELEASE";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.subentityId = savingLinkageAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId +"/savingslinkage/"+ savingLinkageAccountId+"?command=release";
+        return this;
+    }
+    public CommandWrapperBuilder transferSavingLinkageAccount(final Long ivestmentAccountId, Long savingLinkageAccountId) {
+        this.actionName = "TRANSFER";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.subentityId = savingLinkageAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId +"/savingslinkage/"+ savingLinkageAccountId+"?command=transfer";
+        return this;
+    }
 
 }
