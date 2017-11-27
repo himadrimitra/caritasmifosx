@@ -301,6 +301,14 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
                 SavingsAccountTransactionType.AMOUNT_RELEASE.getValue(),transactionDate , createdDate,
                 accountTransaction.amount, accountTransaction.reversed, appUserId, accountTransaction.isManualTransaction);
     }
+    
+    public static SavingsAccountTransaction releaseAmount(final SavingsAccount savingsAccount, final Office office,
+            final PaymentDetail paymentDetail, final LocalDate date, final Money amount, final Date createdDate, final AppUser appUser) {
+        final boolean isReversed = false;
+        final boolean isManualTransaction = false;
+        return new SavingsAccountTransaction(savingsAccount, office, paymentDetail, SavingsAccountTransactionType.AMOUNT_RELEASE.getValue(),
+                date, createdDate, amount, isReversed, appUser, isManualTransaction);
+    }
 
     private SavingsAccountTransaction(final SavingsAccount savingsAccount, final Office office, final Integer typeOf,
             final LocalDate transactionLocalDate, final Money amount, final boolean isReversed, final AppUser appUser,

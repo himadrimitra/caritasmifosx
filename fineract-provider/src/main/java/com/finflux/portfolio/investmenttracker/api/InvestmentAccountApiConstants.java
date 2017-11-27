@@ -48,6 +48,12 @@ public class InvestmentAccountApiConstants {
     public static final String localeParamName = "locale";
     public static final String dateFormatParamName = "dateFormat";
     
+    public static final String holdAmountMessage = "Hold amount for new investment with id";
+    public static final String releaseAmountMessage = "Release amount for new investment with id";
+    public static final String interestEarnedAmountMessage = "Interest earned from investment with id";
+    public static final String payChargeAmountMessage = "Acivation fee associated with with account";
+    public static final String managementAmountMessage = "Management charge associated with investment account";
+    
     public static Set<String> INVESTMENT_ACCOUNT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdParamName,
             partnerIdParamName, officeIdParamName, investmetProductIdParamName, statusParamName, currencyCodeParamName,
             digitsAfterDecimalParamName,inMultiplesOfParamName,submittedOnDateParamName,approvedOnDateParamName,

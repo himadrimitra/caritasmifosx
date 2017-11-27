@@ -1,9 +1,11 @@
 package com.finflux.portfolio.investmenttracker.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -182,10 +184,11 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
                     final PaymentDetail paymentDetail =  null;
                     SavingsAccountTransaction holdTransaction = SavingsAccountTransaction.holdAmount(savingsAccount, appUser.getOffice(), paymentDetail, DateUtils.getLocalDateOfTenant(), Money.of(savingsAccount.getCurrency(), savingsLinkage.getInvestmentAmount()), currentDate, appUser);
                     this.savingsAccountTransactionRepository.save(holdTransaction);
-                    InvestmentSavingsTransaction investmentSavingsTransaction = InvestmentSavingsTransaction.create(savingsAccount.getId(), investmentAccountId, holdTransaction.getId(), "hold for new investment with id "+investmentAccountId);
+                    InvestmentSavingsTransaction investmentSavingsTransaction = InvestmentSavingsTransaction.create(savingsAccount.getId(), investmentAccountId, holdTransaction.getId(), getMessage(InvestmentAccountApiConstants.holdAmountMessage, investmentAccountId));
                     this.investmentSavingsTransactionRepository.save(investmentSavingsTransaction);
                     savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
                     savingsLinkage.setActiveFromDate(currentDate);
+                    savingsLinkage.setActiveToDate(investmentAccount.getMaturityOnDate());
                     BigDecimal expectedInterestAmount = null;
                     if(i!=investmentAccountSavingsLinkages.size()){
                         expectedInterestAmount = MathUtility.getShare(totalInterest, savingsLinkage.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), investmentAccount.getCurrency());
@@ -313,8 +316,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
 
     @Override
     public CommandProcessingResult releaseSavingLinkageAccount(Long investmentAccountId, Long savingLinkageAccountId, JsonCommand command) {
-        System.out.println("investmentAccountId "+investmentAccountId);
-        System.out.println("savingLinkageAccountId "+savingLinkageAccountId);
+        
         InvestmentAccount investmentAccount = this.investmentAccountRepository.findOne(investmentAccountId);
         final LocalDate releaseDate = command.localDateValueOfParameterNamed(InvestmentAccountApiConstants.dateParamName);
         InvestmentAccountSavingsLinkages investmentAccountSavingsLinkage = this.investmentAccountSavingsLinkagesRepositoryWrapper.findOneWithNotFoundDetection(savingLinkageAccountId);
@@ -326,14 +328,54 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         investmentAccountSavingsLinkage.setActiveToDate(releaseDate.toDate());
         investmentAccountSavingsLinkage.setMaturityAmount(investmentAccountSavingsLinkage.getInvestmentAmount().add(interestEarned));
         investmentAccountSavingsLinkage.setStatus(InvestmentAccountStatus.CLOSED.getValue());
-        return null;
+        processReleaseTransaction(investmentAccountSavingsLinkage);
+        this.investmentAccountSavingsLinkagesRepositoryWrapper.save(investmentAccountSavingsLinkage);
+        return new CommandProcessingResultBuilder() //
+        .withEntityId(investmentAccountSavingsLinkage.getId()).build();
     }
     
     public int getNumberOfDays(LocalDate startDate, LocalDate endDate){
         return Days.daysBetween(startDate, endDate).getDays();
     }
     
+    public void processReleaseTransaction(InvestmentAccountSavingsLinkages investmentAccountSavingsLinkage){
+        AppUser user = this.context.authenticatedUser();
+        Long investmentId = investmentAccountSavingsLinkage.getInvestmentAccount().getId();
+        SavingsAccount  savingAccount = investmentAccountSavingsLinkage.getSavingsAccount();
+        LocalDate date = DateUtils.getLocalDateOfTenant();
+        
+        //release hold amount
+        final PaymentDetail paymentDetail =  null;
+        List<SavingsAccountTransaction> transactions = new ArrayList<>();
+        SavingsAccountTransaction releaseTransaction = SavingsAccountTransaction.releaseAmount(savingAccount, user.getOffice(), paymentDetail, date, Money.of(savingAccount.getCurrency(), investmentAccountSavingsLinkage.getInvestmentAmount()), date.toDate(), user);
+        transactions.add(releaseTransaction);
+        //pay charge amount
+        if(MathUtility.isGreaterThanZero(investmentAccountSavingsLinkage.getChargeAmount())){
+            
+        }
+        SavingsAccountTransaction depositTransaction = null;
+        if(MathUtility.isGreaterThanZero(investmentAccountSavingsLinkage.getInterestAmount())){
+            depositTransaction = SavingsAccountTransaction.deposit(savingAccount, user.getOffice(), paymentDetail, date, Money.of(savingAccount.getCurrency(),investmentAccountSavingsLinkage.getInterestAmount()), date.toDate(), user);
+            transactions.add(depositTransaction);
+        }
+        
+        //deposit (interest earned - paid charge)
+        this.savingsAccountTransactionRepository.save(transactions);
+        
+        List<InvestmentSavingsTransaction> investmentTransactions = new ArrayList<>();
+        InvestmentSavingsTransaction investmentReleaseSavingsTransaction = InvestmentSavingsTransaction.create(savingAccount.getId(), investmentId, releaseTransaction.getId(), getMessage(InvestmentAccountApiConstants.releaseAmountMessage, investmentId));
+        investmentTransactions.add(investmentReleaseSavingsTransaction);
+        if(depositTransaction != null){
+            InvestmentSavingsTransaction investmentDepositSavingsTransaction = InvestmentSavingsTransaction.create(savingAccount.getId(), investmentId, depositTransaction.getId(), getMessage(InvestmentAccountApiConstants.interestEarnedAmountMessage, investmentId));
+            investmentTransactions.add(investmentDepositSavingsTransaction);
+        }
+        
+        this.investmentSavingsTransactionRepository.save(investmentTransactions);
+    }
     
+    public static String getMessage(String message, Long investmentAccountId){
+        return message+" # "+investmentAccountId;
+    }
 
     @Override
     public CommandProcessingResult transferSavingLinkageAccount(Long investmentAccountId, Long savingLinkageAccountId, JsonCommand command) {
