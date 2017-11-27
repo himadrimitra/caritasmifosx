@@ -54,6 +54,7 @@ public class InvestmentAccountApiConstants {
     public static final String payChargeAmountMessage = "Acivation fee associated with with account";
     public static final String managementAmountMessage = "Management charge associated with investment account";
     
+    
     public static Set<String> INVESTMENT_ACCOUNT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdParamName,
             partnerIdParamName, officeIdParamName, investmetProductIdParamName, statusParamName, currencyCodeParamName,
             digitsAfterDecimalParamName,inMultiplesOfParamName,submittedOnDateParamName,approvedOnDateParamName,

@@ -12,6 +12,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -79,6 +80,22 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
         this.expectedInterestAmount = null;
         this.expectedChargeAmount = null;
         this.expectedMaturityAmount = null;
+        this.chargeAmount = null;
+        this.maturityAmount = null;
+        this.interestAmount = null;
+    }
+    
+    public InvestmentAccountSavingsLinkages(InvestmentAccountSavingsLinkages investmentSavingAccount,SavingsAccount savingsAccount, Date activeFromDate) {
+        this.savingsAccount = savingsAccount;
+        this.accountHolder = savingsAccount.getClient()==null?savingsAccount.getGroup().getName():savingsAccount.getClient().getDisplayName();
+        this.investmentAmount = investmentSavingAccount.getInvestmentAmount();
+        this.investmentAccount = investmentSavingAccount.getInvestmentAccount();
+        this.status = InvestmentAccountStatus.ACTIVE.getValue();
+        this.activeFromDate = activeFromDate;
+        this.activeToDate = investmentSavingAccount.getInvestmentAccount().getMaturityOnDate();
+        this.expectedInterestAmount = MathUtility.subtract(investmentSavingAccount.getExpectedInterestAmount(), investmentSavingAccount.getInterestAmount());
+        this.expectedChargeAmount = MathUtility.subtract(investmentSavingAccount.getExpectedChargeAmount(), investmentSavingAccount.getChargeAmount());
+        this.expectedMaturityAmount = MathUtility.subtract(investmentSavingAccount.getExpectedMaturityAmount(), investmentSavingAccount.getMaturityAmount());
         this.chargeAmount = null;
         this.maturityAmount = null;
         this.interestAmount = null;
@@ -210,6 +227,8 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
         this.maturityAmount = maturityAmount;
     }
     
-    
+    public boolean isActive(){
+        return this.status.equals(InvestmentAccountStatus.ACTIVE.getValue());
+    }
     
 }
