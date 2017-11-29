@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.charge.domain;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.portfolio.charge.exception.ChargeIsNotActiveException;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
@@ -59,4 +60,9 @@ public class ChargeRepositoryWrapper {
     public Collection<Charge> findAllCharges(final Collection<Long> ids) {
         return this.repository.findAll(ids);
     }
+    
+    public List<Charge> findByChargeTimeType(Integer chargeTimeType){
+        return this.repository.findByChargeTimeType(chargeTimeType);
+    }
+    
 }

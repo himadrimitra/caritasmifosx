@@ -231,6 +231,20 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
         this.paid = determineIfFullyPaid();
         this.status = status;
     }
+    
+    public SavingsAccountCharge(final SavingsAccount savingsAccount, final Charge chargeDefinition, final BigDecimal amount, final LocalDate dueDate){
+        this.savingsAccount = savingsAccount;
+        this.charge = chargeDefinition;
+        this.penaltyCharge = false;
+        this.chargeTime = chargeDefinition.getChargeTimeType();
+        this.dueDate = dueDate.toDate();
+        this.feeInterval = null;
+        this.chargeCalculation = chargeDefinition.getChargeCalculation();
+        final BigDecimal transactionAmount = BigDecimal.ZERO;
+        populateDerivedFields(transactionAmount, amount);
+        this.paid = determineIfFullyPaid();
+        this.status = true;
+    }
 
     public void resetPropertiesForRecurringFees() {
         if (isMonthlyFee() || isAnnualFee() || isWeeklyFee()) {

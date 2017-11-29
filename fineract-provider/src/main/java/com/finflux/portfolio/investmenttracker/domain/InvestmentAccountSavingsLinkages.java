@@ -231,4 +231,8 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
         return this.status.equals(InvestmentAccountStatus.ACTIVE.getValue());
     }
     
+    public void updateExpectedCharge(BigDecimal amount){
+        this.expectedChargeAmount = MathUtility.add(this.expectedChargeAmount, amount);
+    }
+    
 }

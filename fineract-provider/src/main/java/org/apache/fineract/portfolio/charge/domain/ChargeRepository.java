@@ -18,9 +18,16 @@
  */
 package org.apache.fineract.portfolio.charge.domain;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ChargeRepository extends JpaRepository<Charge, Long>, JpaSpecificationExecutor<Charge> {
-    // no added behaviour
+    public static final String FIND_BY_CHARGE_TIME_TYPE = "from Charge charge where charge.chargeTimeType =:chargeTimeType ";
+    
+    @Query(FIND_BY_CHARGE_TIME_TYPE)
+    List<Charge> findByChargeTimeType(@Param("chargeTimeType") Integer chargeTimeType);
 }
