@@ -2,6 +2,7 @@ package com.finflux.portfolio.investmenttracker.service;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 
@@ -26,4 +27,9 @@ public interface InvestmentAccountReadService {
     InvestmentAccountSavingsLinkagesData retrieveInvestmentSavingsLinkageAccountData(final Long investmentAccountId, final Long savingsLinkageAccountId);
     
     BigDecimal checkReleaseAmount(final Long investmentAccountId, final Long savingsLinkageAccountId, String apiRequestBody);
+    
+    InvestmentAccountData retrieveReinvestmentAccountTemplateData(final Long investmentAccountId);
+    
+    Collection<InvestmentAccountSavingsLinkagesData> retrieveInvestmentSavingLinkagesAccountData(final Long investmentAccountId, final Integer status);
+    
 }

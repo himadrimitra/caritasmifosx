@@ -1,18 +1,18 @@
 package com.finflux.portfolio.investmenttracker.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -25,8 +25,10 @@ import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
+import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -491,5 +493,106 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         
         return null;
     }
+
+    @Override
+    public InvestmentAccountData retrieveReinvestmentAccountTemplateData(Long investmentAccountId) {
+        
+        InvestmentAccountData investmentAccountData = retrieveInvestmentAccount(investmentAccountId);
+        InvestmentProductData investmentProductData = this.investmentProductReadService.retrieveOne(investmentAccountData.getInvestmentProductData().getId());
+        investmentAccountData.setInvestmentProductData(investmentProductData);
+        Collection<InvestmentAccountSavingsLinkagesData> investmentAccSavingsLinkages = retrieveInvestmentSavingLinkagesAccountData(investmentAccountId, InvestmentAccountStatus.MATURED.getValue());
+        investmentAccountData.setInvestmentSavingsLinkagesData(investmentAccSavingsLinkages);
+
+        Collection<InvestmentAccountChargeData> charges = retrieveInvestmentAccountCharges(investmentAccountId);
+        investmentAccountData.setInvestmentAccountCharges(charges);
+        
+        investmentAccountData = investmentAccountReInvestCalculations(investmentAccountData);
+
+        return investmentAccountData;
+    }
+    
+
+    private InvestmentAccountData investmentAccountReInvestCalculations(final InvestmentAccountData investmentAccountData) {
+
+        // Investment amount calculation
+        BigDecimal totalReinvestmentAmount = BigDecimal.ZERO;
+        for (InvestmentAccountSavingsLinkagesData linkageData : investmentAccountData.getInvestmentSavingsLinkagesData()) {
+
+            BigDecimal savingsAccInvAmount = linkageData.getIndividualInvestmentAmount();
+            BigDecimal interestAmount = linkageData.getInterestAmount();
+            BigDecimal chargeAmount = linkageData.getChargeAmount();
+            savingsAccInvAmount = savingsAccInvAmount.add(linkageData.getInterestAmount());
+            totalReinvestmentAmount = totalReinvestmentAmount.add(linkageData.getIndividualInvestmentAmount());
+            //Savings Linkage account new investment amount calculation
+            BigDecimal newSavingsAccInvAmount = MathUtility.add(savingsAccInvAmount,interestAmount).subtract(chargeAmount);
+            linkageData.setIndividualInvestmentAmount(newSavingsAccInvAmount);
+        }
+        investmentAccountData.setInvestmentAmount(totalReinvestmentAmount);
+
+        // maturity amount and maturity date calculation
+        BigDecimal rateOfInterestPerDay = BigDecimal.ZERO;
+        int investmentTermInDays = 0;
+        BigDecimal maturityAmount = BigDecimal.ZERO;
+        BigDecimal interestEarned = BigDecimal.ZERO;
+        int monthsInYear = 12;
+        int daysInWeek = 7;
+        BigDecimal daysInYear = new BigDecimal(365);
+        LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+        LocalDate reinvestmentDate = currentDate;
+        LocalDate maturityDate = currentDate;
+        switch (investmentAccountData.getInvestmentProductData().getInterestRateType().getId().intValue()) {
+        // InvestmentFrequencyType.MONTHS = 2
+            case 2:
+                rateOfInterestPerDay = MathUtility.multiply(
+                        investmentAccountData.getInvestmentProductData().getDefaultNominalInterestRate(), monthsInYear).divide(daysInYear,2, RoundingMode.HALF_UP);
+            break;
+            // InvestmentFrequencyType.YEARS = 3
+            case 3:
+                rateOfInterestPerDay = investmentAccountData.getInvestmentProductData().getDefaultNominalInterestRate().divide(daysInYear,2, RoundingMode.HALF_UP);
+            break;
+        }
+
+        switch (investmentAccountData.getInvestmentProductData().getInvesmentTermPeriodType().getId().intValue()) {
+        // InvestmentTermFrequenceyType.DAYS = 0
+            case 0:
+                investmentTermInDays = investmentAccountData.getInvesmentTermPeriod();
+                maturityDate = currentDate.plusDays(investmentTermInDays);
+            break;
+            // InvestmentTermFrequenceyType.WEEKS = 1
+            case 1:
+                investmentTermInDays = investmentAccountData.getInvesmentTermPeriod() * daysInWeek;
+                maturityDate = currentDate.plusWeeks(investmentAccountData.getInvesmentTermPeriod());
+            break;
+            // InvestmentTermFrequenceyType.MONTHS = 2
+            case 2:
+                maturityDate = currentDate.plusMonths(investmentAccountData.getInvesmentTermPeriod());
+                investmentTermInDays = Days.daysBetween(reinvestmentDate, maturityDate).getDays();
+            break;
+        }
+        interestEarned = MathUtility.multiply(MathUtility.multiply(totalReinvestmentAmount, investmentTermInDays), rateOfInterestPerDay)
+                .divide(new BigDecimal(100),2, RoundingMode.HALF_UP);
+        maturityAmount = MathUtility.add(totalReinvestmentAmount, interestEarned);
+        investmentAccountData.setMaturityAmount(maturityAmount);
+        investmentAccountData.getTimelineData().setMaturityOnDate(maturityDate);
+        investmentAccountData.getTimelineData().setInvestmentOnData(reinvestmentDate);
+
+        return investmentAccountData;
+    }
+    
+    @Override
+    public Collection<InvestmentAccountSavingsLinkagesData> retrieveInvestmentSavingLinkagesAccountData(final Long investmentAccountId, final Integer status) {
+        try{
+        InvestmentAccountSavingsLinkagesMapper linkageMapper = new InvestmentAccountSavingsLinkagesMapper();
+        
+        String sql = "SELECT " + linkageMapper.schema() + " WHERE ia.id = ? and ia.status_enum = ? and ias.status = ? order by sa.id;";
+        
+        Collection<InvestmentAccountSavingsLinkagesData> linkagesData = this.jdbcTemplate.query(sql, linkageMapper, investmentAccountId, status, status);
+        
+        return linkagesData;
+        } catch (final EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        }
+    }
+
 
 }

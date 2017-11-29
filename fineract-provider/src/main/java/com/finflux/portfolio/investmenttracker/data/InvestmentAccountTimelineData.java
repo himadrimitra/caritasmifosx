@@ -20,12 +20,12 @@ public class InvestmentAccountTimelineData {
     private final String activatedByFirstname;
     private final String activatedByLastname;
     
-    private final LocalDate investmentOnData;
+    private  LocalDate investmentOnData;
     private final String investedByUsername;
     private final String investedByFirstname;
     private final String investedByLastname;
     
-    private final LocalDate maturityOnDate;
+    private  LocalDate maturityOnDate;
     private final String maturityByUsername;
     private final String maturityByFirstname;
     private final String maturityByLastname;
@@ -225,6 +225,18 @@ public class InvestmentAccountTimelineData {
     
     public String getCloseByLastname() {
         return this.closeByLastname;
-    } 
+    }
+
+    
+    public void setMaturityOnDate(LocalDate maturityOnDate) {
+        this.maturityOnDate = maturityOnDate;
+    }
+
+
+    
+    public void setInvestmentOnData(LocalDate investmentOnData) {
+        this.investmentOnData = investmentOnData;
+    }
+    
     
 }

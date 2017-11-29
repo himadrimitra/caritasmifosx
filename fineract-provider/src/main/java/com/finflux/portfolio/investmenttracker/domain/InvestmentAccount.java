@@ -490,5 +490,15 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
 
         return ids;
     }
+
+    
+    public void setMaturityBy(AppUser maturityBy) {
+        this.maturityBy = maturityBy;
+    }
+
+    
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
+    }
     
 }

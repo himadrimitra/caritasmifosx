@@ -19,4 +19,10 @@ public interface InvestmentAccountWritePlatformService {
     CommandProcessingResult releaseSavingLinkageAccount(final Long investmentAccountId, final Long savingLinkageAccountId, final JsonCommand command);
     
     CommandProcessingResult transferSavingLinkageAccount(final Long investmentAccountId, final Long savingLinkageAccountId, final JsonCommand command);
+    
+    public void matureInvestmentAccounts();
+    
+    CommandProcessingResult reinvestInvestmentAccount(final Long investmentAccountId, final JsonCommand command);
+    
+    CommandProcessingResult closeInvestmentAccount(final Long investmentAccountId, final JsonCommand command);
 }

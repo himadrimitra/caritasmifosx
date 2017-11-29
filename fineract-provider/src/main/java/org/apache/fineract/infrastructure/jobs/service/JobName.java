@@ -59,7 +59,8 @@ public enum JobName {
     HIGHMARK_ENQUIRY("Highmark Enquiry"),
     REDUCE_DP_LIMIT_FOR_SAVINGS("Reduce Dp Limit For Savings"),
     FUND_STATUS_UPDATE("Fund Status update"),
-    UPDATE_NEXT_RECURRING_DATE("Update Next Recurring Date");
+    UPDATE_NEXT_RECURRING_DATE("Update Next Recurring Date"),
+    MATURE_INVESTMENT_ACCOUNTS("Mature Investment Accounts");
 
     private final String name;
 

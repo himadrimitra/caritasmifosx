@@ -191,5 +191,13 @@ public class InvestmentTransaction extends AbstractPersistable<Long> {
     private LocalDate getTransactionLocalDate() {
         return new LocalDate(this.dateOf);
     }
+    
+    public static InvestmentTransaction withDrawal(final InvestmentAccount investmentAccount, final Long officeId, final Date dateOf,
+            final BigDecimal amount, final BigDecimal runningBalance, final Date createdDate, final Long appUserId) {
+        Integer type = InvestmentTransactionType.WITHDRAWAL.getValue();
+        boolean reversed = false;
+        return new InvestmentTransaction(investmentAccount, officeId, type, dateOf, amount, runningBalance, reversed, createdDate,
+                appUserId);
+    }
 
 }
