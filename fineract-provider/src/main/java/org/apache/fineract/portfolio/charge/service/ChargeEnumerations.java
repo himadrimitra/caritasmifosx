@@ -114,10 +114,15 @@ public class ChargeEnumerations {
                 break;
             case MATURITY:
                 optionData = new EnumOptionData(ChargeTimeType.MATURITY.getValue().longValue(), ChargeTimeType.MATURITY.getCode(), "Maturity");
-                break;    
+                break;   
+            case INVESTMENT_ACTIVATION:
+                optionData = new EnumOptionData(ChargeTimeType.INVESTMENT_ACTIVATION.getValue().longValue(),
+                        ChargeTimeType.INVESTMENT_ACTIVATION.getCode(), "Investment Activation");
+            break;    
             default:
                 optionData = new EnumOptionData(ChargeTimeType.INVALID.getValue().longValue(), ChargeTimeType.INVALID.getCode(), "Invalid");
             break;
+             
         }
         return optionData;
     }
