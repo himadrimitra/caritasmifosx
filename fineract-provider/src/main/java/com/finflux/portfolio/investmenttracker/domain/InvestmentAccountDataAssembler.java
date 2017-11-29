@@ -12,6 +12,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
+import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepositoryWrapper;
 import org.apache.fineract.organisation.staff.domain.Staff;
@@ -160,7 +161,7 @@ public  class InvestmentAccountDataAssembler {
                 }
                 InvestmentAccountCharge investmentAccountCharge = null;
                 if(charge.isPercentageOfInterest()){
-                    BigDecimal chargeAmount = MathUtility.percentageOf(interestAmount, charge.getAmount());
+                    BigDecimal chargeAmount = Money.of(investmentAccount.getCurrency(), MathUtility.percentageOf(interestAmount, charge.getAmount())).getAmount();
                     investmentAccountCharge = new InvestmentAccountCharge(investmentAccount, charge, chargeAmount, isPenality, isActive,inactivationDate);
                 }else{
                     investmentAccountCharge = new InvestmentAccountCharge(investmentAccount, charge, charge.getAmount(), isPenality, isActive,inactivationDate);

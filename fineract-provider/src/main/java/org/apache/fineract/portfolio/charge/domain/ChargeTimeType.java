@@ -45,8 +45,9 @@ public enum ChargeTimeType {
     DAILY_FEE(17, "chargeTimeType.dailyFee"), // only for svings account
     UPFRONT_FEE(50, "chargeTimeType.upfrontFee"), //
     LATE_DEPOSITE_FEE(51, "chargeTimeType.lateDepositeFee"), // only for savings
-    MATURITY(52, "chargeTimeType.maturity"), 
-    INVESTMENT_ACTIVATION(53, "chargeTimeType.investmentActivation");
+    MATURITY(52, "chargeTimeType.maturity"), //for investment tracker
+    INVESTMENT_ACTIVATION(53, "chargeTimeType.investmentActivation"),//for investment tracker
+    EXTERNAL_INVESTMENT(54,"chargeTimeType.externalInvestment");//for savings linked on investment tracker, can't be added from UI
 
     private final Integer value;
     private final String code;
@@ -158,6 +159,9 @@ public enum ChargeTimeType {
                 break;
                 case 53:
                     chargeTimeType = INVESTMENT_ACTIVATION;
+                    break;
+                case 54:    
+                    chargeTimeType = EXTERNAL_INVESTMENT;
                 break;
                 default:
                     chargeTimeType = INVALID;
@@ -172,7 +176,7 @@ public enum ChargeTimeType {
     }
 
     public boolean isOnSpecifiedDueDate() {
-        return this.value.equals(ChargeTimeType.SPECIFIED_DUE_DATE.getValue());
+        return this.value.equals(ChargeTimeType.SPECIFIED_DUE_DATE.getValue()) || this.value.equals(ChargeTimeType.EXTERNAL_INVESTMENT.getValue());
     }
 
     public boolean isSavingsActivation() {
