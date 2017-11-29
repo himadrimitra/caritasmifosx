@@ -20,7 +20,10 @@ package org.apache.fineract.infrastructure.jobs.annotation;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,6 +50,8 @@ public class CronMethodParser {
     }
 
     private static final String SEARCH_PACKAGE = "org.apache.fineract.";
+    
+    private static final String FINFLUX_PACKAGE = "com.finflux.";
 
     private static final String CRON_ANNOTATION_ATTRIBUTE_NAME = "jobName";
 
@@ -75,7 +80,15 @@ public class CronMethodParser {
                 .resolveRequiredPlaceholders(SEARCH_PACKAGE));
         String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + basePackagePath + "/" + RESOURCE_PATTERN;
         packageSearchPath = packageSearchPath.replace("//", "/"); // else it doesn't work if *.class are in WAR!!
-        final Resource[] resources = resourcePatternResolver.getResources(packageSearchPath);
+        List<Resource> resources = new ArrayList<>();
+        resources.addAll(Arrays.asList(resourcePatternResolver.getResources(packageSearchPath)));
+        
+        final String finfluxBasePackagePath = ClassUtils.convertClassNameToResourcePath(new StandardEnvironment()
+        .resolveRequiredPlaceholders(FINFLUX_PACKAGE));
+        String finfluxPackageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + finfluxBasePackagePath + "/" + RESOURCE_PATTERN;
+        finfluxPackageSearchPath = finfluxPackageSearchPath.replace("//", "/");
+        resources.addAll(Arrays.asList(resourcePatternResolver.getResources(finfluxPackageSearchPath)));
+        
         for (final Resource resource : resources) {
             if (resource.isReadable()) {
                 final MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(resource);

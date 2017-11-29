@@ -4443,5 +4443,19 @@ public class CommandWrapperBuilder {
         this.href = "/investmentaccounts/" + ivestmentAccountId +"/savingslinkage/"+ savingLinkageAccountId+"?command=transfer";
         return this;
     }
+    public CommandWrapperBuilder investmentAccountReinvest(final Long ivestmentAccountId) {
+        this.actionName = "REINVEST";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=reinvest";
+        return this;
+    }
+    public CommandWrapperBuilder investmentAccountClose(final Long ivestmentAccountId) {
+        this.actionName = "CLOSE";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=close";
+        return this;
+    }
 
 }

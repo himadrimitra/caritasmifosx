@@ -331,4 +331,139 @@ public class InvestmentAccountData {
         this.investmentAccountTransactions = investmentAccountTransactions;
     }
 
+    
+    public void setInvestmentAmount(BigDecimal investmentAmount) {
+        this.investmentAmount = investmentAmount;
+    }
+
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    
+    public void setAccountNo(String accountNo) {
+        this.accountNo = accountNo;
+    }
+
+    
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
+    }
+
+    
+    public void setCurrency(CurrencyData currency) {
+        this.currency = currency;
+    }
+
+    
+    public void setInterestRate(BigDecimal interestRate) {
+        this.interestRate = interestRate;
+    }
+
+    
+    public void setInterestRateType(EnumOptionData interestRateType) {
+        this.interestRateType = interestRateType;
+    }
+
+    
+    public void setInvesmentTermPeriod(Integer invesmentTermPeriod) {
+        this.invesmentTermPeriod = invesmentTermPeriod;
+    }
+
+    
+    public void setInvesmentTermPeriodType(EnumOptionData invesmentTermPeriodType) {
+        this.invesmentTermPeriodType = invesmentTermPeriodType;
+    }
+
+    
+    public void setTimelineData(InvestmentAccountTimelineData timelineData) {
+        this.timelineData = timelineData;
+    }
+
+    
+    public void setMaturityAmount(BigDecimal maturityAmount) {
+        this.maturityAmount = maturityAmount;
+    }
+
+    
+    public void setReinvestAfterMaturity(Boolean reinvestAfterMaturity) {
+        this.reinvestAfterMaturity = reinvestAfterMaturity;
+    }
+
+    
+    public void setOfficeData(OfficeData officeData) {
+        this.officeData = officeData;
+    }
+
+    
+    public void setPartnerData(CodeValueData partnerData) {
+        this.partnerData = partnerData;
+    }
+
+    
+    public void setInvestmentProductData(InvestmentProductData investmentProductData) {
+        this.investmentProductData = investmentProductData;
+    }
+
+    
+    public void setStatusEnum(EnumOptionData statusEnum) {
+        this.statusEnum = statusEnum;
+    }
+
+    
+    public void setStaffData(StaffData staffData) {
+        this.staffData = staffData;
+    }
+
+    
+    public void setTrackSourceAccounts(Boolean trackSourceAccounts) {
+        this.trackSourceAccounts = trackSourceAccounts;
+    }
+
+    
+    public void setPartnerOptions(Collection<CodeValueData> partnerOptions) {
+        this.partnerOptions = partnerOptions;
+    }
+
+    
+    public void setInvestmentProductOptions(Collection<InvestmentProductData> investmentProductOptions) {
+        this.investmentProductOptions = investmentProductOptions;
+    }
+
+    
+    public void setInvestmentChargeOptions(Collection<ChargeData> investmentChargeOptions) {
+        this.investmentChargeOptions = investmentChargeOptions;
+    }
+
+    
+    public void setOfficeDataOptions(Collection<OfficeData> officeDataOptions) {
+        this.officeDataOptions = officeDataOptions;
+    }
+
+    
+    public void setInterestRateFrequencyTypeOptions(List<EnumOptionData> interestRateFrequencyTypeOptions) {
+        this.interestRateFrequencyTypeOptions = interestRateFrequencyTypeOptions;
+    }
+
+    
+    public void setInvestmentTermFrequencyTypeOptions(List<EnumOptionData> investmentTermFrequencyTypeOptions) {
+        this.investmentTermFrequencyTypeOptions = investmentTermFrequencyTypeOptions;
+    }
+
+    
+    public void setStaffOptions(Collection<StaffData> staffOptions) {
+        this.staffOptions = staffOptions;
+    }
+
+    
+    public void setSavingsAccounts(List<SavingsAccountData> savingsAccounts) {
+        this.savingsAccounts = savingsAccounts;
+    }
+
+    
+    public void setInvestmentAccountStatus(Collection<EnumOptionData> investmentAccountStatus) {
+        this.investmentAccountStatus = investmentAccountStatus;
+    }
+
 }

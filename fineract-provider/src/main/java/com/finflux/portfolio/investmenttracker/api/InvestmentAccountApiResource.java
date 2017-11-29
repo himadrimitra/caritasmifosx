@@ -233,6 +233,12 @@ public class InvestmentAccountApiResource {
         } else if (is(commandParam, "undoapproval")) {
             commandRequest = builder.undoInvestmentAccountApproval(investmentAccountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "reinvest")) {
+            commandRequest = builder.investmentAccountReinvest(investmentAccountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, "close")) {
+            commandRequest = builder.investmentAccountClose(investmentAccountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
 
         return this.toApiJsonSerializer.serialize(result);
@@ -240,6 +246,17 @@ public class InvestmentAccountApiResource {
 
     private boolean is(final String commandParam, final String commandValue) {
         return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
+    }
+    
+    @GET
+    @Path("{investmentAccountId}/reinvesttemplate")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveReinvestmentAccountTemplate(@Context final UriInfo uriInfo, @PathParam("investmentAccountId") final Long investmentAccountId) {
+        this.context.authenticatedUser().validateHasReadPermission(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
+        final InvestmentAccountData investmentAccountData = this.investmentAccountReadService.retrieveReinvestmentAccountTemplateData(investmentAccountId);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, investmentAccountData);
     }
 
 }

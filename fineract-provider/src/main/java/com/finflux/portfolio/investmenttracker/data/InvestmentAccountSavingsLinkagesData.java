@@ -13,7 +13,7 @@ public class InvestmentAccountSavingsLinkagesData {
     private final Long savingsAccountId;
     private final String savingsAccountNumber;
     private final Long investmentAccountId;
-    private final BigDecimal individualInvestmentAmount;
+    private  BigDecimal individualInvestmentAmount;
     private final EnumOptionData status;
     private final LocalDate activeFrom;
     private final LocalDate activeTo;
@@ -157,7 +157,9 @@ public class InvestmentAccountSavingsLinkagesData {
     public BigDecimal getMaturityAmount() {
         return this.maturityAmount;
     }
-
     
-    
+    public void setIndividualInvestmentAmount(BigDecimal individualInvestmentAmount) {
+        this.individualInvestmentAmount = individualInvestmentAmount;
+    }
+   
 }
