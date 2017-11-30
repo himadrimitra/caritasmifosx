@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,15 +27,21 @@ import javax.persistence.UniqueConstraint;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerator;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.springframework.data.jpa.domain.AbstractPersistable;
+
+import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
+import com.google.gson.JsonArray;
 
 @Entity
 @Table(name = "f_investment_account", uniqueConstraints = { @UniqueConstraint(columnNames = { "account_no" }, name = "ia_account_no_UNIQUE"),
@@ -432,6 +439,10 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
         this.submittedBy = submittedBy;
     }
     
+    public boolean isTrackSourceAccounts(){
+        return this.trackSourceAccounts;
+    }
+    
     public Map<String, Object> deriveAccountingBridgeData(final CurrencyData currencyData, final Set<Long> existingTransactionIds,
             final Set<Long> existingReversedTransactionIds) {
 
@@ -500,5 +511,185 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     public void setExternalId(String externalId) {
         this.externalId = externalId;
     }
+    
+    public void updateOffice(Office office ){
+        this.office = office;
+    }
+    
+    public void updatePrtner(final CodeValue partner){
+        this.partner = partner;
+    }
+    
+    public void updateInvestmentProduct(final InvestmentProduct investmentProduct){
+        this.investmentProduct = investmentProduct;
+    }
+    
+    public void updateStaff(final Staff staff){
+        this.staff = staff;
+    }
+    
+    public void updateInvestmentAccountSavingsLinkages(final Set<InvestmentAccountSavingsLinkages> investmentAccountSavingsLinkages) {
+        this.investmentAccountSavingsLinkages.clear();
+        this.investmentAccountSavingsLinkages.addAll(investmentAccountSavingsLinkages);
+    }
+    
+    public void updateInvestmentAccountCharges(final Set<InvestmentAccountCharge> investmentAccountCharges) {
+        this.investmentAccountCharges.clear();
+        this.investmentAccountCharges.addAll(investmentAccountCharges);
+    }
+
+    public void modifyApplication(final JsonCommand command, final Map<String, Object> actualChanges) {
+        if (command.isChangeInLongParameterNamed(InvestmentAccountApiConstants.officeIdParamName, this.getOfficeId())) {
+            final Long newValue = command.longValueOfParameterNamed(InvestmentAccountApiConstants.officeIdParamName);
+            actualChanges.put(InvestmentAccountApiConstants.officeIdParamName, newValue);
+        }
+
+        if (command.isChangeInLongParameterNamed(InvestmentAccountApiConstants.partnerIdParamName, this.partner.getId())) {
+            final Long newValue = command.longValueOfParameterNamed(InvestmentAccountApiConstants.partnerIdParamName);
+            actualChanges.put(InvestmentAccountApiConstants.partnerIdParamName, newValue);
+        }
+
+        if (command.isChangeInLongParameterNamed(InvestmentAccountApiConstants.investmetProductIdParamName,
+                this.getInvestmentProduct().getId())) {
+            final Long newValue = command.longValueOfParameterNamed(InvestmentAccountApiConstants.investmetProductIdParamName);
+            actualChanges.put(InvestmentAccountApiConstants.investmetProductIdParamName, newValue);
+        }
+
+        if (command.isChangeInIntegerParameterNamed(InvestmentAccountApiConstants.statusParamName, this.status)) {
+            final Integer newValue = command.integerValueOfParameterNamed(InvestmentAccountApiConstants.statusParamName);
+            this.status = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.statusParamName, newValue);
+        }
+
+        if (command.isChangeInStringParameterNamed(InvestmentAccountApiConstants.externalIdParamName, this.externalId)) {
+            final String newValue = command.stringValueOfParameterNamed(InvestmentAccountApiConstants.externalIdParamName);
+            this.externalId = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.externalIdParamName, newValue);
+        }
+
+        String currencyCode = this.currency.getCode();
+        if (command.isChangeInStringParameterNamed(InvestmentAccountApiConstants.currencyCodeParamName, currencyCode)) {
+            currencyCode = command.stringValueOfParameterNamed(InvestmentAccountApiConstants.currencyCodeParamName);
+            actualChanges.put(InvestmentAccountApiConstants.currencyCodeParamName, currencyCode);
+        }
+
+        Integer digitsAfterDecimal = this.currency.getDigitsAfterDecimal();
+        if (command.isChangeInIntegerParameterNamed(InvestmentAccountApiConstants.digitsAfterDecimalParamName, digitsAfterDecimal)) {
+            digitsAfterDecimal = command.integerValueOfParameterNamed(InvestmentAccountApiConstants.digitsAfterDecimalParamName);
+            actualChanges.put(InvestmentAccountApiConstants.digitsAfterDecimalParamName, digitsAfterDecimal);
+        }
+
+        Integer inMultiplesOf = this.currency.getCurrencyInMultiplesOf();
+        if (command.isChangeInIntegerParameterNamed(InvestmentAccountApiConstants.inMultiplesOfParamName, inMultiplesOf)) {
+            inMultiplesOf = command.integerValueOfParameterNamed(InvestmentAccountApiConstants.inMultiplesOfParamName);
+            actualChanges.put(InvestmentAccountApiConstants.inMultiplesOfParamName, inMultiplesOf);
+        }
+
+        this.currency = new MonetaryCurrency(currencyCode, digitsAfterDecimal, inMultiplesOf);
+
+        if (command.isChangeInDateParameterNamed(InvestmentAccountApiConstants.submittedOnDateParamName, this.submittedOnDate)) {
+            Date newValue = command.DateValueOfParameterNamed(InvestmentAccountApiConstants.submittedOnDateParamName);
+            this.submittedOnDate = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.submittedOnDateParamName, newValue);
+        }
+
+        if (command.isChangeInDateParameterNamed(InvestmentAccountApiConstants.approvedOnDateParamName, this.approvedOnDate)) {
+            Date newValue = command.DateValueOfParameterNamed(InvestmentAccountApiConstants.approvedOnDateParamName);
+            this.approvedOnDate = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.approvedOnDateParamName, newValue);
+        }
+
+        if (command.isChangeInDateParameterNamed(InvestmentAccountApiConstants.activatedOnDateParamName, this.activatedOnDate)) {
+            Date newValue = command.DateValueOfParameterNamed(InvestmentAccountApiConstants.activatedOnDateParamName);
+            this.activatedOnDate = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.activatedOnDateParamName, newValue);
+        }
+
+        if (command.isChangeInDateParameterNamed(InvestmentAccountApiConstants.investmentOnDateParamName, this.investmentOnDate)) {
+            Date newValue = command.DateValueOfParameterNamed(InvestmentAccountApiConstants.investmentOnDateParamName);
+            this.investmentOnDate = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.investmentOnDateParamName, newValue);
+        }
+
+        if (command.isChangeInBigDecimalParameterNamed(InvestmentAccountApiConstants.investmentAmountParamName, this.investmentAmount)) {
+            BigDecimal newValue = command.bigDecimalValueOfParameterNamed(InvestmentAccountApiConstants.investmentAmountParamName);
+            this.investmentAmount = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.investmentAmountParamName, newValue);
+        }
+
+        if (command.isChangeInBigDecimalParameterNamed(InvestmentAccountApiConstants.interestRateParamName, this.interestRate)) {
+            BigDecimal newValue = command.bigDecimalValueOfParameterNamed(InvestmentAccountApiConstants.interestRateParamName);
+            this.interestRate = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.interestRateParamName, newValue);
+        }
+
+        if (command.isChangeInIntegerParameterNamed(InvestmentAccountApiConstants.interestRateTypeParamName, this.interestRateType)) {
+            final Integer newValue = command.integerValueOfParameterNamed(InvestmentAccountApiConstants.interestRateTypeParamName);
+            this.interestRateType = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.interestRateTypeParamName, newValue);
+        }
+
+        if (command.isChangeInIntegerParameterNamed(InvestmentAccountApiConstants.investmentTermParamName, this.investmentTerm)) {
+            final Integer newValue = command.integerValueOfParameterNamed(InvestmentAccountApiConstants.investmentTermParamName);
+            this.investmentTerm = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.investmentTermParamName, newValue);
+        }
+
+        if (command.isChangeInIntegerParameterNamed(InvestmentAccountApiConstants.investmentTermTypeParamName, this.investmentTermType)) {
+            final Integer newValue = command.integerValueOfParameterNamed(InvestmentAccountApiConstants.investmentTermTypeParamName);
+            this.investmentTerm = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.investmentTermTypeParamName, newValue);
+        }
+
+        if (command.isChangeInDateParameterNamed(InvestmentAccountApiConstants.maturityOnDateParamName, this.maturityOnDate)) {
+            Date newValue = command.DateValueOfParameterNamed(InvestmentAccountApiConstants.maturityOnDateParamName);
+            this.maturityOnDate = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.maturityOnDateParamName, newValue);
+        }
+
+        if (command.isChangeInBigDecimalParameterNamed(InvestmentAccountApiConstants.maturityAmountParamName, this.maturityAmount)) {
+            BigDecimal newValue = command.bigDecimalValueOfParameterNamed(InvestmentAccountApiConstants.maturityAmountParamName);
+            this.maturityAmount = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.maturityAmountParamName, newValue);
+        }
+
+        if (command.isChangeInBooleanParameterNamed(InvestmentAccountApiConstants.reinvestAfterMaturityParamName,
+                this.reinvestAfterMaturity)) {
+            boolean newValue = command.booleanPrimitiveValueOfParameterNamed(InvestmentAccountApiConstants.reinvestAfterMaturityParamName);
+            this.reinvestAfterMaturity = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.reinvestAfterMaturityParamName, newValue);
+        }
+
+        if (command.isChangeInBooleanParameterNamed(InvestmentAccountApiConstants.trackSourceAccountsParamName, this.trackSourceAccounts)) {
+            boolean newValue = command.booleanPrimitiveValueOfParameterNamed(InvestmentAccountApiConstants.trackSourceAccountsParamName);
+            this.trackSourceAccounts = newValue;
+            actualChanges.put(InvestmentAccountApiConstants.trackSourceAccountsParamName, newValue);
+        }
+
+        if (command.isChangeInLongParameterNamed(InvestmentAccountApiConstants.staffIdParamName, this.staff.getId())) {
+            final Long newValue = command.longValueOfParameterNamed(InvestmentAccountApiConstants.staffIdParamName);
+            actualChanges.put(InvestmentAccountApiConstants.staffIdParamName, newValue);
+        }
+
+        if (command.hasParameter(InvestmentAccountApiConstants.chargesParamName)) {
+            final JsonArray jsonArray = command.arrayOfParameterNamed(InvestmentAccountApiConstants.chargesParamName);
+            if (jsonArray != null) {
+                actualChanges.put(InvestmentAccountApiConstants.chargesParamName,
+                        command.jsonFragment(InvestmentAccountApiConstants.chargesParamName));
+            }
+        }
+
+        if (this.trackSourceAccounts) {
+            final JsonArray actions = command.arrayOfParameterNamed(InvestmentAccountApiConstants.savingsAccountsParamName);
+            if (actions != null) {
+                actualChanges.put(InvestmentAccountApiConstants.savingsAccountsParamName,
+                        command.jsonFragment(InvestmentAccountApiConstants.savingsAccountsParamName));
+            }
+        } else {
+            this.investmentAccountSavingsLinkages = new HashSet<>();
+
+        }
+
+    } 
     
 }

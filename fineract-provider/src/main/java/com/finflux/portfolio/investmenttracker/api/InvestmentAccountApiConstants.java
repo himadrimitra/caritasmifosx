@@ -47,6 +47,7 @@ public class InvestmentAccountApiConstants {
     // general
     public static final String localeParamName = "locale";
     public static final String dateFormatParamName = "dateFormat";
+    public static final String isDeletedParamName = "isDeleted";
     
     public static final String holdAmountMessage = "Hold amount for new investment with id";
     public static final String releaseAmountMessage = "Release amount for new investment with id";
@@ -56,6 +57,14 @@ public class InvestmentAccountApiConstants {
     
     
     public static Set<String> INVESTMENT_ACCOUNT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdParamName,
+            partnerIdParamName, officeIdParamName, investmetProductIdParamName, statusParamName, currencyCodeParamName,
+            digitsAfterDecimalParamName,inMultiplesOfParamName,submittedOnDateParamName,approvedOnDateParamName,
+            investmentOnDateParamName,investmentAmountParamName,interestRateParamName,interestRateTypeParamName,
+            investmentTermParamName,investmentTermTypeParamName,maturityOnDateParamName,maturityAmountParamName,
+            reinvestAfterMaturityParamName,savingsAccountsParamName,chargesParamName,localeParamName,dateFormatParamName,
+            trackSourceAccountsParamName, staffIdParamName));
+    
+    public static Set<String> INVESTMENT_ACCOUNT_UPADTE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdParamName,
             partnerIdParamName, officeIdParamName, investmetProductIdParamName, statusParamName, currencyCodeParamName,
             digitsAfterDecimalParamName,inMultiplesOfParamName,submittedOnDateParamName,approvedOnDateParamName,
             investmentOnDateParamName,investmentAmountParamName,interestRateParamName,interestRateTypeParamName,

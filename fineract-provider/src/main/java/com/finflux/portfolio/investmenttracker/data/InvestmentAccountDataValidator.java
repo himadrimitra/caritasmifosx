@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
@@ -13,6 +14,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanceException;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Component;
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountStateTransitionException;
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountSavingsLinkages;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -250,4 +253,215 @@ public class InvestmentAccountDataValidator {
             throw new InsufficientAccountBalanceException(savingAccount.getAccountNumber(),savingAccount.getAccountNumber());
         }
     }
+    
+    
+    public void validateForUpdate(final String json) {
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors);
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
+                InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_UPADTE_DATA_PARAMETERS);
+
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.officeIdParamName, element)) {
+            final Long officeId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.officeIdParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.officeIdParamName).value(officeId).notNull()
+                    .longGreaterThanZero();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.partnerIdParamName, element)) {
+            final Long partnerId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.partnerIdParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.partnerIdParamName).value(partnerId).notNull()
+                    .longGreaterThanZero();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.investmetProductIdParamName, element)) {
+            final Long investmetProductId = this.fromApiJsonHelper
+                    .extractLongNamed(InvestmentAccountApiConstants.investmetProductIdParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmetProductIdParamName).value(investmetProductId)
+                    .notNull().longGreaterThanZero();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.investmetProductIdParamName, element)) {
+            final Integer status = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(InvestmentAccountApiConstants.statusParamName,
+                    element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.statusParamName).value(status).notNull()
+                    .integerSameAsNumber(InvestmentAccountStatus.PENDING_APPROVAL.getValue());
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.externalIdParamName, element)) {
+            final String externalId = this.fromApiJsonHelper.extractStringNamed(InvestmentAccountApiConstants.externalIdParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.externalIdParamName).value(externalId).ignoreIfNull()
+                    .notExceedingLengthOf(100);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.currencyCodeParamName, element)) {
+            final String currencyCode = this.fromApiJsonHelper.extractStringNamed(InvestmentAccountApiConstants.currencyCodeParamName,
+                    element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.currencyCodeParamName).value(currencyCode).notBlank();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.digitsAfterDecimalParamName, element)) {
+            final Integer digitsAfterDecimal = this.fromApiJsonHelper
+                    .extractIntegerSansLocaleNamed(InvestmentAccountApiConstants.digitsAfterDecimalParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.digitsAfterDecimalParamName).value(digitsAfterDecimal)
+                    .notNull().inMinMaxRange(0, 6);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.inMultiplesOfParamName, element)) {
+            final Integer inMultiplesOf = this.fromApiJsonHelper.extractIntegerNamed(InvestmentAccountApiConstants.inMultiplesOfParamName,
+                    element, Locale.getDefault());
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.inMultiplesOfParamName).value(inMultiplesOf).ignoreIfNull()
+                    .integerZeroOrGreater();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.submittedOnDateParamName, element)) {
+            final LocalDate submittedOnDate = this.fromApiJsonHelper
+                    .extractLocalDateNamed(InvestmentAccountApiConstants.submittedOnDateParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.submittedOnDateParamName).value(submittedOnDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.approvedOnDateParamName, element)) {
+            final LocalDate approvedOnDate = this.fromApiJsonHelper
+                    .extractLocalDateNamed(InvestmentAccountApiConstants.approvedOnDateParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.approvedOnDateParamName).value(approvedOnDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.activatedOnDateParamName, element)) {
+            final LocalDate activatedOnDate = this.fromApiJsonHelper
+                    .extractLocalDateNamed(InvestmentAccountApiConstants.activatedOnDateParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.activatedOnDateParamName).value(activatedOnDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.investmentOnDateParamName, element)) {
+            final LocalDate investmentOnDate = this.fromApiJsonHelper
+                    .extractLocalDateNamed(InvestmentAccountApiConstants.investmentOnDateParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentOnDateParamName).value(investmentOnDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.investmentAmountParamName, element)) {
+            BigDecimal investmentAmount = this.fromApiJsonHelper
+                    .extractBigDecimalWithLocaleNamed(InvestmentAccountApiConstants.investmentAmountParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentAmountParamName).value(investmentAmount).notNull()
+                    .positiveAmount();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.interestRateParamName, element)) {
+            final BigDecimal interestRate = this.fromApiJsonHelper
+                    .extractBigDecimalWithLocaleNamed(InvestmentAccountApiConstants.interestRateParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.interestRateParamName).value(interestRate).positiveAmount();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.interestRateTypeParamName, element)) {
+            Integer interestRateType = this.fromApiJsonHelper
+                    .extractIntegerWithLocaleNamed(InvestmentAccountApiConstants.interestRateTypeParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.interestRateTypeParamName).value(interestRateType).notNull()
+                    .inMinMaxRange(2, 3);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.investmentTermParamName, element)) {
+            Integer investmentTerm = this.fromApiJsonHelper
+                    .extractIntegerWithLocaleNamed(InvestmentAccountApiConstants.investmentTermParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentTermParamName).value(investmentTerm).notNull()
+                    .integerGreaterThanZero();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.investmentTermTypeParamName, element)) {
+            Integer investmentTermType = this.fromApiJsonHelper
+                    .extractIntegerWithLocaleNamed(InvestmentAccountApiConstants.investmentTermTypeParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentTermTypeParamName).value(investmentTermType)
+                    .notNull().inMinMaxRange(0, 2);
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.maturityOnDateParamName, element)) {
+            final LocalDate maturityOnDate = this.fromApiJsonHelper
+                    .extractLocalDateNamed(InvestmentAccountApiConstants.maturityOnDateParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.maturityOnDateParamName).value(maturityOnDate).notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.maturityAmountParamName, element)) {
+            final BigDecimal maturityAmount = this.fromApiJsonHelper
+                    .extractBigDecimalWithLocaleNamed(InvestmentAccountApiConstants.maturityAmountParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.maturityAmountParamName).value(maturityAmount).notNull()
+                    .positiveAmount();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.reinvestAfterMaturityParamName, element)) {
+            boolean reinvestAfterMaturity = this.fromApiJsonHelper
+                    .extractBooleanNamed(InvestmentAccountApiConstants.reinvestAfterMaturityParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.reinvestAfterMaturityParamName).value(reinvestAfterMaturity)
+                    .notNull();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.staffIdParamName, element)) {
+            final Long staffId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.staffIdParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.staffIdParamName).value(staffId).ignoreIfNull()
+                    .longGreaterThanZero();
+        }
+
+        boolean trackSourceAccounts = false;
+        if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.trackSourceAccountsParamName, element)) {
+            trackSourceAccounts = this.fromApiJsonHelper.extractBooleanNamed(InvestmentAccountApiConstants.trackSourceAccountsParamName,
+                    element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.trackSourceAccountsParamName).value(trackSourceAccounts)
+                    .notNull();
+        }
+
+        Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.localeParamName).value(locale).notNull();
+
+        if (trackSourceAccounts) {
+            final JsonArray savingsAccountActions = this.fromApiJsonHelper
+                    .extractJsonArrayNamed(InvestmentAccountApiConstants.savingsAccountsParamName, element);
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountsParamName).value(savingsAccountActions)
+                    .jsonArrayNotEmpty();
+
+            // investment account and savings account linkages validation
+            for (JsonElement savingsAccountElement : savingsAccountActions) {
+                if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.idParamName, element)) {
+                    final Long id = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.idParamName,
+                            savingsAccountElement);
+                    baseDataValidator.reset().parameter(InvestmentAccountApiConstants.idParamName).value(id).notNull()
+                            .longGreaterThanZero();
+                }
+
+                if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.savingsAccountIdParamName, element)) {
+                    final Long savingsAccountId = this.fromApiJsonHelper
+                            .extractLongNamed(InvestmentAccountApiConstants.savingsAccountIdParamName, savingsAccountElement);
+                    baseDataValidator.reset().parameter(InvestmentAccountApiConstants.savingsAccountIdParamName).value(savingsAccountId)
+                            .notNull().longGreaterThanZero();
+                }
+
+                if (this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.individualInvestmentAmountParamName, element)) {
+                    final BigDecimal individualInvestmentAmount = this.fromApiJsonHelper.extractBigDecimalNamed(
+                            InvestmentAccountApiConstants.individualInvestmentAmountParamName, savingsAccountElement, locale);
+                    baseDataValidator.reset().parameter(InvestmentAccountApiConstants.individualInvestmentAmountParamName)
+                            .value(individualInvestmentAmount).notNull().positiveAmount();
+                }
+
+            }
+        }
+        
+        validateCharges(baseDataValidator, element);
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+    
+    public void validateForSavingsAccountlinkages(final Set<InvestmentAccountSavingsLinkages> savingsAccountlinkages,
+            final BigDecimal investmentAmount) {
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors);
+        BigDecimal sumOfInvestmentAmount = BigDecimal.ZERO;
+        for (InvestmentAccountSavingsLinkages accountLink : savingsAccountlinkages) {
+            sumOfInvestmentAmount = sumOfInvestmentAmount.add(accountLink.getInvestmentAmount());
+        }
+        if (!MathUtility.isEqual(sumOfInvestmentAmount, investmentAmount)) {
+            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentAmountParamName).failWithCode(
+                    "parameter.should.be.equal.to.sum.of.savingsaccount.investmentamount",
+                    "Investment Amount Parameter should be equal to sum of savings account Investment Amount");
+        }
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+    
 }

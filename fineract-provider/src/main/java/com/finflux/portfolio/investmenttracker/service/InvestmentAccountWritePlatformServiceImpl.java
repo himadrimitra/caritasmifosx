@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,6 +87,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     private final ChargeRepositoryWrapper chargeRepositoryWrapper;
     private final SavingsAccountChargeRepositoryWrapper savingsAccountChargeRepositoryWrapper;
     
+   
     
     @Autowired
     public InvestmentAccountWritePlatformServiceImpl(InvestmentAccountDataValidator fromApiJsonDataValidator,
@@ -139,6 +141,23 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             return new CommandProcessingResultBuilder() //
                     .withEntityId(investmentAccount.getId()) //
                     .build();
+        } catch (final DataIntegrityViolationException e) {
+            handleDataIntegrityIssues(command, e);
+            return CommandProcessingResult.empty();
+        }
+    }
+    
+    @Override
+    public CommandProcessingResult modifyInvestmentAccount(final Long investmentAccountId, final JsonCommand command) {
+        try {
+            this.fromApiJsonDataValidator.validateForUpdate(command.json());
+            AppUser appUser = this.context.authenticatedUser();
+            InvestmentAccount accountForUpdate = investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
+            final Map<String, Object> changes = new LinkedHashMap<>(20);
+            accountForUpdate.modifyApplication(command, changes);
+            this.investmentAccountDataAssembler.updateAssemble(command, accountForUpdate, changes);
+            this.investmentAccountRepository.save(accountForUpdate);
+            return new CommandProcessingResultBuilder().withEntityId(investmentAccountId).build();
         } catch (final DataIntegrityViolationException e) {
             handleDataIntegrityIssues(command, e);
             return CommandProcessingResult.empty();
