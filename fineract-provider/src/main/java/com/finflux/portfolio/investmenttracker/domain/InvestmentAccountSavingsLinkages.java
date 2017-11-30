@@ -138,7 +138,7 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
     }
 
     
-    public void setInvestmentAmount(BigDecimal investmentAmount) {
+    public void updateInvestmentAmount(BigDecimal investmentAmount) {
         this.investmentAmount = investmentAmount;
     }
 

@@ -203,6 +203,24 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
     }
     
     @Override
+    public List<Long> retrieveInvestmentAccountSavingLinkagesIds(Long investmentAccountId) {
+        try {
+            StringBuilder sqlBuilder = new StringBuilder();
+            sqlBuilder.append(" SELECT ias.id ");
+            sqlBuilder.append(" from m_savings_account sa");
+            sqlBuilder.append(" join f_investment_account_savings_linkages ias on ias.savings_account_id = sa.id");
+            sqlBuilder.append(" join f_investment_account ia on ia.id = ias.investment_account_id");
+            sqlBuilder.append(" WHERE ia.id = ");
+            sqlBuilder.append(investmentAccountId);
+            sqlBuilder.append(" order by sa.id");
+            List<Long> linkagesDataIds = this.jdbcTemplate.queryForList(sqlBuilder.toString(), Long.class);
+            return linkagesDataIds;
+        } catch (final EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        }
+    }
+    
+    @Override
     public InvestmentAccountSavingsLinkagesData retrieveInvestmentSavingsLinkageAccountData(final Long investmentAccountId, final Long savingsLinkageAccountId) {
         InvestmentAccountSavingsLinkagesMapper linkageMapper = new InvestmentAccountSavingsLinkagesMapper();
         

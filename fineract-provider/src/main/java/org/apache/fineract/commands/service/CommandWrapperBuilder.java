@@ -4457,5 +4457,12 @@ public class CommandWrapperBuilder {
         this.href = "/investmentaccounts/" + ivestmentAccountId + "?command=close";
         return this;
     }
+    public CommandWrapperBuilder modifyInvestmentAccountApproval(final Long ivestmentAccountId) {
+        this.actionName = "UPDATE";
+        this.entityName = "INVESTMENT_ACCOUNT";
+        this.entityId = ivestmentAccountId;
+        this.href = "/investmentaccounts/" + ivestmentAccountId;
+        return this;
+    }
 
 }

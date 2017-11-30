@@ -8,6 +8,8 @@ public interface InvestmentAccountWritePlatformService {
 
     CommandProcessingResult createInvestmentAccount(final JsonCommand command);
     
+    CommandProcessingResult modifyInvestmentAccount(final Long accountId, final JsonCommand command);
+    
     CommandProcessingResult approveInvestmentAccount(final Long investmentAccountId, final JsonCommand command);
     
     CommandProcessingResult activateInvestmentAccount(final Long investmentAccountId, final JsonCommand command);
