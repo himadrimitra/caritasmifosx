@@ -36,6 +36,10 @@ public class InvestmentEnumerations {
                 optionData = new InvestmentTransactionEnumData(InvestmentTransactionType.PAY_CHARGE.getValue().longValue(),
                         InvestmentTransactionType.PAY_CHARGE.getCode(), "Pay Charge");
             break;
+            case ACCRUAL_INTEREST:
+                optionData = new InvestmentTransactionEnumData(InvestmentTransactionType.ACCRUAL_INTEREST.getValue().longValue(),
+                        InvestmentTransactionType.ACCRUAL_INTEREST.getCode(), "Accrual Interest");
+            break;
         }
         return optionData;
     }
