@@ -120,4 +120,12 @@ public class InvestmentAccountCharge extends AbstractPersistable<Long>{
         return this.charge.isExternalInvestmentCharge();
     }
     
+    public boolean isAcivationCharge() {
+        return this.charge.isInvestmentActivationCharge();
+    }
+    
+    public boolean isMaturityCharge() {
+        return this.charge.isMaturityCharge();
+    }
+    
 }

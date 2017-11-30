@@ -36,7 +36,7 @@ public class InvestmentAccountSavingsCharge  extends AbstractPersistable<Long>{
         this.paidAmount = null;
     }
     
-    public static InvestmentAccountSavingsCharge craete(InvestmentAccountCharge investmentAccountCharge,
+    public static InvestmentAccountSavingsCharge create(InvestmentAccountCharge investmentAccountCharge,
             InvestmentAccountSavingsLinkages investmentAccountSavingsLinkages, BigDecimal amount){
         return new InvestmentAccountSavingsCharge(investmentAccountCharge, investmentAccountSavingsLinkages, amount);
     }

@@ -973,17 +973,24 @@ public class Charge extends AbstractPersistable<Long> {
         return this.chargeOverueDetail;
     }
 
-	public ChargeInvestmentDetails getChargeInvestmentDetails() {
-		return this.chargeInvestmentDetails;
-	}
+    public ChargeInvestmentDetails getChargeInvestmentDetails() {
+        return this.chargeInvestmentDetails;
+    }
 
-	public void setChargeInvestmentDetails(
-			ChargeInvestmentDetails chargeInvestmentDetails) {
-		this.chargeInvestmentDetails = chargeInvestmentDetails;
-	}
-	
-	 public boolean isExternalInvestmentCharge() {
-	        return ChargeAppliesTo.fromInt(this.chargeAppliesTo).isExternalInvestmentCharge();
-	    }
+    public void setChargeInvestmentDetails(ChargeInvestmentDetails chargeInvestmentDetails) {
+        this.chargeInvestmentDetails = chargeInvestmentDetails;
+    }
 
+    public boolean isExternalInvestmentCharge() {
+        return ChargeAppliesTo.fromInt(this.chargeAppliesTo).isExternalInvestmentCharge();
+    }
+
+    public boolean isInvestmentActivationCharge() {
+        return ChargeTimeType.fromInt(this.chargeTimeType).equals(ChargeTimeType.INVESTMENT_ACTIVATION);
+    }
+    
+    public boolean isMaturityCharge() {
+        return ChargeTimeType.fromInt(this.chargeTimeType).equals(ChargeTimeType.MATURITY);
+    }
+ 
 }
