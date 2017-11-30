@@ -299,7 +299,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
 
     private void processTransactions(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
         processDeposit(appUser, investmentAccount, currentDate);
-        processInterest(appUser, investmentAccount, currentDate);
+        processAccrualInterest(appUser, investmentAccount, currentDate);
         processCharge(appUser, investmentAccount, currentDate);
        
     }
@@ -724,6 +724,11 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     }
     private void processWithDrawl(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
         InvestmentTransaction investmentTransaction = InvestmentTransaction.withDrawal(investmentAccount, investmentAccount.getOfficeId(), currentDate, investmentAccount.getMaturityAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
+        investmentAccount.getTransactions().add(investmentTransaction);        
+    }
+    
+    private void processAccrualInterest(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
+        InvestmentTransaction investmentTransaction = InvestmentTransaction.accrualInterest(investmentAccount, investmentAccount.getOfficeId(), currentDate, MathUtility.subtract(investmentAccount.getMaturityAmount(), investmentAccount.getInvestmentAmount()), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
         investmentAccount.getTransactions().add(investmentTransaction);        
     }
     

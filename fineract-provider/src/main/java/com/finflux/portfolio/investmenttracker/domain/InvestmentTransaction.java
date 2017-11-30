@@ -199,5 +199,13 @@ public class InvestmentTransaction extends AbstractPersistable<Long> {
         return new InvestmentTransaction(investmentAccount, officeId, type, dateOf, amount, runningBalance, reversed, createdDate,
                 appUserId);
     }
+    
+    public static InvestmentTransaction accrualInterest(final InvestmentAccount investmentAccount, final Long officeId, final Date dateOf,
+            final BigDecimal amount, final BigDecimal runningBalance, final Date createdDate, final Long appUserId) {
+        Integer type = InvestmentTransactionType.ACCRUAL_INTEREST.getValue();
+        boolean reversed = false;
+        return new InvestmentTransaction(investmentAccount, officeId, type, dateOf, amount, runningBalance, reversed, createdDate,
+                appUserId);
+    }
 
 }

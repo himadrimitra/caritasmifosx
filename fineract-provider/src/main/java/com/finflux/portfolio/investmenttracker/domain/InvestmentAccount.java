@@ -665,8 +665,12 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
             this.trackSourceAccounts = newValue;
             actualChanges.put(InvestmentAccountApiConstants.trackSourceAccountsParamName, newValue);
         }
-
-        if (command.isChangeInLongParameterNamed(InvestmentAccountApiConstants.staffIdParamName, this.staff.getId())) {
+        
+        Long staffId = null;
+        if (this.staff != null) {
+            staffId = this.staff.getId();
+        }
+        if (command.isChangeInLongParameterNamed(InvestmentAccountApiConstants.staffIdParamName, staffId)) {
             final Long newValue = command.longValueOfParameterNamed(InvestmentAccountApiConstants.staffIdParamName);
             actualChanges.put(InvestmentAccountApiConstants.staffIdParamName, newValue);
         }

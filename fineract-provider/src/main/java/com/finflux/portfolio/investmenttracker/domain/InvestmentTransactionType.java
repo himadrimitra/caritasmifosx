@@ -6,7 +6,8 @@ public enum InvestmentTransactionType {
     DEPOSIT(1, "investmentTransactionType.deposit"), //
     WITHDRAWAL(2, "investmentTransactionType.withdrawal"), //
     INTEREST_POSTING(3, "investmentTransactionType.interestPosting"), 
-    PAY_CHARGE(4, "investmentTransactionType.payCharge");
+    PAY_CHARGE(4, "investmentTransactionType.payCharge"),
+    ACCRUAL_INTEREST(5,"investmentTransactionType.accrualInterest");
 
     private final Integer value;
     private final String code;
@@ -41,6 +42,9 @@ public enum InvestmentTransactionType {
             break;
             case 4:
                 investmentTransactionType = InvestmentTransactionType.PAY_CHARGE;
+            break;
+            case 5:
+                investmentTransactionType = InvestmentTransactionType.ACCRUAL_INTEREST;
             break;
         }
         return investmentTransactionType;
