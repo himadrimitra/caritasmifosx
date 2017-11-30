@@ -316,21 +316,21 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             final BigDecimal maturityAmount = rs.getBigDecimal("maturity_amount");
             final boolean reinvestAfterMaturity = rs.getBoolean("reinvest_after_maturity");
             
-            final Long partnerId = rs.getLong("partner_id");
+            final Long partnerId = JdbcSupport.getLongDefaultToNullIfZero(rs, "partner_id");
             final String partnerName = rs.getString("partnerName");
             CodeValueData partner = null;
             if(partnerId != null){
                 partner = CodeValueData.instance(partnerId, partnerName);
             }
             
-            final Long officeId = rs.getLong("office_id");
+            final Long officeId =  JdbcSupport.getLongDefaultToNullIfZero(rs, "office_id");
             final String officeName = rs.getString("officeName");
             OfficeData officeData = null;
             if(officeId != null){
                 officeData = OfficeData.lookup(officeId, officeName);
             }
             
-            final Long investmentProductId = rs.getLong("investment_product_id");
+            final Long investmentProductId =  JdbcSupport.getLongDefaultToNullIfZero(rs, "investment_product_id");
             final String investmentProductName = rs.getString("investmentProductName");
             InvestmentProductData investmentProductData= null;
             if(investmentProductId != null){
@@ -339,7 +339,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             
             final boolean trackSourceAccounts = rs.getBoolean("track_source_accounts");
             
-            final Long staffId = rs.getLong("staff_id");
+            final Long staffId = JdbcSupport.getLongDefaultToNullIfZero(rs, "staff_id");
             final String staffName = rs.getString("display_name");
             StaffData staffData = null;
             if(staffId != null){
@@ -516,13 +516,18 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
     public InvestmentAccountData retrieveReinvestmentAccountTemplateData(Long investmentAccountId) {
         
         InvestmentAccountData investmentAccountData = retrieveInvestmentAccount(investmentAccountId);
+        
         InvestmentProductData investmentProductData = this.investmentProductReadService.retrieveOne(investmentAccountData.getInvestmentProductData().getId());
         investmentAccountData.setInvestmentProductData(investmentProductData);
+        
         Collection<InvestmentAccountSavingsLinkagesData> investmentAccSavingsLinkages = retrieveInvestmentSavingLinkagesAccountData(investmentAccountId, InvestmentAccountStatus.MATURED.getValue());
         investmentAccountData.setInvestmentSavingsLinkagesData(investmentAccSavingsLinkages);
 
         Collection<InvestmentAccountChargeData> charges = retrieveInvestmentAccountCharges(investmentAccountId);
         investmentAccountData.setInvestmentAccountCharges(charges);
+        
+        boolean isStaffInSelectedOffice = true;
+        investmentAccountData = retrieveInvestmentAccountTemplate(investmentAccountData, isStaffInSelectedOffice, investmentAccountData.getOfficeData().getId());
         
         investmentAccountData = investmentAccountReInvestCalculations(investmentAccountData);
 
@@ -536,14 +541,13 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         BigDecimal totalReinvestmentAmount = BigDecimal.ZERO;
         for (InvestmentAccountSavingsLinkagesData linkageData : investmentAccountData.getInvestmentSavingsLinkagesData()) {
 
-            BigDecimal savingsAccInvAmount = linkageData.getIndividualInvestmentAmount();
-            BigDecimal interestAmount = linkageData.getInterestAmount();
-            BigDecimal chargeAmount = linkageData.getChargeAmount();
-            savingsAccInvAmount = savingsAccInvAmount.add(linkageData.getInterestAmount());
-            totalReinvestmentAmount = totalReinvestmentAmount.add(linkageData.getIndividualInvestmentAmount());
-            //Savings Linkage account new investment amount calculation
+            BigDecimal savingsAccInvAmount = linkageData.getExpectedMaturityAmount();
+            BigDecimal interestAmount = linkageData.getExpectedInterestAmount();
+            BigDecimal chargeAmount = linkageData.getExpectedChargeAmount();
             BigDecimal newSavingsAccInvAmount = MathUtility.add(savingsAccInvAmount,interestAmount).subtract(chargeAmount);
             linkageData.setIndividualInvestmentAmount(newSavingsAccInvAmount);
+            totalReinvestmentAmount = totalReinvestmentAmount.add(newSavingsAccInvAmount);
+
         }
         investmentAccountData.setInvestmentAmount(totalReinvestmentAmount);
 

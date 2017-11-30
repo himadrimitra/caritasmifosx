@@ -615,13 +615,13 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         
         Integer reinvestStatus = InvestmentAccountStatus.REINVESTED.getValue();
         investmentAccount.setStatus(reinvestStatus);
-        investmentAccount.setExternalId(investmentAccount.getExternalId() + "-R");
+        investmentAccount.setExternalId(investmentAccount.getExternalId() + "_R_"+investmentAccount.getId());
         for(InvestmentAccountSavingsLinkages linkageData : investmentAccount.getInvestmentAccountSavingsLinkages()){
             if(investmentSavingsAccountLinkageIds.contains(linkageData.getId())){
                 linkageData.setStatus(reinvestStatus);
             }
         }
-        this.investmentAccountRepository.save(investmentAccount);
+        this.investmentAccountRepository.saveAndFlush(investmentAccount);
     }
 
     @Override
@@ -646,12 +646,21 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             if(savingsAccountLinkage.getStatus().compareTo(matureStatus) == 0 ){
                 SavingsAccount  savingAccount = savingsAccountLinkage.getSavingsAccount();
                 LocalDate date = DateUtils.getLocalDateOfTenant();
-                
+                final Set<Long> savingsAccExistingTransactionIds = new HashSet<>();
+                final Set<Long> savingsAccExistingReversedTransactionIds = new HashSet<>();
+                savingsAccExistingTransactionIds.addAll(savingAccount.findExistingTransactionIds());
+                savingsAccExistingReversedTransactionIds.addAll(savingAccount.findExistingReversedTransactionIds());
                 //release hold amount
                 final PaymentDetail paymentDetail =  null;
                 List<SavingsAccountTransaction> transactions = new ArrayList<>();
                 SavingsAccountTransaction releaseTransaction = SavingsAccountTransaction.releaseAmount(savingAccount, appUser.getOffice(), paymentDetail, date, Money.of(savingAccount.getCurrency(), savingsAccountLinkage.getInvestmentAmount()), date.toDate(), appUser);
                 transactions.add(releaseTransaction);
+                
+                //pay charge amount
+                if(MathUtility.isGreaterThanZero(savingsAccountLinkage.getExpectedChargeAmount())){
+                    processSavingsAccountCharge(savingsAccountLinkage, investmentAccount, savingAccount, savingsAccountLinkage.getActiveToDate(), transactions, date);
+                    
+                }
 
                 //Deposit Earnings
                 SavingsAccountTransaction depositTransaction = null;
@@ -672,9 +681,16 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
                     investmentTransactions.add(investmentDepositSavingsTransaction);
                 }           
                 this.investmentSavingsTransactionRepository.save(investmentTransactions);
+                postJournalEntries(savingAccount, savingsAccExistingTransactionIds, savingsAccExistingReversedTransactionIds);
+                savingsAccountLinkage.setStatus(InvestmentAccountStatus.CLOSED.getValue());
+                savingsAccountLinkage.setMaturityAmount(savingsAccountLinkage.getExpectedMaturityAmount());
+                savingsAccountLinkage.setInterestAmount(savingsAccountLinkage.getExpectedInterestAmount());
+                savingsAccountLinkage.setChargeAmount(savingsAccountLinkage.getExpectedChargeAmount());
             }
 
         }
+        investmentAccount.setStatus(InvestmentAccountStatus.CLOSED.getValue());
+        this.investmentAccountRepository.saveAndFlush(investmentAccount);
     }
     private void processWithDrawl(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
         InvestmentTransaction investmentTransaction = InvestmentTransaction.withDrawal(investmentAccount, investmentAccount.getOfficeId(), currentDate, investmentAccount.getMaturityAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
