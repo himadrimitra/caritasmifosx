@@ -229,7 +229,7 @@ public class InvestmentAccountApiResource {
              commandRequest = builder.activateInvestmentAccount(investmentAccountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         } else if (is(commandParam, "reject")) {
-            commandRequest = builder.activateInvestmentAccount(investmentAccountId).build();
+            commandRequest = builder.rejectInvestmentAccount(investmentAccountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         } else if (is(commandParam, "undoapproval")) {
             commandRequest = builder.undoInvestmentAccountApproval(investmentAccountId).build();
