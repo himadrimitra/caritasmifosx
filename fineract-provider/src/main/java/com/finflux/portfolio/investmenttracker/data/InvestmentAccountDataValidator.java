@@ -21,6 +21,7 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountAmountException;
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountStateTransitionException;
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
@@ -449,18 +450,13 @@ public class InvestmentAccountDataValidator {
     
     public void validateForSavingsAccountlinkages(final Set<InvestmentAccountSavingsLinkages> savingsAccountlinkages,
             final BigDecimal investmentAmount) {
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors);
         BigDecimal sumOfInvestmentAmount = BigDecimal.ZERO;
         for (InvestmentAccountSavingsLinkages accountLink : savingsAccountlinkages) {
             sumOfInvestmentAmount = sumOfInvestmentAmount.add(accountLink.getInvestmentAmount());
         }
         if (!MathUtility.isEqual(sumOfInvestmentAmount, investmentAmount)) {
-            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentAmountParamName).failWithCode(
-                    "parameter.should.be.equal.to.sum.of.savingsaccount.investmentamount",
-                    "Investment Amount Parameter should be equal to sum of savings account Investment Amount");
+            throw new InvestmentAccountAmountException();
         }
-        throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
     
 }

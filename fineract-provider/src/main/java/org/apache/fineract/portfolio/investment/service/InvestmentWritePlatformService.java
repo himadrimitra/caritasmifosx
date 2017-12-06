@@ -18,9 +18,6 @@
  */
 package org.apache.fineract.portfolio.investment.service;
 
-import java.sql.SQLException;
-import java.text.ParseException;
-
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 

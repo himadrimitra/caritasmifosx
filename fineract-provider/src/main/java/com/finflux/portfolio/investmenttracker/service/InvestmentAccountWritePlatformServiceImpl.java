@@ -422,7 +422,6 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         
         BigDecimal interestEarned = MathUtility.getShare(investmentAccountSavingsLinkage.getExpectedInterestAmount(),numberOfDaysForInterest,totalNumberOfDays, investmentAccount.getCurrency());
         investmentAccountSavingsLinkage.setInterestAmount(interestEarned);
-        investmentAccountSavingsLinkage.setActiveToDate(releaseDate.toDate());
         investmentAccountSavingsLinkage.setMaturityAmount(investmentAccountSavingsLinkage.getInvestmentAmount().add(interestEarned));
         investmentAccountSavingsLinkage.setStatus(InvestmentAccountStatus.CLOSED.getValue());
         processReleaseTransaction(investmentAccountSavingsLinkage, investmentAccount, releaseDate);
@@ -502,12 +501,17 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             Integer numberOfDays = getNumberOfDays(new LocalDate(investmentAccountSavingsLinkage.getActiveFromDate()),releaseDate);
             Charge externalCharge = externalCharges.get(0);
             for(InvestmentAccountSavingsCharge charge :charges){
-                BigDecimal paidAmount = MathUtility.getShare(charge.getAmount(), numberOfDays, totalNumberOfDays, investmentAccount.getCurrency());
-                paidTotalChargeBySavingsAccount = paidTotalChargeBySavingsAccount.add(paidAmount);
-                SavingsAccountCharge savingsAccountCharge =  new SavingsAccountCharge(savingAccount, externalCharge, paidAmount, date);
-                charge.setPaidAmount(paidAmount);
-                savingsAccountCharges.add(savingsAccountCharge);
+            	if(numberOfDays!=0){
+            		BigDecimal paidAmount = MathUtility.getShare(charge.getAmount(), numberOfDays, totalNumberOfDays, investmentAccount.getCurrency());
+                    paidTotalChargeBySavingsAccount = paidTotalChargeBySavingsAccount.add(paidAmount);
+                    SavingsAccountCharge savingsAccountCharge =  new SavingsAccountCharge(savingAccount, externalCharge, paidAmount, date);
+                    charge.setPaidAmount(paidAmount);
+                    savingsAccountCharges.add(savingsAccountCharge);  
+            	}
+            	              
             }
+
+            investmentAccountSavingsLinkage.setActiveToDate(releaseDate.toDate());
             investmentAccountSavingsLinkage.setChargeAmount(paidTotalChargeBySavingsAccount);
             this.savingsAccountChargeRepositoryWrapper.save(savingsAccountCharges);
         }
