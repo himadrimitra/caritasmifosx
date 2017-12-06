@@ -273,8 +273,9 @@ public  class InvestmentAccountDataAssembler {
                                 isActive, inactivationDate);
                     }
 
-                    chargesSet.add(investmentAccountCharge);
+                    
                 }
+                chargesSet.add(investmentAccountCharge);
 
             }
         }

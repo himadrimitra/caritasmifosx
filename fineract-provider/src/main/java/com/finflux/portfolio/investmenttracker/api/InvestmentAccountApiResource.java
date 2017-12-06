@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -23,7 +22,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
-import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
@@ -31,9 +29,6 @@ import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSeria
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
-import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
-import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,14 +50,16 @@ import com.finflux.portfolio.investmenttracker.service.InvestmentTransactionRead
 public class InvestmentAccountApiResource {
 
     private final PlatformSecurityContext context;
-    private final DefaultToApiJsonSerializer toApiJsonSerializer;
+    @SuppressWarnings("rawtypes")
+	private final DefaultToApiJsonSerializer toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final InvestmentAccountReadService investmentAccountReadService;
     private final InvestmentTransactionReadPlatformService investmentTransactionReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
 
-    @Autowired
+    @SuppressWarnings("rawtypes")
+	@Autowired
     public InvestmentAccountApiResource(PlatformSecurityContext context, DefaultToApiJsonSerializer toApiJsonSerializer,
             ApiRequestParameterHelper apiRequestParameterHelper,
             PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,

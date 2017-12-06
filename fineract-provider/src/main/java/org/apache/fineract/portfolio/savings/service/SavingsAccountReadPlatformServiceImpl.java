@@ -1515,8 +1515,10 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             final String groupName = rs.getString("groupName");
             final Long clientId = JdbcSupport.getLong(rs, "clientId");
             final String clientName = rs.getString("clientName");
-            
-            return SavingsAccountData.lookupWithClientAndGroupDetails(id, accountNo, externalId, depositType, clientId, clientName, groupId, groupName);
+            SavingsAccountData data = SavingsAccountData.lookupWithClientAndGroupDetails(id, accountNo, externalId, depositType, clientId, clientName, groupId, groupName);
+            String displayName = clientName==null?groupName:clientName;
+            data.setDisplayName(displayName);
+            return data;
         }
     }
 

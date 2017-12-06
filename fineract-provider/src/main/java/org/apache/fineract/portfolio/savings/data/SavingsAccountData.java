@@ -106,6 +106,7 @@ public class SavingsAccountData {
     private final BigDecimal minOverdraftForInterestCalculation;
     private final Collection<EnumOptionData> savingsDpLimitCalculationTypeOptions;
     private final SavingsAccountDpDetailsData savingsAccountDpDetailsData;
+    private  String displayName;
 
     public static SavingsAccountData instance(final Long id, final String accountNo, final EnumOptionData depositType,
             final String externalId, final Long groupId, final String groupName, final Long clientId, final String clientName,
@@ -668,4 +669,14 @@ public class SavingsAccountData {
     public SavingsAccountSummaryData getSummary() {
         return this.summary;
     }
+
+	public String getDisplayName() {
+		return this.displayName;
+	}
+
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+    
+    
 }
