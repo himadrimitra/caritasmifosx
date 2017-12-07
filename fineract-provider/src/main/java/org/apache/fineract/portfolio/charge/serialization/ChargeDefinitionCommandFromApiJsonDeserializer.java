@@ -278,6 +278,12 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             final Boolean notApplyToInvestmentAccount = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.doNotApplyToInvestmentAccountParamName, element);
             baseDataValidator.reset().parameter(ChargesApiConstants.doNotApplyToInvestmentAccountParamName).value(notApplyToInvestmentAccount).notNull();
             
+            if (this.fromApiJsonHelper.parameterExists("penalty", element)) {
+                final Boolean penalty = this.fromApiJsonHelper.extractBooleanNamed("penalty", element);
+                if(penalty){
+                	baseDataValidator.reset().parameter("penalty").value(penalty).failWithCode("not.applicable", "Penality is not applicable.");
+                }
+            }
         }
 
         final String name = this.fromApiJsonHelper.extractStringNamed("name", element);
