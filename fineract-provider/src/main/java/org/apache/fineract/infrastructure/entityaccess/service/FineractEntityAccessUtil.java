@@ -177,7 +177,7 @@ public class FineractEntityAccessUtil {
 
 	private boolean isProductOrChargeIdValid(Long productOrChargeId, Collection<FineractEntityToEntityMappingData> allowedMapping) {
 		for (FineractEntityToEntityMappingData mapping:allowedMapping) {
-			if(productOrChargeId == mapping.getToId()){
+			if(productOrChargeId.equals(mapping.getToId())){
 				return true;
 			}
 		}
