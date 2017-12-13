@@ -30,7 +30,8 @@ public enum NoteType {
     GROUP(600, "noteType.group", "groups"),
     SHARE_ACCOUNT(700, "noteType.shares", "accounts/share"),
     CGT(800, "noteType.cgt", "cgt"),
-    CGT_DAY(900, "noteType.cgt.day", "cgtDay");
+    CGT_DAY(900, "noteType.cgt.day", "cgtDay"),
+    INVESTMENT_ACCOUNT(901, "noteType.investment", "investment");
     
     private Integer value;
     private String code;

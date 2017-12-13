@@ -736,7 +736,7 @@ public class CommandWrapper {
         boolean isnoteResource = false;
         if (this.entityName.equalsIgnoreCase("CLIENTNOTE") || this.entityName.equalsIgnoreCase("LOANNOTE")
                 || this.entityName.equalsIgnoreCase("LOANTRANSACTIONNOTE") || this.entityName.equalsIgnoreCase("SAVINGNOTE")
-                || this.entityName.equalsIgnoreCase("GROUPNOTE")) {
+                || this.entityName.equalsIgnoreCase("GROUPNOTE") || this.entityName.equalsIgnoreCase("INVESTMENT_NOTE")) {
             isnoteResource = true;
         }
         return isnoteResource;

@@ -205,6 +205,10 @@ public class NotesApiResource {
                 resourceNameForPermissions = "GROUPNOTE";
                 resourceDetails.withGroupId(resourceId);
             break;
+            case INVESTMENT_ACCOUNT:
+                resourceNameForPermissions = "INVESTMENT_NOTE";
+                resourceDetails.withSubEntityId(resourceId);
+            break;
 
         }
 

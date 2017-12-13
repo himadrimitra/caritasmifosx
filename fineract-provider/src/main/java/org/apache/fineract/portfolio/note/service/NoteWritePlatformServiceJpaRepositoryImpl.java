@@ -45,6 +45,10 @@ import org.apache.fineract.portfolio.note.serialization.NoteCommandFromApiJsonDe
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepository;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositoryWrapper;
+
 @Service
 public class NoteWritePlatformServiceJpaRepositoryImpl implements NoteWritePlatformService {
 
@@ -55,17 +59,20 @@ public class NoteWritePlatformServiceJpaRepositoryImpl implements NoteWritePlatf
     private final LoanRepository loanRepository;
     private final LoanTransactionRepository loanTransactionRepository;
     private final NoteCommandFromApiJsonDeserializer fromApiJsonDeserializer;
+    private final InvestmentAccountRepositoryWrapper investmentAccountRepository;
 
     @Autowired
     public NoteWritePlatformServiceJpaRepositoryImpl(final NoteRepository noteRepository, final ClientRepositoryWrapper clientRepository,
             final GroupRepository groupRepository, final LoanRepository loanRepository,
-            final LoanTransactionRepository loanTransactionRepository, final NoteCommandFromApiJsonDeserializer fromApiJsonDeserializer) {
+            final LoanTransactionRepository loanTransactionRepository, final NoteCommandFromApiJsonDeserializer fromApiJsonDeserializer,
+            final InvestmentAccountRepositoryWrapper investmentAccountRepository) {
         this.noteRepository = noteRepository;
         this.clientRepository = clientRepository;
         this.groupRepository = groupRepository;
         this.loanRepository = loanRepository;
         this.loanTransactionRepository = loanTransactionRepository;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
+        this.investmentAccountRepository = investmentAccountRepository;
     }
 
     private CommandProcessingResult createClientNote(final JsonCommand command) {
@@ -83,6 +90,22 @@ public class NoteWritePlatformServiceJpaRepositoryImpl implements NoteWritePlatf
                 .withEntityId(newNote.getId()) //
                 .withClientId(client.getId()) //
                 .withOfficeId(client.officeId()) //
+                .build();
+
+    }
+    
+    private CommandProcessingResult createInvestmentNote(final JsonCommand command) {
+
+        final Long resourceId = command.subentityId();
+
+        final InvestmentAccount investmentAccount = this.investmentAccountRepository.findOneWithNotFoundDetection(resourceId);
+        final Note newNote = Note.investmentNoteFromJson(investmentAccount, command);
+
+        this.noteRepository.save(newNote);
+
+        return new CommandProcessingResultBuilder() //
+                .withCommandId(command.commandId()) //
+                .withEntityId(newNote.getId()) //
                 .build();
 
     }
@@ -197,9 +220,9 @@ public class NoteWritePlatformServiceJpaRepositoryImpl implements NoteWritePlatf
             case LOAN_TRANSACTION: {
                 return createLoanTransactionNote(command);
             }
-            // case SAVING_ACCOUNT: {
-            // return createSavingAccountNote(command);
-            // }
+            case INVESTMENT_ACCOUNT: {
+             return createInvestmentNote(command);
+             }
             default:
                 throw new NoteResourceNotSupportedException(resourceUrl);
         }
@@ -223,7 +246,10 @@ public class NoteWritePlatformServiceJpaRepositoryImpl implements NoteWritePlatf
         } else if (command.getSavingsId() != null) {
             //TODO: SAVING_TRANSACTION type need to be add.
             resourceUrl = NoteType.SAVING_ACCOUNT.getApiUrl();
-        } else {
+        } else if (command.subentityId() != null) {
+            //TODO: SAVING_TRANSACTION type need to be add.
+            resourceUrl = NoteType.INVESTMENT_ACCOUNT.getApiUrl();
+        }else {
             resourceUrl = "";
         }
 

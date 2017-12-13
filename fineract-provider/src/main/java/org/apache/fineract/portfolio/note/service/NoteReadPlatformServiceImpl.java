@@ -135,6 +135,9 @@ public class NoteReadPlatformServiceImpl implements NoteReadPlatformService {
             case CGT_DAY:
                 conditionSql = " n.cgt_day_id = ? ";
             break;
+            case INVESTMENT_ACCOUNT:
+                conditionSql = " n.investment_account_id = ? ";
+            break;
             default:
             break;
         }
