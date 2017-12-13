@@ -1539,4 +1539,19 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         }
 
     }
+
+    @Override
+    public List<SavingsAccountData> retrieveAllActiveSavingsAccountsByOffice(String officeHierarchy) {
+        try {
+            this.context.authenticatedUser();
+            SavingAccountOptionsMapper sapm = new SavingAccountOptionsMapper();
+            officeHierarchy = officeHierarchy + "%";
+            final StringBuilder sqlBuilder = new StringBuilder("select " + sapm.schema());
+            sqlBuilder.append(" where ( o.hierarchy like ? )and sa.status_enum = 300 ");
+            final Object[] queryParameters = new Object[] { officeHierarchy };
+            return this.jdbcTemplate.query(sqlBuilder.toString(), sapm, queryParameters);
+        } catch (final EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        }
+    }
 }
