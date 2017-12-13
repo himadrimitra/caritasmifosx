@@ -86,4 +86,6 @@ public interface SavingsAccountReadPlatformService {
     List<Long> retrieveAllActiveSavingsIdsForActiveClients();
     
     public List<SavingsAccountData> retrieveAllActiveSavingAccountByCurrentOffice();
+    
+    public List<SavingsAccountData> retrieveAllActiveSavingsAccountsByOffice(String officeHierarchy);
 }

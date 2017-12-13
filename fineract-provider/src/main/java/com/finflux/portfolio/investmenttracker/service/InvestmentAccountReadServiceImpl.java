@@ -104,17 +104,21 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             staffOptions = this.staffReadPlatformService.retrieveAllStaffInOfficeAndItsParentOfficeHierarchy(defaultOfficeId,
                     loanOfficersOnly);
         }
-        final List<SavingsAccountData> savingsAccount = this.savingsAccountReadPlatformService.retrieveAllActiveSavingAccountByCurrentOffice();
+        List<SavingsAccountData> savingsAccounts = null;
+        if(officeId != null){
+            OfficeData officeData = this.officeReadPlatformService.retrieveOffice(officeId);
+             savingsAccounts = this.savingsAccountReadPlatformService.retrieveAllActiveSavingsAccountsByOffice(officeData.getHierarchy());
+        }        
         
         Collection<EnumOptionData> investmentAccountStatus = InvestmentAccountStatus.investmentAccountStatusTypeOptions();
         
         if(investmentAccountData != null){
             return InvestmentAccountData.withTemplateData(investmentAccountData,partnerOptions, investmentProductOptions, investmentChargeOptions, officeDataOptions,
-                    interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccount, investmentAccountStatus);
+                    interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccounts, investmentAccountStatus);
         }
         
         return InvestmentAccountData.onlyTemplateData(partnerOptions, investmentProductOptions, investmentChargeOptions, officeDataOptions,
-                interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccount, investmentAccountStatus);
+                interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccounts, investmentAccountStatus);
        
     }
 
