@@ -239,7 +239,8 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
         DISTRICTS("districts"), //
         VILLAGES("villages"), //
         CENTERS("centers"), //
-        LOANAPPLICATION("loanapplication");
+        LOANAPPLICATION("loanapplication"), //
+        INVESTMENT("investment");
 
         private final String name;
 
@@ -296,6 +297,9 @@ public class DocumentWritePlatformServiceJpaRepositoryImpl implements DocumentWr
                     break;
                     case "loanapplication":
                         entityType = LOANAPPLICATION;
+                    break;
+                    case "investment":
+                        entityType = INVESTMENT;
                     break;
                 }
             }

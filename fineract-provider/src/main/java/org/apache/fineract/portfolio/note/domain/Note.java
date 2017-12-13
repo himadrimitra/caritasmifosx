@@ -41,6 +41,8 @@ import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.shareaccounts.domain.ShareAccount;
 import org.apache.fineract.useradministration.domain.AppUser;
 
+import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
+
 @Entity
 @Table(name = "m_note")
 public class Note extends AbstractAuditableCustom<AppUser, Long> {
@@ -60,6 +62,10 @@ public class Note extends AbstractAuditableCustom<AppUser, Long> {
     @ManyToOne
     @JoinColumn(name = "loan_transaction_id", nullable = true)
     private LoanTransaction loanTransaction;
+    
+    @ManyToOne
+    @JoinColumn(name = "investment_account_id", nullable = true)
+    private InvestmentAccount investmentAccount;
 
     @Column(name = "note", length = 1000)
     private String note;
@@ -92,6 +98,11 @@ public class Note extends AbstractAuditableCustom<AppUser, Long> {
         final String note = command.stringValueOfParameterNamed("note");
         return new Note(group, note);
     }
+    
+    public static Note investmentNoteFromJson(final InvestmentAccount investmentAccount, final JsonCommand command) {
+        final String note = command.stringValueOfParameterNamed("note");
+        return new Note(investmentAccount, note);
+    }
 
     public static Note loanNote(final Loan loan, final String note) {
         return new Note(loan, note);
@@ -121,6 +132,16 @@ public class Note extends AbstractAuditableCustom<AppUser, Long> {
         this.client = client;
         this.note = note;
         this.noteTypeId = NoteType.CLIENT.getValue();
+    }
+    
+    public Note(final InvestmentAccount investmentAccount, final String note) {
+        this.investmentAccount = investmentAccount;
+        this.note = note;
+        this.noteTypeId = NoteType.INVESTMENT_ACCOUNT.getValue();
+        this.client = null;
+        this.group = null;
+        this.loan = null;
+        this.loanTransaction = null;
     }
 
     private Note(final Group group, final String note) {
