@@ -866,7 +866,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         return listOfTransactionsSorted;
     }
 
-    protected void recalculateDailyBalances(final Money openingAccountBalance, final LocalDate interestPostingUpToDate, List<SavingsAccountTransaction> transactions) {
+    public void recalculateDailyBalances(final Money openingAccountBalance, final LocalDate interestPostingUpToDate, List<SavingsAccountTransaction> transactions) {
 
         Money runningBalance = openingAccountBalance.copy();
         List<SavingsAccountTransaction> accountTransactionsSorted = transactions ;
