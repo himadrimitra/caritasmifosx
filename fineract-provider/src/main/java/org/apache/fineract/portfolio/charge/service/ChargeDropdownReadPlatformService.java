@@ -62,4 +62,6 @@ public interface ChargeDropdownReadPlatformService {
     List<EnumOptionData> retrieveInvestmentChargeCalculationTypes();
 
     List<EnumOptionData> retrieveInvestmentChargeTimeTypes();
+    
+    List<EnumOptionData> retrieveInvestmentChargeAppliesTo();
 }

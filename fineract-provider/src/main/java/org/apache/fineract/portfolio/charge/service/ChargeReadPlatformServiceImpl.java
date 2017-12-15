@@ -37,13 +37,13 @@ import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAcc
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
-import org.apache.fineract.portfolio.charge.data.ChargeInvestmentData;
 import org.apache.fineract.portfolio.charge.data.ChargeOverdueData;
 import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargePercentagePeriodType;
 import org.apache.fineract.portfolio.charge.domain.ChargePercentageType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.domain.InvestmentChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.PenaltyGraceType;
 import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
@@ -208,6 +208,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         final Collection<EnumOptionData> penaltyGraceTypeOptions = this.chargeDropdownReadPlatformService.retrivePenaltyGraceTypes();
         final List<EnumOptionData> investmentChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService.retrieveInvestmentChargeCalculationTypes();
         final List<EnumOptionData> investmentChargeTimeTypeOptions = this.chargeDropdownReadPlatformService.retrieveInvestmentChargeTimeTypes();
+        final List<EnumOptionData> investmentChargeAppliesTo = this.chargeDropdownReadPlatformService.retrieveInvestmentChargeAppliesTo();
         
         return ChargeData.template(currencyOptions, allowedChargeCalculationTypeOptions, allowedChargeAppliesToOptions,
                 allowedChargeTimeOptions, chargePaymentOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
@@ -215,7 +216,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                 clientChargeTimeTypeOptions, feeFrequencyOptions, incomeOrLiabilityAccountOptions, taxGroupOptions,
                 shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, glimChargeCalculationTypeOptions, slabChargeTypeOptions,
                 percentageTypeOptions, percentagePeriodTypeOptions, penaltyGraceTypeOptions, investmentChargeCalculationTypeOptions, 
-                investmentChargeTimeTypeOptions);
+                investmentChargeTimeTypeOptions,investmentChargeAppliesTo);
     }
 
     @Override
@@ -352,18 +353,17 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
                     + "c.fee_interval as feeInterval, c.fee_frequency as feeFrequency,c.min_cap as minCap,c.max_cap as maxCap, "
                     + "c.income_or_liability_account_id as glAccountId , acc.name as glAccountName, acc.gl_code as glCode, "
-                    + "c.charge_percentage_type as percentageType, c.charge_percentage_period_type as percentagePeriodType,"
+                    + "c.charge_percentage_type as percentageType, c.charge_percentage_period_type as percentagePeriodType,c.investment_charge_applies_to as investmentChargeAppliesTo, "
                     + "cod.id as overdueDetailId,cod.grace_period as penaltyGracePeriod, cod.penalty_free_period as penaltyFreePeriod, "
                     + "cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, "
                     + "cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,"
                     + "cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue,cod.min_overdue_amount_required as minOverdueAmountRequired,"
-                    + "cod.stop_charge_on_npa as stopChargeOnNPA," + "tg.id as taxGroupId, tg.name as taxGroupName, " 
-                    + "cid.id as chargeInvestmentDetailsId, cid.apply_to_linked_savings_account , cid.not_apply_to_investment_account "
+                    + "cod.stop_charge_on_npa as stopChargeOnNPA," + "tg.id as taxGroupId, tg.name as taxGroupName " 
                     + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
                     + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id " + " LEFT JOIN f_charge_slab cs on cs.charge_id = c.id "
-                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id "  + " LEFT JOIN f_charge_investment_details cid on cid.charge_id = c.id ";
+                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id " ;
         }
 
         public String chargeSchema() {
@@ -376,19 +376,17 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
                     + "c.fee_interval as feeInterval, c.fee_frequency as feeFrequency,c.min_cap as minCap,c.max_cap as maxCap, "
                     + "c.income_or_liability_account_id as glAccountId , acc.name as glAccountName, acc.gl_code as glCode, "
-                    + "c.charge_percentage_type as percentageType, c.charge_percentage_period_type as percentagePeriodType,"
+                    + "c.charge_percentage_type as percentageType, c.charge_percentage_period_type as percentagePeriodType,c.investment_charge_applies_to as investmentChargeAppliesTo,"
                     + "cod.id as overdueDetailId,cod.grace_period as penaltyGracePeriod, cod.penalty_free_period as penaltyFreePeriod, "
                     + "cod.grace_type_enum as penaltyGraceType,cod.apply_charge_for_broken_period as applyPenaltyForBrokenPeriod, "
                     + "cod.is_based_on_original_schedule as penaltyBasedOnOriginalSchedule, cod.consider_only_posted_interest as penaltyOnPostedInterestOnly,"
                     + "cod.calculate_charge_on_current_overdue as penaltyOnCurrentOverdue, cod.min_overdue_amount_required as minOverdueAmountRequired, "
-                    + "cod.stop_charge_on_npa as stopChargeOnNPA," + "tg.id as taxGroupId, tg.name as taxGroupName, " 
-                    + "cid.id as chargeInvestmentDetailsId, cid.apply_to_linked_savings_account , cid.not_apply_to_investment_account "
+                    + "cod.stop_charge_on_npa as stopChargeOnNPA," + "tg.id as taxGroupId, tg.name as taxGroupName " 
                     + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
                     + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id "
-                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id "
-                    + " LEFT JOIN f_charge_investment_details cid on cid.charge_id = c.id ";
+                    + " LEFT JOIN f_charge_overdue_detail cod on cod.charge_id = c.id ";
         }
 
         public String loanProductChargeSchema() {
@@ -486,18 +484,15 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             if (chargeTimeTypeEnum.isOverdueInstallment()) {
                 chargeOverdueData = this.chargeOverdueDetailMapper.mapRow(rs, rowNum);
             }
-            ChargeInvestmentData chargeInvestmentData = null;
-            if((ChargeAppliesTo.EXTERNALINVESTMENT.getValue()).intValue() == chargeAppliesTo){
-            	if(JdbcSupport.getLong(rs, "chargeInvestmentDetailsId") != null){
-            		chargeInvestmentData = new ChargeInvestmentData(JdbcSupport.getLong(rs, "chargeInvestmentDetailsId"),
-            				rs.getBoolean("apply_to_linked_savings_account"),rs.getBoolean("not_apply_to_investment_account"));
-            	}    	
-            }
+            final int investmentChargeAppliesToInteger = rs.getInt("investmentChargeAppliesTo");
+            final InvestmentChargeAppliesTo investmentChargeAppliesToType = InvestmentChargeAppliesTo.fromInt(investmentChargeAppliesToInteger);
+            final EnumOptionData investmentChargeAppliesTo = ChargeEnumerations.investmentChargeAppliesTo(investmentChargeAppliesToType);
+
 
             return ChargeData.instance(id, name, amount, currency, chargeTimeType, chargeAppliesToType, chargeCalculationType,
                     chargePaymentMode, feeOnMonthDay, feeInterval, penalty, active, minCap, maxCap, feeFrequencyType, glAccountData,
                     taxGroupData, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation, isCapitalized, percentageTypeOptionData,
-                    percentagePeriodTypeOptionData, chargeOverdueData,chargeInvestmentData);
+                    percentagePeriodTypeOptionData, chargeOverdueData,investmentChargeAppliesTo);
         }
     }
 

@@ -279,23 +279,26 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         Set<InvestmentAccountCharge> charges = investmentAccount.getInvestmentAccountCharges();
         if(charges != null && !charges.isEmpty()){
             List<InvestmentAccountSavingsCharge> investmentAccountCharges =  new ArrayList<>();
-            for(InvestmentAccountCharge charge: charges){
-                int i= 0;
-                BigDecimal cumulativeAmount = BigDecimal.ZERO;
-                for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
-                    i++;
-                    if(i!=investmentAccountSavingsLinkages.size()){
-                        BigDecimal amount = MathUtility.getShare(charge.getAmount(), savingsLinkage.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), investmentAccount.getCurrency());
-                        cumulativeAmount = cumulativeAmount.add(amount);
-                        savingsLinkage.updateExpectedCharge(amount); 
-                        investmentAccountCharges.add(InvestmentAccountSavingsCharge.create(charge, savingsLinkage, amount));
-                    }else{
-                        BigDecimal amount = MathUtility.subtract(charge.getAmount(), cumulativeAmount);
-                        savingsLinkage.updateExpectedCharge(amount);
-                        investmentAccountCharges.add(InvestmentAccountSavingsCharge.create(charge, savingsLinkage, amount));
+            for(InvestmentAccountCharge investmentCharge: charges){
+            	if(investmentCharge.getCharge().isApplyToSavings()){
+            		int i= 0;
+                    BigDecimal cumulativeAmount = BigDecimal.ZERO;
+                    for(InvestmentAccountSavingsLinkages savingsLinkage : investmentAccountSavingsLinkages){
+                        i++;
+                        if(i!=investmentAccountSavingsLinkages.size()){
+                            BigDecimal amount = MathUtility.getShare(investmentCharge.getAmount(), savingsLinkage.getInvestmentAmount(), investmentAccount.getInvestmentAmount(), investmentAccount.getCurrency());
+                            cumulativeAmount = cumulativeAmount.add(amount);
+                            savingsLinkage.updateExpectedCharge(amount); 
+                            investmentAccountCharges.add(InvestmentAccountSavingsCharge.create(investmentCharge, savingsLinkage, amount));
+                        }else{
+                            BigDecimal amount = MathUtility.subtract(investmentCharge.getAmount(), cumulativeAmount);
+                            savingsLinkage.updateExpectedCharge(amount);
+                            investmentAccountCharges.add(InvestmentAccountSavingsCharge.create(investmentCharge, savingsLinkage, amount));
+                        }
+                        
                     }
-                    
-                }
+            	}
+                
             }
             this.investmentAccountSavingsChargeRepositoryWrapper.save(investmentAccountCharges);
         }
@@ -317,7 +320,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     private void processCharge(AppUser appUser, InvestmentAccount investmentAccount, Date currentDate) {
         if(investmentAccount.getInvestmentAccountCharges().size()>0){
             for(InvestmentAccountCharge charge : investmentAccount.getInvestmentAccountCharges()){
-                if(charge.isAcivationCharge()){
+                if(charge.isAcivationCharge() && charge.getCharge().isApplyToInvestment()){
                     InvestmentTransaction investmentTransaction = InvestmentTransaction.payCharge(investmentAccount, investmentAccount.getOfficeId(), currentDate, charge.getAmount(), investmentAccount.getInvestmentAmount(), currentDate, appUser.getId());
                     investmentAccount.getTransactions().add(investmentTransaction);
                 }
@@ -704,6 +707,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
                 List<SavingsAccountTransaction> transactions = new ArrayList<>();
                 SavingsAccountTransaction releaseTransaction = SavingsAccountTransaction.releaseAmount(savingAccount, appUser.getOffice(), paymentDetail, date, Money.of(savingAccount.getCurrency(), savingsAccountLinkage.getInvestmentAmount()), date.toDate(), appUser);
                 transactions.add(releaseTransaction);
+                savingAccount.releaseAmount(savingsAccountLinkage.getInvestmentAmount());
                 
                 //pay charge amount
                 if(MathUtility.isGreaterThanZero(savingsAccountLinkage.getExpectedChargeAmount())){
