@@ -24,6 +24,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.InvestmentChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 
 public class ChargeEnumerations {
@@ -152,6 +153,28 @@ public class ChargeEnumerations {
             break;
             default:
                 optionData = new EnumOptionData(ChargeAppliesTo.INVALID.getValue().longValue(), ChargeAppliesTo.INVALID.getCode(),
+                        "Invalid");
+            break;
+        }
+        return optionData;
+    }
+    
+
+    public static EnumOptionData investmentChargeAppliesTo(final InvestmentChargeAppliesTo type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case INVESTMENT_ACCOUNT:
+                optionData = new EnumOptionData(InvestmentChargeAppliesTo.INVESTMENT_ACCOUNT.getValue().longValue(), InvestmentChargeAppliesTo.INVESTMENT_ACCOUNT.getCode(), "Investment Account");
+            break;
+            case LINKED_SAVINGS:
+                optionData = new EnumOptionData(InvestmentChargeAppliesTo.LINKED_SAVINGS.getValue().longValue(), InvestmentChargeAppliesTo.LINKED_SAVINGS.getCode(),
+                        "Linked Savings");
+            break;
+            case INVESTMENT_ACCOUNT_AND_LINKED_SAVINGS:
+                optionData = new EnumOptionData(InvestmentChargeAppliesTo.INVESTMENT_ACCOUNT_AND_LINKED_SAVINGS.getValue().longValue(), InvestmentChargeAppliesTo.INVESTMENT_ACCOUNT_AND_LINKED_SAVINGS.getCode(), "Investment Account And Linked Savings");
+            break;
+            default:
+                optionData = new EnumOptionData(InvestmentChargeAppliesTo.INVALID.getValue().longValue(), InvestmentChargeAppliesTo.INVALID.getCode(),
                         "Invalid");
             break;
         }

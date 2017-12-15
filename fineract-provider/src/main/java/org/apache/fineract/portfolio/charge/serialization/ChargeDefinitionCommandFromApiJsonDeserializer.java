@@ -44,6 +44,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargePercentagePeriodType;
 import org.apache.fineract.portfolio.charge.domain.ChargePercentageType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.InvestmentChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.PenaltyGraceType;
 import org.apache.fineract.portfolio.charge.exception.ChargeSlabNotFoundException;
 import org.apache.fineract.portfolio.common.domain.LoanPeriodFrequencyType;
@@ -69,14 +70,14 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             ChargesApiConstants.glimChargeCalculation, ChargesApiConstants.slabsParamName, ChargesApiConstants.isCapitalizedParamName,
             ChargesApiConstants.minValueParamName, ChargesApiConstants.maxValueParamName, ChargesApiConstants.percentageTypeParamName,
             ChargesApiConstants.percentagePeriodTypeParamName, ChargesApiConstants.overdueChargeDetailParamName,
-            ChargesApiConstants.applyToLinkedSavingsAccountParamName, ChargesApiConstants.doNotApplyToInvestmentAccountParamName));
+            ChargesApiConstants.investmentChargeAppliesTo));
 
     private final Set<String> supportedParametersForOverdue = new HashSet<>(Arrays.asList(ChargesApiConstants.graceTypeParamName,
             ChargesApiConstants.penaltyFreePeriodParamName, ChargesApiConstants.gracePeriodParamName,
             ChargesApiConstants.considerOnlyPostedInterestParamName, ChargesApiConstants.calculateChargeOnCurrentOverdueParamName,
             ChargesApiConstants.isBasedOnOriginalScheduleParamName, ChargesApiConstants.applyChargeForBrokenPeriodParamName,
             ChargesApiConstants.minOverdueAmountRequiredParamName, ChargesApiConstants.stopChargeOnNPAParamName,
-            ChargesApiConstants.applyToLinkedSavingsAccountParamName, ChargesApiConstants.doNotApplyToInvestmentAccountParamName));
+            ChargesApiConstants.investmentChargeAppliesTo));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -272,12 +273,9 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                            .isOneOfTheseValues(ChargeCalculationType.validValuesForExternalIvestments());
                }
         	
-        	final Boolean applyToLinkedSavingsAccount = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.applyToLinkedSavingsAccountParamName, element);
-            baseDataValidator.reset().parameter(ChargesApiConstants.applyToLinkedSavingsAccountParamName).value(applyToLinkedSavingsAccount).notNull();
-            
-            final Boolean notApplyToInvestmentAccount = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.doNotApplyToInvestmentAccountParamName, element);
-            baseDataValidator.reset().parameter(ChargesApiConstants.doNotApplyToInvestmentAccountParamName).value(notApplyToInvestmentAccount).notNull();
-            
+               final Integer investmentChargeAppliesTo = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ChargesApiConstants.investmentChargeAppliesTo, element);
+               baseDataValidator.reset().parameter(ChargesApiConstants.investmentChargeAppliesTo).value(investmentChargeAppliesTo).notNull().isOneOfTheseValues(InvestmentChargeAppliesTo.validValues());
+
             if (this.fromApiJsonHelper.parameterExists("penalty", element)) {
                 final Boolean penalty = this.fromApiJsonHelper.extractBooleanNamed("penalty", element);
                 if(penalty){
@@ -420,6 +418,11 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             final Integer chargeAppliesTo = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeAppliesTo", element);
             baseDataValidator.reset().parameter("chargeAppliesTo").value(chargeAppliesTo).notNull()
                     .isOneOfTheseValues(ChargeAppliesTo.validValues());
+            if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.investmentChargeAppliesTo, element) && ChargeAppliesTo.EXTERNALINVESTMENT.getValue().equals(chargeAppliesTo)) {
+            	final Integer investmentChargeAppliesTo = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ChargesApiConstants.investmentChargeAppliesTo, element);
+                baseDataValidator.reset().parameter(ChargesApiConstants.investmentChargeAppliesTo).value(investmentChargeAppliesTo).notNull().isOneOfTheseValues(InvestmentChargeAppliesTo.validValues());
+
+            }
         }
         boolean isCapitalized = false;
         if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.isCapitalizedParamName, element)) {
@@ -544,17 +547,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                 }
             }
         }
-        
-        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.applyToLinkedSavingsAccountParamName, element)) {
-        	final Boolean applyToLinkedSavingsAccount = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.applyToLinkedSavingsAccountParamName, element);
-            baseDataValidator.reset().parameter(ChargesApiConstants.applyToLinkedSavingsAccountParamName).value(applyToLinkedSavingsAccount).notNull();
-        }
-        
-        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.doNotApplyToInvestmentAccountParamName, element)) {
-        	final Boolean notApplyToInvestmentAccount = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.doNotApplyToInvestmentAccountParamName, element);
-            baseDataValidator.reset().parameter(ChargesApiConstants.doNotApplyToInvestmentAccountParamName).value(notApplyToInvestmentAccount).notNull();
-            
-        }
+              
         
         validatePercentageDetails(baseDataValidator, element);
 

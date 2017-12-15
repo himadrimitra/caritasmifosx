@@ -229,12 +229,13 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
         final Collection<EnumOptionData> penaltyGraceTypeOptions = null;
         final List<EnumOptionData> investmentChargeCalculationTypeOptions = null;
         final List<EnumOptionData> investmentChargeTimeTypeOptions = null;
+        final List<EnumOptionData> investmentChargeAppliesTo = null;
         return ChargeData.template(null, allowedChargeCalculationTypeOptions, null, allowedChargeTimeOptions, null,
                 loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions,
                 savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions, clientChargeTimeTypeOptions, feeFrequencyOptions,
                 incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions,
                 glimChargeCalculationOptions, slabChargeTypeOptions, percentageTypeOptions, percentagePeriodTypeOptions,
-                penaltyGraceTypeOptions, investmentChargeCalculationTypeOptions, investmentChargeTimeTypeOptions);
+                penaltyGraceTypeOptions, investmentChargeCalculationTypeOptions, investmentChargeTimeTypeOptions, investmentChargeAppliesTo);
     }
 
     @Override

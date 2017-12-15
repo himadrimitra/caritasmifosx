@@ -36,6 +36,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargePercentagePeriodType;
 import org.apache.fineract.portfolio.charge.domain.ChargePercentageType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
+import org.apache.fineract.portfolio.charge.domain.InvestmentChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.PenaltyGraceType;
 import org.apache.fineract.portfolio.charge.domain.SlabChargeType;
 import org.springframework.stereotype.Service;
@@ -182,5 +183,10 @@ public class ChargeDropdownReadPlatformServiceImpl implements ChargeDropdownRead
     @Override
     public List<EnumOptionData> retrieveInvestmentChargeTimeTypes() {
         return Arrays.asList(chargeTimeType(ChargeTimeType.MATURITY), chargeTimeType(ChargeTimeType.INVESTMENT_ACTIVATION));
+    }
+    
+    @Override
+    public List<EnumOptionData> retrieveInvestmentChargeAppliesTo() {
+    	return Arrays.asList(ChargeEnumerations.investmentChargeAppliesTo(InvestmentChargeAppliesTo.INVESTMENT_ACCOUNT), ChargeEnumerations.investmentChargeAppliesTo(InvestmentChargeAppliesTo.LINKED_SAVINGS),ChargeEnumerations.investmentChargeAppliesTo(InvestmentChargeAppliesTo.INVESTMENT_ACCOUNT_AND_LINKED_SAVINGS));
     }
 }

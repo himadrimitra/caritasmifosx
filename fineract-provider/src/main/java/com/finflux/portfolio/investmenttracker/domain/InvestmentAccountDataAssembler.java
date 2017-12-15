@@ -244,8 +244,7 @@ public  class InvestmentAccountDataAssembler {
                 final Long chargeId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.chargeIdParamName,
                         actionElement);
                 final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(chargeId);
-                boolean isPenality = this.fromApiJsonHelper.extractBooleanNamed(InvestmentAccountApiConstants.isPentalityParamName,
-                        actionElement);
+                boolean isPenality = false;
                 boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(InvestmentAccountApiConstants.isActiveParamName,
                         actionElement);
                 Date inactivationDate = null;

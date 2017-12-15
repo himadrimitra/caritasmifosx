@@ -51,7 +51,7 @@ public class ChargesApiConstants {
     public static final String minOverdueAmountRequiredParamName = "minOverdueAmountRequired";  
     
     //investment charge releated parameters
-    public static final String applyToLinkedSavingsAccountParamName = "applyToLinkedSavingsAccount";
-    public static final String doNotApplyToInvestmentAccountParamName = "doNotApplyToInvestmentAccount";
+    public static final String investmentChargeAppliesTo = "investmentChargeAppliesTo";
+    
 
 }
