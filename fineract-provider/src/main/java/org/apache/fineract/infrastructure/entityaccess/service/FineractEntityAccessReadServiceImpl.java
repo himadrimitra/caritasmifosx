@@ -138,7 +138,7 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
             sql += " where firstentity.hierarchy like ? order by firstEntity.hierarchy";
             entityAccessData = this.jdbcTemplate.query(sql, mapper, new Object[] { fromEntityId, fromEntityId, hierarchySearchString });
         } else {
-        	entityAccessData = this.jdbcTemplate.query(sql, mapper, new Object[] { relId, fromEntityId, hierarchy, hierarchy});
+        	entityAccessData = this.jdbcTemplate.query(sql, mapper, new Object[] { relId, fromEntityId, hierarchy});
         }
 
         return entityAccessData;
@@ -153,9 +153,7 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
                 str.append("where eem.rel_id = ? ");
                 str.append("and ((eem.allowed_for_child_offices = 0 and eem.from_id = ?) ");
                 str.append("or ");
-                str.append("(eem.allowed_for_child_offices = 1 and ? like concat(off.hierarchy,'%')) ");
-                str.append("or ");
-                str.append("(off.hierarchy like concat(?,'%'))) ");
+                str.append("(eem.allowed_for_child_offices = 1 and ? like concat(off.hierarchy,'%'))) ");
         logger.debug(str.toString());
         return str.toString();
     }
