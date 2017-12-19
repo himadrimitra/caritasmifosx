@@ -14,6 +14,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanceException;
@@ -21,6 +22,8 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.investmenttracker.Exception.FutureDateTransactionException;
+import com.finflux.portfolio.investmenttracker.Exception.InvalidDateException;
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountAmountException;
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountStateTransitionException;
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
@@ -53,7 +56,9 @@ public class InvestmentAccountDataValidator {
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
         final JsonElement element = this.fromApiJsonHelper.parse(json);
-
+        
+        LocalDate today =DateUtils.getLocalDateOfTenant(); 
+        
         final Long officeId = this.fromApiJsonHelper.extractLongNamed(
                 InvestmentAccountApiConstants.officeIdParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.officeIdParamName)
@@ -91,19 +96,15 @@ public class InvestmentAccountDataValidator {
 
         final LocalDate submittedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.submittedOnDateParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.submittedOnDateParamName).value(submittedOnDate).notNull();
-        
-        if(this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.approvedOnDateParamName, element)){
-            final LocalDate approvedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.approvedOnDateParamName, element);
-            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.approvedOnDateParamName).value(approvedOnDate).notNull();     
+        if(submittedOnDate != null && submittedOnDate.isAfter(today)){
+        	throw new FutureDateTransactionException("submitted");
         }
-        
-        if(this.fromApiJsonHelper.parameterExists(InvestmentAccountApiConstants.activatedOnDateParamName, element)){
-            final LocalDate activatedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.activatedOnDateParamName, element);
-            baseDataValidator.reset().parameter(InvestmentAccountApiConstants.activatedOnDateParamName).value(activatedOnDate).notNull();         
-        }
-        
+                
         final LocalDate investmentOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.investmentOnDateParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentOnDateParamName).value(investmentOnDate).notNull();
+        if(investmentOnDate.isBefore(submittedOnDate)){
+        	throw new InvalidDateException("investment.on", "submitted");
+        }
         
         final BigDecimal investmentAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(InvestmentAccountApiConstants.investmentAmountParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentAmountParamName).value(investmentAmount).notNull().positiveAmount();
@@ -130,6 +131,10 @@ public class InvestmentAccountDataValidator {
         
         final LocalDate maturityOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.maturityOnDateParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.maturityOnDateParamName).value(maturityOnDate).notNull();
+        
+        if(!maturityOnDate.isAfter(investmentOnDate)){
+        	throw new InvalidDateException("maturity", "investment");
+        }
         
         final BigDecimal maturityAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(InvestmentAccountApiConstants.maturityAmountParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.maturityAmountParamName).value(maturityAmount).notNull().positiveAmount();
@@ -211,35 +216,129 @@ public class InvestmentAccountDataValidator {
         
     }
     
-    public void validateForInvestmentAccountToActivate(InvestmentAccount investmentAccount) {
-        if(InvestmentAccountStatus.APPROVED.getValue().compareTo(investmentAccount.getStatus()) != 0){
-            String defaultErrorMessage = "Investment Account should be in Approve status to Activate";
-            String action = InvestmentAccountStatus.ACTIVE.name();
-            throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
-        }
+    public void validateForInvestmentAccountToActivate(InvestmentAccount investmentAccount, final String json) {
+    	if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
+                InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_ACTIVATE_DATA_PARAMETERS);
+        
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        
+        final LocalDate activatedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.activatedOnDateParamName, element);
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.activatedOnDateParamName).value(activatedOnDate).notNull();
+        
+        for (InvestmentAccountSavingsLinkages investmentSavingAccount : investmentAccount.getInvestmentAccountSavingsLinkages()) {
+        	baseDataValidator.reset().parameter(InvestmentAccountApiConstants.activatedOnDateParamName).value(activatedOnDate).notNull();
+		}
+        
+        investmentAccount.setActivatedOnDate(activatedOnDate.toDate());
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        validateForAcivate(investmentAccount);
     }
     
-    public void validateForInvestmentAccountToApprove(InvestmentAccount investmentAccount) {
-        if(InvestmentAccountStatus.PENDING_APPROVAL.getValue().compareTo(investmentAccount.getStatus()) != 0){
-            String defaultErrorMessage = "Investment Account should be in PENDING_APPROVAL status to Approve";
-            String action = InvestmentAccountStatus.APPROVED.name();
-            throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
-        }
+    public void validateForInvestmentAccountToApprove(InvestmentAccount investmentAccount,final String json) {
+    	if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
+                InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_APPROVE_DATA_PARAMETERS);
+        
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final LocalDate approvedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.approvedOnDateParamName, element);
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.approvedOnDateParamName).value(approvedOnDate).notNull();
+        investmentAccount.setApprovedOnDate(approvedOnDate.toDate());
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        validateForApprove(investmentAccount);
     }
     
-    public void validateForInvestmentAccountToReject(InvestmentAccount investmentAccount) {
-        if(InvestmentAccountStatus.PENDING_APPROVAL.getValue().compareTo(investmentAccount.getStatus()) != 0){
-            String defaultErrorMessage = "Investment Account should be in PENDING_APPROVAL status to Reject";
-            String action = InvestmentAccountStatus.REJECTED.name();
-            throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
+    public void validateForInvestmentAccountToClose(InvestmentAccount investmentAccount, final String json) {
+    	if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
+                InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_CLOSE_DATA_PARAMETERS);
+        
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        
+        final LocalDate closedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.closedOnDateParamName, element);
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.closedOnDateParamName).value(closedOnDate).notNull();
+        
+        investmentAccount.setCloseOnDate(closedOnDate.toDate());
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        validateForClose(investmentAccount);
+    }
+    
+    
+    public static void validateForApprove(InvestmentAccount investmentAccount){
+    	if(!InvestmentAccountStatus.PENDING_APPROVAL.getValue().equals(investmentAccount.getStatus())){
+            throw new InvestmentAccountStateTransitionException("pending.approve","pending approval");
+        }
+    	LocalDate today = DateUtils.getLocalDateOfTenant();
+    	if(investmentAccount.getApprovedOnDate().isAfter(today)){
+    		throw new FutureDateTransactionException("approve");
+    	}
+    	if(investmentAccount.getApprovedOnDate().isBefore(investmentAccount.getSubmittedOnDate())){
+    		throw new InvalidDateException("approve", "submitted");
+    	}
+    	for (InvestmentAccountSavingsLinkages investmentSavingAccount : investmentAccount.getInvestmentAccountSavingsLinkages()) {
+        	if(investmentAccount.getApprovedOnDate().isBefore(investmentSavingAccount.getSavingsAccount().getActivationLocalDate())){
+        		throw new InvalidDateException("approve", "savings.activated");
+        	}
+		}
+    }
+    
+    public static void validateForClose(InvestmentAccount investmentAccount){
+    	if(!InvestmentAccountStatus.MATURED.getValue().equals(investmentAccount.getStatus())){
+            throw new InvestmentAccountStateTransitionException("matured","matured");
+        }
+    	LocalDate today = DateUtils.getLocalDateOfTenant();
+    	if(investmentAccount.getCloseOnDate().isAfter(today)){
+    		throw new FutureDateTransactionException("closed");
+    	}
+    	if(investmentAccount.getCloseOnDate().isBefore(investmentAccount.getActivatedOnDate())){
+    		throw new InvalidDateException("closed", "activation");
+    	}
+    	
+    }
+    
+    public static void validateForAcivate(InvestmentAccount investmentAccount){
+    	if(!InvestmentAccountStatus.APPROVED.getValue().equals(investmentAccount.getStatus())){
+            throw new InvestmentAccountStateTransitionException("approved","approved");            
+        }
+    	LocalDate today = DateUtils.getLocalDateOfTenant();
+    	if(investmentAccount.getActivatedOnDate().isAfter(today)){
+    		throw new FutureDateTransactionException("activation");
+    	}
+    	if(investmentAccount.getActivatedOnDate().isBefore(investmentAccount.getApprovedOnDate())){
+    		throw new InvalidDateException("activation", "approved");
+    	}
+    	
+    	for (InvestmentAccountSavingsLinkages investmentSavingAccount : investmentAccount.getInvestmentAccountSavingsLinkages()) {
+    		if(investmentAccount.getActivatedOnDate().isBefore(investmentSavingAccount.getSavingsAccount().getActivationLocalDate())){
+        		throw new InvalidDateException("activation", "savings.activated");
+        	}
+		}
+    }
+    
+    public void validateForInvestmentAccountToReject(InvestmentAccount investmentAccount,final String json) {
+        if(!InvestmentAccountStatus.PENDING_APPROVAL.getValue().equals(investmentAccount.getStatus())){
+        	throw new InvestmentAccountStateTransitionException("pending.approve","pending approval");
         }
     }
     
     public void validateForInvestmentAccountToUndoApproval(InvestmentAccount investmentAccount) {
-        if(InvestmentAccountStatus.APPROVED.getValue().compareTo(investmentAccount.getStatus()) != 0){
-            String defaultErrorMessage = "Investment Account should be in APPROVED status to UndoApproval";
-            String action = "UndoApproval";
-            throw new InvestmentAccountStateTransitionException(action,defaultErrorMessage,investmentAccount.getAccountNumber());
+        if(!InvestmentAccountStatus.APPROVED.getValue().equals(investmentAccount.getStatus())){
+            throw new InvestmentAccountStateTransitionException("approved","approved");
         }
     }
     
@@ -249,7 +348,7 @@ public class InvestmentAccountDataValidator {
     
     public void validateSavingsAccountBalanceForInvestment(final SavingsAccount savingAccount, final BigDecimal savingsAccountInvestmentAmount){
         BigDecimal savingsAccountBalance = savingAccount.getWithdrawableBalance();
-        if(savingsAccountBalance.compareTo(savingsAccountInvestmentAmount) < 0){
+        if(MathUtility.isLesser(savingsAccountBalance, savingsAccountInvestmentAmount)){
             throw new InsufficientAccountBalanceException(savingAccount.getAccountNumber(),savingAccount.getAccountNumber());
         }
     }

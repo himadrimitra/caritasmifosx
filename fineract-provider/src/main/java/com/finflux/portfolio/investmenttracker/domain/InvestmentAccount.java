@@ -38,6 +38,7 @@ import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
+import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
@@ -268,8 +269,8 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     }
 
     
-    public Date getSubmittedOnDate() {
-        return this.submittedOnDate;
+    public LocalDate getSubmittedOnDate() {
+        return new LocalDate(this.submittedOnDate);
     }
 
     
@@ -278,8 +279,8 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     }
 
     
-    public Date getApprovedOnDate() {
-        return this.approvedOnDate;
+    public LocalDate getApprovedOnDate() {
+        return new LocalDate(this.approvedOnDate);
     }
 
     
@@ -288,8 +289,8 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     }
 
     
-    public Date getActivatedOnDate() {
-        return this.activatedOnDate;
+    public LocalDate getActivatedOnDate() {
+        return new LocalDate(this.activatedOnDate);
     }
 
     
@@ -694,6 +695,16 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
 
         }
 
-    } 
+    }
+
+	public LocalDate getCloseOnDate() {
+		return new LocalDate(this.closeOnDate);
+	}
+
+	public void setCloseOnDate(Date closeOnDate) {
+		this.closeOnDate = closeOnDate;
+	} 
+    
+    
     
 }
