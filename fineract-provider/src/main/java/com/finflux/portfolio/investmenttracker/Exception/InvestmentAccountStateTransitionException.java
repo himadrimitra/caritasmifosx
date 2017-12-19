@@ -5,9 +5,8 @@ import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainR
 
 public class InvestmentAccountStateTransitionException extends AbstractPlatformDomainRuleException {
 
-    public InvestmentAccountStateTransitionException(final String action, final String defaultUserMessage,
-            final Object... defaultUserMessageArgs) {
-        super("error.msg.investmentaccount.cannot.be." + action , defaultUserMessage, defaultUserMessageArgs);
+    public InvestmentAccountStateTransitionException(final String action, final String msg) {
+        super("error.msg.investmentaccount.not.in."+action+".state" , "Investment account not in "+msg+" state.", msg);
     }
 
 }

@@ -49,6 +49,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavailableException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -127,9 +128,12 @@ import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+
+import com.finflux.portfolio.investmenttracker.Exception.InvestmentSavingAccountTransactionException;
 
 @Service
 public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements SavingsAccountWritePlatformService {
@@ -162,6 +166,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
     private final CalendarInstanceRepositoryWrapper calendarInstanceRepository;
     private final BusinessEventNotifierService businessEventNotifierService;
     private final CalendarInstanceRepository calendarRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public SavingsAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -183,7 +188,8 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             final InvestmentReadPlatformService invesetmentReadPlatformService, final AppUserRepositoryWrapper appuserRepository,
             final StandingInstructionRepository standingInstructionRepository, final FineractEntityAccessUtil fineractEntityAccessUtil,
             final CalendarInstanceRepositoryWrapper calendarInstanceRepository,
-            final BusinessEventNotifierService businessEventNotifierService, final CalendarInstanceRepository calendarRepository) {
+            final BusinessEventNotifierService businessEventNotifierService, final CalendarInstanceRepository calendarRepository,
+            final RoutingDataSource dataSource) {
         this.context = context;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
         this.savingAccountAssembler = savingAccountAssembler;
@@ -212,6 +218,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.businessEventNotifierService = businessEventNotifierService;
         this.calendarRepository = calendarRepository;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
     @Transactional
@@ -1580,7 +1587,11 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         final AppUser submittedBy = this.context.authenticatedUser();
         final SavingsAccountTransaction holdTransaction = this.savingsAccountTransactionRepository
                 .findOneByIdAndSavingsAccountId(savingsTransactionId, savingsId);
-
+        
+        boolean isHoldForInvestment = this.isActiveInvestmentAccount(savingsTransactionId);
+        if(isHoldForInvestment){
+        	throw new InvestmentSavingAccountTransactionException();
+        }
         final SavingsAccountTransaction transaction = this.savingsAccountTransactionDataValidator
                 .validateReleaseAmountAndAssembleForm(holdTransaction, submittedBy);
         final SavingsAccount account = this.savingAccountAssembler.assembleFrom(savingsId);
@@ -1594,6 +1605,15 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
 
         return new CommandProcessingResultBuilder().withEntityId(transaction.getId()).withOfficeId(account.officeId())
                 .withClientId(account.clientId()).withGroupId(account.groupId()).withSavingsId(account.getId()).build();
+    }
+    
+    public Boolean isActiveInvestmentAccount(Long transactionId) {
+    	String sql = "SELECT case count(sal.id) when 0 then false else if(sal.status = 600,false,true) end as val"+ 
+                      " from f_investment_account_savings_linkages sal "+
+                      " join f_investment_saving_account_transaction isat on " +
+                      " isat.investment_id = sal.investment_account_id  "+
+                      " where isat.transaction_id = ? ";
+        return this.jdbcTemplate.queryForObject(sql, Boolean.class, transactionId);
     }
 
     @Override

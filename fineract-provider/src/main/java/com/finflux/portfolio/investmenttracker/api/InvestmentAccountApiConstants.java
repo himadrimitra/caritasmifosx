@@ -21,7 +21,9 @@ public class InvestmentAccountApiConstants {
     public static final String submittedOnDateParamName = "submittedOnDate";
     public static final String approvedOnDateParamName = "approvedOnDate";
     public static final String activatedOnDateParamName = "activatedOnDate";
+    public static final String closedOnDateParamName = "closedOnDate";
     public static final String investmentOnDateParamName = "investmentOnDate";
+    public static final String rejectOnDateParamName = "rejectOnDate";
     public static final String investmentAmountParamName = "investmentAmount";
     public static final String interestRateParamName = "interestRate";
     public static final String interestRateTypeParamName = "interestRateType";
@@ -71,4 +73,12 @@ public class InvestmentAccountApiConstants {
             investmentTermParamName,investmentTermTypeParamName,maturityOnDateParamName,maturityAmountParamName,
             reinvestAfterMaturityParamName,savingsAccountsParamName,chargesParamName,localeParamName,dateFormatParamName,
             trackSourceAccountsParamName, staffIdParamName));
+    
+    public static Set<String> INVESTMENT_ACCOUNT_APPROVE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(approvedOnDateParamName,localeParamName,dateFormatParamName));
+    
+    public static Set<String> INVESTMENT_ACCOUNT_ACTIVATE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(activatedOnDateParamName,localeParamName,dateFormatParamName));
+    
+    public static Set<String> INVESTMENT_ACCOUNT_REJECT_DATA_PARAMETERS = new HashSet<>(Arrays.asList(rejectOnDateParamName,localeParamName,dateFormatParamName));
+    
+    public static Set<String> INVESTMENT_ACCOUNT_CLOSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(closedOnDateParamName,localeParamName,dateFormatParamName));
 }
