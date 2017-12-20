@@ -299,8 +299,8 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
     }
 
     
-    public Date getInvestmentOnDate() {
-        return this.investmentOnDate;
+    public LocalDate getInvestmentOnDate() {
+        return new LocalDate(this.investmentOnDate);
     }
 
     

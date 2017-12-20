@@ -28,6 +28,7 @@ public class InvestmentTrackerDropDownReadServiceImpl implements InvestmentTrack
     @Override
     public List<EnumOptionData> retrieveCompoundingInterestPeriodTypeOptions() {
         return Arrays.asList(
+        		InvestmentTrackerEnumerations.compoundingInterestPeriodType(InvestmentCompoundingInterestPeriodType.NONE),
                 InvestmentTrackerEnumerations.compoundingInterestPeriodType(InvestmentCompoundingInterestPeriodType.DAILY), //
                 InvestmentTrackerEnumerations.compoundingInterestPeriodType(InvestmentCompoundingInterestPeriodType.MONTHLY),
                 InvestmentTrackerEnumerations.compoundingInterestPeriodType(InvestmentCompoundingInterestPeriodType.QUATERLY),

@@ -29,6 +29,8 @@ import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSeria
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +59,7 @@ public class InvestmentAccountApiResource {
     private final InvestmentAccountReadService investmentAccountReadService;
     private final InvestmentTransactionReadPlatformService investmentTransactionReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
+    private final OfficeReadPlatformService officeReadPlatformService;
 
     @SuppressWarnings("rawtypes")
 	@Autowired
@@ -65,7 +68,8 @@ public class InvestmentAccountApiResource {
             PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             InvestmentAccountReadService investmentAccountReadService,
             InvestmentTransactionReadPlatformService investmentTransactionReadPlatformService,
-            final SavingsAccountReadPlatformService savingsAccountReadPlatformService) {
+            final SavingsAccountReadPlatformService savingsAccountReadPlatformService,
+            final OfficeReadPlatformService officeReadPlatformService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
@@ -73,6 +77,7 @@ public class InvestmentAccountApiResource {
         this.investmentAccountReadService = investmentAccountReadService;
         this.investmentTransactionReadPlatformService = investmentTransactionReadPlatformService;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
+        this.officeReadPlatformService = officeReadPlatformService;
     }
 
     @GET
@@ -177,8 +182,10 @@ public class InvestmentAccountApiResource {
                 .findByInvestmentIdAndSavingsId(investmentAccountId, savingLinkageAccountData.getSavingsAccountId());
         savingLinkageAccountData.setInvestmentSavingsTransactionData(investmentSavingsTransactionData);
         if (isTemplate) {
+        	InvestmentAccountData investmentAccountData = this.investmentAccountReadService.retrieveInvestmentAccount(investmentAccountId);
+        	OfficeData officeData = this.officeReadPlatformService.retrieveOffice(investmentAccountData.getOfficeData().getId());
             final List<SavingsAccountData> savingsAccounts = this.savingsAccountReadPlatformService
-                    .retrieveAllActiveSavingAccountByCurrentOffice();
+                    .retrieveAllActiveSavingsAccountsByOffice(officeData.getHierarchy());
             savingLinkageAccountData.setSavingsAccounts(savingsAccounts);
         }
 

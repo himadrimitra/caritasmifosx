@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.portfolio.investmenttracker.api.InvestmentProductApiconstants;
+import com.finflux.portfolio.investmenttracker.data.InvestmentCompoundingInterestPeriodType;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -49,10 +50,11 @@ public class InvestmentProductDataAssembler {
                 .bigDecimalValueOfParameterNamed(InvestmentProductApiconstants.maxNominalInterestRateParamName);
         final Integer nominalInterestRateEnum = command
                 .integerValueOfParameterNamed(InvestmentProductApiconstants.nominalInterestRateEnumParamName);
-
-        final Integer interestCompoundingPeriodEnum = command
-                .integerValueOfParameterNamed(InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName);
-
+        Integer interestCompoundingPeriodEnum = InvestmentCompoundingInterestPeriodType.NONE.getValue();
+        if(command.parameterExists(InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName)){
+        	interestCompoundingPeriodEnum = command
+                    .integerValueOfParameterNamed(InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName);
+        }
         final Integer defaultInvestmentTermPeriod = command
                 .integerValueOfParameterNamed(InvestmentProductApiconstants.defaultInvestmentTermPeriodParamName);
         final Integer minInvestmentTermPeriod = command

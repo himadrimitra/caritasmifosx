@@ -86,5 +86,10 @@ public interface ProductToGLAccountMappingRepository
     @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value = "true") })
     List<ProductToGLAccountMapping> findByProductIdProductTypeAndFinancialAccountType(@Param("productId") Long productId,
             @Param("productType") int productType, @Param("accountTypes") List accountTypes);
+    
+    @Query("from ProductToGLAccountMapping mapping where mapping.productId =:productId and mapping.productType =:productType and mapping.financialAccountType=6 and mapping.charge is not NULL")
+    @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value = "true") })
+    List<ProductToGLAccountMapping> findAllFeeToExpenseAccountMappings(@Param("productId") Long productId,
+            @Param("productType") int productType);
 
 }

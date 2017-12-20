@@ -39,11 +39,13 @@ public class InvestmentTrackerEnumerations {
     public static EnumOptionData compoundingInterestPeriodType(final InvestmentCompoundingInterestPeriodType type) {
 
         final String codePrefix = "investment.compounding.period.";
-        EnumOptionData optionData = new EnumOptionData(InvestmentCompoundingInterestPeriodType.INVALID.getValue().longValue(),
-                InvestmentCompoundingInterestPeriodType.INVALID.getCode(), "Invalid");
+        EnumOptionData optionData = new EnumOptionData(InvestmentCompoundingInterestPeriodType.NONE.getValue().longValue(),
+                InvestmentCompoundingInterestPeriodType.NONE.getCode(), "None");
 
         switch (type) {
-            case INVALID:
+            case NONE:
+            	optionData = new EnumOptionData(InvestmentCompoundingInterestPeriodType.NONE.getValue().longValue(), codePrefix
+                        + InvestmentCompoundingInterestPeriodType.NONE.getCode(), "None");
             break;
             case DAILY:
                 optionData = new EnumOptionData(InvestmentCompoundingInterestPeriodType.DAILY.getValue().longValue(), codePrefix
@@ -54,7 +56,7 @@ public class InvestmentTrackerEnumerations {
                         + InvestmentCompoundingInterestPeriodType.MONTHLY.getCode(), "Monthly");
             break;
             case QUATERLY:
-                optionData = new EnumOptionData(SavingsCompoundingInterestPeriodType.QUATERLY.getValue().longValue(), codePrefix
+                optionData = new EnumOptionData(InvestmentCompoundingInterestPeriodType.QUATERLY.getValue().longValue(), codePrefix
                         + InvestmentCompoundingInterestPeriodType.QUATERLY.getCode(), "Quarterly");
             break;
             case BI_ANNUAL:

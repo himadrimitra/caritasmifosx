@@ -5,7 +5,7 @@ import java.util.List;
 
 public enum InvestmentCompoundingInterestPeriodType {
 
-    INVALID(0, "investmentCompoundingInterestPeriodType.invalid"), //
+    NONE(0, "investmentCompoundingInterestPeriodType.none"), //
     DAILY(1, "investmentCompoundingInterestPeriodType.daily"), //
     MONTHLY(2, "investmentCompoundingInterestPeriodType.monthly"), //
     QUATERLY(3, "investmentCompoundingInterestPeriodType.quarterly"), //
@@ -31,16 +31,13 @@ public enum InvestmentCompoundingInterestPeriodType {
     public static Object[] integerValues() {
         final List<Integer> values = new ArrayList<>();
         for (final InvestmentCompoundingInterestPeriodType enumType : values()) {
-            if (enumType.getValue() > 0) {
-                values.add(enumType.getValue());
-            }
+        	values.add(enumType.getValue());
         }
-
         return values.toArray();
     }
 
     public static InvestmentCompoundingInterestPeriodType fromInt(final Integer type) {
-        InvestmentCompoundingInterestPeriodType compoundingInterestPeriodType = InvestmentCompoundingInterestPeriodType.INVALID;
+        InvestmentCompoundingInterestPeriodType compoundingInterestPeriodType = InvestmentCompoundingInterestPeriodType.NONE;
         if (type != null) {
             switch (type) {
                 case 1:

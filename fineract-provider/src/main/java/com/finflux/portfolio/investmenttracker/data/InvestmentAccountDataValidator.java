@@ -290,6 +290,10 @@ public class InvestmentAccountDataValidator {
     	if(investmentAccount.getApprovedOnDate().isBefore(investmentAccount.getSubmittedOnDate())){
     		throw new InvalidDateException("approve", "submitted");
     	}
+
+    	if(investmentAccount.getApprovedOnDate().isAfter(investmentAccount.getInvestmentOnDate())){
+    		throw new InvalidDateException("investment", "approve");
+    	}
     	for (InvestmentAccountSavingsLinkages investmentSavingAccount : investmentAccount.getInvestmentAccountSavingsLinkages()) {
         	if(investmentAccount.getApprovedOnDate().isBefore(investmentSavingAccount.getSavingsAccount().getActivationLocalDate())){
         		throw new InvalidDateException("approve", "savings.activated");
@@ -322,7 +326,9 @@ public class InvestmentAccountDataValidator {
     	if(investmentAccount.getActivatedOnDate().isBefore(investmentAccount.getApprovedOnDate())){
     		throw new InvalidDateException("activation", "approved");
     	}
-    	
+    	if(investmentAccount.getActivatedOnDate().isAfter(investmentAccount.getInvestmentOnDate())){
+    		throw new InvalidDateException("investment", "activation");
+    	}
     	for (InvestmentAccountSavingsLinkages investmentSavingAccount : investmentAccount.getInvestmentAccountSavingsLinkages()) {
     		if(investmentAccount.getActivatedOnDate().isBefore(investmentSavingAccount.getSavingsAccount().getActivationLocalDate())){
         		throw new InvalidDateException("activation", "savings.activated");

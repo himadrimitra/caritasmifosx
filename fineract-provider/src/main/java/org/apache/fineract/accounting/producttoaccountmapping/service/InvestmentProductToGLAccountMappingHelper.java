@@ -183,16 +183,15 @@ public class InvestmentProductToGLAccountMappingHelper extends ProductToGLAccoun
     public void updateChargesToExpenseAccountMappings(final JsonCommand command, final JsonElement element, final Long productId,
             final Map<String, Object> changes) {
         // update both fee and penalty charges
-        updateChargeToIncomeAccountMappings(command, element, productId, changes, PortfolioProductType.SAVING, true);
-        updateChargeToIncomeAccountMappings(command, element, productId, changes, PortfolioProductType.SAVING, false);
+    	updateChargesToExpenseAccountMappings(command, element, productId, changes, PortfolioProductType.INVESTMENT);
     }
 
     public void updateChargesToExpenseAccountMappings(final JsonCommand command, final JsonElement element, final Long productId,
             final Map<String, Object> changes, final PortfolioProductType portfolioProductType) {
 
         List<ProductToGLAccountMapping> existingChargeToExpenseAccountMappings = this.accountMappingRepository
-                .findAllPenaltyToIncomeAccountMappings(productId, portfolioProductType.getValue());
-        String arrayFragmentName = INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE.getValue();
+                .findAllFeeToExpenseAccountMappings(productId, portfolioProductType.getValue());
+        String arrayFragmentName = INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE_ACCOUNT_MAPPING.getValue();
 
         final JsonArray chargeToExpenseAccountMappingArray = this.fromApiJsonHelper.extractJsonArrayNamed(arrayFragmentName, element);
         final Map<Long, Long> inputChargeToExpenseAccountMap = new HashMap<>();
