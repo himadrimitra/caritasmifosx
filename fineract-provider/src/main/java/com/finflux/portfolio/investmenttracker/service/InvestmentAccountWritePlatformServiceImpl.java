@@ -54,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.finflux.portfolio.investmenttracker.Exception.FutureDateTransactionException;
 import com.finflux.portfolio.investmenttracker.Exception.InvalidDateException;
+import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountSavingsLinkagesDuplicationException;
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountSavingsLinkagesNotActiveException;
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountDataValidator;
@@ -271,7 +272,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
 		        InvestmentSavingsTransaction investmentSavingsTransaction = InvestmentSavingsTransaction.create(savingsAccount.getId(), investmentAccountId, holdTransaction.getId(), getMessage(InvestmentAccountApiConstants.holdAmountMessage, investmentAccountId));
 		        this.investmentSavingsTransactionRepository.save(investmentSavingsTransaction);
 		        savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
-		        savingsLinkage.setActiveFromDate(investmentAccount.getInvestmentOnDate());
+		        savingsLinkage.setActiveFromDate(investmentAccount.getInvestmentOnDate().toDate());
 		        savingsLinkage.setActiveToDate(investmentAccount.getMaturityOnDate());
 		        BigDecimal expectedInterestAmount = null;
 		        if(i!=investmentAccountSavingsLinkages.size()){
@@ -580,8 +581,9 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         	throw new InvalidDateException("transfer", "activation");
         }
         InvestmentAccountSavingsLinkages investmentAccountSavingsLinkage = this.investmentAccountSavingsLinkagesRepositoryWrapper.findOneWithNotFoundDetection(savingLinkageAccountId);
-        processRelease(investmentAccount, transferDate, investmentAccountSavingsLinkage);
         final Long savingsId = command.longValueOfParameterNamed(InvestmentAccountApiConstants.savingsAccountIdParamName);
+        validateForExistingSavingLinkageAccount(savingsId, investmentAccount.getInvestmentAccountSavingsLinkages());
+        processRelease(investmentAccount, transferDate, investmentAccountSavingsLinkage);
         SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsId);
   
         InvestmentAccountSavingsLinkages newInvestmentAccountSavingsLinkage = new InvestmentAccountSavingsLinkages(investmentAccountSavingsLinkage, savingsAccount, transferDate.toDate());
@@ -605,6 +607,14 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         this.investmentSavingsTransactionRepository.save(investmentSavingsTransaction);
         return new CommandProcessingResultBuilder() //
         .withEntityId(investmentAccountId).build();
+    }
+    
+    public void validateForExistingSavingLinkageAccount(Long savingsId, Set<InvestmentAccountSavingsLinkages> savingLinakgeAccount){
+    	for (InvestmentAccountSavingsLinkages investmentAccountSavingsLinkages : savingLinakgeAccount) {
+			if(savingsId.equals(investmentAccountSavingsLinkages.getSavingsAccount().getId())){
+				throw new InvestmentAccountSavingsLinkagesDuplicationException();
+			}
+		}
     }
     
     @Override

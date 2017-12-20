@@ -29,6 +29,7 @@ import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountSavingsLinkagesDuplicationException;
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountDataValidator;
 import com.google.gson.JsonArray;
@@ -141,8 +142,11 @@ public  class InvestmentAccountDataAssembler {
         }
         if (changes.containsKey(InvestmentAccountApiConstants.staffIdParamName)) {
             final Long staffId = command.longValueOfParameterNamed(InvestmentAccountApiConstants.staffIdParamName);
-            final Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetection(staffId);
-            accountForUpdate.updateStaff(staff);
+            if(staffId != null){
+            	final Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetection(staffId);
+                accountForUpdate.updateStaff(staff);
+            }
+            
         }
         
         if (changes.containsKey(InvestmentAccountApiConstants.savingsAccountsParamName)) {
@@ -167,6 +171,7 @@ public  class InvestmentAccountDataAssembler {
         Locale locale =command.extractLocale();
         final JsonArray actions = command.arrayOfParameterNamed(InvestmentAccountApiConstants.savingsAccountsParamName);
         if (actions != null) {
+        	Set<Long> savingIds = new HashSet<>();
             Set<InvestmentAccountSavingsLinkages> savingsAccountlinkages = new HashSet<>();
             for (int i = 0; i < actions.size(); i++) {
                 final JsonObject actionElement = actions.get(i).getAsJsonObject();
@@ -183,7 +188,11 @@ public  class InvestmentAccountDataAssembler {
                 InvestmentAccountSavingsLinkages accountLink = new InvestmentAccountSavingsLinkages(investmentAccount, accountHolder, savingsAccount, individualInvestmentAmount,
                          status);
                 savingsAccountlinkages.add(accountLink);
+                savingIds.add(savingsAccountId);
             }      
+            if(savingIds.size() != savingsAccountlinkages.size()){
+            	throw new InvestmentAccountSavingsLinkagesDuplicationException();
+            }
             investmentAccount.setInvestmentAccountSavingsLinkages(savingsAccountlinkages);
         }
         

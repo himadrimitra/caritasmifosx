@@ -99,11 +99,12 @@ public class InvestmentProductDataValidator {
                 InvestmentProductApiconstants.nominalInterestRateEnumParamName, element);
         baseDataValidator.reset().parameter(InvestmentProductApiconstants.nominalInterestRateEnumParamName).value(nominalInterestRateEnum)
                 .notNull().integerZeroOrGreater();
-
-        Integer interestCompoundingPeriodEnum = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
-                InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName, element);
-        baseDataValidator.reset().parameter(InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName)
-                .value(interestCompoundingPeriodEnum).notNull().integerZeroOrGreater();
+        if(this.fromApiJsonHelper.parameterExists(InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName, element)){
+        	Integer interestCompoundingPeriodEnum = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
+                    InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName, element);
+            baseDataValidator.reset().parameter(InvestmentProductApiconstants.interestCompoundingPeriodEnumParamName)
+                    .value(interestCompoundingPeriodEnum).notNull().integerZeroOrGreater();
+        }
 
         final Integer defaultInvestmentTermPeriod = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
                 InvestmentProductApiconstants.defaultInvestmentTermPeriodParamName, element);

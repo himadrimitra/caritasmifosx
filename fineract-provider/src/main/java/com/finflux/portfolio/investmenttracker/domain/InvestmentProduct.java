@@ -5,6 +5,7 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.inMultip
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -367,6 +368,12 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
                 actualChanges.put(InvestmentProductApiconstants.chargesParamName,
                         command.jsonFragment(InvestmentProductApiconstants.chargesParamName));
             }
+        }
+        
+        if (command.isChangeInIntegerParameterNamed(InvestmentProductApiconstants.accountingTypeParamName, this.accountingType)) {
+            final Integer newValue = command.integerValueOfParameterNamed(InvestmentProductApiconstants.accountingTypeParamName);
+            actualChanges.put(InvestmentProductApiconstants.accountingTypeParamName, newValue);
+            this.accountingType = newValue;
         }
 
         return actualChanges;
