@@ -55,6 +55,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.portfolio.investmenttracker.Exception.ActiveInvestmentAccountException;
+
 @Service
 public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWritePlatformService {
 
@@ -142,6 +144,9 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
 
             this.fromApiJsonDeserializer.validateChargeTimeNCalculationType(chargeForUpdate.getChargeTimeType(),
                     chargeForUpdate.getChargeCalculation(), chargeForUpdate.isGlimCharge());
+            if(chargeForUpdate.isExternalInvestmentCharge()){
+            	validateForActiveInvestmentAccount(chargeForUpdate.getId());
+            }
 
             // MIFOSX-900: Check if the Charge has been active before and now is
             // deactivated:
@@ -210,6 +215,16 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
+    }
+    
+    public void validateForActiveInvestmentAccount(Long chargeId){
+    	String sql = "select (count(*)) as counts from f_investment_account_charge iac "+
+						"join f_investment_account ia on iac.investment_account_id = ia.id "+
+						"where iac.charge_id = ? and ia.status_enum in (400,500)";
+    	Integer numberOfActiveAccount = this.jdbcTemplate.queryForObject(sql, Integer.class, chargeId);
+    	if(numberOfActiveAccount>0){
+    		throw new ActiveInvestmentAccountException();
+    	}
     }
 
     @Transactional
