@@ -105,6 +105,7 @@ public class SmsMessageScheduledJobServiceImpl implements SmsMessageScheduledJob
         Integer pageLimit = 200;
         Integer page = 0;
         int totalRecords = 0;
+        boolean isAnyException = false;
         do {
             PageRequest pageRequest = new PageRequest(0, pageLimit);
             org.springframework.data.domain.Page<SmsMessage> pendingMessages = this.smsMessageRepository.findByStatusType(
@@ -133,11 +134,14 @@ public class SmsMessageScheduledJobServiceImpl implements SmsMessageScheduledJob
 //                    new MyThread(ThreadLocalContextUtil.getTenant(), apiQueueResourceDatas).start();
                 }
             } catch (Exception e) {
-                throw new ConnectionFailureException(SmsCampaignConstants.SMS);
+            	isAnyException = true;                
             }
             page ++;
             totalRecords = pendingMessages.getTotalPages();
         } while (page < totalRecords);
+        if(isAnyException){
+        	throw new ConnectionFailureException(SmsCampaignConstants.SMS);
+        }
     }
 
     class SmsTask implements Runnable, ApplicationListener<ContextClosedEvent> {
