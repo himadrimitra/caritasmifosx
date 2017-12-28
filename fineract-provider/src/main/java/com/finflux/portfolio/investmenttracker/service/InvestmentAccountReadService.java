@@ -2,7 +2,10 @@ package com.finflux.portfolio.investmenttracker.service;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+
+import javax.ws.rs.QueryParam;
 
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 
@@ -26,11 +29,13 @@ public interface InvestmentAccountReadService {
     
     InvestmentAccountSavingsLinkagesData retrieveInvestmentSavingsLinkageAccountData(final Long investmentAccountId, final Long savingsLinkageAccountId);
     
-    BigDecimal checkReleaseAmount(final Long investmentAccountId, final Long savingsLinkageAccountId, String apiRequestBody);
-    
     InvestmentAccountData retrieveReinvestmentAccountTemplateData(final Long investmentAccountId);
     
     Collection<InvestmentAccountSavingsLinkagesData> retrieveInvestmentSavingLinkagesAccountData(final Long investmentAccountId, final Integer status);
     
     List<Long> retrieveInvestmentAccountSavingLinkagesIds(Long investmentAccountId);
+    
+    String calculateMaturity(final Long investmentProductId, BigDecimal investmentAmount, final Long investmentRate,
+            final Integer investmentRateType, final Integer investmentTerm, final Integer investmentTermType, final Date investmentDate,
+            final Date marturityDate);
 }

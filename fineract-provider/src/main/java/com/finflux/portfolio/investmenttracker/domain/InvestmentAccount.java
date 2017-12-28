@@ -638,7 +638,7 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
 
         if (command.isChangeInIntegerParameterNamed(InvestmentAccountApiConstants.investmentTermTypeParamName, this.investmentTermType)) {
             final Integer newValue = command.integerValueOfParameterNamed(InvestmentAccountApiConstants.investmentTermTypeParamName);
-            this.investmentTerm = newValue;
+            this.investmentTermType = newValue;
             actualChanges.put(InvestmentAccountApiConstants.investmentTermTypeParamName, newValue);
         }
 

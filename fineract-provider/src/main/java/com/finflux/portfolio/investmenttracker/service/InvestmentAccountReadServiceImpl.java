@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
@@ -17,6 +19,7 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
+import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.organisation.staff.data.StaffData;
@@ -41,9 +44,10 @@ import com.finflux.portfolio.investmenttracker.data.InvestmentAccountData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountSavingsLinkagesData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountTimelineData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentProductData;
-import com.finflux.portfolio.investmenttracker.domain.InvestmentAccount;
-import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountRepositoryWrapper;
 import com.finflux.portfolio.investmenttracker.domain.InvestmentAccountStatus;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentProduct;
+import com.finflux.portfolio.investmenttracker.domain.InvestmentProductRepositoryWrapper;
+import com.google.gson.Gson;
 
 @Service
 public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadService {
@@ -57,7 +61,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
     private final PlatformSecurityContext context;
     private final StaffReadPlatformService staffReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
-    private final InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper;
+    private final InvestmentProductRepositoryWrapper investmentProductRepositoryWrapper;
     
     @Autowired
     public InvestmentAccountReadServiceImpl(final RoutingDataSource dataSource,
@@ -69,7 +73,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              final PlatformSecurityContext context,
              final StaffReadPlatformService staffReadPlatformService,
              final SavingsAccountReadPlatformService savingsAccountReadPlatformService,
-             final InvestmentAccountRepositoryWrapper investmentAccountRepositoryWrapper){
+             final InvestmentProductRepositoryWrapper investmentProductRepositoryWrapper){
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.chargeReadPlatformService = chargeReadPlatformService;
         this.investmentProductReadService = investmentProductReadService;
@@ -79,7 +83,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         this.context = context;
         this.staffReadPlatformService = staffReadPlatformService;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
-        this.investmentAccountRepositoryWrapper = investmentAccountRepositoryWrapper;
+        this.investmentProductRepositoryWrapper = investmentProductRepositoryWrapper;
     }
     
     @Override
@@ -510,13 +514,6 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
     }
 
     @Override
-    public BigDecimal checkReleaseAmount(Long investmentAccountId, Long savingsLinkageAccountId, String apiRequestBody) {
-        InvestmentAccount investmentAccount = this.investmentAccountRepositoryWrapper.findOneWithNotFoundDetection(investmentAccountId);
-        
-        return null;
-    }
-
-    @Override
     public InvestmentAccountData retrieveReinvestmentAccountTemplateData(Long investmentAccountId) {
         
         InvestmentAccountData investmentAccountData = retrieveInvestmentAccount(investmentAccountId);
@@ -620,5 +617,64 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         }
     }
 
+    @Override
+    public String calculateMaturity(Long investmentProductId, BigDecimal investmentAmount, Long investmentRate, Integer investmentRateType,
+            Integer investmentTerm, Integer investmentTermType, Date investmentDate, Date marturityDate) {
+        Gson gson = new Gson();
+        BigDecimal maturityAmount = investmentAmount;
+        HashMap<String, Object> responseMap = new HashMap<>();
+        if (investmentProductId != null && investmentRate != null && investmentRateType != null && investmentTerm != null
+                && investmentTermType != null && investmentDate != null) {
+            marturityDate = getMaturitydate(investmentTerm, investmentTermType, investmentDate);
+            InvestmentProduct investmentProductData = this.investmentProductRepositoryWrapper
+                    .findOneWithNotFoundDetection(investmentProductId);
+            Integer numberOfDays = Days.daysBetween(LocalDate.fromDateFields(investmentDate), LocalDate.fromDateFields(marturityDate))
+                    .getDays();
+            if (!investmentProductData.isInterestCompoundingPeriod()) {
+                BigDecimal dailyInterestRate = getDailyInterestRate(investmentRate, investmentRateType);
+                BigDecimal interestEarned = calcualteInterest(investmentAmount, dailyInterestRate, numberOfDays);
+                ;
+                maturityAmount = investmentAmount.add(Money.of(investmentProductData.getCurrency(), interestEarned).getAmount());
+            }
+        }
+        responseMap.put("maturityAmount", maturityAmount);
+        responseMap.put("marturityDate", marturityDate);
+        return gson.toJson(responseMap);
+    }
+
+    public static BigDecimal getDailyInterestRate(Long investmentRate, Integer investmentRateType) {
+        BigDecimal interestRate = BigDecimal.valueOf(investmentRate);
+        switch (investmentRateType) {
+            case 2:
+                interestRate = BigDecimal.valueOf((interestRate.doubleValue() * 12 / 365));
+            break;
+            case 3:
+                interestRate = BigDecimal.valueOf(interestRate.doubleValue() / 365);
+            break;
+        }
+        return interestRate;
+    }
+
+    public static Date getMaturitydate(Integer investmentTerm, Integer investmentTermType, Date investmentDate) {
+        LocalDate date = LocalDate.fromDateFields(investmentDate);
+        switch (investmentTermType) {
+            case 0:
+                date = date.plusDays(investmentTerm);
+            break;
+            case 1:
+                date = date.plusWeeks(investmentTerm);
+            break;
+            case 2:
+                date = date.plusMonths(investmentTerm);
+            break;
+        }
+        return date.toDate();
+    }
+
+    BigDecimal calcualteInterest(BigDecimal investmentAmount, BigDecimal interestRate, Integer investmentTerm) {
+        BigDecimal oneTermInterestAmount = MathUtility.multiply(interestRate, investmentAmount);
+        Double interest = MathUtility.multiply(oneTermInterestAmount, investmentTerm).doubleValue() / 100;
+        return BigDecimal.valueOf(interest);
+    }
 
 }

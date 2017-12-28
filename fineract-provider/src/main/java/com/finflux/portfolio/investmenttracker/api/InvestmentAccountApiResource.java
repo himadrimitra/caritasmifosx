@@ -1,5 +1,6 @@
 package com.finflux.portfolio.investmenttracker.api;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -163,6 +164,23 @@ public class InvestmentAccountApiResource {
                     investmentAccountData.getOfficeData().getId());
         }
         return this.toApiJsonSerializer.serialize(settings, investmentAccountData);
+    }
+    
+    @GET
+    @Path("calculate/maturity")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String calculateMaturityAmount(@Context final UriInfo uriInfo,
+            @QueryParam("investmentProductId") final Long investmentProductId, @QueryParam("investmentRate") final Long investmentRate,
+            @QueryParam("investmentRateType") final Integer investmentRateType, @QueryParam("investmentTerm") final Integer investmentTerm,
+            @QueryParam("investmentTermType") final Integer investmentTermType,
+            @QueryParam("investmentAmount") final BigDecimal investmentAmount, @QueryParam("investmentDate") final Date investmentDate,
+            @QueryParam("marturityDate") final Date marturityDate) {
+
+        this.context.authenticatedUser().validateHasReadPermission(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
+
+        return this.investmentAccountReadService.calculateMaturity(investmentProductId, investmentAmount, investmentRate,
+                investmentRateType, investmentTerm, investmentTermType, investmentDate, marturityDate);
     }
 
     @GET

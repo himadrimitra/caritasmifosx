@@ -160,9 +160,7 @@ public  class InvestmentAccountDataAssembler {
         if (changes.containsKey(InvestmentAccountApiConstants.chargesParamName)) {
             Set<InvestmentAccountCharge> chargesSet = createInvestmentAccountCharges(command, accountForUpdate,
                     accountForUpdate.getMaturityAmount().subtract(accountForUpdate.getInvestmentAmount()));
-            if(chargesSet.size() > 0){
-                accountForUpdate.updateInvestmentAccountCharges(chargesSet);
-            }
+            accountForUpdate.updateInvestmentAccountCharges(chargesSet);
         }
     }
     
