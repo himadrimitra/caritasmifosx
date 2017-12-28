@@ -190,7 +190,7 @@ public class InvestmentAccountDataValidator {
 
     private void validateCharges(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
         final JsonArray chargesActions = this.fromApiJsonHelper.extractJsonArrayNamed(InvestmentAccountApiConstants.chargesParamName, element);
-        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).ignoreIfNull().jsonArrayNotEmpty();
+        baseDataValidator.reset().parameter(InvestmentAccountApiConstants.chargesParamName).value(chargesActions).ignoreIfNull();
         if(chargesActions != null && chargesActions.size()>0){
             for (JsonElement chargeElement : chargesActions) {             
                 Long chargeId = this.fromApiJsonHelper.extractLongNamed(
@@ -352,8 +352,8 @@ public class InvestmentAccountDataValidator {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
     
-    public void validateSavingsAccountBalanceForInvestment(final SavingsAccount savingAccount, final BigDecimal savingsAccountInvestmentAmount){
-        BigDecimal savingsAccountBalance = savingAccount.getWithdrawableBalance();
+    public void validateSavingsAccountBalanceForInvestment(final SavingsAccount savingAccount, final BigDecimal savingsAccountInvestmentAmount, LocalDate date){
+        BigDecimal savingsAccountBalance = savingAccount.getWithdrawalBalanceAsOfDate(date);
         if(MathUtility.isLesser(savingsAccountBalance, savingsAccountInvestmentAmount)){
             throw new InsufficientAccountBalanceException(savingAccount.getAccountNumber(),savingAccount.getAccountNumber());
         }

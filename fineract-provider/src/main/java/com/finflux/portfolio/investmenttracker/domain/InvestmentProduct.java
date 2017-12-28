@@ -5,7 +5,6 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.inMultip
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,6 +24,7 @@ import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import com.finflux.portfolio.investmenttracker.api.InvestmentProductApiconstants;
+import com.finflux.portfolio.investmenttracker.data.InvestmentCompoundingInterestPeriodType;
 import com.google.gson.JsonArray;
 
 @Entity
@@ -169,6 +169,26 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
         return this.interestCompoundingPeriodEnum;
     }
 
+    public boolean isDailyInterestCompounding() {
+        return this.interestCompoundingPeriodEnum.equals(InvestmentCompoundingInterestPeriodType.DAILY.getValue());
+    }
+
+    public boolean isMonthlyInterestCompounding() {
+        return this.interestCompoundingPeriodEnum.equals(InvestmentCompoundingInterestPeriodType.MONTHLY.getValue());
+    }
+
+    public boolean isQuaterlyInterestCompounding() {
+        return this.interestCompoundingPeriodEnum.equals(InvestmentCompoundingInterestPeriodType.QUATERLY.getValue());
+    }
+
+    public boolean isBiAnnualyInterestCompounding() {
+        return this.interestCompoundingPeriodEnum.equals(InvestmentCompoundingInterestPeriodType.BI_ANNUAL.getValue());
+    }
+
+    public boolean annualyInterestCompounding() {
+        return this.interestCompoundingPeriodEnum.equals(InvestmentCompoundingInterestPeriodType.ANNUAL.getValue());
+    }
+
     public Integer getMinInvestmentTermPeriod() {
         return this.minInvestmentTermPeriod;
     }
@@ -194,7 +214,7 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
     }
 
     public boolean isInterestCompoundingPeriod() {
-        return this.interestCompoundingPeriod;
+        return !(this.interestCompoundingPeriodEnum.equals(InvestmentCompoundingInterestPeriodType.NONE.getValue()));
     }
 
     public boolean isInvestmentTerm() {
