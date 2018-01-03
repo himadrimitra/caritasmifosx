@@ -703,6 +703,10 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
 
 	public void setCloseOnDate(Date closeOnDate) {
 		this.closeOnDate = closeOnDate;
+	}
+
+	public void setMaturityAmount(BigDecimal maturityAmount) {
+		this.maturityAmount = maturityAmount;
 	} 
     
     

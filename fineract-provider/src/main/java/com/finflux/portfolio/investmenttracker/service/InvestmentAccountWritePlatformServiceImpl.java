@@ -230,6 +230,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             Date activationDate = investmentAccount.getActivatedOnDate().toDate();
             BigDecimal cumulativeInterestAmount = BigDecimal.ZERO;
             BigDecimal totalInterest = investmentAccount.getMaturityAmount().subtract(investmentAccount.getInvestmentAmount());
+            totalInterest = Money.of(investmentAccount.getCurrency(), totalInterest).getAmount();
             updateSavingLinkageAccountOnActivate(investmentAccountId, appUser,
 					investmentAccount, investmentAccountSavingsLinkages,
 					activationDate, cumulativeInterestAmount, totalInterest);
@@ -331,13 +332,16 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
     
     private void processCharge(AppUser appUser, InvestmentAccount investmentAccount, Date date) {
         if(investmentAccount.getInvestmentAccountCharges().size()>0){
+        	BigDecimal activationCharge = BigDecimal.ZERO;
             for(InvestmentAccountCharge charge : investmentAccount.getInvestmentAccountCharges()){
                 if(charge.isAcivationCharge() && charge.getCharge().isApplyToInvestment()){
+                	activationCharge = activationCharge.add(charge.getAmount());
                     InvestmentTransaction investmentTransaction = InvestmentTransaction.payCharge(investmentAccount, investmentAccount.getOfficeId(), date, charge.getAmount(), investmentAccount.getInvestmentAmount(), date, appUser.getId());
                     investmentAccount.getTransactions().add(investmentTransaction);
                 }
                 
-            }
+            }            
+            investmentAccount.setMaturityAmount(investmentAccount.getMaturityAmount().subtract(activationCharge));
         }        
     }
 
