@@ -629,11 +629,13 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             InvestmentProduct investmentProductData = this.investmentProductRepositoryWrapper
                     .findOneWithNotFoundDetection(investmentProductId);
             Integer numberOfDays = Days.daysBetween(LocalDate.fromDateFields(investmentDate), LocalDate.fromDateFields(marturityDate))
-                    .getDays();
+                    .getDays();           
             if (!investmentProductData.isInterestCompoundingPeriod()) {
                 BigDecimal dailyInterestRate = getDailyInterestRate(investmentRate, investmentRateType);
                 BigDecimal interestEarned = calcualteInterest(investmentAmount, dailyInterestRate, numberOfDays);
                 ;
+                interestEarned = Money.of(investmentProductData.getCurrency(), interestEarned).getAmount();
+                
                 maturityAmount = investmentAmount.add(Money.of(investmentProductData.getCurrency(), interestEarned).getAmount());
             }
         }

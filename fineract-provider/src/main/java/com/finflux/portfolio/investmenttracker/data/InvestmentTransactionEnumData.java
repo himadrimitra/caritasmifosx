@@ -12,6 +12,7 @@ public class InvestmentTransactionEnumData {
     private final boolean withdrawal;
     private final boolean interestPosting;
     private final boolean feeDeduction;
+    private final boolean accrualInterest;
 
     public InvestmentTransactionEnumData(Long id, String code, String value) {
         this.id = id;
@@ -21,6 +22,7 @@ public class InvestmentTransactionEnumData {
         this.withdrawal = Long.valueOf(InvestmentTransactionType.WITHDRAWAL.getValue()).equals(this.id);
         this.interestPosting = Long.valueOf(InvestmentTransactionType.INTEREST_POSTING.getValue()).equals(this.id);
         this.feeDeduction = Long.valueOf(InvestmentTransactionType.PAY_CHARGE.getValue()).equals(this.id);
+        this.accrualInterest = Long.valueOf(InvestmentTransactionType.ACCRUAL_INTEREST.getValue()).equals(this.id);
     }
 
     public boolean isDeposit() {
@@ -54,6 +56,8 @@ public class InvestmentTransactionEnumData {
         return this.value;
     }
     
-    
+    public boolean isAccrualInterest() {
+        return this.accrualInterest;
+    }
 
 }

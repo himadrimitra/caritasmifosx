@@ -54,7 +54,7 @@ public class CashBasedAccountingProcessorForInvestment implements AccountingProc
                 this.helper.createCashBasedJournalEntriesAndReversalsForInvestment(CASH_ACCOUNTS_FOR_INVESTMENT.INVESTMENT_PARTNER_ACCOUNT.getValue(), CASH_ACCOUNTS_FOR_INVESTMENT.FUND_SOURCE.getValue(), investmentProductId, amount, isReversal, journalEntry);
             }else if(investmentTransactionDTO.getTransactionType().isFeeDeduction()){
                 this.helper.createCashBasedJournalEntriesAndReversalsForInvestment(CASH_ACCOUNTS_FOR_INVESTMENT.BANK_FEE_EXPENSE.getValue(), CASH_ACCOUNTS_FOR_INVESTMENT.FUND_SOURCE.getValue(), investmentProductId, amount, isReversal, journalEntry);
-            }else if(investmentTransactionDTO.getTransactionType().isInterestPosting()){
+            }else if(investmentTransactionDTO.getTransactionType().isInterestPosting() || investmentTransactionDTO.getTransactionType().isAccrualInterest()){
                 this.helper.createCashBasedJournalEntriesAndReversalsForInvestment(CASH_ACCOUNTS_FOR_INVESTMENT.PARTNER_INTEREST_RECEIVABLE.getValue(), CASH_ACCOUNTS_FOR_INVESTMENT.INCOME_FROM_INVESTMENT_INTEREST.getValue(), investmentProductId, amount, isReversal, journalEntry);
             }
 
