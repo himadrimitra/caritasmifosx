@@ -764,6 +764,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
                 
                 //deposit (interest earned)
                 this.savingsAccountTransactionRepository.save(transactions);
+                savingAccount.getTransactions().addAll(transactions);
                 this.updateRunningBalance(savingAccount);
                 List<InvestmentSavingsTransaction> investmentTransactions = new ArrayList<>();
                 InvestmentSavingsTransaction investmentReleaseSavingsTransaction = InvestmentSavingsTransaction.create(savingAccount.getId(), investmentAccount.getId(), releaseTransaction.getId(), getMessage(InvestmentAccountApiConstants.releaseAmountMessage, investmentAccount.getId()));

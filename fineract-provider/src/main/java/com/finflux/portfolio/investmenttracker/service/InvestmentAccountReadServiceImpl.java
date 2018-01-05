@@ -543,9 +543,8 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         for (InvestmentAccountSavingsLinkagesData linkageData : investmentAccountData.getInvestmentSavingsLinkagesData()) {
 
             BigDecimal savingsAccInvAmount = linkageData.getExpectedMaturityAmount();
-            BigDecimal interestAmount = linkageData.getExpectedInterestAmount();
             BigDecimal chargeAmount = linkageData.getExpectedChargeAmount();
-            BigDecimal newSavingsAccInvAmount = MathUtility.add(savingsAccInvAmount,interestAmount).subtract(chargeAmount);
+            BigDecimal newSavingsAccInvAmount = MathUtility.subtract(savingsAccInvAmount, chargeAmount);
             linkageData.setIndividualInvestmentAmount(newSavingsAccInvAmount);
             totalReinvestmentAmount = totalReinvestmentAmount.add(newSavingsAccInvAmount);
 
