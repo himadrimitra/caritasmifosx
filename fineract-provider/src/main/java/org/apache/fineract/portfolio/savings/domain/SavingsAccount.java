@@ -1129,55 +1129,69 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
         LocalDate lastSavingsDate = null;
         final BigDecimal withdrawalFee = null;
+        Money holdAmountTillTransactionDate = Money.zero(this.currency);
+        Money releaseAmountTillTransactionDate = Money.zero(this.currency);
         for (final SavingsAccountTransaction transaction : transactionsSortedByDate) {
-            if (transaction.isNotReversed() && transaction.isCredit()) {
-                runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
-                if (overdraftInterest.isGreaterThanZero()) {
-                    overdraftInterest = overdraftInterest.minus(transaction.getAmount(this.currency));
-                    if (overdraftInterest.isLessThanZero()) {
-                        overdraftInterest = overdraftInterest.zero();
+        	if(!transaction.getTransactionLocalDate().isAfter(currentTransaction.getTransactionLocalDate())  ){
+        		if(transaction.getTypeOf().equals(SavingsAccountTransactionType.AMOUNT_HOLD.getValue())){
+            		holdAmountTillTransactionDate = holdAmountTillTransactionDate.plus(transaction.getAmount(this.currency));
+            	}else if(transaction.getTypeOf().equals(SavingsAccountTransactionType.AMOUNT_RELEASE.getValue())){
+            		releaseAmountTillTransactionDate = releaseAmountTillTransactionDate.plus(transaction.getAmount(this.currency));
+            	}
+                if (transaction.isNotReversed() && transaction.isCredit()) {
+                    runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
+                    if (overdraftInterest.isGreaterThanZero()) {
+                        overdraftInterest = overdraftInterest.minus(transaction.getAmount(this.currency));
+                        if (overdraftInterest.isLessThanZero()) {
+                            overdraftInterest = overdraftInterest.zero();
+                        }
                     }
+                } else if (transaction.isNotReversed() && transaction.isDebit()) {
+                    runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
+                    if (transaction.isOverdraftInterestAndNotReversed()) {
+                        overdraftInterest = overdraftInterest.plus(transaction.getAmount(this.currency));
+                    }
+                } else {
+                    continue;
                 }
-            } else if (transaction.isNotReversed() && transaction.isDebit()) {
-                runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
-                if (transaction.isOverdraftInterestAndNotReversed()) {
-                    overdraftInterest = overdraftInterest.plus(transaction.getAmount(this.currency));
-                }
-            } else {
-                continue;
-            }
 
-            /*
-             * Loop through the onHold funds and see if we need to deduct or add
-             * to minimum required balance and the point in time the transaction
-             * was made:
-             */
-            if (depositAccountOnHoldTransactions != null) {
-                for (final DepositAccountOnHoldTransaction onHoldTransaction : depositAccountOnHoldTransactions) {
-                    // Compare the balance of the on hold:
-                    if ((onHoldTransaction.getTransactionDate().isBefore(transaction.transactionLocalDate())
-                            || onHoldTransaction.getTransactionDate().isEqual(transaction.transactionLocalDate()))
-                            && (lastSavingsDate == null || onHoldTransaction.getTransactionDate().isAfter(lastSavingsDate))) {
-                        if (onHoldTransaction.getTransactionType().isHold()) {
-                            minRequiredBalance = minRequiredBalance.plus(onHoldTransaction.getAmountMoney(this.currency));
-                        } else {
-                            minRequiredBalance = minRequiredBalance.minus(onHoldTransaction.getAmountMoney(this.currency));
+                /*
+                 * Loop through the onHold funds and see if we need to deduct or add
+                 * to minimum required balance and the point in time the transaction
+                 * was made:
+                 */
+                if (depositAccountOnHoldTransactions != null) {
+                    for (final DepositAccountOnHoldTransaction onHoldTransaction : depositAccountOnHoldTransactions) {
+                        // Compare the balance of the on hold:
+                        if ((onHoldTransaction.getTransactionDate().isBefore(transaction.transactionLocalDate())
+                                || onHoldTransaction.getTransactionDate().isEqual(transaction.transactionLocalDate()))
+                                && (lastSavingsDate == null || onHoldTransaction.getTransactionDate().isAfter(lastSavingsDate))) {
+                            if (onHoldTransaction.getTransactionType().isHold()) {
+                                minRequiredBalance = minRequiredBalance.plus(onHoldTransaction.getAmountMoney(this.currency));
+                            } else {
+                                minRequiredBalance = minRequiredBalance.minus(onHoldTransaction.getAmountMoney(this.currency));
+                            }
                         }
                     }
                 }
-            }
 
-            // deal with potential minRequiredBalance and
-            // enforceMinRequiredBalance
-            if (!isException && transaction.canProcessBalanceCheck()) {
-                if (runningBalance.minus(minRequiredBalance).plus(overdraftInterest).isLessThanZero()) {
-                    insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
+                // deal with potential minRequiredBalance and
+                // enforceMinRequiredBalance
+                if (!isException && transaction.canProcessBalanceCheck()) {
+                    if (runningBalance.minus(minRequiredBalance).plus(overdraftInterest).isLessThanZero()) {
+                        insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
+                    }
                 }
-            }
-            lastSavingsDate = transaction.transactionLocalDate();
+                lastSavingsDate = transaction.transactionLocalDate();
+        	}else{
+        		break;
+        	}
         }
-        if (MathUtility.isGreaterThanZero(this.getSavingsHoldAmount())) {
-            if (runningBalance.minus(this.getSavingsHoldAmount()).isLessThanZero()) {
+        if (MathUtility.isGreaterThanZero(holdAmountTillTransactionDate.getAmount())) {
+        	if(holdAmountTillTransactionDate.isGreaterThanOrEqualTo(releaseAmountTillTransactionDate)){
+        		holdAmountTillTransactionDate = holdAmountTillTransactionDate.minus(releaseAmountTillTransactionDate);
+        	}
+            if (runningBalance.minus(holdAmountTillTransactionDate.getAmount()).isLessThanZero()) {
                 insufficientBalanceException(currentTransaction.getAmount(), withdrawalFee);
             }
         }
@@ -1300,7 +1314,7 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
             if (!transaction.getTransactionLocalDate().isAfter(date)) {
                 if (transaction.isCredit()) {
                     totalOutstandingAmount = totalOutstandingAmount.plus(transaction.getAmount(this.currency));
-                } else if (transaction.isDebit() || transaction.isAmountOnHold()) {
+                } else if (transaction.isDebit()) {
                     totalOutstandingAmount = totalOutstandingAmount.minus(transaction.getAmount(this.currency));
                 }
             }

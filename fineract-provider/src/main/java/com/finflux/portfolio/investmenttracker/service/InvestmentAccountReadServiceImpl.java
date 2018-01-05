@@ -543,9 +543,8 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         for (InvestmentAccountSavingsLinkagesData linkageData : investmentAccountData.getInvestmentSavingsLinkagesData()) {
 
             BigDecimal savingsAccInvAmount = linkageData.getExpectedMaturityAmount();
-            BigDecimal interestAmount = linkageData.getExpectedInterestAmount();
             BigDecimal chargeAmount = linkageData.getExpectedChargeAmount();
-            BigDecimal newSavingsAccInvAmount = MathUtility.add(savingsAccInvAmount,interestAmount).subtract(chargeAmount);
+            BigDecimal newSavingsAccInvAmount = MathUtility.subtract(savingsAccInvAmount, chargeAmount);
             linkageData.setIndividualInvestmentAmount(newSavingsAccInvAmount);
             totalReinvestmentAmount = totalReinvestmentAmount.add(newSavingsAccInvAmount);
 
@@ -629,11 +628,13 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             InvestmentProduct investmentProductData = this.investmentProductRepositoryWrapper
                     .findOneWithNotFoundDetection(investmentProductId);
             Integer numberOfDays = Days.daysBetween(LocalDate.fromDateFields(investmentDate), LocalDate.fromDateFields(marturityDate))
-                    .getDays();
+                    .getDays();           
             if (!investmentProductData.isInterestCompoundingPeriod()) {
                 BigDecimal dailyInterestRate = getDailyInterestRate(investmentRate, investmentRateType);
                 BigDecimal interestEarned = calcualteInterest(investmentAmount, dailyInterestRate, numberOfDays);
                 ;
+                interestEarned = Money.of(investmentProductData.getCurrency(), interestEarned).getAmount();
+                
                 maturityAmount = investmentAmount.add(Money.of(investmentProductData.getCurrency(), interestEarned).getAmount());
             }
         }
