@@ -594,7 +594,7 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         validateForExistingSavingLinkageAccount(savingsId, investmentAccount.getInvestmentAccountSavingsLinkages());
         processRelease(investmentAccount, transferDate, investmentAccountSavingsLinkage);
         SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsId);
-  
+        this.fromApiJsonDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, investmentAccountSavingsLinkage.getInvestmentAmount(), transferDate);
         InvestmentAccountSavingsLinkages newInvestmentAccountSavingsLinkage = new InvestmentAccountSavingsLinkages(investmentAccountSavingsLinkage, savingsAccount, transferDate.toDate());
         investmentAccount.getInvestmentAccountSavingsLinkages().add(newInvestmentAccountSavingsLinkage);
         
