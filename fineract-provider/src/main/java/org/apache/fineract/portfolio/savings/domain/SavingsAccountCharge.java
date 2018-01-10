@@ -889,4 +889,14 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
     public boolean canOverriteSavingAccountRules() {
         return !(isSavingsActivation() || isWithdrawalFee());
     }
+
+	public SavingsAccount getSavingsAccount() {
+		return this.savingsAccount;
+	}
+
+	public void setSavingsAccount(SavingsAccount savingsAccount) {
+		this.savingsAccount = savingsAccount;
+	}
+    
+    
 }
