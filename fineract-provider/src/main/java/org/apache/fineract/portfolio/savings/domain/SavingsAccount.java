@@ -1310,16 +1310,23 @@ payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransa
     }
     public BigDecimal getWithdrawalBalanceAsOfDate(final LocalDate date){
     	Money totalOutstandingAmount = Money.zero(this.currency);
+    	Money holdAmount = Money.zero(this.currency);
+    	Money releaseAmount = Money.zero(this.currency);
         for (final SavingsAccountTransaction transaction : this.transactions) {
             if (!transaction.getTransactionLocalDate().isAfter(date)) {
                 if (transaction.isCredit()) {
                     totalOutstandingAmount = totalOutstandingAmount.plus(transaction.getAmount(this.currency));
                 } else if (transaction.isDebit()) {
                     totalOutstandingAmount = totalOutstandingAmount.minus(transaction.getAmount(this.currency));
+                } else if (transaction.isAmountRelease()) {
+                	releaseAmount = releaseAmount.plus(transaction.getAmount(this.currency));
+                } else if (transaction.isAmountOnHold()) {
+                	holdAmount = holdAmount.plus(transaction.getAmount(this.currency));
                 }
             }
         }
-        return totalOutstandingAmount.getAmount();
+        holdAmount = holdAmount.minus(releaseAmount);
+        return totalOutstandingAmount.minus(holdAmount).getAmount();
     }
 
     public void modifyApplication(final JsonCommand command, final Map<String, Object> actualChanges) {
