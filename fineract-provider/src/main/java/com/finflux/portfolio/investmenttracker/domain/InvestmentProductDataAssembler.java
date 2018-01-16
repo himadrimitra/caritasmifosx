@@ -39,6 +39,7 @@ public class InvestmentProductDataAssembler {
 
         final String currencyCode = command.stringValueOfParameterNamed(InvestmentProductApiconstants.currencyCodeParamName);
         final Integer digitsAfterDecimal = command.integerValueOfParameterNamed(InvestmentProductApiconstants.digitsAfterDecimalParamName);
+        final Integer categoryId = command.integerValueOfParameterNamed(InvestmentProductApiconstants.categoryParamName);
         final Integer inMultiplesOf = command.integerValueOfParameterNamed(InvestmentProductApiconstants.inMultiplesOfParamName);
         final MonetaryCurrency currency = new MonetaryCurrency(currencyCode, digitsAfterDecimal, inMultiplesOf);
 
@@ -80,7 +81,7 @@ public class InvestmentProductDataAssembler {
                 minNominalInterestRate, defaultNominalInterestRate, maxNominalInterestRate, nominalInterestRateEnum,
                 interestCompoundingPeriodEnum, minInvestmentTermPeriod, defaultInvestmentTermPeriod, maxInvestmentTermPeriod,
                 investmentTermEnum, overrideTermsInInvestmentAccounts, nominalInterestRate, interestCompoundingPeriod, investmentTerm,
-                accountingType, charges);
+                accountingType, charges, categoryId);
 
         return investmentProduct;
     }

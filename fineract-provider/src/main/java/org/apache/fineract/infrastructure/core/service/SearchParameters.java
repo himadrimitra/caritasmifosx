@@ -69,6 +69,7 @@ public final class SearchParameters {
     // For Vouchers
     private final String voucherType;
     private final String voucherNumber;
+    private Long partnerId = null;
 
     public Integer getTransactionsCount() {
         return this.transactionsCount;
@@ -954,7 +955,7 @@ public final class SearchParameters {
             final String orderBy, final String sortOrder, final Long staffId, final String accountNo, final Long loanId,
             final Long savingsId, final Boolean orphansOnly, final boolean isSelfUser, final Long centerId, final Long groupId,
             final Long paymentTypeId, final Long clientId, final String voucherType, final String voucherNumber, final Date startDate,
-            final Date endDate, final Long productId, final Long categoryId, final Integer status) {
+            final Date endDate, final Long productId, final Long categoryId, final Integer status, final Long partnerId) {
         if (searchConditions == null) {
             searchConditions = new LinkedHashMap<>(1);
         }
@@ -988,10 +989,11 @@ public final class SearchParameters {
         this.voucherNumber = voucherNumber;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.partnerId = partnerId;
     }
     
     public static SearchParameters forInvestmentAccount(final Map<String, String> searchConditions, final Long officeId,
-             final Long investmeproductId, final Long partnerId, final Integer status,final Date maturityStartDate,final Date maturityEndDate) {
+            final Long categoryId,final Long investmeproductId, final Long partnerId, final Integer status,final Date maturityStartDate,final Date maturityEndDate) {
         final Integer maxLimitAllowed = null;
         final Long staffId = null;
         final String accountNo = null;
@@ -1015,7 +1017,19 @@ public final class SearchParameters {
         final boolean isSelfUser = false;
         return new SearchParameters(searchConditions, officeId, externalId, displayName, hierarchy, firstname, lastname, offset,
                 maxLimitAllowed, orderBy, sortOrder, staffId, accountNo, loanId, savingsId, orphansOnly, isSelfUser, centerId, groupId,
-                paymentTypeId, clientId, voucherType, voucherNumber, maturityStartDate, maturityEndDate, investmeproductId, partnerId, status);
+                paymentTypeId, clientId, voucherType, voucherNumber, maturityStartDate, maturityEndDate, investmeproductId, categoryId, status,partnerId);
     }
+
+    
+    public Long getPartnerId() {
+        return this.partnerId;
+    }
+
+    
+    public void setPartnerId(Long partnerId) {
+        this.partnerId = partnerId;
+    }
+
+    
 
 }

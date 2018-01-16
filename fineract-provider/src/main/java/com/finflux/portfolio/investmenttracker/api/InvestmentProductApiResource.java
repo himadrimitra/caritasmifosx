@@ -10,6 +10,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -90,11 +91,11 @@ public class InvestmentProductApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo) {
+    public String retrieveAll(@Context final UriInfo uriInfo,@QueryParam("categoryId") final Long categoryId) {
 
         this.context.authenticatedUser().validateHasReadPermission(InvestmentProductApiconstants.INVESTMENT_PRODUCT_RESOURCE_NAME);
 
-        final Collection<InvestmentProductData> products = this.investmentProductReadService.retrieveAll();
+        final Collection<InvestmentProductData> products = this.investmentProductReadService.retrieveAll(categoryId);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, products);

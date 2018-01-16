@@ -9,6 +9,7 @@ import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.producttoaccountmapping.data.ChargeToGLAccountMapper;
 import org.apache.fineract.accounting.producttoaccountmapping.data.PaymentTypeToGLAccountMapper;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
@@ -53,6 +54,8 @@ public class InvestmentProductData {
     private final List<EnumOptionData> accountingRuleOptions;
     private final Map<String, List<GLAccountData>> accountingMappingOptions;
     private final Collection<PaymentTypeData> paymentTypeOptions;
+    private final List<CodeValueData> categoryOptions;
+    private final CodeValueData category;
 
     public InvestmentProductData(final Long id, final String name, final String shortName, final String description,
             final CurrencyData currency, final BigDecimal minNominalInterestRate, final BigDecimal defaultNominalInterestRate,
@@ -67,7 +70,7 @@ public class InvestmentProductData {
             final List<EnumOptionData> investmentCompoundingPeriodTypeOptions,
             final List<EnumOptionData> investmentTermFrequencyTypeOptions, final Collection<ChargeData> chargesOptions,
             final List<EnumOptionData> accountingRuleOptions, final Map<String, List<GLAccountData>> accountingMappingOptions,
-            final Collection<PaymentTypeData> paymentTypeOptions) {
+            final Collection<PaymentTypeData> paymentTypeOptions, final List<CodeValueData> categoryOptions,final CodeValueData category) {
         this.id = id;
         this.name = name;
         this.shortName = shortName;
@@ -99,6 +102,8 @@ public class InvestmentProductData {
         this.accountingRuleOptions = accountingRuleOptions;
         this.accountingMappingOptions = accountingMappingOptions;
         this.paymentTypeOptions = paymentTypeOptions;
+        this.categoryOptions = categoryOptions;
+        this.category = category;
     }
 
     public static InvestmentProductData investmentProductDetails(final Long id, final String name, final String shortName,
@@ -107,7 +112,7 @@ public class InvestmentProductData {
             final EnumOptionData compoundingPeriodType, final Integer minInvesmentTermPeriod,
             final Integer defaultInvesmentTermPeriod, final Integer maxInvesmentTermPeriod,
             final EnumOptionData invesmentTermPeriodType, final boolean overrideTermsInvesmentAccounts, final boolean nominalIntersetRate,
-            final boolean interestCompoundingPeriod, final boolean invesmentTerm, final EnumOptionData accountingRuleType) {
+            final boolean interestCompoundingPeriod, final boolean invesmentTerm, final EnumOptionData accountingRuleType, final CodeValueData category) {
         final Map<String, Object> accountingMappings = null;
         final Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings = null;
         final Collection<ChargeToGLAccountMapper> feeToExpenseAccountMappings = null;
@@ -120,14 +125,14 @@ public class InvestmentProductData {
         final List<EnumOptionData> accountingRuleOptions = null;
         final Map<String, List<GLAccountData>> accountingMappingOptions = null;
         final Collection<PaymentTypeData> paymentTypeOptions = null;
-
+        final List<CodeValueData> categoryOptions = null;
         return new InvestmentProductData(id, name, shortName, description, currency, minNominalInterestRate, defaultNominalInterestRate,
                 maxNominalInterestRate, interestRateType, compoundingPeriodType, minInvesmentTermPeriod, defaultInvesmentTermPeriod,
                 maxInvesmentTermPeriod, invesmentTermPeriodType, overrideTermsInvesmentAccounts, nominalIntersetRate,
                 interestCompoundingPeriod, invesmentTerm, accountingRuleType, accountingMappings, paymentChannelToFundSourceMappings,
                 feeToExpenseAccountMappings, charges, currencyOptions, interestRateFrequencyTypeOptions,
                 investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions, chargesOptions, accountingRuleOptions,
-                accountingMappingOptions, paymentTypeOptions);
+                accountingMappingOptions, paymentTypeOptions, categoryOptions, category);
     }
 
     public static InvestmentProductData investmentProductDetailsWithTemplate(final Long id, final String name, final String shortName,
@@ -144,14 +149,14 @@ public class InvestmentProductData {
             final List<EnumOptionData> investmentCompoundingPeriodTypeOptions,
             final List<EnumOptionData> investmentTermFrequencyTypeOptions, final Collection<ChargeData> chargesOptions,
             final List<EnumOptionData> accountingRuleOptions, final Map<String, List<GLAccountData>> accountingMappingOptions,
-            final Collection<PaymentTypeData> paymentTypeOptions) {
+            final Collection<PaymentTypeData> paymentTypeOptions, final List<CodeValueData> categoryOptions, final CodeValueData category) {
         return new InvestmentProductData(id, name, shortName, description, currency, minNominalInterestRate, defaultNominalInterestRate,
                 maxNominalInterestRate, interestRateType, compoundingPeriodType, minInvesmentTermPeriod, defaultInvesmentTermPeriod,
                 maxInvesmentTermPeriod, invesmentTermPeriodType, overrideTermsInvesmentAccounts, nominalIntersetRate,
                 interestCompoundingPeriod, invesmentTerm, accountingRuleType, accountingMappings, paymentChannelToFundSourceMappings,
                 feeToExpenseAccountMappings, charges, currencyOptions, interestRateFrequencyTypeOptions,
                 investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions, chargesOptions, accountingRuleOptions,
-                accountingMappingOptions, paymentTypeOptions);
+                accountingMappingOptions, paymentTypeOptions, categoryOptions, category);
 
     }
 
@@ -167,7 +172,7 @@ public class InvestmentProductData {
         final List<EnumOptionData> accountingRuleOptions = null;
         final Map<String, List<GLAccountData>> accountingMappingOptions = null;
         final Collection<PaymentTypeData> paymentTypeOptions = null;
-
+        final List<CodeValueData> categoryOptions = null;
         return new InvestmentProductData(investmentProductData.getId(), investmentProductData.getName(),
                 investmentProductData.getShortName(), investmentProductData.getDescription(), investmentProductData.getCurrency(),
                 investmentProductData.getMinNominalInterestRate(), investmentProductData.getDefaultNominalInterestRate(),
@@ -179,7 +184,7 @@ public class InvestmentProductData {
                 investmentProductData.isInvesmentTerm(), investmentProductData.getAccountingRuleType(), accountingMappings,
                 paymentChannelToFundSourceMappings, feeToExpenseAccountMappings, investmentProductData.getCharges(), currencyOptions,
                 interestRateFrequencyTypeOptions, investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions,
-                chargesOptions, accountingRuleOptions, accountingMappingOptions, paymentTypeOptions);
+                chargesOptions, accountingRuleOptions, accountingMappingOptions, paymentTypeOptions, categoryOptions, investmentProductData.getCategory());
     }
 
     public static InvestmentProductData withTemplateDetails(final InvestmentProductData investmentProductData,
@@ -187,7 +192,7 @@ public class InvestmentProductData {
             final List<EnumOptionData> investmentCompoundingPeriodTypeOptions,
             final List<EnumOptionData> investmentTermFrequencyTypeOptions, final Collection<ChargeData> chargesOptions,
             final List<EnumOptionData> accountingRuleOptions, final Map<String, List<GLAccountData>> accountingMappingOptions,
-            final Collection<PaymentTypeData> paymentTypeOptions) {
+            final Collection<PaymentTypeData> paymentTypeOptions,final List<CodeValueData> categoryOptions) {
 
         return new InvestmentProductData(investmentProductData.getId(), investmentProductData.getName(),
                 investmentProductData.getShortName(), investmentProductData.getDescription(), investmentProductData.getCurrency(),
@@ -201,14 +206,14 @@ public class InvestmentProductData {
                 investmentProductData.getAccountingMappings(), investmentProductData.getPaymentChannelToFundSourceMappings(),
                 investmentProductData.getFeeToExpenseAccountMappings(), investmentProductData.getCharges(), currencyOptions,
                 interestRateFrequencyTypeOptions, investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions,
-                chargesOptions, accountingRuleOptions, accountingMappingOptions, paymentTypeOptions);
+                chargesOptions, accountingRuleOptions, accountingMappingOptions, paymentTypeOptions, categoryOptions, investmentProductData.getCategory());
     }
 
     public static InvestmentProductData onlyTemplateDetails(final Collection<CurrencyData> currencyOptions,
             final List<EnumOptionData> interestRateFrequencyTypeOptions, final List<EnumOptionData> investmentCompoundingPeriodTypeOptions,
             final List<EnumOptionData> investmentTermFrequencyTypeOptions, final Collection<ChargeData> chargesOptions,
             final List<EnumOptionData> accountingRuleOptions, final Map<String, List<GLAccountData>> accountingMappingOptions,
-            final Collection<PaymentTypeData> paymentTypeOptions) {
+            final Collection<PaymentTypeData> paymentTypeOptions, final List<CodeValueData> categoryOptions) {
 
         Long id = null;
         String name = null;
@@ -233,14 +238,14 @@ public class InvestmentProductData {
         Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings = null;
         Collection<ChargeToGLAccountMapper> feeToExpenseAccountMappings = null;
         Collection<ChargeData> charges = null;
-
+        final CodeValueData category = null;
         return new InvestmentProductData(id, name, shortName, description, currency, minNominalInterestRate, defaultNominalInterestRate,
                 maxNominalInterestRate, interestRateType, compoundingPeriodType, minInvesmentTermPeriod, defaultInvesmentTermPeriod,
                 maxInvesmentTermPeriod, invesmentTermPeriodType, overrideTermsInvesmentAccounts, nominalIntersetRate,
                 interestCompoundingPeriod, invesmentTerm, accountingRuleType, accountingMappings, paymentChannelToFundSourceMappings,
                 feeToExpenseAccountMappings, charges, currencyOptions, interestRateFrequencyTypeOptions,
                 investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions, chargesOptions, accountingRuleOptions,
-                accountingMappingOptions, paymentTypeOptions);
+                accountingMappingOptions, paymentTypeOptions, categoryOptions, category);
     }
 
     public static InvestmentProductData withCharges(final InvestmentProductData investmentProductData, final Collection<ChargeData> charges) {
@@ -252,7 +257,7 @@ public class InvestmentProductData {
         final List<EnumOptionData> accountingRuleOptions = null;
         final Map<String, List<GLAccountData>> accountingMappingOptions = null;
         final Collection<PaymentTypeData> paymentTypeOptions = null;
-
+        final List<CodeValueData> categoryOptions = null;
         return new InvestmentProductData(investmentProductData.getId(), investmentProductData.getName(),
                 investmentProductData.getShortName(), investmentProductData.getDescription(), investmentProductData.getCurrency(),
                 investmentProductData.getMinNominalInterestRate(), investmentProductData.getDefaultNominalInterestRate(),
@@ -265,7 +270,7 @@ public class InvestmentProductData {
                 investmentProductData.getAccountingMappings(), investmentProductData.getPaymentChannelToFundSourceMappings(),
                 investmentProductData.getFeeToExpenseAccountMappings(), charges, currencyOptions, interestRateFrequencyTypeOptions,
                 investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions, chargesOptions, accountingRuleOptions,
-                accountingMappingOptions, paymentTypeOptions);
+                accountingMappingOptions, paymentTypeOptions, categoryOptions, investmentProductData.getCategory());
     }
 
     public boolean hasAccountingEnabled() {
@@ -399,6 +404,10 @@ public class InvestmentProductData {
     public int accountingRuleTypeId() {
         return this.accountingRuleType.getId().intValue();
     }
+        
+    public List<CodeValueData> getCategoryOptions() {
+        return this.categoryOptions;
+    }
 
     public static InvestmentProductData lookup(long id, String name){
         String shortName = null;
@@ -430,13 +439,21 @@ public class InvestmentProductData {
         final List<EnumOptionData> accountingRuleOptions = null;
         final Map<String, List<GLAccountData>> accountingMappingOptions = null;
         final Collection<PaymentTypeData> paymentTypeOptions = null;
-        
+        final List<CodeValueData> categoryOptions = null;
+        final CodeValueData category = null;
         return new InvestmentProductData(id, name, shortName, description, currency, minNominalInterestRate, defaultNominalInterestRate,
                 maxNominalInterestRate, interestRateType, compoundingPeriodType, minInvesmentTermPeriod, defaultInvesmentTermPeriod,
                 maxInvesmentTermPeriod, invesmentTermPeriodType, overrideTermsInvesmentAccounts, nominalIntersetRate,
                 interestCompoundingPeriod, invesmentTerm, accountingRuleType, accountingMappings, paymentChannelToFundSourceMappings,
                 feeToExpenseAccountMappings, charges, currencyOptions, interestRateFrequencyTypeOptions,
                 investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions, chargesOptions, accountingRuleOptions,
-                accountingMappingOptions, paymentTypeOptions);
+                accountingMappingOptions, paymentTypeOptions, categoryOptions, category);
     }
+
+    
+    public CodeValueData getCategory() {
+        return this.category;
+    }
+    
+    
 }

@@ -39,6 +39,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.portfolio.investmenttracker.api.InvestmentProductApiconstants;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountChargeData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountData;
 import com.finflux.portfolio.investmenttracker.data.InvestmentAccountSavingsLinkagesData;
@@ -113,16 +114,17 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             OfficeData officeData = this.officeReadPlatformService.retrieveOffice(officeId);
              savingsAccounts = this.savingsAccountReadPlatformService.retrieveAllActiveSavingsAccountsByOffice(officeData.getHierarchy());
         }        
-        
+        final List<CodeValueData> categoryOptions = new ArrayList<>(
+                this.codeValueReadPlatformService.retrieveCodeValuesByCode(InvestmentProductApiconstants.investmentCategory)); 
         Collection<EnumOptionData> investmentAccountStatus = InvestmentAccountStatus.investmentAccountStatusTypeOptions();
         
         if(investmentAccountData != null){
             return InvestmentAccountData.withTemplateData(investmentAccountData,partnerOptions, investmentProductOptions, investmentChargeOptions, officeDataOptions,
-                    interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccounts, investmentAccountStatus);
+                    interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccounts, investmentAccountStatus, categoryOptions);
         }
         
         return InvestmentAccountData.onlyTemplateData(partnerOptions, investmentProductOptions, investmentChargeOptions, officeDataOptions,
-                interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccounts, investmentAccountStatus);
+                interestRateFrequencyTypeOptions, investmentTermFrequencyTypeOptions,staffOptions,savingsAccounts, investmentAccountStatus, categoryOptions);
        
     }
 
@@ -131,7 +133,11 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         InvestmentAccountMapper investmentAccountMapper = new InvestmentAccountMapper();
         String sql = "SELECT " + investmentAccountMapper.schema();
         Long officeId = searchParameters.getOfficeId();
-        Long partnerId = searchParameters.getCategoryId();
+        Long partnerId = searchParameters.getPartnerId();
+        Long categoryId = searchParameters.getCategoryId();
+        if(categoryId != null){
+            sql = sql+"";
+        }
         Long investmetnProductId = searchParameters.getProductId();
         Integer status = searchParameters.getStatus();
         LocalDate maturityStartDate = null;
@@ -151,6 +157,12 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
                 queryParams.append(" and fia.partner_id = ").append(partnerId);
             else
                 queryParams.append(" WHERE fia.partner_id = ").append(partnerId);
+        }
+        if( categoryId != null){
+            if(queryParams.length() > 0)
+                queryParams.append(" and fip.category = ").append(categoryId);
+            else
+                queryParams.append(" WHERE fip.category = ").append(categoryId);
         }
         if( investmetnProductId != null){
             if(queryParams.length() > 0)
@@ -178,9 +190,9 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         }
         
         if(queryParams.length() > 0){
-            sql = sql + queryParams.toString() + " ORDER BY fia.id";
+            sql = sql + queryParams.toString() + " ORDER BY fia.maturityon_date ";
         }else{
-            sql = sql + " ORDER BY fia.id desc";
+            sql = sql + " ORDER BY fia.maturityon_date ";
         }
         
         Collection<InvestmentAccountData> investmentAccountDetails = this.jdbcTemplate.query(sql, investmentAccountMapper);
@@ -278,6 +290,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
             sqlBuilder.append(" join m_office off on off.id = fia.office_id");
             sqlBuilder.append(" join m_code_value cv on cv.id = fia.partner_id");
             sqlBuilder.append(" join f_investment_product fip on fip.id =  fia.investment_product_id");
+            sqlBuilder.append(" left join m_code_value category_cv on category_cv.id = fip.category");
             sqlBuilder.append(" left join m_appuser sbu on sbu.id = fia.submittedon_userid");
             sqlBuilder.append(" left join m_appuser apu on apu.id = fia.approvedon_userid");
             sqlBuilder.append(" left join m_appuser acu on acu.id = fia.activatedon_userid");
