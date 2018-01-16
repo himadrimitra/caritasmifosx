@@ -57,7 +57,10 @@ public class InvestmentProductDataValidator {
 
         final String shortName = this.fromApiJsonHelper.extractStringNamed(InvestmentProductApiconstants.shortNameParamName, element);
         baseDataValidator.reset().parameter(LoanProductConstants.shortName).value(shortName).notBlank().notExceedingLengthOf(4);
-
+        
+        final Integer categoryId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(InvestmentProductApiconstants.categoryParamName, element);
+        baseDataValidator.reset().parameter(InvestmentProductApiconstants.categoryParamName).value(categoryId).integerGreaterThanZero();
+        
         final String description = this.fromApiJsonHelper.extractStringNamed(InvestmentProductApiconstants.descriptionParamName, element);
         baseDataValidator.reset().parameter("description").value(description).notExceedingLengthOf(500);
 
@@ -292,6 +295,11 @@ public class InvestmentProductDataValidator {
             final String shortName = this.fromApiJsonHelper.extractStringNamed(InvestmentProductApiconstants.shortNameParamName, element);
             baseDataValidator.reset().parameter(InvestmentProductApiconstants.shortNameParamName).value(shortName).notBlank()
                     .notExceedingLengthOf(4);
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(InvestmentProductApiconstants.categoryParamName, element)) {
+            final Integer category = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(InvestmentProductApiconstants.categoryParamName, element);
+            baseDataValidator.reset().parameter(InvestmentProductApiconstants.categoryParamName).value(category).notNull().integerGreaterThanZero();
         }
 
         if (this.fromApiJsonHelper.parameterExists(InvestmentProductApiconstants.descriptionParamName, element)) {

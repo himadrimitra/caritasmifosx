@@ -113,7 +113,7 @@ public class InvestmentAccountApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveAll(@Context final UriInfo uriInfo, @QueryParam("searchConditions") final String searchConditions,
-            @QueryParam("officeId") final Long officeId, @QueryParam("partnerId") final Long partnerId,
+            @QueryParam("officeId") final Long officeId, @QueryParam("categoryId") final Long categoryId, @QueryParam("partnerId") final Long partnerId,
             @QueryParam("investmentProductId") final Long investmentProductId,
             @QueryParam("investmentAccountStatus") final Integer investmentAccountStatus,
             @QueryParam("marturityFromDate") final Date marturityFromDate, @QueryParam("marturityToDate") final Date marturityToDate) {
@@ -122,7 +122,7 @@ public class InvestmentAccountApiResource {
 
         final Map<String, String> searchConditionsMap = FinfluxStringUtils.convertJsonStringToMap(searchConditions);
 
-        SearchParameters searchParameters = SearchParameters.forInvestmentAccount(searchConditionsMap, officeId, investmentProductId,
+        SearchParameters searchParameters = SearchParameters.forInvestmentAccount(searchConditionsMap, officeId, categoryId, investmentProductId,
                 partnerId, investmentAccountStatus, marturityFromDate, marturityToDate);
 
         final Collection<InvestmentAccountData> investmentAccounts = this.investmentAccountReadService.retrieveAll(searchParameters);

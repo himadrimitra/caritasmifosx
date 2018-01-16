@@ -89,6 +89,9 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
     @ManyToMany
     @JoinTable(name = "f_investment_product_charge", joinColumns = @JoinColumn(name = "investment_product_id"), inverseJoinColumns = @JoinColumn(name = "charge_id"))
     protected Set<Charge> charges;
+    
+    @Column(name = "category", nullable = false)
+    private Integer category;
 
     protected InvestmentProduct() {}
 
@@ -97,7 +100,7 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
             final Integer nominalInterestRateEnum, final Integer interestCompoundingPeriodEnum, final Integer minInvestmentTermPeriod,
             final Integer defaultInvestmentTermPeriod, final Integer maxInvestmentTermPeriod, final Integer investmentTermEnum,
             boolean overrideTermsInInvestmentAccounts, final boolean nominalInterestRate, final boolean interestCompoundingPeriod,
-            final boolean investmentTerm, final Integer accountingType, final Set<Charge> charges) {
+            final boolean investmentTerm, final Integer accountingType, final Set<Charge> charges, final Integer category) {
         this.name = name;
         this.shortName = shortName;
         this.description = description;
@@ -117,6 +120,7 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
         this.investmentTerm = investmentTerm;
         this.accountingType = accountingType;
         this.charges = charges;
+        this.category = category;
     }
 
     public static InvestmentProduct createInvestmentProduct(final String name, final String shortName, final String description,
@@ -125,12 +129,12 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
             final Integer minInvestmentTermPeriod, final Integer defaultInvestmentTermPeriod,
             final Integer maxInvestmentTermPeriod, final Integer investmentTermEnum, boolean overrideTermsInInvestmentAccounts,
             final boolean nominalInterestRate, final boolean interestCompoundingPeriod, final boolean investmentTerm,
-            final Integer accountingType, final Set<Charge> charges) {
+            final Integer accountingType, final Set<Charge> charges, final Integer category) {
 
         return new InvestmentProduct(name, shortName, description, currency, minNominalInterestRate, defaultNominalInterestRate,
                 maxNominalInterestRate, nominalInterestRateEnum, interestCompoundingPeriodEnum, minInvestmentTermPeriod,
                 defaultInvestmentTermPeriod, maxInvestmentTermPeriod, investmentTermEnum, overrideTermsInInvestmentAccounts,
-                nominalInterestRate, interestCompoundingPeriod, investmentTerm, accountingType, charges);
+                nominalInterestRate, interestCompoundingPeriod, investmentTerm, accountingType, charges, category);
     }
 
     public String getName() {
@@ -241,6 +245,12 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
             final String newValue = command.stringValueOfParameterNamed(InvestmentProductApiconstants.shortNameParamName);
             actualChanges.put(InvestmentProductApiconstants.shortNameParamName, newValue);
             this.shortName = newValue;
+        }
+        
+        if (command.isChangeInIntegerParameterNamed(InvestmentProductApiconstants.categoryParamName, this.category)) {
+            final Integer newValue = command.integerValueOfParameterNamed(InvestmentProductApiconstants.categoryParamName);
+            actualChanges.put(InvestmentProductApiconstants.categoryParamName, newValue);
+            this.category = newValue;
         }
 
         if (command.isChangeInStringParameterNamed(InvestmentProductApiconstants.descriptionParamName, this.description)) {
@@ -425,5 +435,13 @@ public class InvestmentProduct extends AbstractPersistable<Long> {
    public boolean isCashBasedAccountingEnabled(){
        return this.accountingType.equals(AccountingRuleType.CASH_BASED.getValue());
    }
+
+    public Integer getCategory() {
+        return this.category;
+    }
+
+    public void setCategory(Integer category) {
+        this.category = category;
+    }
 
 }

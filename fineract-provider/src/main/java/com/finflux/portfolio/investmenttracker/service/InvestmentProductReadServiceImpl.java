@@ -3,6 +3,7 @@ package com.finflux.portfolio.investmenttracker.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,8 @@ import java.util.Map;
 import org.apache.fineract.accounting.common.AccountingDropdownReadPlatformService;
 import org.apache.fineract.accounting.common.AccountingEnumerations;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -26,6 +29,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentProductNotFoundException;
+import com.finflux.portfolio.investmenttracker.api.InvestmentProductApiconstants;
 import com.finflux.portfolio.investmenttracker.data.InvestmentProductData;
 
 @Service
@@ -37,19 +41,22 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
     private final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
     private final ChargeReadPlatformService chargeReadPlatformService;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     @Autowired
     public InvestmentProductReadServiceImpl(final RoutingDataSource dataSource,
             final CurrencyReadPlatformService currencyReadPlatformService,
             final InvestmentTrackerDropDownReadService dropdownReadPlatformService,
             final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService,
-            final PaymentTypeReadPlatformService paymentTypeReadPlatformService, final ChargeReadPlatformService chargeReadPlatformService) {
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService, final ChargeReadPlatformService chargeReadPlatformService,
+            final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.currencyReadPlatformService = currencyReadPlatformService;
         this.dropdownReadPlatformService = dropdownReadPlatformService;
         this.accountingDropdownReadPlatformService = accountingDropdownReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
         this.chargeReadPlatformService = chargeReadPlatformService;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
     }
 
     @Override
@@ -68,23 +75,27 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
         final List<EnumOptionData> accountingRuleTypeOptions = this.accountingDropdownReadPlatformService
                 .retrieveAccountingRuleTypeOptions();
         final Collection<PaymentTypeData> paymentTypeOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
-
+        final List<CodeValueData> categoryOptions = new ArrayList<>(
+                this.codeValueReadPlatformService.retrieveCodeValuesByCode(InvestmentProductApiconstants.investmentCategory));
         if (investmentProductData != null) {
             investmentProductData = InvestmentProductData.withTemplateDetails(investmentProductData, currencyOptions,
                     interestRateFrequencyTypeOptions, investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions,
-                    chargeOptions, accountingRuleTypeOptions, accountOptions, paymentTypeOptions);
+                    chargeOptions, accountingRuleTypeOptions, accountOptions, paymentTypeOptions, categoryOptions);
         } else {
             investmentProductData = InvestmentProductData.onlyTemplateDetails(currencyOptions, interestRateFrequencyTypeOptions,
                     investmentCompoundingPeriodTypeOptions, investmentTermFrequencyTypeOptions, chargeOptions, accountingRuleTypeOptions,
-                    accountOptions, paymentTypeOptions);
+                    accountOptions, paymentTypeOptions, categoryOptions);
         }
         return investmentProductData;
     }
 
     @Override
-    public Collection<InvestmentProductData> retrieveAll() {
+    public Collection<InvestmentProductData> retrieveAll(Long categoryId) {
         InvestmentProductMapper investmentProductMapper = new InvestmentProductMapper();
         String sql = "SELECT " + investmentProductMapper.schema();
+        if(categoryId != null){
+            sql = sql+" where fip.category = "+categoryId;
+        }
         Collection<InvestmentProductData> investmentProductDetails = this.jdbcTemplate.query(sql, investmentProductMapper);
         return investmentProductDetails;
     }
@@ -117,6 +128,7 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
         public InvestmentProductMapper() {
             StringBuilder sqlBuilder = new StringBuilder(300);
             sqlBuilder.append(" fip.id as id, fip.name as name, fip.short_name as shortName, fip.description as description,");
+            sqlBuilder.append(" fip.category as categoryId, cv.code_value as categoryValue,");
             sqlBuilder
                     .append(" fip.currency_code as currencyCode, fip.currency_digits as currencyDigits, fip.currency_multiplesof as inMultiplesOf,");
             sqlBuilder.append(" curr.name as currencyName, curr.internationalized_name_code as currencyNameCode,");
@@ -129,6 +141,7 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
             sqlBuilder.append(" fip.accounting_type");
             sqlBuilder.append(" from f_investment_product fip");
             sqlBuilder.append(" join m_currency curr on curr.code = fip.currency_code");
+            sqlBuilder.append(" left join m_code_value cv on cv.id = fip.category");
 
             this.schemaSql = sqlBuilder.toString();
         }
@@ -143,6 +156,11 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
             final Long id = rs.getLong("id");
             final String name = rs.getString("name");
             final String shortName = rs.getString("shortName");
+            
+            final Long categoryId = JdbcSupport.getLong(rs, "categoryId");
+            final String categoryValue = rs.getString("categoryValue");
+            final CodeValueData category = CodeValueData.instance(categoryId, categoryValue);
+            
             final String description = rs.getString("description");
 
             final String currencyCode = rs.getString("currencyCode");
@@ -182,7 +200,7 @@ public class InvestmentProductReadServiceImpl implements InvestmentProductReadSe
             return InvestmentProductData.investmentProductDetails(id, name, shortName, description, currency, minNominalInterestRate,
                     defaultNominalInterestRate, maxNominalInterestRate, interestRateTypeEnum, compoundingPeriodTypeEnum,
                     minInvesmentTermPeriod, defaultInvesmentTermPeriod, maxInvesmentTermPeriod, invesmentTermPeriodEnum,
-                    overrideTermsInvesmentAccounts, nominalIntersetRate, interestCompoundingPeriod, invesmentTerm, accountingRuleType);
+                    overrideTermsInvesmentAccounts, nominalIntersetRate, interestCompoundingPeriod, invesmentTerm, accountingRuleType, category);
         }
     }
     

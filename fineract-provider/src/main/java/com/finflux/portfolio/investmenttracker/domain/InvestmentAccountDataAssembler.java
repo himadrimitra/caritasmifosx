@@ -245,6 +245,7 @@ public  class InvestmentAccountDataAssembler {
             BigDecimal interestAmount) {
         Set<InvestmentAccountCharge> chargesSet = new HashSet<>();
         final JsonArray charges = command.arrayOfParameterNamed(InvestmentAccountApiConstants.chargesParamName);
+        BigDecimal totalActivationCharge = getTotalActivationChargeAmount(charges, investmentAccount ,interestAmount);
         if (charges != null && charges.size() > 0) {
             for (int i = 0; i < charges.size(); i++) {
                 final JsonObject actionElement = charges.get(i).getAsJsonObject();
@@ -263,8 +264,12 @@ public  class InvestmentAccountDataAssembler {
                 }
                 InvestmentAccountCharge investmentAccountCharge = null;
                 if (charge.isPercentageOfInterest()) {
+                    BigDecimal amountToCalculateCharge = interestAmount;
+                    if(!charge.isInvestmentActivationCharge()){
+                        amountToCalculateCharge = amountToCalculateCharge.subtract(totalActivationCharge);
+                    }
                     BigDecimal chargeAmount = Money
-                            .of(investmentAccount.getCurrency(), MathUtility.percentageOf(interestAmount, charge.getAmount())).getAmount();
+                            .of(investmentAccount.getCurrency(), MathUtility.percentageOf(amountToCalculateCharge, charge.getAmount())).getAmount();
                     investmentAccountCharge = new InvestmentAccountCharge(investmentAccount, charge, chargeAmount, isPenality, isActive,
                             inactivationDate);
                 } else {
@@ -286,6 +291,32 @@ public  class InvestmentAccountDataAssembler {
             }
         }
         return chargesSet;
+    }
+    
+    BigDecimal getTotalActivationChargeAmount(final JsonArray charges, InvestmentAccount investmentAccount,
+            BigDecimal interestAmount){
+        BigDecimal totalActivationCharge = BigDecimal.ZERO;
+        if (charges != null && charges.size() > 0) {
+            for (int i = 0; i < charges.size(); i++) {
+                final JsonObject actionElement = charges.get(i).getAsJsonObject();
+                final Long chargeId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.chargeIdParamName,
+                        actionElement);
+                final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(chargeId);
+                if(charge.isInvestmentActivationCharge()){
+                    if (charge.isPercentageOfInterest()) {
+                        BigDecimal chargeAmount = Money
+                                .of(investmentAccount.getCurrency(), MathUtility.percentageOf(interestAmount, charge.getAmount())).getAmount();
+                        totalActivationCharge = totalActivationCharge.add(chargeAmount);
+                    }else{
+                        totalActivationCharge = totalActivationCharge.add(charge.getAmount());
+                    }
+                }
+                
+                
+
+            }
+        }
+        return totalActivationCharge;
     }
     
 

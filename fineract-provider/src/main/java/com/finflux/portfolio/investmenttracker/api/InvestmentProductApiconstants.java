@@ -36,6 +36,8 @@ public class InvestmentProductApiconstants {
     // general
     public static final String localeParamName = "locale";
     public static final String dateFormatParamName = "dateFormat";
+    public static final String categoryParamName = "category";
+    public static final String investmentCategory = "InvestmentCategory";
 
     public static final Set<String> INVESTMENT_PRODUCT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(nameParamName,
             shortNameParamName, descriptionParamName, currencyCodeParamName, digitsAfterDecimalParamName, inMultiplesOfParamName,
@@ -51,7 +53,7 @@ public class InvestmentProductApiconstants {
             INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE_ACCOUNT_MAPPING.getValue(), localeParamName, dateFormatParamName,
             chargesParamName,INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue(),
             INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(),INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue(),
-            INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue()));
+            INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue(), categoryParamName));
 
     public static final Set<String> INVESTMENT_PRODUCT_UPDATE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(nameParamName,
             shortNameParamName, descriptionParamName, currencyCodeParamName, digitsAfterDecimalParamName, inMultiplesOfParamName,
@@ -67,5 +69,7 @@ public class InvestmentProductApiconstants {
             INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.FEE_EXPENSE_ACCOUNT_MAPPING.getValue(), localeParamName, dateFormatParamName,
             chargesParamName, idParamName,INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.PARTNER_INTEREST_RECEIVABLE.getValue(),
             INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(),INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.SAVINGS_CONTROL_ACCOUNT.getValue(),
-            INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue()));
+            INVESTMENT_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS_ACCOUNT.getValue(), categoryParamName));
+    
+    
 }

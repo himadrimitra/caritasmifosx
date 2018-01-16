@@ -8,7 +8,7 @@ public interface InvestmentProductReadService {
 
     InvestmentProductData retrieveInvestmentProductTemplate(InvestmentProductData investmentProductData);
 
-    Collection<InvestmentProductData> retrieveAll();
+    Collection<InvestmentProductData> retrieveAll(Long categoryId);
 
     InvestmentProductData retrieveOne(final Long investmentProductId);
     
