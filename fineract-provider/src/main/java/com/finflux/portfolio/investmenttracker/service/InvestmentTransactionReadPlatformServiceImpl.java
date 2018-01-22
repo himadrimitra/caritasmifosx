@@ -173,5 +173,18 @@ public class InvestmentTransactionReadPlatformServiceImpl implements InvestmentT
         }
 
     }
+    
+    @Override
+    public InvestmentSavingsTransactionData findBySavingsTransactionId(Long savingTransactionId) {
+        try{
+        InvestmentSavingsTransactionDataMapper mapper = new InvestmentSavingsTransactionDataMapper();
+        String sql = "select "+mapper.schema()+" where isat.transaction_id = ? ";
+        final Object[] queryParameters = new Object[] { savingTransactionId };
+        return this.jdbcTemplate.queryForObject(sql, mapper, queryParameters);
+        } catch (final EmptyResultDataAccessException e) {
+            return null;
+        }
+
+    }
 
 }

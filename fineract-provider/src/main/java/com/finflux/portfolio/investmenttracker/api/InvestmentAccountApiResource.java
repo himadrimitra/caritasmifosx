@@ -298,5 +298,15 @@ public class InvestmentAccountApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, investmentAccountData);
     }
+    
+    @GET
+    @Path("{savingsId}/investments")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAllInvestmentBySavingAccount(@Context final UriInfo uriInfo, @PathParam("savingsId") final Long savingsId) {
+        final Collection<InvestmentAccountSavingsLinkagesData> savingsLinkage = this.investmentAccountReadService.getAllInvestmentBySavingsId(savingsId);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, savingsLinkage);
+    }
 
 }

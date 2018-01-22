@@ -58,6 +58,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 
 import com.finflux.common.util.FinfluxStringUtils;
+import com.finflux.portfolio.investmenttracker.data.InvestmentSavingsTransactionData;
+import com.finflux.portfolio.investmenttracker.service.InvestmentTransactionReadPlatformService;
 
 @Path("/savingsaccounts/{savingsId}/transactions")
 @Component
@@ -70,6 +72,7 @@ public class SavingsAccountTransactionsApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
+    private final InvestmentTransactionReadPlatformService investmentTransactionReadPlatformService;
 
     @Autowired
     public SavingsAccountTransactionsApiResource(final PlatformSecurityContext context,
@@ -77,13 +80,15 @@ public class SavingsAccountTransactionsApiResource {
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final SavingsAccountReadPlatformService savingsAccountReadPlatformService,
-            final PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+            final InvestmentTransactionReadPlatformService investmentTransactionReadPlatformService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
+        this.investmentTransactionReadPlatformService = investmentTransactionReadPlatformService;
     }
 
     private boolean is(final String commandParam, final String commandValue) {
@@ -145,6 +150,10 @@ public class SavingsAccountTransactionsApiResource {
         if (settings.isTemplate()) {
             final Collection<PaymentTypeData> paymentTypeOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
             transactionData = SavingsAccountTransactionData.templateOnTop(transactionData, paymentTypeOptions);
+        }
+        if(transactionData.getInvestmentTransactionId()!= null){
+            InvestmentSavingsTransactionData investmentTransactionData = this.investmentTransactionReadPlatformService.findBySavingsTransactionId(transactionId);
+            transactionData.setInvestmentTransactionData(investmentTransactionData);
         }
 
         return this.toApiJsonSerializer.serialize(settings, transactionData,
