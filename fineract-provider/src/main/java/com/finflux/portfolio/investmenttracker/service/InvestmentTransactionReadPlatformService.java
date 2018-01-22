@@ -10,4 +10,6 @@ public interface InvestmentTransactionReadPlatformService {
     List<InvestmentTransactionData> findByAccountId(Long accountId);
     
     List<InvestmentSavingsTransactionData> findByInvestmentIdAndSavingsId(Long accountId, Long savingsId);
+    
+    InvestmentSavingsTransactionData findBySavingsTransactionId(Long savingTransactionId);
 }

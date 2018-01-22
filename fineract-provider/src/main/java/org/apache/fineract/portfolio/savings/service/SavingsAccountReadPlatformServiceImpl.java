@@ -95,7 +95,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import com.finflux.common.constant.CommonConstants;
-import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountNotFoundException;
 
 @Service
 public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountReadPlatformService {
@@ -843,7 +842,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             final StringBuilder sqlBuilder = new StringBuilder(400);
             sqlBuilder.append("tr.id as transactionId, tr.transaction_type_enum as transactionType, ");
             sqlBuilder.append("tr.transaction_date as transactionDate, tr.amount as transactionAmount,");
-            sqlBuilder.append("tr.created_date as submittedOnDate,");
+            sqlBuilder.append("tr.created_date as submittedOnDate,tr.investment_transaction_id as investmentTransactionId , ");
             sqlBuilder.append("tr.running_balance_derived as runningBalance, tr.is_reversed as reversed,");
             sqlBuilder.append("fromtran.id as fromTransferId, fromtran.is_reversed as fromTransferReversed,");
             sqlBuilder.append("fromtran.transaction_date as fromTransferDate, fromtran.amount as fromTransferAmount,");
@@ -938,9 +937,11 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
                 transfer = AccountTransferData.transferBasicDetails(toTransferId, currency, toTransferAmount, toTransferDate,
                         toTransferDescription, toTransferReversed);
             }
+            
+            final Long investmentTransactionId  = rs.getLong("savingsId");
 
             return SavingsAccountTransactionData.create(id, transactionType, paymentDetailData, savingsId, accountNo, date, currency,
-                    amount, runningBalance, reversed, transfer, submittedOnDate, postInterestAsOn);
+                    amount, runningBalance, reversed, transfer, submittedOnDate, postInterestAsOn, investmentTransactionId);
         }
     }
 

@@ -642,14 +642,12 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
                     .findOneWithNotFoundDetection(investmentProductId);
             Integer numberOfDays = Days.daysBetween(LocalDate.fromDateFields(investmentDate), LocalDate.fromDateFields(marturityDate))
                     .getDays();           
-            if (!investmentProductData.isInterestCompoundingPeriod()) {
-                BigDecimal dailyInterestRate = getDailyInterestRate(investmentRate, investmentRateType);
-                BigDecimal interestEarned = calcualteInterest(investmentAmount, dailyInterestRate, numberOfDays);
-                ;
-                interestEarned = Money.of(investmentProductData.getCurrency(), interestEarned).getAmount();
-                
-                maturityAmount = investmentAmount.add(Money.of(investmentProductData.getCurrency(), interestEarned).getAmount());
-            }
+            BigDecimal dailyInterestRate = getDailyInterestRate(investmentRate, investmentRateType);
+            BigDecimal interestEarned = calcualteInterest(investmentAmount, dailyInterestRate, numberOfDays);
+            
+            interestEarned = Money.of(investmentProductData.getCurrency(), interestEarned).getAmount();
+            
+            maturityAmount = investmentAmount.add(Money.of(investmentProductData.getCurrency(), interestEarned).getAmount());
         }
         responseMap.put("maturityAmount", maturityAmount);
         responseMap.put("marturityDate", marturityDate);
@@ -689,6 +687,17 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         BigDecimal oneTermInterestAmount = MathUtility.multiply(interestRate, investmentAmount);
         Double interest = MathUtility.multiply(oneTermInterestAmount, investmentTerm).doubleValue() / 100;
         return BigDecimal.valueOf(interest);
+    }
+
+    @Override
+    public Collection<InvestmentAccountSavingsLinkagesData> getAllInvestmentBySavingsId(Long savingsId) {
+        try {
+            InvestmentAccountSavingsLinkagesMapper mapper = new InvestmentAccountSavingsLinkagesMapper();
+            String sql = "select " + mapper.schema() + " where ias.savings_account_id = ? ";
+            return this.jdbcTemplate.query(sql, mapper, savingsId);
+        } catch (final EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        }
     }
 
 }

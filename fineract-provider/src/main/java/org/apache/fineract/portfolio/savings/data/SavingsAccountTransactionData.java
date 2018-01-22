@@ -31,6 +31,8 @@ import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.service.SavingsEnumerations;
 import org.joda.time.LocalDate;
 
+import com.finflux.portfolio.investmenttracker.data.InvestmentSavingsTransactionData;
+
 /**
  * Immutable data object representing a savings account transaction.
  */
@@ -53,14 +55,17 @@ public class SavingsAccountTransactionData {
 
     // templates
     final Collection<PaymentTypeData> paymentTypeOptions;
+    private Long investmentTransactionId;
+    private InvestmentSavingsTransactionData investmentTransactionData;
 
     public static SavingsAccountTransactionData create(final Long id, final SavingsAccountTransactionEnumData transactionType,
             final PaymentDetailData paymentDetailData, final Long savingsId, final String savingsAccountNo, final LocalDate date,
             final CurrencyData currency, final BigDecimal amount, final BigDecimal runningBalance, final boolean reversed,
             final AccountTransferData transfer, final boolean interestedPostedAsOn) {
         final Collection<PaymentTypeData> paymentTypeOptions = null;
+        final Long investmentTransactionId = null;
         return new SavingsAccountTransactionData(id, transactionType, paymentDetailData, savingsId, savingsAccountNo, date, currency,
-                amount, runningBalance, reversed, transfer, paymentTypeOptions, interestedPostedAsOn);
+                amount, runningBalance, reversed, transfer, paymentTypeOptions, interestedPostedAsOn, investmentTransactionId);
     }
     
     public static SavingsAccountTransactionData create(final Long id, final SavingsAccountTransactionEnumData transactionType,
@@ -74,17 +79,18 @@ public class SavingsAccountTransactionData {
         final AccountTransferData transfer = null;
         final boolean interestedPostedAsOn = false;
         final Long savingsId = null;
+        final Long investmentTransactionId = null;
         return new SavingsAccountTransactionData(id, transactionType, paymentDetailData, savingsId, savingsAccountNo, date, currency,
-                amount, runningBalance, reversed, transfer, paymentTypeOptions, interestedPostedAsOn);
+                amount, runningBalance, reversed, transfer, paymentTypeOptions, interestedPostedAsOn, investmentTransactionId);
     }
 
     public static SavingsAccountTransactionData create(final Long id, final SavingsAccountTransactionEnumData transactionType,
             final PaymentDetailData paymentDetailData, final Long savingsId, final String savingsAccountNo, final LocalDate date,
             final CurrencyData currency, final BigDecimal amount, final BigDecimal runningBalance, final boolean reversed,
-            final AccountTransferData transfer, final LocalDate submittedOnDate, final boolean interestedPostedAsOn) {
+            final AccountTransferData transfer, final LocalDate submittedOnDate, final boolean interestedPostedAsOn, final Long investmentTransactionId) {
         final Collection<PaymentTypeData> paymentTypeOptions = null;
         return new SavingsAccountTransactionData(id, transactionType, paymentDetailData, savingsId, savingsAccountNo, date, currency,
-                amount, runningBalance, reversed, transfer, paymentTypeOptions, submittedOnDate, interestedPostedAsOn);
+                amount, runningBalance, reversed, transfer, paymentTypeOptions, submittedOnDate, interestedPostedAsOn, investmentTransactionId);
     }
 
     public static SavingsAccountTransactionData template(final Long savingsId, final String savingsAccountNo,
@@ -97,33 +103,35 @@ public class SavingsAccountTransactionData {
         final PaymentDetailData paymentDetailData = null;
         final Collection<CodeValueData> paymentTypeOptions = null;
         final boolean interestedPostedAsOn = false;
+        final Long investmentTransactionId = null;
         return new SavingsAccountTransactionData(id, transactionType, paymentDetailData, savingsId, savingsAccountNo, defaultLocalDate,
-                currency, amount, runningBalance, reversed, null, null, interestedPostedAsOn);
+                currency, amount, runningBalance, reversed, null, null, interestedPostedAsOn, investmentTransactionId);
     }
 
     public static SavingsAccountTransactionData templateOnTop(final SavingsAccountTransactionData savingsAccountTransactionData,
             final Collection<PaymentTypeData> paymentTypeOptions) {
+        
         return new SavingsAccountTransactionData(savingsAccountTransactionData.id, savingsAccountTransactionData.transactionType,
                 savingsAccountTransactionData.paymentDetailData, savingsAccountTransactionData.accountId,
                 savingsAccountTransactionData.accountNo, savingsAccountTransactionData.date, savingsAccountTransactionData.currency,
                 savingsAccountTransactionData.amount, savingsAccountTransactionData.runningBalance, savingsAccountTransactionData.reversed,
-                savingsAccountTransactionData.transfer, paymentTypeOptions, savingsAccountTransactionData.interestedPostedAsOn);
+                savingsAccountTransactionData.transfer, paymentTypeOptions, savingsAccountTransactionData.interestedPostedAsOn, savingsAccountTransactionData.investmentTransactionId);
     }
 
     private SavingsAccountTransactionData(final Long id, final SavingsAccountTransactionEnumData transactionType,
             final PaymentDetailData paymentDetailData, final Long savingsId, final String savingsAccountNo, final LocalDate date,
             final CurrencyData currency, final BigDecimal amount, final BigDecimal runningBalance, final boolean reversed,
-            final AccountTransferData transfer, final Collection<PaymentTypeData> paymentTypeOptions, final boolean interestedPostedAsOn) {
+            final AccountTransferData transfer, final Collection<PaymentTypeData> paymentTypeOptions, final boolean interestedPostedAsOn, final Long investmentTransactionId) {
 
         this(id, transactionType, paymentDetailData, savingsId, savingsAccountNo, date, currency, amount, runningBalance, reversed,
-                transfer, paymentTypeOptions, null, interestedPostedAsOn);
+                transfer, paymentTypeOptions, null, interestedPostedAsOn, investmentTransactionId);
     }
 
     private SavingsAccountTransactionData(final Long id, final SavingsAccountTransactionEnumData transactionType,
             final PaymentDetailData paymentDetailData, final Long savingsId, final String savingsAccountNo, final LocalDate date,
             final CurrencyData currency, final BigDecimal amount, final BigDecimal runningBalance, final boolean reversed,
             final AccountTransferData transfer, final Collection<PaymentTypeData> paymentTypeOptions, final LocalDate submittedOnDate,
-            final boolean interestedPostedAsOn) {
+            final boolean interestedPostedAsOn, final Long investmentTransactionId) {
         this.id = id;
         this.transactionType = transactionType;
         this.paymentDetailData = paymentDetailData;
@@ -138,6 +146,7 @@ public class SavingsAccountTransactionData {
         this.paymentTypeOptions = paymentTypeOptions;
         this.submittedOnDate = submittedOnDate;
         this.interestedPostedAsOn = interestedPostedAsOn;
+        this.investmentTransactionId = investmentTransactionId;
     }
 
     public static SavingsAccountTransactionData withWithDrawalTransactionDetails(
@@ -152,6 +161,23 @@ public class SavingsAccountTransactionData {
                 savingsAccountTransactionData.accountNo, currentDate, savingsAccountTransactionData.currency,
                 savingsAccountTransactionData.runningBalance, savingsAccountTransactionData.runningBalance,
                 savingsAccountTransactionData.reversed, savingsAccountTransactionData.transfer,
-                savingsAccountTransactionData.paymentTypeOptions, savingsAccountTransactionData.interestedPostedAsOn);
+                savingsAccountTransactionData.paymentTypeOptions, savingsAccountTransactionData.interestedPostedAsOn, savingsAccountTransactionData.investmentTransactionId);
     }
+
+    
+    public Long getInvestmentTransactionId() {
+        return this.investmentTransactionId;
+    }
+
+    
+    public InvestmentSavingsTransactionData getInvestmentTransactionData() {
+        return this.investmentTransactionData;
+    }
+
+    
+    public void setInvestmentTransactionData(InvestmentSavingsTransactionData investmentTransactionData) {
+        this.investmentTransactionData = investmentTransactionData;
+    }
+    
+    
 }

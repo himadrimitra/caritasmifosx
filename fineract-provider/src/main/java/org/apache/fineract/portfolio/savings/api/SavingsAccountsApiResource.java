@@ -68,6 +68,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import com.finflux.common.util.FinfluxStringUtils;
+import com.finflux.portfolio.investmenttracker.data.InvestmentAccountSavingsLinkagesData;
+import com.finflux.portfolio.investmenttracker.service.InvestmentAccountReadService;
 
 @Path("/savingsaccounts")
 @Component
@@ -77,17 +79,19 @@ public class SavingsAccountsApiResource {
     private final GuarantorReadPlatformService guarantorReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
     private final PlatformSecurityContext context;
-    private final DefaultToApiJsonSerializer<SavingsAccountData> toApiJsonSerializer;
+    private final DefaultToApiJsonSerializer toApiJsonSerializer;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService;
+    private final InvestmentAccountReadService investmentAccountReadService;
 
     @Autowired
     public SavingsAccountsApiResource(final SavingsAccountReadPlatformService savingsAccountReadPlatformService,
             final PlatformSecurityContext context, final DefaultToApiJsonSerializer<SavingsAccountData> toApiJsonSerializer,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final ApiRequestParameterHelper apiRequestParameterHelper,
-            final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService, final GuarantorReadPlatformService guarantorReadPlatformService) {
+            final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService, final GuarantorReadPlatformService guarantorReadPlatformService,
+            final InvestmentAccountReadService investmentAccountReadService) {
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -95,6 +99,7 @@ public class SavingsAccountsApiResource {
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
         this.guarantorReadPlatformService = guarantorReadPlatformService;
+        this.investmentAccountReadService = investmentAccountReadService;
     }
 
     @GET
@@ -357,5 +362,15 @@ public class SavingsAccountsApiResource {
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
+    }
+    
+    @GET
+    @Path("{savingsId}/investments")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAllInvestmentBySavingAccount(@Context final UriInfo uriInfo, @PathParam("savingsId") final Long savingsId) {
+        final Collection<InvestmentAccountSavingsLinkagesData> savingsLinkage = this.investmentAccountReadService.getAllInvestmentBySavingsId(savingsId);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, savingsLinkage);
     }
 }

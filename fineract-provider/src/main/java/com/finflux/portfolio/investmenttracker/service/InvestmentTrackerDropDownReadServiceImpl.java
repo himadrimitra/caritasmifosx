@@ -20,7 +20,6 @@ public class InvestmentTrackerDropDownReadServiceImpl implements InvestmentTrack
     public List<EnumOptionData> retrieveInterestRateFrequencyTypeOptions() {
         // support for monthly and annual percentage rate (MPR) and (APR)
         final List<EnumOptionData> interestRateFrequencyTypeOptions = Arrays.asList(
-                InvestmentTrackerEnumerations.interestRateFrequencyType(PeriodFrequencyType.MONTHS),
                 InvestmentTrackerEnumerations.interestRateFrequencyType(PeriodFrequencyType.YEARS));
         return interestRateFrequencyTypeOptions;
     }
@@ -40,9 +39,7 @@ public class InvestmentTrackerDropDownReadServiceImpl implements InvestmentTrack
     public List<EnumOptionData> retrieveInvestmentTermFrequencyTypeOptions() {
 
         final List<EnumOptionData> repaymentFrequencyOptions = Arrays.asList(
-                InvestmentTrackerEnumerations.investmentTermFrequencyType(PeriodFrequencyType.DAYS),
-                InvestmentTrackerEnumerations.investmentTermFrequencyType(PeriodFrequencyType.WEEKS),
-                InvestmentTrackerEnumerations.investmentTermFrequencyType(PeriodFrequencyType.MONTHS));
+                InvestmentTrackerEnumerations.investmentTermFrequencyType(PeriodFrequencyType.DAYS));
         return repaymentFrequencyOptions;
     }
 

@@ -126,6 +126,9 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "savings_transaction_id", referencedColumnName = "id", nullable = false)
     private final List<SavingsAccountTransactionTaxDetails> taxDetails = new ArrayList<>();
+    
+    @Column(name = "investment_transaction_id", nullable = false)
+    private Long investmentTransactionId;
 
     protected SavingsAccountTransaction() {
         this.dateOf = null;
@@ -845,4 +848,16 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     public Long getOfficeId() {
         return this.officeId;
     }
+
+    
+    public Long getInvestmentTransactionId() {
+        return this.investmentTransactionId;
+    }
+
+    
+    public void setInvestmentTransactionId(Long investmentTransactionId) {
+        this.investmentTransactionId = investmentTransactionId;
+    }
+    
+    
 }

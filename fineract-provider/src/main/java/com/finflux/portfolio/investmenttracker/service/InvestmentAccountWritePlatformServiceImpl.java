@@ -272,6 +272,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
 		        this.savingsAccountRepository.save(savingsAccount);
 		        InvestmentSavingsTransaction investmentSavingsTransaction = InvestmentSavingsTransaction.create(savingsAccount.getId(), investmentAccountId, holdTransaction.getId(), getMessage(InvestmentAccountApiConstants.holdAmountMessage, investmentAccountId));
 		        this.investmentSavingsTransactionRepository.save(investmentSavingsTransaction);
+		        holdTransaction.setInvestmentTransactionId(investmentSavingsTransaction.getId());
+		        this.savingsAccountTransactionRepository.save(holdTransaction);
 		        savingsLinkage.setStatus(InvestmentAccountStatus.ACTIVE.getValue());
 		        savingsLinkage.setActiveFromDate(investmentAccount.getInvestmentOnDate().toDate());
 		        savingsLinkage.setActiveToDate(investmentAccount.getMaturityOnDate());
@@ -483,18 +485,19 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         savingAccount.releaseAmount(investmentAccountSavingsLinkage.getInvestmentAmount());
         SavingsAccountTransaction releaseTransaction = SavingsAccountTransaction.releaseAmount(savingAccount, user.getOffice(), paymentDetail, releaseDate, Money.of(savingAccount.getCurrency(), investmentAccountSavingsLinkage.getInvestmentAmount()), date.toDate(), user);
         transactions.add(releaseTransaction);
-        //process savings account charges
-        if(MathUtility.isGreaterThanZero(investmentAccountSavingsLinkage.getExpectedChargeAmount())){
-            processSavingsAccountCharge(investmentAccountSavingsLinkage, investmentAccount, savingAccount, releaseDate, transactions, releaseDate);
-            
-        }
         SavingsAccountTransaction depositTransaction = null;
+        
         if(MathUtility.isGreaterThanZero(investmentAccountSavingsLinkage.getInterestAmount())){
             final boolean isManualTransaction = false;
             depositTransaction = SavingsAccountTransaction.interestPosting(savingAccount, user.getOffice(), releaseDate, Money.of(savingAccount.getCurrency(),investmentAccountSavingsLinkage.getInterestAmount()),isManualTransaction);
             transactions.add(depositTransaction);
         }
-        
+
+        //process savings account charges
+        if(MathUtility.isGreaterThanZero(investmentAccountSavingsLinkage.getExpectedChargeAmount())){
+            processSavingsAccountCharge(investmentAccountSavingsLinkage, investmentAccount, savingAccount, releaseDate, transactions, releaseDate);
+            
+        }
         //deposit (interest earned - paid charge)
         this.savingsAccountTransactionRepository.save(transactions);
         savingAccount.getTransactions().addAll(transactions);
@@ -527,9 +530,11 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             }
             InvestmentSavingsTransaction investmentSavingsTransaction = InvestmentSavingsTransaction.create(savingAccount.getId(), 
                     investmentId, transaction.getId(), description);
-            investmentTransactions.add(investmentSavingsTransaction);
+            this.investmentSavingsTransactionRepository.save(investmentSavingsTransaction);
+            transaction.setInvestmentTransactionId(investmentSavingsTransaction.getId());
+            this.savingsAccountTransactionRepository.save(transaction);
         }
-        this.investmentSavingsTransactionRepository.save(investmentTransactions);
+        
     }
 
     private void processSavingsAccountCharge(InvestmentAccountSavingsLinkages investmentAccountSavingsLinkage,
@@ -614,6 +619,8 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
         this.savingsAccountRepository.save(savingsAccount);
         InvestmentSavingsTransaction investmentSavingsTransaction = InvestmentSavingsTransaction.create(savingsAccount.getId(), investmentAccountId, holdTransaction.getId(), getMessage(InvestmentAccountApiConstants.holdAmountMessage, investmentAccountId));
         this.investmentSavingsTransactionRepository.save(investmentSavingsTransaction);
+        holdTransaction.setInvestmentTransactionId(investmentSavingsTransaction.getId());
+        this.savingsAccountTransactionRepository.save(holdTransaction);
         return new CommandProcessingResultBuilder() //
         .withEntityId(investmentAccountId).build();
     }
@@ -763,18 +770,18 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
                 transactions.add(releaseTransaction);
                 savingAccount.releaseAmount(savingsAccountLinkage.getInvestmentAmount());
                 
-                //pay charge amount
-                if(MathUtility.isGreaterThanZero(savingsAccountLinkage.getExpectedChargeAmount())){
-                    processSavingsAccountCharge(savingsAccountLinkage, investmentAccount, savingAccount, savingsAccountLinkage.getActiveToDate(), transactions, closedOnDate);
-                    
-                }
-
                 //Deposit Earnings
                 SavingsAccountTransaction depositTransaction = null;
                 if(MathUtility.isGreaterThanZero(savingsAccountLinkage.getInterestAmount())){
                     final boolean isManualTransaction = false;
                     depositTransaction = SavingsAccountTransaction.interestPosting(savingAccount, appUser.getOffice(), closedOnDate, Money.of(savingAccount.getCurrency(),savingsAccountLinkage.getInterestAmount()),isManualTransaction);
                     transactions.add(depositTransaction);
+                }
+                
+                //pay charge amount
+                if(MathUtility.isGreaterThanZero(savingsAccountLinkage.getExpectedChargeAmount())){
+                    processSavingsAccountCharge(savingsAccountLinkage, investmentAccount, savingAccount, savingsAccountLinkage.getActiveToDate(), transactions, closedOnDate);
+                    
                 }
                 
                 //deposit (interest earned)

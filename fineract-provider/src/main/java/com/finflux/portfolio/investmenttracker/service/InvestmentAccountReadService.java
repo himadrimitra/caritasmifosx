@@ -38,4 +38,7 @@ public interface InvestmentAccountReadService {
     String calculateMaturity(final Long investmentProductId, BigDecimal investmentAmount, final Long investmentRate,
             final Integer investmentRateType, final Integer investmentTerm, final Integer investmentTermType, final Date investmentDate,
             final Date marturityDate);
+    
+    Collection<InvestmentAccountSavingsLinkagesData> getAllInvestmentBySavingsId(Long savingsId);
+    
 }
