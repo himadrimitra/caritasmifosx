@@ -95,7 +95,7 @@ public class InvestmentAccountSavingsLinkages extends AbstractPersistable<Long>{
         this.activeToDate = investmentSavingAccount.getInvestmentAccount().getMaturityOnDate();
         this.expectedInterestAmount = MathUtility.subtract(investmentSavingAccount.getExpectedInterestAmount(), investmentSavingAccount.getInterestAmount());
         this.expectedChargeAmount = MathUtility.subtract(investmentSavingAccount.getExpectedChargeAmount(), investmentSavingAccount.getChargeAmount());
-        this.expectedMaturityAmount = MathUtility.subtract(investmentSavingAccount.getExpectedMaturityAmount(), investmentSavingAccount.getMaturityAmount());
+        this.expectedMaturityAmount = MathUtility.subtract(MathUtility.add(this.investmentAmount,this.expectedInterestAmount),this.expectedChargeAmount);
         this.chargeAmount = null;
         this.maturityAmount = null;
         this.interestAmount = null;
