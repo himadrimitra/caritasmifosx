@@ -26,12 +26,13 @@ public class InvestmentAccountSavingsLinkagesData {
     private final BigDecimal interestAmount;
     private final BigDecimal chargeAmount;
     private final BigDecimal maturityAmount;
+    private final String investmentExternalId;
     
     public InvestmentAccountSavingsLinkagesData(final Long id, final Long savingsAccountId, final String savingsAccountNumber,
             final Long investmentAccountId, final BigDecimal individualInvestmentAmount, final EnumOptionData status,
             final LocalDate activeFrom, final LocalDate activeTo, final String accountHolder, final BigDecimal expectedInterestAmount,
             final BigDecimal expectedChargeAmount,final BigDecimal expectedMaturityAmount, final BigDecimal interestAmount,
-            final BigDecimal chargeAmount, final BigDecimal maturityAmount){
+            final BigDecimal chargeAmount, final BigDecimal maturityAmount, final String investmentExternalId){
         this.id = id;
         this.savingsAccountId = savingsAccountId;
         this.savingsAccountNumber = savingsAccountNumber;
@@ -49,6 +50,7 @@ public class InvestmentAccountSavingsLinkagesData {
         this.chargeAmount = chargeAmount;
         this.interestAmount = interestAmount;
         this.maturityAmount = maturityAmount;
+        this.investmentExternalId = investmentExternalId;
     }
 
     
