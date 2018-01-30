@@ -16,6 +16,7 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.monetary.exception.CurrencyMismatchException;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepositoryWrapper;
 import org.apache.fineract.organisation.staff.domain.Staff;
@@ -175,6 +176,9 @@ public  class InvestmentAccountDataAssembler {
                 final JsonObject actionElement = actions.get(i).getAsJsonObject();
                 final Long savingsAccountId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.savingsAccountIdParamName, actionElement);
                 final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsAccountId);
+                if(!savingsAccount.getCurrency().getCode().equalsIgnoreCase(investmentAccount.getCurrency().getCode())){
+                	throw new CurrencyMismatchException(savingsAccount.getCurrency().getCode());
+                }
                 final BigDecimal individualInvestmentAmount = this.fromApiJsonHelper.extractBigDecimalNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, actionElement,locale);
                 final Integer status = InvestmentAccountStatus.PENDING_APPROVAL.getValue();
                 String accountHolder = null;
@@ -209,6 +213,9 @@ public  class InvestmentAccountDataAssembler {
                 final Long savingsAccountId = this.fromApiJsonHelper
                         .extractLongNamed(InvestmentAccountApiConstants.savingsAccountIdParamName, actionElement);
                 final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsAccountId);
+                if(!savingsAccount.getCurrency().getCode().equalsIgnoreCase(investmentAccount.getCurrency().getCode())){
+                	throw new CurrencyMismatchException(savingsAccount.getCurrency().getCode());
+                }
                 final BigDecimal individualInvestmentAmount = this.fromApiJsonHelper
                         .extractBigDecimalNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, actionElement, locale);
                 final Integer status = InvestmentAccountStatus.PENDING_APPROVAL.getValue();

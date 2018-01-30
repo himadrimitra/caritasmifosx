@@ -425,7 +425,7 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         public InvestmentAccountSavingsLinkagesMapper(){
             StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append(" sa.id as savingsAccountId, sa.account_no as savingsAccountNumber, ias.investment_account_id as investmentAccountId,");
-            sqlBuilder.append(" ias.id as id, ias.investment_amount as individualInvestmentAmount,");
+            sqlBuilder.append(" ias.id as id, ias.investment_amount as individualInvestmentAmount,ia.external_id as investmentExternalId,");
             
             sqlBuilder.append(" ias.expected_interest_amount as expectedInterestAmount, ias.interest_amount as interestAmount,");
             sqlBuilder.append(" ias.expected_charge_amount as expectedChargeAmount, ias.charge_amount as chargeAmount,");
@@ -466,9 +466,10 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
              LocalDate activeFrom = JdbcSupport.getLocalDate(rs, "active_from_date");
              LocalDate activeTo = JdbcSupport.getLocalDate(rs, "active_to_date");
              String accountHolder = rs.getString("accountHolder");
+             String investmentExternalId = rs.getString("investmentExternalId");
              InvestmentAccountSavingsLinkagesData data = new InvestmentAccountSavingsLinkagesData(id, savingsAccountId, savingsAccountNumber, investmentAccountId,individualInvestmentAmount,
                      statusEnumData,activeFrom,activeTo, accountHolder, expectedInterestAmount, expectedChargeAmount, expectedMaturityAmount,
-                     interestAmount, chargeAmount, maturityAmount);
+                     interestAmount, chargeAmount, maturityAmount,investmentExternalId);
             return data;
         }
     
