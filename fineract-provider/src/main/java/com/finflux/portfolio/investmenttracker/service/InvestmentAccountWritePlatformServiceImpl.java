@@ -704,9 +704,18 @@ public class InvestmentAccountWritePlatformServiceImpl implements InvestmentAcco
             
             //New Investment Account Creation
             this.fromApiJsonDataValidator.validateForCreate(command.json());
+            
+            
             AppUser appUser = this.context.authenticatedUser();   
 
             final InvestmentAccount newInvestmentAccount = this.investmentAccountDataAssembler.createAssemble(command, appUser);
+           
+            if(newInvestmentAccount.getSubmittedOnDate().isBefore(LocalDate.fromDateFields(investmentAccount.getMaturityOnDate()))) {
+            	throw new InvalidDateException("reinvest.submitted", "maturity");
+            }
+            if(newInvestmentAccount.getInvestmentOnDate().isBefore(LocalDate.fromDateFields(investmentAccount.getMaturityOnDate()))) {
+            	throw new InvalidDateException("reinvest.investment", "maturity");
+            }
             
             this.investmentAccountRepository.save(newInvestmentAccount);
             

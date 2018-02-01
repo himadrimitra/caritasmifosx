@@ -27,6 +27,7 @@ import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -121,7 +122,7 @@ public  class InvestmentAccountDataAssembler {
              investmentAccount = assembleInvestmentAccountSavingsLinkages(command,investmentAccount);
          }      
          investmentAccount =  assembleInvestmentAccountCharges(command,investmentAccount, maturityAmount.subtract(investmentAmount));
-         
+         this.investmentAccountDataValidator.validateInvestmentAccountDates(investmentAccount);
          return investmentAccount;
     }
     
@@ -163,6 +164,7 @@ public  class InvestmentAccountDataAssembler {
                     accountForUpdate.getMaturityAmount().subtract(accountForUpdate.getInvestmentAmount()));
             accountForUpdate.updateInvestmentAccountCharges(chargesSet);
         }
+        this.investmentAccountDataValidator.validateInvestmentAccountDates(accountForUpdate);
     }
     
     private InvestmentAccount assembleInvestmentAccountSavingsLinkages( JsonCommand command, InvestmentAccount investmentAccount){
@@ -176,10 +178,12 @@ public  class InvestmentAccountDataAssembler {
                 final JsonObject actionElement = actions.get(i).getAsJsonObject();
                 final Long savingsAccountId = this.fromApiJsonHelper.extractLongNamed(InvestmentAccountApiConstants.savingsAccountIdParamName, actionElement);
                 final SavingsAccount savingsAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsAccountId);
+                
                 if(!savingsAccount.getCurrency().getCode().equalsIgnoreCase(investmentAccount.getCurrency().getCode())){
                 	throw new CurrencyMismatchException(savingsAccount.getCurrency().getCode());
                 }
                 final BigDecimal individualInvestmentAmount = this.fromApiJsonHelper.extractBigDecimalNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, actionElement,locale);
+                this.investmentAccountDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, individualInvestmentAmount, investmentAccount.getSubmittedOnDate());
                 final Integer status = InvestmentAccountStatus.PENDING_APPROVAL.getValue();
                 String accountHolder = null;
                 if(savingsAccount.getClient() != null){
@@ -218,6 +222,7 @@ public  class InvestmentAccountDataAssembler {
                 }
                 final BigDecimal individualInvestmentAmount = this.fromApiJsonHelper
                         .extractBigDecimalNamed(InvestmentAccountApiConstants.individualInvestmentAmountParamName, actionElement, locale);
+                this.investmentAccountDataValidator.validateSavingsAccountBalanceForInvestment(savingsAccount, individualInvestmentAmount, investmentAccount.getSubmittedOnDate());
                 final Integer status = InvestmentAccountStatus.PENDING_APPROVAL.getValue();
                 if (id == null) {
                     String accountHolder = null;

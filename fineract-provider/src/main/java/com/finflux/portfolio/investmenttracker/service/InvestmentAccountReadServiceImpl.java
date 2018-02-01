@@ -556,11 +556,9 @@ public class InvestmentAccountReadServiceImpl implements InvestmentAccountReadSe
         BigDecimal totalReinvestmentAmount = BigDecimal.ZERO;
         for (InvestmentAccountSavingsLinkagesData linkageData : investmentAccountData.getInvestmentSavingsLinkagesData()) {
 
-            BigDecimal savingsAccInvAmount = linkageData.getExpectedMaturityAmount();
-            BigDecimal chargeAmount = linkageData.getExpectedChargeAmount();
-            BigDecimal newSavingsAccInvAmount = MathUtility.subtract(savingsAccInvAmount, chargeAmount);
-            linkageData.setIndividualInvestmentAmount(newSavingsAccInvAmount);
-            totalReinvestmentAmount = totalReinvestmentAmount.add(newSavingsAccInvAmount);
+            BigDecimal savingsAccInvAmount = linkageData.getMaturityAmount();
+            linkageData.setIndividualInvestmentAmount(savingsAccInvAmount);
+            totalReinvestmentAmount = totalReinvestmentAmount.add(savingsAccInvAmount);
 
         }
         investmentAccountData.setInvestmentAmount(totalReinvestmentAmount);

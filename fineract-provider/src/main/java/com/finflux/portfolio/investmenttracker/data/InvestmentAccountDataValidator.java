@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.portfolio.investmenttracker.Exception.FutureDateTransactionException;
+import com.finflux.portfolio.investmenttracker.Exception.InvalidAmountException;
 import com.finflux.portfolio.investmenttracker.Exception.InvalidDateException;
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountAmountException;
 import com.finflux.portfolio.investmenttracker.Exception.InvestmentAccountStateTransitionException;
@@ -56,8 +57,6 @@ public class InvestmentAccountDataValidator {
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(InvestmentAccountApiConstants.INVESTMENT_ACCOUNT_RESOURCE_NAME);
         final JsonElement element = this.fromApiJsonHelper.parse(json);
-        
-        LocalDate today =DateUtils.getLocalDateOfTenant(); 
         
         final Long officeId = this.fromApiJsonHelper.extractLongNamed(
                 InvestmentAccountApiConstants.officeIdParamName, element);
@@ -96,15 +95,9 @@ public class InvestmentAccountDataValidator {
 
         final LocalDate submittedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.submittedOnDateParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.submittedOnDateParamName).value(submittedOnDate).notNull();
-        if(submittedOnDate != null && submittedOnDate.isAfter(today)){
-        	throw new FutureDateTransactionException("submitted");
-        }
-                
+        
         final LocalDate investmentOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.investmentOnDateParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentOnDateParamName).value(investmentOnDate).notNull();
-        if(investmentOnDate.isBefore(submittedOnDate)){
-        	throw new InvalidDateException("investment.on", "submitted");
-        }
         
         final BigDecimal investmentAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(InvestmentAccountApiConstants.investmentAmountParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.investmentAmountParamName).value(investmentAmount).notNull().positiveAmount();
@@ -132,13 +125,11 @@ public class InvestmentAccountDataValidator {
         final LocalDate maturityOnDate = this.fromApiJsonHelper.extractLocalDateNamed(InvestmentAccountApiConstants.maturityOnDateParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.maturityOnDateParamName).value(maturityOnDate).notNull();
         
-        if(!maturityOnDate.isAfter(investmentOnDate)){
-        	throw new InvalidDateException("maturity", "investment");
-        }
-        
         final BigDecimal maturityAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(InvestmentAccountApiConstants.maturityAmountParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.maturityAmountParamName).value(maturityAmount).notNull().positiveAmount();
-    
+        if(MathUtility.isLesser(maturityAmount, investmentAmount)) {
+        	throw new InvalidAmountException("maturity", maturityAmount, "investment", investmentAmount);
+        }
         boolean reinvestAfterMaturity = this.fromApiJsonHelper.extractBooleanNamed(
                 InvestmentAccountApiConstants.reinvestAfterMaturityParamName, element);
         baseDataValidator.reset().parameter(InvestmentAccountApiConstants.reinvestAfterMaturityParamName).value(reinvestAfterMaturity)
@@ -553,6 +544,24 @@ public class InvestmentAccountDataValidator {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
     
+	public void validateInvestmentAccountDates(InvestmentAccount investmentAccount) {
+		LocalDate today = DateUtils.getLocalDateOfTenant();
+
+		if (investmentAccount.getSubmittedOnDate() != null && investmentAccount.getSubmittedOnDate().isAfter(today)) {
+			throw new FutureDateTransactionException("submitted");
+		}
+		if (investmentAccount.getInvestmentOnDate().isBefore(investmentAccount.getSubmittedOnDate())) {
+			throw new InvalidDateException("investment.on", "submitted");
+		}
+		if (investmentAccount.getInvestmentOnDate().isAfter(today)) {
+			throw new FutureDateTransactionException("investment");
+		}
+		if (!LocalDate.fromDateFields(investmentAccount.getMaturityOnDate()).isAfter(investmentAccount.getInvestmentOnDate())) {
+			throw new InvalidDateException("maturity", "investment");
+		}
+
+	}
+
     public void validateForSavingsAccountlinkages(final Set<InvestmentAccountSavingsLinkages> savingsAccountlinkages,
             final BigDecimal investmentAmount) {
         BigDecimal sumOfInvestmentAmount = BigDecimal.ZERO;

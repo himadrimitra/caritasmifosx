@@ -34,6 +34,7 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
@@ -41,6 +42,7 @@ import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
+import com.finflux.portfolio.investmenttracker.Exception.InvalidAmountException;
 import com.finflux.portfolio.investmenttracker.api.InvestmentAccountApiConstants;
 import com.google.gson.JsonArray;
 
@@ -693,6 +695,9 @@ public class InvestmentAccount extends AbstractPersistable<Long>{
         } else {
             this.investmentAccountSavingsLinkages = new HashSet<>();
 
+        }
+        if(MathUtility.isLesser(this.maturityAmount, this.investmentAmount)) {
+        	throw new InvalidAmountException("maturity", this.maturityAmount, "investment", this.investmentAmount);
         }
 
     }
