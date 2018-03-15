@@ -277,9 +277,9 @@ public  class InvestmentAccountDataAssembler {
                 InvestmentAccountCharge investmentAccountCharge = null;
                 if (charge.isPercentageOfInterest()) {
                     BigDecimal amountToCalculateCharge = interestAmount;
-                    if(!charge.isInvestmentActivationCharge()){
+                    /*if(!charge.isInvestmentActivationCharge()){
                         amountToCalculateCharge = amountToCalculateCharge.subtract(totalActivationCharge);
-                    }
+                    }*/
                     BigDecimal chargeAmount = Money
                             .of(investmentAccount.getCurrency(), MathUtility.percentageOf(amountToCalculateCharge, charge.getAmount())).getAmount();
                     investmentAccountCharge = new InvestmentAccountCharge(investmentAccount, charge, chargeAmount, isPenality, isActive,
